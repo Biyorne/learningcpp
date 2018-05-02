@@ -14,10 +14,9 @@
 int main(void)
 {
     school::PersonName bobName("Bob", "", "Derp");
-    school::Employee bobEmployee(bobName);
     school::Address bobAddress("USA", "Colorado", "Denver", "80005", "123 main");
     school::Date bobDateOfBirth(1972, 03, 1);
-
+    school::Employee bobEmployee(bobName, bobDateOfBirth, bobAddress);
     school::Class bobsClass(
         "Math", bobEmployee, bobDateOfBirth, bobAddress, school::TimeOfDay(4, 0, 0));
 
