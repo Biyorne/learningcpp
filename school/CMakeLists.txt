@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.5)
+project("school")
+file(GLOB source_files *.?pp)
+add_executable(${PROJECT_NAME} ${source_files})
+target_link_libraries(${PROJECT_NAME})
