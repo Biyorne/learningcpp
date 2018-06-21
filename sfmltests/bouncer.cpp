@@ -34,7 +34,7 @@ private:
 int main(void)
 {
     sf::Texture texture;
-    if (texture.loadFromFile("bog-spike.png") == false)
+    if (texture.loadFromFile("cinder_magical_pony.png") == false)
     {
         std::cout << "Failed to open file" << std::endl;
         char ignore;
@@ -43,7 +43,7 @@ int main(void)
     }
 
     sf::RenderWindow window;
-    window.create(sf::VideoMode(), "SFML works!", sf::Style::Fullscreen);
+    window.create(sf::VideoMode(1920,1080), "SFML works!", sf::Style::Fullscreen);
 
     const float WINDOW_WIDTH(static_cast<float>(window.getSize().x));
     const float WINDOW_HEIGHT(static_cast<float>(window.getSize().y));
