@@ -8,26 +8,64 @@ namespace movement
 class Bouncer
 {
 public:
-    Bouncer(const float START, const float END, const float SPEED)
-        : m_start(START)
-        , m_end(END)
+    Bouncer(const float POINT_A, const float POINT_B, const float SPEED)
+        : m_pointA(POINT_A)
+        , m_pointB(POINT_B)
         , m_speed(SPEED)
-        , m_pos(START)
+        , m_pos(POINT_A)
+		, m_isMovingRight(POINT_A < POINT_B)
     {}
+
     void update(const float TIMEELAPSED)
-    {
-        if (m_pos < m_end)
+	{
+        if (m_isMovingRight)
         {
             m_pos += m_speed * TIMEELAPSED;
+			
+			if (m_pointA < m_pointB)
+			{
+				if (m_pos > m_pointB)
+				{
+					m_isMovingRight = false;
+				}
+			}
+			else
+			{
+				if (m_pos > m_pointA)
+				{
+					m_isMovingRight = false;
+				}
+			}
         }
+		else
+		{
+			m_pos -= m_speed * TIMEELAPSED;
+
+			if (m_pointA < m_pointB)
+			{
+				if (m_pos < m_pointA)
+				{
+					m_isMovingRight = true;
+				}
+			}
+			else
+			{
+				if (m_pos < m_pointB)
+				{
+					m_isMovingRight = true;
+				}
+			}
+		}
     }
+
     float getPosition() const { return m_pos; }
 
 private:
-    float m_start;
-    float m_end;
+    float m_pointA;
+    float m_pointB;
     float m_speed;
     float m_pos;
+	bool m_isMovingRight;
 };
 } // namespace movement
 
@@ -47,10 +85,8 @@ int main(void)
 
     const float WINDOW_WIDTH(static_cast<float>(window.getSize().x));
     const float WINDOW_HEIGHT(static_cast<float>(window.getSize().y));
-    std::cout << "size=" << WINDOW_WIDTH << "x" << WINDOW_HEIGHT << std::endl;
     sf::Clock clock;
     sf::Sprite sprite(texture);
-    sprite.setColor(sf::Color(255, 255, 0));
     sf::Image image(texture.copyToImage());
     image.createMaskFromColor(sf::Color::Black);
     texture.loadFromImage(image);
