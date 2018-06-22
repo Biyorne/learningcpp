@@ -60,6 +60,8 @@ public:
 
     float getPosition() const { return m_pos; }
 
+	void setSpeed(const float NEW_SPEED) { m_speed = NEW_SPEED; }
+
 private:
     float m_pointA;
     float m_pointB;
@@ -87,13 +89,17 @@ int main(void)
     const float WINDOW_HEIGHT(static_cast<float>(window.getSize().y));
     sf::Clock clock;
     sf::Sprite sprite(texture);
+	sprite.setOrigin(sprite.getGlobalBounds().width * 0.5f, sprite.getGlobalBounds().height * 0.5f);
     sf::Image image(texture.copyToImage());
     image.createMaskFromColor(sf::Color::Black);
     texture.loadFromImage(image);
     float red(0.0f);
     const float SPEED(500.0f);
-    movement::Bouncer myBouncer(0.0f, WINDOW_WIDTH - sprite.getGlobalBounds().width, SPEED);
-
+    movement::Bouncer bouncerHorizontal(0.0f, WINDOW_WIDTH, SPEED);
+	movement::Bouncer bouncerVertical(0.0f, WINDOW_HEIGHT, SPEED);
+	movement::Bouncer bouncerRotation(0.0f, 360.0f, SPEED);
+	movement::Bouncer bouncerSpeed(0.0f, SPEED, SPEED);
+	float rotation(0.0f);
     while (window.isOpen())
     {
         const float TIME_ELAPSED(clock.getElapsedTime().asSeconds());
@@ -113,11 +119,19 @@ int main(void)
                 window.close();
             }
         }
-
-        myBouncer.update(TIME_ELAPSED);
+		bouncerSpeed.update(TIME_ELAPSED);
+		bouncerHorizontal.setSpeed(bouncerSpeed.getPosition());
+        bouncerHorizontal.update(TIME_ELAPSED);
+		bouncerVertical.setSpeed(bouncerSpeed.getPosition());
+		bouncerVertical.update(TIME_ELAPSED);
+		bouncerRotation.setSpeed(bouncerSpeed.getPosition());
+		bouncerRotation.update(TIME_ELAPSED);
+		
         sprite.setPosition(
-            myBouncer.getPosition(),
-            (WINDOW_HEIGHT * 0.5f) - (sprite.getGlobalBounds().height * 0.5f));
+            bouncerHorizontal.getPosition(),
+            bouncerVertical.getPosition());
+		rotation += TIME_ELAPSED * bouncerSpeed.getPosition();
+		sprite.setRotation(rotation);
 
         // Change background color
         const float COLOR_SPEED(20.0f);
