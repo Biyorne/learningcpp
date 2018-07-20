@@ -1,5 +1,6 @@
 #ifndef ARRAYS_UTIL_HPP_INCLUDED
 #define ARRAYS_UTIL_HPP_INCLUDED
+#include "test.hpp"
 #include <iostream>
 
 namespace util
@@ -8,14 +9,7 @@ namespace util
     template <typename T>
     T sum(const T ARRAY[], const std::size_t SIZE)
     {
-        T sum(0);
-
-        for (std::size_t i(0); i < SIZE; ++i)
-        {
-            sum += ARRAY[i];
-        }
-
-        return sum;
+        return test::sum<T>(ARRAY, SIZE);
     }
 
     template <typename T>
@@ -40,6 +34,17 @@ namespace util
         {
             myArray[i] = i;
         }
+    }
+
+    void runTests()
+    {
+        // fillCounting
+
+        const std::size_t ARRAY_SIZE(4);
+        int arrayCounting[ARRAY_SIZE];
+        int arrayExpected[ARRAY_SIZE] = { 0, 1, 2, 3 };
+        fillCounting(arrayCounting, ARRAY_SIZE);
+        test::printResult(test::isEqual(arrayCounting, ARRAY_SIZE, arrayExpected, ARRAY_SIZE));
     }
 
 } // namespace util
