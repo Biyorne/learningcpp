@@ -55,6 +55,10 @@ namespace test
         return true;
     }
 
+    void isTrue(const bool CONDITION) { std::cout << ((CONDITION) ? "PASS" : "FAIL") << std::endl; }
+
+    void isFalse(const bool CONDITION) { return isTrue(!CONDITION); }
+
     void runTests()
     {
         const std::size_t ARRAY_SIZE(4);

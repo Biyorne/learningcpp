@@ -28,23 +28,33 @@ namespace util
     }
 
     template <typename T>
-    void fillCounting(T myArray[], const std::size_t SIZE)
+    void fillCounting(T myArray[], const std::size_t SIZE, const T COUNT_START = 0)
     {
+        T counter(COUNT_START);
         for (std::size_t i(0); i < SIZE; ++i)
         {
-            myArray[i] = i;
+            myArray[i] = counter++;
         }
     }
 
     void runTests()
     {
         // fillCounting
-
         const std::size_t ARRAY_SIZE(4);
-        int arrayCounting[ARRAY_SIZE];
-        int arrayExpected[ARRAY_SIZE] = { 0, 1, 2, 3 };
-        fillCounting(arrayCounting, ARRAY_SIZE);
-        test::printResult(test::isEqual(arrayCounting, ARRAY_SIZE, arrayExpected, ARRAY_SIZE));
+
+        {
+            int arrayCounting[ARRAY_SIZE];
+            int arrayExpected[ARRAY_SIZE] = { 0, 1, 2, 3 };
+            fillCounting(arrayCounting, ARRAY_SIZE);
+            test::printResult(test::isEqual(arrayCounting, ARRAY_SIZE, arrayExpected, ARRAY_SIZE));
+        }
+
+        {
+            int arrayCounting[ARRAY_SIZE];
+            int arrayExpected[ARRAY_SIZE] = { 1, 2, 3, 4 };
+            fillCounting(arrayCounting, ARRAY_SIZE, 1);
+            test::printResult(test::isEqual(arrayCounting, ARRAY_SIZE, arrayExpected, ARRAY_SIZE));
+        }
     }
 
 } // namespace util
