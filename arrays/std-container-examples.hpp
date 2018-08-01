@@ -90,6 +90,43 @@ namespace examples
             copyMultiplesAndReturnCount(countingVector, multsVector, 10));
         util::print(multsVector.data(), multsVector.size());
     }
+    // O(n)
+    bool isValueDuplicated(const int VALUE, const std::vector<int> & V)
+    {
+        std::size_t howManyFound(0);
+        for (std::size_t u(0); u < V.size(); ++u)
+        {
+            if (VALUE == V[u])
+            {
+                ++howManyFound;
+                if (howManyFound > 1)
+                {
+                    return true;
+                }
+            }
+        }
+
+        const bool IS_DUPLICATED(howManyFound > 1);
+        return IS_DUPLICATED;
+    }
+
+    // O(n^2)
+    bool isEveryValueDuplicated(const std::vector<int> & V)
+    {
+        std::size_t duplicateCounter(0);
+        for (std::size_t i(0); i < V.size(); ++i)
+        {
+            const int VALUE(V[i]);
+            const bool IS_DUPLICATED(isValueDuplicated(VALUE, V));
+
+            if (IS_DUPLICATED)
+            {
+                ++duplicateCounter;
+            }
+        }
+
+        return (V.size() == duplicateCounter);
+    }
 
     void runTests()
     {
@@ -98,19 +135,32 @@ namespace examples
         test::isTrue(isMultipleOf(0, 8765, true));
         test::isFalse(isMultipleOf(0, 315, false));
         test::isFalse(isMultipleOf(0, 0));
-
         runStdVectorCopyingTests();
-        {
-            std::vector<int> v;
-            v.reserve(100);
-            std::cout << v.capacity() << std::endl;
-            for (std::size_t i(0); i < 100; ++i)
-            {
-                const std::size_t CAPACITY_ORIG(v.capacity());
-                v.push_back(0);
-                std::cout << v.capacity() - CAPACITY_ORIG << std::endl;
-            }
-        }
+
+        std::cout << "-" << std::endl;
+        // isEveryValueDuplicated(V(n)) = O(n^2)
+        test::isFalse(isEveryValueDuplicated({ 0, 1, 2, 3 }));
+        test::isTrue(isEveryValueDuplicated({ 1, 1, 2, 2 }));
+
+        /*{
+    std::vector<int> v;
+    v.reserve(100);
+    // std::cout << v.capacity() << std::endl;
+    for (std::size_t i(0); i < 100; ++i)
+    {
+        const std::size_t CAPACITY_ORIG(v.capacity());
+        v.push_back(0);
+        // std::cout << v.capacity() - CAPACITY_ORIG << std::endl;
+    }
+}*/
+
+        //	Big O notation: O(#)
+        //	The O stands for order
+        //	The # stands for the number of operations that will be performed in the worst case.
+        //	Linear naive searching of arrays of size n is O(n)
+        //	O(1) means that the worst case takes just one operation.
+        //	If the operations don't depend on the size of something, then it's considered O(1).
+        //
 
         // std::array
         //	Elements are in an array on the stack
@@ -118,6 +168,8 @@ namespace examples
         //	- You have to pick the size ahead of time and you can never pick the right size.
         //	- Pass and return from functions is a hassle because you have to pick the size.
         //	+ It is the fastest container there is.
+        //  + Implements the indice operator[] to access elements
+        //	- Search operation. O(n) "Linear"
         // When to use std::array
         //	If you know the size ahead of time
         //	If you don't change the size
@@ -130,7 +182,46 @@ namespace examples
         //	+ Resizable
         //	+ Smart automatic resizing
         //  + control the actual and under-the-hood size
+        //	+ Implements the indice operator[] to access elements
+        //	- Search operation. O(n) "Linear"
+        //	- Insert/Remove O(n)
+        //	+ Push/Pop back amortized is O(1)
+        //	+-
+
+        // std::list
+        // Chain of pointers to nodes scattered in memory
+        // Single or double linked
+        // - Search O(n)
+        // + Insert/Remove O(1)
+        // Use when inserting and removing needs to be as fast as possible.
+
+        // std::set
+        // Elements in a balanced binary tree.
+        // + Search O(log2(n))
+        // + Insert/Remove O(log2(n))
+        // + Always sorted
+
+        // std::multiset
+        // O(same as std::set)
+
+        // std::string
+        //
+
+        // std::map<Key_t, Value_t>
+        //  (same as set, only direction nodes are a different type than the value nodes)
+        /*
+                std::map<std::string, std::string> dict;
+                dict.insert("one", "lowest cardinal");
+                ..
+                const std::string KEY("one");
+                std::cout << "The definition of " << KEY << " is " << dict.find(KEY);
+        */
+        // std::multimap
+
+        // Array, List, Balanced Binary Tree
+        // myInventoryMap.Find("Bob").DropItem("Torch");
     }
+
 } // namespace examples
 
 #endif // STD_CONTAINER_EXAMPLES_HPP_INCLUDED
