@@ -37,14 +37,14 @@ namespace school
         //
         // As Telex evolved, it needed codes for things that were not letters.  (STX/ETX/LF/CR/BEL/etc.)
         //  10 LF "Line Feed" -moved the print position down one line
-        //  13 CR "Carrige Recturn" -moved the print position down one line and all the way to the left
-        //   7 BEL "Bell" -notified attendats that some transmission was complete
+        //  13 CR "Carrige Return" -moved the print position all the way to the left
+        //   7 BEL "Bell" -notified attendats that some transmission was complete-
         // Bell Labs was the Google god of the 1960's, so it set out to create a new standard that extended the ITA-2.
         // The people at Bell Labs were smart, knew their history, and figured out how to make standards that the world actually used.
-        // They created a comity to draft a standard that included representatives from other businesses and researchers, and it worked.
+        // They created a committee to draft a standard that included representatives from other businesses and researchers, and it worked.
         // 1963 Bell Labs publishes the 7bit American Standard Code for Information Interchange (ASCII).
         // Everybody used it.
-        // This new way of using well represented comities to make standards is widely used today.
+        // This new way of using well represented committees to make standards is widely used today.
         // C++ is a language standard that evolves over time in this same fashion.
         // ASCII evolved over time as well, now 8bits, etc.
         // ASCII became the foundation for programing languages, C, C++, Java, Python, HTML, and MANY others...
