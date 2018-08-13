@@ -3,6 +3,9 @@
 
 #include "test.hpp"
 
+#include <algorithm>
+#include <list>
+#include <set>
 #include <vector>
 
 namespace examples
@@ -220,8 +223,117 @@ namespace examples
 
         // Array, List, Balanced Binary Tree
         // myInventoryMap.Find("Bob").DropItem("Torch");
+
+        // Three Fundamental Container Memory Layouts
+
+        // Array
+        //	Why a big three?  100 % efficient
+        // std::array
+        // std::vector
+        // Search O(n)
+        // Insert/Remove O(n)
+
+        // List
+        //	Why a big three?  Insert/Remove is Constant Time
+        // std::list
+        // Search O(n)
+        // Insert/Remove O(1)
+
+        // BBT
+        //	Logrithmic operations, Always sorted
+        // std::set
+        // std::multiset
+        // std::map
+        // std::multimap
+        // Search O(log(n))
+        // Insert/Remove O(log(n))
+
+        // STL Containers
+        //.size(), .empty(), .insert(),
+
+        // STL Iterators
+        // begin/end/advance/++/--/
+
+        std::vector<int> myVec = { 5, 4, 3, 2, 1 };
+        // util::print(myVec.data(), myVec.size());
+        std::sort(myVec.begin(), myVec.end(), [](const int L, const int R) { return (R < L); });
+        util::print(myVec.data(), myVec.size());
+
+        /*std::list<int> myList = { 6, 7, 9, 8, 10 };
+        myList.sort();
+        for (std::list<int>::const_reverse_iterator i(myList.crbegin()); i != myList.crend(); ++i)
+        {
+            std::cout << *i;
+        }
+        std::cout << std::endl;
+
+        std::list<int> myList2 = { 6, 7, 9, 8, 10 };
+
+                const int MAX(7);
+
+        std::copy_if(myList.begin(), myList.end(), std::back_inserter(myVec), [&MAX](const int
+        VALUE) { return (VALUE <= MAX);
+        });
+                */
+        std::sort(myVec.rbegin(), myVec.rend());
+        util::print(myVec.data(), myVec.size());
+
+        /*std::set<int> mySet = { 0, 3, 6, 2, 7 };
+        for (std::set<int>::iterator i(mySet.begin()); i != mySet.end(); ++i)
+        {
+            std::cout << *i;
+        }
+        std::cout << std::endl;*/
     }
 
+    /*
+// O(1) - "Constant Time"
+// O(9999999) - "Constant Time"
+void Foo1(const std::vector<int> & V)
+{
+    for (int i(0); i < 9999999; ++i)
+    {
+        std::cout << "The vector has " << V.size() << " ints." << std::endl;
+    }
+}
+
+// O(n)	- "Linear Time"
+// O(3n) - "Linear Time"
+void Foo2(const std::vector<int> & V)
+{
+    for (int i(0); i < V.size(); ++i)
+    {
+        std::cout << "Value=" << V[i] << "." << std::endl;
+        std::cout << "Value=" << V[i] << "." << std::endl;
+        std::cout << "Value=" << V[i] << "." << std::endl;
+    }
+}
+
+// O(n * log(n)) - "some strange name"
+void Foo3(const std::vector<int> & V)
+{
+    std::set<int> mySet;
+    for (int i(0); i < V.size(); ++i)
+    {
+        mySet.insert(V[i]);
+    }
+}
+
+// O(n^3) - "Exponential Time"
+void Foo4(const std::vector<int> & V)
+{
+    for (int i(0); i < V.size(); ++i)
+    {
+        for (int u(0); u < V.size(); ++u)
+        {
+            for (int x(0); x < V.size(); ++x)
+            {
+                std::cout << "Value=" << V[i] << "." << std::endl;
+            }
+        }
+    }
+}
+    */
 } // namespace examples
 
 #endif // STD_CONTAINER_EXAMPLES_HPP_INCLUDED
