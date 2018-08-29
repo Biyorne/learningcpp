@@ -1,6 +1,7 @@
 #ifndef FILE_IO_HPP_INCLUDED
 #define FILE_IO_HPP_INCLUDED
 
+#include <cctype>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -95,30 +96,46 @@ namespace school
         }
         else
         {
-            std::set<std::string> lines;
-            std::string line;
-            while (std::getline(fileStream, line))
+            std::map<std::string, int> wordCounts;
+            std::string word;
+            while (fileStream >> word)
             {
-                lines.insert(line);
+                std::string cleanWord;
+                for (const auto CHAR : word)
+                {
+                    if (isalpha(CHAR))
+                    {
+                        cleanWord += tolower(CHAR);
+                    }
+                }
+                if (!cleanWord.empty())
+                {
+                    ++(wordCounts[cleanWord]);
+                }
             }
-            /*
-for (const auto & STREET_NAME : lines)
-{
-    std::cout << STREET_NAME << '\n';
-}
-std::cout << std::flush;
-            */
-            std::fstream outputStream("out.txt", std::fstream::out | std::fstream::trunc);
-            for (const auto & STREET_NAME : lines)
+            std::multimap<int, std::string> countedWords;
+            for (const auto & WORD_COUNT_PAIR : wordCounts)
             {
-                outputStream << STREET_NAME << '\n';
+                countedWords.insert(std::make_pair(WORD_COUNT_PAIR.second, WORD_COUNT_PAIR.first));
             }
+
+            for (const auto & WORD_COUNT_PAIR : countedWords)
+            {
+                std::cout << WORD_COUNT_PAIR.first << " " << WORD_COUNT_PAIR.second << '\n';
+            }
+            std::cout << wordCounts.size() << std::flush;
+
+            // std::fstream outputStream(FILE_NAME + "-out.txt", std::fstream::out |
+            // std::fstream::trunc); for (const auto & STREET_NAME : lines)
+            //{
+            //    outputStream << STREET_NAME << '\n';
+            //}
         }
     }
 
     void runFileIoTests()
     {
-        fileWordTests("names-street.txt");
+        fileWordTests("bible.txt");
         // printFileByLine("names-street.txt");
         // printFileByString("names-street.txt");
         // printFileByCharacter("names-street.txt");
