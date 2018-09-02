@@ -6,14 +6,14 @@
 #include "TimeDuration.hpp"
 #include "TimeOfDay.hpp"
 #include "file-io.hpp"
+#include "iterator.hpp"
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <tuple>
-
 int main(void)
 {
-    school::runFileIoTests();
+    school::runIteratorTests();
     return EXIT_SUCCESS;
 }
