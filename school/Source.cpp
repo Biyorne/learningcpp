@@ -7,6 +7,7 @@
 #include "TimeOfDay.hpp"
 #include "file-io.hpp"
 #include "iterator.hpp"
+#include "working-with-containers.hpp"
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
@@ -14,6 +15,6 @@
 #include <tuple>
 int main(void)
 {
-    school::runIteratorTests();
+    school::runContainerTests();
     return EXIT_SUCCESS;
 }

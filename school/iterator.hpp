@@ -78,6 +78,20 @@ namespace school
         }
     }
 
+    template <typename Iterator_t, typename Functor_t>
+    void doSomethingToEveryElement(
+        const Iterator_t & SOURCE_BEGIN_ITER,
+        const Iterator_t & SOURCE_END_ITER,
+        Functor_t & doSomethingFunctor)
+    {
+        auto sourceIter(SOURCE_BEGIN_ITER);
+        auto destIter(destBeginIter);
+        while (sourceIter != SOURCE_END_ITER)
+        {
+            doSomethingFunctor(*(sourceIter++));
+        }
+    }
+
     void runIteratorTests()
     {
         // Iterator
