@@ -21,9 +21,6 @@ int main()
     const sf::Color CELL_OFF_COLOR(255, 0, 0, 127);
     const sf::Color CELL_OUTLINE_COLOR(sf::Color::Black);
 
-    const float CELL_OUTLINE_THICKNESS(5.0f);
-    const sf::Vector2f CELL_OUTLINE_THICKNESS_V(CELL_OUTLINE_THICKNESS, CELL_OUTLINE_THICKNESS);
-
     std::vector<sf::RectangleShape> rectangles;
 
     for (std::size_t row(0); row < CELL_COUNT_VERT; ++row)
@@ -31,16 +28,14 @@ int main()
         for (std::size_t column(0); column < CELL_COUNT_HORIZ; ++column)
         {
             sf::RectangleShape cellShape;
-            cellShape.setOutlineColor(CELL_OUTLINE_COLOR);
-            cellShape.setOutlineThickness(CELL_OUTLINE_THICKNESS);
             cellShape.setFillColor(CELL_ON_COLOR);
-            cellShape.setSize(CELL_SIZE_V - CELL_OUTLINE_THICKNESS_V);
+            cellShape.setSize(CELL_SIZE_V);
 
             const sf::Vector2f CELL_POSITION_V(
                 (static_cast<float>(column) * CELL_SIZE_V.x),
                 (static_cast<float>(row) * CELL_SIZE_V.y));
 
-            cellShape.setPosition(CELL_POSITION_V + CELL_OUTLINE_THICKNESS_V);
+            cellShape.setPosition(CELL_POSITION_V);
 
             rectangles.push_back(cellShape);
         }
@@ -58,6 +53,27 @@ int main()
             if (event.type == sf::Event::KeyPressed)
             {
                 window.close();
+            }
+            if (event.type == sf::Event::MouseButtonPressed)
+            {
+                const sf::Vector2f MOUSE_POSITION_V(
+                    sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
+
+                for (sf::RectangleShape & rectangle : rectangles)
+                {
+                    if (rectangle.getGlobalBounds().contains(MOUSE_POSITION_V))
+                    {
+                        if (rectangle.getFillColor() == CELL_ON_COLOR)
+                        {
+                            rectangle.setFillColor(CELL_OFF_COLOR);
+                        }
+                        else
+                        {
+                            rectangle.setFillColor(CELL_ON_COLOR);
+                        }
+                        break;
+                    }
+                }
             }
         }
 
