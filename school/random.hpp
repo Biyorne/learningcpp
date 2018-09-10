@@ -600,10 +600,34 @@ public:
             }
             else
             {
-                std::uniform_int_distribution<Number_t> uniformDistribution(MIN, MAX);
-                return uniformDistribution(m_engine);
+                // std::uniform_int_distribution does not work with char and unsigned char, so
+                // handle them with special cases that cast can recall
+                if constexpr (std::is_same<Number_t, char>::value)
+                {
+                    return static_cast<char>(
+                        minToMax(static_cast<int>(MIN), static_cast<int>(MAX)));
+                }
+                else if constexpr (std::is_same<Number_t, unsigned char>::value)
+                {
+                    return static_cast<unsigned char>(
+                        minToMax(static_cast<unsigned>(MIN), static_cast<unsigned>(MAX)));
+                }
+                else
+                {
+                    std::uniform_int_distribution<Number_t> uniformDistribution(MIN, MAX);
+                    return uniformDistribution(m_engine);
+                }
             }
         }
+    }
+
+    // this does not work for real types yet...TODO
+    template <
+        typename Number_t,
+        typename = std::enable_if_t<is_valid_random_number<Number_t>::value>>
+    Number_t minToMax()
+    {
+        return minToMax(std::numeric_limits<Number_t>::min(), std::numeric_limits<Number_t>::max());
     }
 
     template <
@@ -665,6 +689,7 @@ void printTestStringEnd(const char * const FUNCTION_NAME)
 }
 
 #include <sstream>
+#include <typeinfo>
 
 void makeStringOfArgs(std::ostringstream &) {}
 
@@ -843,6 +868,35 @@ void runCPPRandomLibraryTests()
     }
 }
 
+void runRandomWrapperTests_Boolean(RandomWrapper & randomWrapper)
+{
+    printTestStringBegin(__FUNCTION__);
+
+    for (int i(0); i < 10; ++i)
+    {
+        std::cout << std::boolalpha << randomWrapper.boolean() << std::endl;
+    }
+
+    printTestStringBegin(__FUNCTION__);
+}
+
+template <typename Number_t, typename Printable_t = long long>
+void runRandomWrapperTests_FullRangeOfType(RandomWrapper & randomWrapper)
+{
+    std::ostringstream ss;
+    ss << "runRandomWrapperTests_FullRangeOfType<" << typeid(Number_t).name() << ">";
+
+    printTestStringBegin(ss.str().c_str());
+
+    for (int i(0); i < 10; ++i)
+    {
+        std::cout << typeid(Number_t).name() << "="
+                  << static_cast<Printable_t>(randomWrapper.minToMax<Number_t>()) << std::endl;
+    }
+
+    printTestStringBegin(ss.str().c_str());
+}
+
 void runRandomWrapperTests()
 {
     RandomWrapper randomWrapper;
@@ -867,15 +921,19 @@ void runRandomWrapperTests()
     runTestsOneParam<long double>(
         "randomWrapper.oneTo", [&](const auto MAX) -> auto { return randomWrapper.oneTo(MAX); });
 
-    // custom test for boolean()
-    printTestStringBegin("randomWrapper.boolean");
+    runRandomWrapperTests_Boolean(randomWrapper);
 
-    for (int i(0); i < 10; ++i)
-    {
-        std::cout << std::boolalpha << randomWrapper.boolean() << std::endl;
-    }
-
-    printTestStringBegin("randomWrapper.boolean");
+    runRandomWrapperTests_FullRangeOfType<unsigned char>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<char>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<unsigned short>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<short>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<unsigned int>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<int>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<unsigned long long>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<long long>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<float>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<double>(randomWrapper);
+    runRandomWrapperTests_FullRangeOfType<long double>(randomWrapper);
 
     // compilation tests
     {
@@ -914,9 +972,7 @@ void runRandomWrapperTests()
         // this compiles but it is commented out so that no random garbage is cout
         // std::cout << randomWrapper.minToMax(NULL, NULL) << std::endl;
 
-        // NOTE that char and unsigned char are a valid arithmetic types so using them will allow
-        // RandomWrapper's functions to compile, but then when std::uniform_int_distribution will
-        // fail to compile, so this does NOT compile
+        // NOTE that char and unsigned char are a valid arithmetic types so this SHOULD compile
         // std::cout << randomWrapper.minToMax('a', 'b') << std::endl;
     }
 }
