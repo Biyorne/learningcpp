@@ -181,41 +181,54 @@ void seedRandomNumberGenerator_OldSchoolVersion_TutorialVersion()
 // this line at the top of main()
 void seedRandomNumberGenerator_OldSchoolVersion_ShortVersion() { srand((unsigned int)time(0)); }
 
-// this function uses rand() to generate a pseudo-random number, assumes the seed as already been
-// set, since this is also just a one-liner it is never really wrapped in its own function
+// this function uses rand() to generate a pseudo-random int over [0, RAND_MAX], RAND_MAX is a
+// #define that can vary with the platform, but it is usually set to 32767
 //
-// returns an int over [0, RAND_MAX], RAND_MAX is a #define that can vary with the platform, but it
-// is usually set to 32767.
-int generateRandomNumber_OldSchoolVersion_ZeroToRandMax() { return rand(); }
+// since this is just a one-liner you would not really wrap it in its own function
+int randomNumber_OldSchoolVersion_ZeroToRandMax() { return rand(); }
 
-// The problem with the code above is that you usually don't want numbers from [0, RAND_MAX].   What
-// you want is a function that returns random numbers from [0,MAX).  (note the half-closed
-// interval) (why is that handy?), in this function we assume that the seed was already set in main,
-// since this is also just a one-liner it is never really wrapped in its own function
+// The problem with the function above is that you don't want numbers over [0, RAND_MAX], you want
+// numbers from 0 to a MAX that you specify [0, MAX]
 //
-// You will see this everywhere in real code.
-int randomNumber_OldSchoolVersion_QuickAndDirtyVersion_ZeroTo(const int MAX)
+// note the clever use of the mod (modulus) operator, which (basically) gives you the remainder
+// of division.  (any_rand_number % number_to_divide_by) returns numbers over [0,
+// number_to_divide_by).  Notice that is a half-closed interval, so if you want results over [0,
+// MAX] then you need to use MAX+1 as your number_to_divide_by, like so: (any_rand_number %
+// (MAX+1)), which is what you see below
+//
+// Since we are using the % (mod) operator we need to be aware that we are dividing, remember this
+// very important C++ rule: "If the second operand of / or % is zero then the behavior is
+// undefined", that means if we do this: randomNumber_OldSchoolVersion_ZeroTo(-1) then we will end
+// up dividing by zero and all hell breaks lose, remember this whenever working with code that {
+// rand() % X } because you have to be sure X is not zero.  See the SafeRandom() exercise below.
+//
+// you will see this everywhere in real code
+//
+// since this is just a one-liner you would not really wrap it in its own function
+int randomNumber_OldSchoolVersion_ZeroTo(const int MAX) { return (rand() % (MAX + 1)); }
+
+// here is a handy version that lets you pick both [MIN, MAX]
+//
+// you will see this everywhere in real code
+//
+// since this is just a one-liner you would not really wrap it in its own function
+int randomNumber_OldSchoolVersion_MinToMax(const int MIN, const int MAX)
 {
-    if (MAX < 0)
-    {
-        return -1 * randomNumber_OldSchoolVersion_QuickAndDirtyVersion_ZeroTo(MAX * -1);
-    }
-    else
-    {
-        return (rand() % (MAX + 1));
-    }
-
-    // note the clever use of the mod (modulus) operator, which (basically) gives you the remainder
-    // of division.  (x % y) will always result in a number from [0,y).  (again, note the half
-    // closed interval)  So it works perfectly to restrict the size of the number returned by
-    // rand().
+    return (MIN + (rand() % ((MAX - MIN) + 1)));
 }
 
-// Actually, you don't want numbers from [0,MAX) either.  Usually you want [MIN, MAX].
-// (note this is NOT a half-closed interval)
+// Exercise
+//  Implement a better version of the function above that never results in undefined behavior, and
+//  always returns a number that makes sense.
 //
-// You will see this everywhere in real code.
-int randomNumber_OldSchoolVersion_QuickAndDirtyVersion_Ranged(const int MIN, const int MAX)
+// Here is a specification to help you get started:
+//  - If MIN==MAX return MIN
+//  - If MIN>MAX return SafeRandom(MAX, MIN)
+//  - Either or both MIN/MAX can be negative
+//  - Never results in undefined behavior
+//  - Does not throw exceptions
+//
+int randomNumber_OldSchoolVersion_MinToMax_Safe(const int MIN, const int MAX)
 {
     if (MIN == MAX)
     {
@@ -223,7 +236,7 @@ int randomNumber_OldSchoolVersion_QuickAndDirtyVersion_Ranged(const int MIN, con
     }
     else if (MIN > MAX)
     {
-        return randomNumber_OldSchoolVersion_QuickAndDirtyVersion_Ranged(MAX, MIN);
+        return randomNumber_OldSchoolVersion_MinToMax_Safe(MAX, MIN);
     }
     else
     {
@@ -443,210 +456,180 @@ void seedRandomNumberGenerator_RealVersion(std::mt19937 & engine)
 // this function creates a random int over the interval [MIN, MAX], and shows how engines work with
 // distributions to make random numbers over a specific range
 //
-// note that the MIN and MAX you provide to uniform_int_distribution<> defines a closed-interval so
-// this function might return either MIN or MAX
-int randomNumber_CPPRandomLibraryVersion_MT19937Int(
+// note that the MIN and MAX you provide to uniform_int_distribution defines a closed-interval,
+// so this function could return either MIN or MAX
+//
+// NOTE that this function is NOT SAFE, providing MIN/MAX values that do not make sense results in
+// undefined behavior!
+int randomNumber_CPPRandomLibraryVersion_MT19937_Int(
     std::mt19937 & engine, const int MIN, const int MAX)
 {
-    if (MIN == MAX)
-    {
-        return MIN;
-    }
-    else if (MIN > MAX)
-    {
-        return randomNumber_CPPRandomLibraryVersion_MT19937Int(engine, MAX, MIN);
-    }
-    else
-    {
-        std::uniform_int_distribution<int> uniformDistribution(MIN, MAX);
-        return uniformDistribution(engine);
-    }
+    std::uniform_int_distribution<int> uniformDistribution(MIN, MAX);
+    return uniformDistribution(engine);
 }
 
-// std::uniform_int_distribution<> accepts any of the <random> library engines, so we can
-// template the function above so that it can use any engine
-template <typename Engine_t>
-int randomNumber_CPPRandomLibraryVersion_Int(Engine_t & engine, const int MIN, const int MAX)
-{
-    if (MIN == MAX)
-    {
-        return MIN;
-    }
-    else if (MIN > MAX)
-    {
-        return randomNumber_CPPRandomLibraryVersion_Int(engine, MAX, MIN);
-    }
-    else
-    {
-        std::uniform_int_distribution<int> uniformDistribution(MIN, MAX);
-        return uniformDistribution(engine);
-    }
-}
-
-// std::uniform_int_distribution<> actually works for all non-real fundamental types: short, int,
-// long, long long, unsigned short, unsigned int, unsigned long, and unsigned long long (just not
-// float, double, or long double), so we can template the number type, HOWEVER if somebody calls
-// this with the NonReal_t as float or double we will end up with undefined behavior! (see below)
-template <typename Engine_t, typename NonReal_t>
-NonReal_t randomNumber_CPPRandomLibraryVersion_NonReal(
-    Engine_t & engine, const NonReal_t MIN, const NonReal_t MAX)
-{
-    if (MIN == MAX)
-    {
-        return MIN;
-    }
-    else if (MIN > MAX)
-    {
-        return randomNumber_CPPRandomLibraryVersion_NonReal(engine, MAX, MIN);
-    }
-    else
-    {
-        std::uniform_int_distribution<NonReal_t> uniformDistribution(MIN, MAX);
-        return uniformDistribution(engine);
-    }
-}
-
-// but this is C++ and we don't put up with that kind of bullshit where you need multiple functions
-// to work with multiple types, and we also don't put up with that bullshit where if you code the
-// wrong type there is undefined behavior: we write one templated version that solves the fucking
-// problem: either it works or it doesn't compile!
-//
-// it uses some template magic you have not seen yet called SFINAE ("substitution failure is not an
-// error") to prevent the code from compiling if Number_t is set to something that is not a
-// fundamental arithmetic type
-//
-// it uses some MORE type magic you have not seen yet called a "constexpr if", which basically is an
-// if() statement that compares types instead of values
-template <
-    typename Engine_t,
-    typename Number_t,
-    typename
-    = std::enable_if_t<std::is_arithmetic<Number_t>::value && !std::is_same<Number_t, bool>::value>>
-Number_t randomNumber_CPPRandomLibraryVersion_AnyFundamentalNumberType(
+// here is another (fancy) version of the function above with the following handy modifications:
+//  - if() statements added to prevent undefined behavior
+//  - more if() statements added so that strange/incorrect input is handled gracefully
+//  - added a template type allowing the use of any engine
+//  - added a template type allowing the use of any fundamental arithmetic type (except for bool)
+//  - std::uniform_int_distribution does not work with char or unsigned char so casts have been
+//    added to get around that limitation and allow the function to work anyway
+//  - std::uniform_real_distribution's interval is half-closed [MIN, MAX) so the std::nextafter()
+//    function is used to close the interval so it works the same as the non-real types
+template <typename Engine_t, typename Number_t>
+Number_t randomNumber_CPPRandomLibraryVersion_Fancy(
     Engine_t & engine, const Number_t MIN, const Number_t MAX)
 {
+    // these lines will cause a compile error if Number_t is not a number
+    static_assert(std::is_arithmetic<Number_t>::value);
+
+    // std::is_arithmetic<bool>==true, so we also need this line
+    static_assert(std::is_same<Number_t, bool>::value == false);
+
     if (MIN == MAX)
     {
         return MIN;
     }
     else if (MIN > MAX)
     {
-        return randomNumber_CPPRandomLibraryVersion_AnyFundamentalNumberType(engine, MAX, MIN);
+        return randomNumber_CPPRandomLibraryVersion_Fancy(engine, MAX, MIN);
     }
     else
     {
         if constexpr (std::is_floating_point<Number_t>::value)
         {
-            std::uniform_real_distribution<Number_t> uniformDistribution(
+            // this forces the use of the uniform_real_distribution if Number_t is real
+            std::uniform_real_distribution<Number_t> uniformRealDistribution(
                 MIN, std::nextafter(MAX, std::numeric_limits<Number_t>::max()));
 
-            return uniformDistribution(engine);
+            return uniformRealDistribution(engine);
+        }
+        else if constexpr (
+            std::is_same<Number_t, char>::value || std::is_same<Number_t, unsigned char>::value)
+        {
+            // this is a work-around allowing chars and unsigned chars to work right even though
+            // uniform_int_distribution does not support them
+            return static_cast<Number_t>(randomNumber_CPPRandomLibraryVersion_Fancy(
+                engine, static_cast<int>(MIN), static_cast<int>(MAX)));
         }
         else
         {
-            std::uniform_int_distribution<Number_t> uniformDistribution(MIN, MAX);
-            return uniformDistribution(engine);
+            // the if constexpr statements above combined with the static_asserts before them means
+            // that at this point in the code Number_t must be one of the types supported by
+            // std::uniform_int_distribution
+            std::uniform_int_distribution<Number_t> uniformIntDistribution(MIN, MAX);
+            return uniformIntDistribution(engine);
         }
     }
 }
 
-// the above code is fine, but it would be better if we made a class that would make an engine and
-// use the constructor to seed it, that way we won't have to remember to seed it ourselves
-class RandomWrapper
+// you can use both seedRandomNumberGenerator_RealVersion() and
+// randomNumber_CPPRandomLibraryVersion_Fancy() to get all the random numbers you need, but it would
+// be better if we had a class that would wrap all of this functionality into one place and use the
+// constructor to seed the engine so we don't have to remember to seed it ourselves
+class Random
 {
 public:
-    using engine_type = std::mt19937;
-
-    RandomWrapper()
+    Random()
         : m_engine()
     {
         seed();
     }
 
-    RandomWrapper(const RandomWrapper &) = default;
-    RandomWrapper(RandomWrapper &&) = default;
-    RandomWrapper & operator=(const RandomWrapper &) = default;
-    RandomWrapper & operator=(RandomWrapper &&) = default;
+    // these lines tell the compiler to make default versions of the: copy-constructor,
+    // move-constructor, copy-assignment operator, and move-assignment operator, basically this
+    // means that instances of our Random class have value semantics
+    Random(const Random &) = default;
+    Random(Random &&) = default;
+    Random & operator=(const Random &) = default;
+    Random & operator=(Random &&) = default;
 
-    template <class Number_t>
-    struct is_valid_random_number
-        : std::integral_constant<
-              bool,
-              std::is_arithmetic<typename std::remove_cv<Number_t>::type>::value
-                  && !std::is_same<bool, typename std::remove_cv<Number_t>::type>::value>
-    {};
-
-    template <
-        typename Number_t,
-        typename = std::enable_if_t<is_valid_random_number<Number_t>::value>>
-    Number_t minToMax(const Number_t MIN, const Number_t MAX)
+    template <typename Number_t>
+    static constexpr bool isValidNumberType()
     {
+        if constexpr (std::is_arithmetic<Number_t>::value && !std::is_same<Number_t, bool>::value)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    // this is the same as randomNumber_CPPRandomLibraryVersion_Fancy() above
+    template <typename Number_t>
+    Number_t range(const Number_t MIN, const Number_t MAX) const
+    {
+        static_assert(
+            isValidNumberType<Number_t>()
+            && "Number_t must be both std::is_arithmetic and not bool");
+
         if (MIN == MAX)
         {
             return MIN;
         }
         else if (MIN > MAX)
         {
-            return minToMax(MAX, MIN);
+            return range(MAX, MIN);
         }
         else
         {
             if constexpr (std::is_floating_point<Number_t>::value)
             {
-                std::uniform_real_distribution<Number_t> uniformDistribution(
+                std::uniform_real_distribution<Number_t> uniformRealDistribution(
                     MIN, std::nextafter(MAX, std::numeric_limits<Number_t>::max()));
 
-                return uniformDistribution(m_engine);
+                return uniformRealDistribution(m_engine);
+            }
+            else if constexpr (
+                std::is_same<Number_t, char>::value || std::is_same<Number_t, unsigned char>::value)
+            {
+                return static_cast<Number_t>(range(static_cast<int>(MIN), static_cast<int>(MAX)));
             }
             else
             {
-                // std::uniform_int_distribution does not work with char and unsigned char, so
-                // handle them with special cases that cast can recall
-                if constexpr (std::is_same<Number_t, char>::value)
-                {
-                    return static_cast<char>(
-                        minToMax(static_cast<int>(MIN), static_cast<int>(MAX)));
-                }
-                else if constexpr (std::is_same<Number_t, unsigned char>::value)
-                {
-                    return static_cast<unsigned char>(
-                        minToMax(static_cast<unsigned>(MIN), static_cast<unsigned>(MAX)));
-                }
-                else
-                {
-                    std::uniform_int_distribution<Number_t> uniformDistribution(MIN, MAX);
-                    return uniformDistribution(m_engine);
-                }
+                std::uniform_int_distribution<Number_t> uniformIntDistribution(MIN, MAX);
+                return uniformIntDistribution(m_engine);
             }
         }
     }
 
-    // this does not work for real types yet...TODO
-    template <
-        typename Number_t,
-        typename = std::enable_if_t<is_valid_random_number<Number_t>::value>>
-    Number_t minToMax()
+    // everything below this comment is just a few functions i thought would come in handy
+
+    template <typename Number_t>
+    Number_t zeroTo(const Number_t MAX) const
     {
-        return minToMax(std::numeric_limits<Number_t>::min(), std::numeric_limits<Number_t>::max());
+        static_assert(
+            isValidNumberType<Number_t>()
+            && "Number_t must be both std::is_arithmetic and not bool");
+
+        return range(Number_t(0), MAX);
     }
 
-    template <
-        typename Number_t,
-        typename = std::enable_if_t<is_valid_random_number<Number_t>::value>>
-    Number_t zeroTo(const Number_t MAX)
+    template <typename Number_t>
+    Number_t oneTo(const Number_t MAX) const
     {
-        return minToMax(Number_t(0), MAX);
+        static_assert(
+            isValidNumberType<Number_t>()
+            && "Number_t must be both std::is_arithmetic and not bool");
+
+        return range(Number_t(1), MAX);
     }
 
-    template <
-        typename Number_t,
-        typename = std::enable_if_t<is_valid_random_number<Number_t>::value>>
-    Number_t oneTo(const Number_t MAX)
-    {
-        return minToMax(Number_t(1), MAX);
-    }
+    bool boolean() const { return (zeroTo(1) == 0); }
 
-    bool boolean() { return (zeroTo(1) == 0); }
+    // TODO this does not work for real types yet...not sure why...yet...
+    template <typename Number_t>
+    Number_t range() const
+    {
+        static_assert(
+            isValidNumberType<Number_t>()
+            && "Number_t must be both std::is_arithmetic and not bool");
+
+        return range(std::numeric_limits<Number_t>::min(), std::numeric_limits<Number_t>::max());
+    }
 
 private:
     void seed()
@@ -660,10 +643,14 @@ private:
         m_engine.seed(seedSequence);
     }
 
-    std::mt19937 m_engine;
+    // using the engine to generate random numbers changes the engine because the seed gets updated,
+    // but we want this Random class to be const-able and to behave as if generating random numbers
+    // does NOT change anything, so we cheat here and make the m_engine mutable which allows
+    // functions that are const to modify it anyway.
+    mutable std::mt19937 m_engine;
 };
 
-// Everything below should be ignored because it is only testing code for everything above.
+// Everything below this comment is code that tests everything above, so you can ignore it.
 //
 // WARNING - Attempting to understand the code below may cause:
 //  * an existential crisis
@@ -675,7 +662,7 @@ private:
 //  * rage
 //  * hate crimes
 //  * death
-//  * war crimes
+//  * war crimes (as defined by the Hague Conventions of 1899 and 1907)
 
 void printTestStringBegin(const char * const FUNCTION_NAME)
 {
@@ -691,40 +678,72 @@ void printTestStringEnd(const char * const FUNCTION_NAME)
 #include <sstream>
 #include <typeinfo>
 
-void makeStringOfArgs(std::ostringstream &) {}
+void makeAStringFromVariadicArgs(std::ostringstream &) {}
 
 template <typename NextArg_t, typename... Args>
-void makeStringOfArgs(std::ostringstream & ss, const NextArg_t & MAYBE_A_NUMBER, Args... args)
+void makeAStringFromVariadicArgs(
+    std::ostringstream & ss, const NextArg_t & MAYBE_A_NUMBER, Args... args)
 {
-    if constexpr (RandomWrapper::is_valid_random_number<NextArg_t>::value)
+    if constexpr (Random::isValidNumberType<NextArg_t>())
     {
         if (ss.str().empty() == false)
         {
             ss << ", ";
         }
 
-        ss << MAYBE_A_NUMBER;
+        if constexpr (
+            std::is_same<NextArg_t, char>::value || std::is_same<NextArg_t, unsigned char>::value)
+        {
+            ss << static_cast<int>(MAYBE_A_NUMBER);
+        }
+        else
+        {
+            ss << MAYBE_A_NUMBER;
+        }
     }
 
-    makeStringOfArgs(ss, args...);
+    makeAStringFromVariadicArgs(ss, args...);
 }
 
 template <typename Function_t, typename... Args>
 void repeatTenTimes(Function_t foo, Args &&... args)
 {
     std::ostringstream ss;
-    makeStringOfArgs(ss, args...);
+    makeAStringFromVariadicArgs(ss, args...);
 
     for (int i(0); i < 10; ++i)
     {
-        std::cout << "(" << ss.str() << ")=" << foo(std::forward<Args>(args)...) << std::endl;
+        std::cout << "(" << ss.str() << ")=";
+
+        const auto REUSLT { foo(std::forward<Args>(args)...) };
+
+        if constexpr (
+            std::is_same<std::remove_cv<decltype(REUSLT)>::type, char>::value
+            || std::is_same<std::remove_cv<decltype(REUSLT)>::type, unsigned char>::value)
+        {
+            std::cout << static_cast<int>(REUSLT);
+        }
+        else
+        {
+            std::cout << REUSLT;
+        }
+        std::cout << std::endl;
     }
 }
 
 template <typename Number_t>
-const std::vector<Number_t> makeTestVectorZeroTo()
+const std::vector<Number_t> makeTestValuesForOneParam()
 {
-    std::vector<Number_t> vec = { -5, -1, 0, 1, 5, 100 };
+    std::vector<Number_t> vec;
+
+    if constexpr (std::is_signed<Number_t>::value)
+    {
+        vec = { -5, -1, 0, 1, 5, 100 };
+    }
+    else
+    {
+        vec = { 0, 1, 5, 100 };
+    }
 
     if constexpr (std::is_floating_point<Number_t>::value)
     {
@@ -741,9 +760,18 @@ const std::vector<Number_t> makeTestVectorZeroTo()
 }
 
 template <typename Number_t>
-const std::vector<Number_t> makeTestVectorRanged()
+const std::vector<Number_t> makeTestValuesForTwoParams()
 {
-    std::vector<Number_t> vec = { -1, -1, 0, 0, 1, 1, -1, 0, 0, 1, 5, 6, 5, 7, 1, 100 };
+    std::vector<Number_t> vec;
+
+    if constexpr (std::is_signed<Number_t>::value)
+    {
+        vec = { -1, -1, 0, 0, 1, 1, -1, 0, 0, 1, 5, 6, 5, 7, 1, 100 };
+    }
+    else
+    {
+        vec = { 0, 0, 1, 1, 0, 1, 5, 6, 5, 7, 1, 100 };
+    }
 
     if constexpr (std::is_floating_point<Number_t>::value)
     {
@@ -764,11 +792,11 @@ void runTestsOneParam(const char * const FUNCTION_NAME, Function_t foo)
 {
     printTestStringBegin(FUNCTION_NAME);
 
-    const auto NUMBERS { makeTestVectorZeroTo<Number_t>() };
+    const auto VALUES_TO_TEST { makeTestValuesForOneParam<Number_t>() };
 
-    for (std::size_t numbersIndex(0); numbersIndex < NUMBERS.size(); ++numbersIndex)
+    for (std::size_t numbersIndex(0); numbersIndex < VALUES_TO_TEST.size(); ++numbersIndex)
     {
-        repeatTenTimes(foo, NUMBERS.at(numbersIndex));
+        repeatTenTimes(foo, VALUES_TO_TEST.at(numbersIndex));
     }
 
     printTestStringEnd(FUNCTION_NAME);
@@ -779,11 +807,11 @@ void runTestsTwoParams(const char * const FUNCTION_NAME, Function_t foo)
 {
     printTestStringBegin(FUNCTION_NAME);
 
-    const auto NUMBERS { makeTestVectorRanged<Number_t>() };
+    const auto VALUES_TO_TEST { makeTestValuesForTwoParams<Number_t>() };
 
-    for (std::size_t numbersIndex(0); numbersIndex < NUMBERS.size(); numbersIndex += 2)
+    for (std::size_t numbersIndex(0); numbersIndex < VALUES_TO_TEST.size(); numbersIndex += 2)
     {
-        repeatTenTimes(foo, NUMBERS.at(numbersIndex), NUMBERS.at(numbersIndex + 1));
+        repeatTenTimes(foo, VALUES_TO_TEST.at(numbersIndex), VALUES_TO_TEST.at(numbersIndex + 1));
     }
 
     printTestStringEnd(FUNCTION_NAME);
@@ -794,11 +822,12 @@ void runTestsTwoParamsAndEngine(const char * const FUNCTION_NAME, Engine_t & eng
 {
     printTestStringBegin(FUNCTION_NAME);
 
-    const auto NUMBERS { makeTestVectorRanged<Number_t>() };
+    const auto VALUES_TO_TEST { makeTestValuesForTwoParams<Number_t>() };
 
-    for (std::size_t numbersIndex(0); numbersIndex < NUMBERS.size(); numbersIndex += 2)
+    for (std::size_t numbersIndex(0); numbersIndex < VALUES_TO_TEST.size(); numbersIndex += 2)
     {
-        repeatTenTimes(foo, engine, NUMBERS.at(numbersIndex), NUMBERS.at(numbersIndex + 1));
+        repeatTenTimes(
+            foo, engine, VALUES_TO_TEST.at(numbersIndex), VALUES_TO_TEST.at(numbersIndex + 1));
     }
 
     printTestStringEnd(FUNCTION_NAME);
@@ -809,15 +838,10 @@ void runOldSchoolTests()
     seedRandomNumberGenerator_OldSchoolVersion_TutorialVersion();
     // seedRandomNumberGenerator_OldSchoolVersion_ShortVersion();
 
-    runTestsOneParam<int>(
-        "randomNumber_OldSchoolVersion_QuickAndDirtyVersion_ZeroTo", [](const auto MAX) -> auto {
-            return randomNumber_OldSchoolVersion_QuickAndDirtyVersion_ZeroTo(MAX);
+    runTestsTwoParams<int>(
+        "randomNumber_OldSchoolVersion_MinToMax_Safe", [](const auto MIN, const auto MAX) -> auto {
+            return randomNumber_OldSchoolVersion_MinToMax_Safe(MIN, MAX);
         });
-
-    runTestsTwoParams<int>("randomNumber_OldSchoolVersion_QuickAndDirtyVersion_Ranged", [
-    ](const auto MIN, const auto MAX) -> auto {
-        return randomNumber_OldSchoolVersion_QuickAndDirtyVersion_Ranged(MIN, MAX);
-    });
 }
 
 void runCPPRandomLibraryTests()
@@ -827,131 +851,121 @@ void runCPPRandomLibraryTests()
     seedRandomNumberGenerator_TutorialVersion(engine);
     // seedRandomNumberGenerator_RealVersion(engine);
 
-    runTestsTwoParamsAndEngine<int>("randomNumber_CPPRandomLibraryVersion_MT19937Int", engine, [
+    runTestsTwoParamsAndEngine<int>("randomNumber_CPPRandomLibraryVersion_Fancy", engine, [
     ](std::mt19937 & engine, const auto MIN, const auto MAX) -> auto {
-        return randomNumber_CPPRandomLibraryVersion_MT19937Int(engine, MIN, MAX);
+        return randomNumber_CPPRandomLibraryVersion_Fancy(engine, MIN, MAX);
     });
 
-    runTestsTwoParamsAndEngine<int>("randomNumber_CPPRandomLibraryVersion_Int", engine, [
-    ](std::mt19937 & engine, const auto MIN, const auto MAX) -> auto {
-        return randomNumber_CPPRandomLibraryVersion_Int(engine, MIN, MAX);
-    });
-
-    runTestsTwoParamsAndEngine<short>("randomNumber_CPPRandomLibraryVersion_NonReal", engine, [
-    ](std::mt19937 & engine, const auto MIN, const auto MAX) -> auto {
-        return randomNumber_CPPRandomLibraryVersion_NonReal(engine, MIN, MAX);
-    });
-
-    runTestsTwoParamsAndEngine<int>(
-        "randomNumber_CPPRandomLibraryVersion_AnyFundamentalNumberType", engine, [
+    runTestsTwoParamsAndEngine<unsigned char>(
+        "randomNumber_CPPRandomLibraryVersion_Fancy", engine, [
         ](std::mt19937 & engine, const auto MIN, const auto MAX) -> auto {
-            return randomNumber_CPPRandomLibraryVersion_AnyFundamentalNumberType(engine, MIN, MAX);
+            return randomNumber_CPPRandomLibraryVersion_Fancy(engine, MIN, MAX);
         });
 
-    runTestsTwoParamsAndEngine<long double>(
-        "randomNumber_CPPRandomLibraryVersion_AnyFundamentalNumberType", engine, [
-        ](std::mt19937 & engine, const auto MIN, const auto MAX) -> auto {
-            return randomNumber_CPPRandomLibraryVersion_AnyFundamentalNumberType(engine, MIN, MAX);
-        });
+    runTestsTwoParamsAndEngine<long double>("randomNumber_CPPRandomLibraryVersion_Fancy", engine, [
+    ](std::mt19937 & engine, const auto MIN, const auto MAX) -> auto {
+        return randomNumber_CPPRandomLibraryVersion_Fancy(engine, MIN, MAX);
+    });
 
     // compilation tests
     {
         // none of these should compile
-        // std::cout << randomNumber_CPPRandomLibraryVersion(engine, false, true) << std::endl;
-        //
-        // std::cout << randomNumber_CPPRandomLibraryVersion_AnyFundamentalNumberType(engine, "abc",
-        // "def") << std::endl;
-        //
-        // std::cout << randomNumber_CPPRandomLibraryVersion_AnyFundamentalNumberType(
+        // std::cout << randomNumber_CPPRandomLibraryVersion_Fancy(engine, false, true) <<
+        // std::endl;
+
+        // std::cout << randomNumber_CPPRandomLibraryVersion_Fancy(engine, "abc", "def") <<
+        // std::endl;
+
+        // std::cout << randomNumber_CPPRandomLibraryVersion_Fancy(
         //                 engine, std::string("abc"), std::string("def"))
         //          << std::endl;
     }
 }
 
-void runRandomWrapperTests_Boolean(RandomWrapper & randomWrapper)
+void runRandomTests_Boolean(Random & randomHelper)
 {
     printTestStringBegin(__FUNCTION__);
 
     for (int i(0); i < 10; ++i)
     {
-        std::cout << std::boolalpha << randomWrapper.boolean() << std::endl;
+        std::cout << std::boolalpha << randomHelper.boolean() << std::endl;
     }
 
-    printTestStringBegin(__FUNCTION__);
+    printTestStringEnd(__FUNCTION__);
 }
 
 template <typename Number_t, typename Printable_t = long long>
-void runRandomWrapperTests_FullRangeOfType(RandomWrapper & randomWrapper)
+void runRandomTests_FullRangeOfType(Random & randomHelper)
 {
     std::ostringstream ss;
-    ss << "runRandomWrapperTests_FullRangeOfType<" << typeid(Number_t).name() << ">";
+    ss << "runRandomTests_FullRangeOfType<" << typeid(Number_t).name() << ">";
 
     printTestStringBegin(ss.str().c_str());
 
     for (int i(0); i < 10; ++i)
     {
         std::cout << typeid(Number_t).name() << "="
-                  << static_cast<Printable_t>(randomWrapper.minToMax<Number_t>()) << std::endl;
+                  << static_cast<Printable_t>(randomHelper.range<Number_t>()) << std::endl;
     }
 
-    printTestStringBegin(ss.str().c_str());
+    printTestStringEnd(ss.str().c_str());
 }
 
-void runRandomWrapperTests()
+void runRandomHelperTests()
 {
-    RandomWrapper randomWrapper;
+    Random randomHelper;
 
-    runTestsTwoParams<int>("randomWrapper.minToMax", [&](const auto MIN, const auto MAX) -> auto {
-        return randomWrapper.minToMax(MIN, MAX);
+    runTestsTwoParams<int>("randomHelper.range", [&](const auto MIN, const auto MAX) -> auto {
+        return randomHelper.range(MIN, MAX);
     });
 
-    runTestsTwoParams<float>("randomWrapper.minToMax", [&](const auto MIN, const auto MAX) -> auto {
-        return randomWrapper.minToMax(MIN, MAX);
+    runTestsTwoParams<float>("randomHelper.range", [&](const auto MIN, const auto MAX) -> auto {
+        return randomHelper.range(MIN, MAX);
     });
 
     runTestsOneParam<int>(
-        "randomWrapper.zeroTo", [&](const auto MAX) -> auto { return randomWrapper.zeroTo(MAX); });
+        "randomHelper.zeroTo", [&](const auto MAX) -> auto { return randomHelper.zeroTo(MAX); });
 
     runTestsOneParam<double>(
-        "randomWrapper.zeroTo", [&](const auto MAX) -> auto { return randomWrapper.zeroTo(MAX); });
+        "randomHelper.zeroTo", [&](const auto MAX) -> auto { return randomHelper.zeroTo(MAX); });
 
     runTestsOneParam<int>(
-        "randomWrapper.oneTo", [&](const auto MAX) -> auto { return randomWrapper.oneTo(MAX); });
+        "randomHelper.oneTo", [&](const auto MAX) -> auto { return randomHelper.oneTo(MAX); });
 
     runTestsOneParam<long double>(
-        "randomWrapper.oneTo", [&](const auto MAX) -> auto { return randomWrapper.oneTo(MAX); });
+        "randomHelper.oneTo", [&](const auto MAX) -> auto { return randomHelper.oneTo(MAX); });
 
-    runRandomWrapperTests_Boolean(randomWrapper);
+    runRandomTests_Boolean(randomHelper);
 
-    runRandomWrapperTests_FullRangeOfType<unsigned char>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<char>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<unsigned short>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<short>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<unsigned int>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<int>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<unsigned long long>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<long long>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<float>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<double>(randomWrapper);
-    runRandomWrapperTests_FullRangeOfType<long double>(randomWrapper);
+    runRandomTests_FullRangeOfType<unsigned char>(randomHelper);
+    runRandomTests_FullRangeOfType<char>(randomHelper);
+    runRandomTests_FullRangeOfType<unsigned short>(randomHelper);
+    runRandomTests_FullRangeOfType<short>(randomHelper);
+    runRandomTests_FullRangeOfType<unsigned int>(randomHelper);
+    runRandomTests_FullRangeOfType<int>(randomHelper);
+    runRandomTests_FullRangeOfType<unsigned long long>(randomHelper);
+    runRandomTests_FullRangeOfType<long long>(randomHelper);
+    runRandomTests_FullRangeOfType<float>(randomHelper);
+    runRandomTests_FullRangeOfType<double>(randomHelper);
+    runRandomTests_FullRangeOfType<long double>(randomHelper);
 
     // compilation tests
     {
         // basically, any type that std::is_arithmetic() and !std::is_same<T, bool> should compile
 
         // using different types should NOT compile
-        // std::cout << randomWrapper.minToMax(0, 1.1) << std::endl;
+        // std::cout << randomHelper.range(0, 1.1) << std::endl;
 
         // using bools should NOT compile
-        // std::cout << randomWrapper.minToMax(false, true) << std::endl;
+        // std::cout << randomHelper.range(false, true) << std::endl;
 
         // pointer types should NOT compile
-        // std::cout << randomWrapper.minToMax(nullptr, nullptr) << std::endl;
+        // std::cout << randomHelper.range(nullptr, nullptr) << std::endl;
         // int ignored(0);
-        // std::cout << randomWrapper.minToMax(&ignored, &ignored) << std::endl;
+        // std::cout << randomHelper.range(&ignored, &ignored) << std::endl;
 
-        // std::cout << randomWrapper.minToMax("a", "b") << std::endl;
-        // std::cout << randomWrapper.minToMax(std::string("a"), std::string("b")) << std::endl;
+        // std::cout << randomHelper.range("a", "b") << std::endl;
+        // std::cout << randomHelper.range(std::string("a"), std::string("b")) << std::endl;
 
         // enum types should NOT compile
         // enum Enum1 : int
@@ -959,32 +973,34 @@ void runRandomWrapperTests()
         //    A0 = 0,
         //    B1 = 1
         //};
-        // std::cout << randomWrapper.minToMax(A0, B1) << std::endl;
+        // std::cout << randomHelper.range(A0, B1) << std::endl;
         //
         // enum class Enum2 : int
         //{
         //    C0 = 0,
         //    D1 = 1
         //};
-        // std::cout << randomWrapper.minToMax(Enum2::C0, Enum2::D1) << std::endl;
+        // std::cout << randomHelper.range(Enum2::C0, Enum2::D1) << std::endl;
 
-        // NOTE that NULL is a #define 0 so this SHOULD compile and call minToMax<int>(0, 0)
+        // NOTE that NULL is a #define 0 so this SHOULD compile and call range<int>(0, 0)
         // this compiles but it is commented out so that no random garbage is cout
-        // std::cout << randomWrapper.minToMax(NULL, NULL) << std::endl;
+        // std::cout << randomHelper.range(NULL, NULL) << std::endl;
 
         // NOTE that char and unsigned char are a valid arithmetic types so this SHOULD compile
-        // std::cout << randomWrapper.minToMax('a', 'b') << std::endl;
+        // std::cout << randomHelper.range('a', 'b') << std::endl;
     }
 }
 
 namespace school
 {
+
     void runRandomTests()
     {
         runOldSchoolTests();
         runCPPRandomLibraryTests();
-        runRandomWrapperTests();
+        runRandomHelperTests();
     }
+
 } // namespace school
 
 #endif // SCHOOL_RANDOM_HPP_INCLUDED
