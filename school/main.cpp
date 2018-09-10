@@ -7,7 +7,9 @@
 #include "TimeOfDay.hpp"
 #include "file-io.hpp"
 #include "iterator.hpp"
+#include "random.hpp"
 #include "working-with-containers.hpp"
+
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
@@ -15,6 +17,6 @@
 #include <tuple>
 int main(void)
 {
-    school::runContainerTests();
+    school::runRandomTests();
     return EXIT_SUCCESS;
 }
