@@ -11,9 +11,12 @@ int main()
     const std::size_t CELL_COUNT_VERT(CELL_COUNT_HORIZ);
     const std::size_t CELL_COUNT(CELL_COUNT_HORIZ * CELL_COUNT_VERT);
 
-    const sf::Vector2f CELL_SIZE_V(
-        (SCREEN_SIZE_V.x / static_cast<float>(CELL_COUNT_HORIZ)),
-        (SCREEN_SIZE_V.y / static_cast<float>(CELL_COUNT_VERT)));
+    const float CELL_PAD(10);
+
+    const float CELL_WIDTH((SCREEN_WIDTH - ((CELL_COUNT_HORIZ + 1) * CELL_PAD)) / CELL_COUNT_HORIZ);
+    const float CELL_HEIGHT((SCREEN_HEIGHT - ((CELL_COUNT_VERT + 1) * CELL_PAD)) / CELL_COUNT_VERT);
+
+    const sf::Vector2f CELL_SIZE_V(CELL_WIDTH, CELL_HEIGHT);
 
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Lights Out");
 
@@ -25,16 +28,19 @@ int main()
 
     for (std::size_t row(0); row < CELL_COUNT_VERT; ++row)
     {
+        const float ROW_FLOAT(static_cast<float>(row));
+
         for (std::size_t column(0); column < CELL_COUNT_HORIZ; ++column)
         {
+            const float COLUMN_FLOAT(static_cast<float>(column));
+
             sf::RectangleShape cellShape;
             cellShape.setFillColor(CELL_ON_COLOR);
             cellShape.setSize(CELL_SIZE_V);
 
-            const sf::Vector2f CELL_POSITION_V(
-                (static_cast<float>(column) * CELL_SIZE_V.x),
-                (static_cast<float>(row) * CELL_SIZE_V.y));
-
+            const float LEFT((CELL_PAD * (COLUMN_FLOAT + 1.0f)) + (CELL_WIDTH * COLUMN_FLOAT));
+            const float TOP((CELL_PAD * (ROW_FLOAT + 1.0f)) + (CELL_HEIGHT * ROW_FLOAT));
+            const sf::Vector2f CELL_POSITION_V(LEFT, TOP);
             cellShape.setPosition(CELL_POSITION_V);
 
             rectangles.push_back(cellShape);
