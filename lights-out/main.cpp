@@ -1,6 +1,54 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 
+class Cell
+{
+public:
+    Cell(const sf::Vector2f & SIZE_V, const sf::Vector2f & POS_V)
+        : m_isOn(false)
+        , m_rectangle()
+        , m_gridPosV(0, 0)
+        , m_colorOn(255, 0, 0)
+        , m_colorOff(255, 0, 0, 127)
+    {
+        m_rectangle.setSize(SIZE_V);
+        m_rectangle.setPosition(POS_V);
+        change();
+    }
+
+    bool isOn() const { return m_isOn; }
+
+    bool doesContain(const sf::Vector2f & POSITION_V) const
+    {
+        return m_rectangle.getGlobalBounds().contains(POSITION_V);
+    }
+
+    sf::Vector2i gridPos() const { return m_gridPosV; }
+
+    sf::RectangleShape rectangle() const { return m_rectangle; }
+
+    void change()
+    {
+        m_isOn = !m_isOn;
+
+        if (m_isOn)
+        {
+            m_rectangle.setFillColor(m_colorOn);
+        }
+        else
+        {
+            m_rectangle.setFillColor(m_colorOff);
+        }
+    }
+
+private:
+    bool m_isOn;
+    sf::RectangleShape m_rectangle;
+    sf::Vector2i m_gridPosV;
+    sf::Color m_colorOn;
+    sf::Color m_colorOff;
+};
+
 int main()
 {
     const unsigned int SCREEN_WIDTH(800);
@@ -20,11 +68,9 @@ int main()
 
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Lights Out");
 
-    const sf::Color CELL_ON_COLOR(255, 0, 0);
-    const sf::Color CELL_OFF_COLOR(255, 0, 0, 127);
     const sf::Color CELL_OUTLINE_COLOR(sf::Color::Black);
 
-    std::vector<sf::RectangleShape> rectangles;
+    std::vector<Cell> cells;
 
     for (std::size_t row(0); row < CELL_COUNT_VERT; ++row)
     {
@@ -34,16 +80,13 @@ int main()
         {
             const float COLUMN_FLOAT(static_cast<float>(column));
 
-            sf::RectangleShape cellShape;
-            cellShape.setFillColor(CELL_ON_COLOR);
-            cellShape.setSize(CELL_SIZE_V);
-
             const float LEFT((CELL_PAD * (COLUMN_FLOAT + 1.0f)) + (CELL_WIDTH * COLUMN_FLOAT));
             const float TOP((CELL_PAD * (ROW_FLOAT + 1.0f)) + (CELL_HEIGHT * ROW_FLOAT));
             const sf::Vector2f CELL_POSITION_V(LEFT, TOP);
-            cellShape.setPosition(CELL_POSITION_V);
 
-            rectangles.push_back(cellShape);
+            Cell cell(CELL_SIZE_V, CELL_POSITION_V);
+
+            cells.push_back(cell);
         }
     }
 
@@ -65,29 +108,27 @@ int main()
                 const sf::Vector2f MOUSE_POSITION_V(
                     sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
 
-                for (sf::RectangleShape & rectangle : rectangles)
+                for (Cell & cell : cells)
                 {
-                    if (rectangle.getGlobalBounds().contains(MOUSE_POSITION_V))
+
+                    if (cell.doesContain(MOUSE_POSITION_V))
                     {
-                        if (rectangle.getFillColor() == CELL_ON_COLOR)
-                        {
-                            rectangle.setFillColor(CELL_OFF_COLOR);
-                        }
-                        else
-                        {
-                            rectangle.setFillColor(CELL_ON_COLOR);
-                        }
+                        cell.change();
+
+                        // find rectangles around rectangle
+                        // check state of rectangles and change them
+
                         break;
                     }
                 }
             }
         }
 
-        window.clear();
+        window.clear(CELL_OUTLINE_COLOR);
 
-        for (const sf::RectangleShape & RECTANGLE : rectangles)
+        for (const Cell & CELL : cells)
         {
-            window.draw(RECTANGLE);
+            window.draw(CELL.rectangle());
         }
 
         window.display();
