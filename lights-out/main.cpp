@@ -49,17 +49,24 @@ private:
     sf::Color m_colorOff;
 };
 
+const unsigned int SCREEN_WIDTH(800);
+const unsigned int SCREEN_HEIGHT(600);
+
+float screenPad(const float SCREEN_FRACTION)
+{
+    const float SCREEN_DIMENSION_AVG(static_cast<float>(SCREEN_WIDTH + SCREEN_HEIGHT) * 0.5f);
+    return (SCREEN_DIMENSION_AVG * SCREEN_FRACTION);
+}
+
 int main()
 {
-    const unsigned int SCREEN_WIDTH(800);
-    const unsigned int SCREEN_HEIGHT(600);
     const sf::Vector2f SCREEN_SIZE_V(sf::Vector2u(SCREEN_WIDTH, SCREEN_HEIGHT));
 
     const std::size_t CELL_COUNT_HORIZ(3);
     const std::size_t CELL_COUNT_VERT(CELL_COUNT_HORIZ);
     const std::size_t CELL_COUNT(CELL_COUNT_HORIZ * CELL_COUNT_VERT);
 
-    const float CELL_PAD(10);
+    const float CELL_PAD(screenPad(0.01f));
 
     const float CELL_WIDTH((SCREEN_WIDTH - ((CELL_COUNT_HORIZ + 1) * CELL_PAD)) / CELL_COUNT_HORIZ);
     const float CELL_HEIGHT((SCREEN_HEIGHT - ((CELL_COUNT_VERT + 1) * CELL_PAD)) / CELL_COUNT_VERT);
