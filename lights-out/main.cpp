@@ -108,19 +108,25 @@ int main()
                 const sf::Vector2f MOUSE_POSITION_V(
                     sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
 
+                // find the cell grid pos that is at the center of all to change
                 for (Cell & cell : cells)
                 {
-
                     if (cell.doesContain(MOUSE_POSITION_V))
                     {
-                        cell.change();
-
-                        // find rectangles around rectangle
-                        // check state of rectangles and change them
 
                         break;
                     }
                 }
+
+                // find the Cells around this cell
+                // make a container of all surrounding cell grid positions + the current cell grid
+                // pos
+                std::vector<sf::Vector2i> gridPosToChange;
+                // fill it up
+                // remove invalid cell grid pos
+
+                // loop over all valid cell grid pos, change them
+                //*
             }
         }
 
