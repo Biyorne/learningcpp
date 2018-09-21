@@ -64,7 +64,7 @@ int main()
 {
     const sf::Vector2f SCREEN_SIZE_V(sf::Vector2u(SCREEN_WIDTH, SCREEN_HEIGHT));
 
-    const std::size_t CELL_COUNT_HORIZ(3);
+    const std::size_t CELL_COUNT_HORIZ(4);
     const std::size_t CELL_COUNT_VERT(CELL_COUNT_HORIZ);
     const std::size_t CELL_COUNT(CELL_COUNT_HORIZ * CELL_COUNT_VERT);
 
@@ -135,13 +135,13 @@ int main()
                     // make the cell grid positions around and including this cell
                     std::vector<sf::Vector2i> cellGridPosToChange;
 
-                    // for (int row(0); row < CELL_COUNT_VERT; ++row)
+                    for (int row(-1); row <= 1; ++row)
                     {
-
                         for (int column(-1); column <= 1; ++column)
                         {
                             const sf::Vector2i GRID_POS_V(
-                                GRID_POS_OF_CLICKED_CELL.x + column, GRID_POS_OF_CLICKED_CELL.y);
+                                GRID_POS_OF_CLICKED_CELL.x + column,
+                                GRID_POS_OF_CLICKED_CELL.y + row);
 
                             cellGridPosToChange.push_back(GRID_POS_V);
                         }
@@ -159,6 +159,13 @@ int main()
                         {
                             iterToCellWithGridPos->change();
                         }
+                    }
+
+                    if (!std::any_of(std::begin(cells), std::end(cells), [](const Cell & CELL) {
+                            return CELL.isOn();
+                        }))
+                    {
+                        window.close();
                     }
                 }
             }
