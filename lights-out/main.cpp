@@ -1,13 +1,15 @@
 #include <SFML/Graphics.hpp>
+#include <algorithm>
+#include <iostream>
 #include <vector>
 
 class Cell
 {
 public:
-    Cell(const sf::Vector2f & SIZE_V, const sf::Vector2f & POS_V)
+    Cell(const sf::Vector2f & SIZE_V, const sf::Vector2f & POS_V, const sf::Vector2i & GRID_POS_V)
         : m_isOn(false)
         , m_rectangle()
-        , m_gridPosV(0, 0)
+        , m_gridPosV(GRID_POS_V)
         , m_colorOn(255, 0, 0)
         , m_colorOff(255, 0, 0, 127)
     {
@@ -91,7 +93,10 @@ int main()
             const float TOP((CELL_PAD * (ROW_FLOAT + 1.0f)) + (CELL_HEIGHT * ROW_FLOAT));
             const sf::Vector2f CELL_POSITION_V(LEFT, TOP);
 
-            Cell cell(CELL_SIZE_V, CELL_POSITION_V);
+            const sf::Vector2i CELL_GRID_POSITION_V(
+                static_cast<int>(column), static_cast<int>(row));
+
+            Cell cell(CELL_SIZE_V, CELL_POSITION_V, CELL_GRID_POSITION_V);
 
             cells.push_back(cell);
         }
@@ -115,25 +120,47 @@ int main()
                 const sf::Vector2f MOUSE_POSITION_V(
                     sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
 
-                // find the cell grid pos that is at the center of all to change
-                for (Cell & cell : cells)
+                // find the cell grid pos (where the mouse was clicked) that is at the center of all
+                // to change
+
+                const std::vector<Cell>::const_iterator ITER_TO_CELL_CLICKED(std::find_if(
+                    std::begin(cells), std::end(cells), [&MOUSE_POSITION_V](const Cell & CELL) {
+                        return CELL.doesContain(MOUSE_POSITION_V);
+                    }));
+
+                if (ITER_TO_CELL_CLICKED != std::cend(cells))
                 {
-                    if (cell.doesContain(MOUSE_POSITION_V))
+                    const sf::Vector2i GRID_POS_OF_CLICKED_CELL(ITER_TO_CELL_CLICKED->gridPos());
+
+                    // make the cell grid positions around and including this cell
+                    std::vector<sf::Vector2i> cellGridPosToChange;
+
+                    // for (int row(0); row < CELL_COUNT_VERT; ++row)
                     {
 
-                        break;
+                        for (int column(-1); column <= 1; ++column)
+                        {
+                            const sf::Vector2i GRID_POS_V(
+                                GRID_POS_OF_CLICKED_CELL.x + column, GRID_POS_OF_CLICKED_CELL.y);
+
+                            cellGridPosToChange.push_back(GRID_POS_V);
+                        }
+                    }
+
+                    // change every cell in the container of grid positions
+                    for (const sf::Vector2i & GRID_POS_V : cellGridPosToChange)
+                    {
+                        auto iterToCellWithGridPos(std::find_if(
+                            std::begin(cells), std::end(cells), [&GRID_POS_V](const Cell & CELL) {
+                                return (CELL.gridPos() == GRID_POS_V);
+                            }));
+
+                        if (iterToCellWithGridPos != std::end(cells))
+                        {
+                            iterToCellWithGridPos->change();
+                        }
                     }
                 }
-
-                // find the Cells around this cell
-                // make a container of all surrounding cell grid positions + the current cell grid
-                // pos
-                std::vector<sf::Vector2i> gridPosToChange;
-                // fill it up
-                // remove invalid cell grid pos
-
-                // loop over all valid cell grid pos, change them
-                //*
             }
         }
 
