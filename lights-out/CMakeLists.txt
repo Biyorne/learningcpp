@@ -13,11 +13,13 @@ target_link_libraries(  ${PROJECT_NAME}
 
 
 #compiler/linker options
-if(MSVC)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
     target_compile_options(${PROJECT_NAME} PUBLIC /std:c++17 -DWIN32_LEAN_AND_MEAN /MP /W4 /w14254 /w14263 /w14287 /we4289 /w14296 /w14311 /w14545 /w14546 /w14547 /w14549 /w14555 /w14640 /w14826 /w14905 /w14906 /w14928)
 
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL AppleClang)
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
     target_compile_options(${PROJECT_NAME} PUBLIC -DNDEBUG -O3 -lstdc++ -std=c++17 -Weverything -Wno-error -Wno-unused-command-line-argument -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-exit-time-destructors -Wno-padded -Wno-weak-vtables -Wno-disabled-macro-expansion -Wno-deprecated -Wno-covered-switch-default -Wno-inconsistent-missing-destructor-override)
     
@@ -28,7 +30,11 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL AppleClang)
     
         target_compile_options(${PROJECT_NAME} PUBLIC -fsanitize=address -fno-omit-frame-pointer)
 
-        target_link_libraries(${PROJECT_NAME} -fsanitize=address -fno-omit-frame-pointer)
+        target_link_libraries(${PROJECT_NAME} PUBLIC -fsanitize=address -fno-omit-frame-pointer)
     endif()
+
+else()
+
+    message(FATAL_ERROR " Unknwon Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
 endif()
