@@ -1,5 +1,5 @@
-#ifndef LIGHTS_OUT_GAME_HPP_INCLUDED
-#define LIGHTS_OUT_GAME_HPP_INCLUDED
+#ifndef LIGHTS_OUT_GAME_BOARD_HPP_INCLUDED
+#define LIGHTS_OUT_GAME_BOARD_HPP_INCLUDED
 
 #include "cell.hpp"
 
@@ -11,7 +11,7 @@
 class GameBoard
 {
 public:
-    GameBoard(const unsigned int SCREEN_WIDTH, const unsigned int SCREEN_HEIGHT);
+    GameBoard(const sf::FloatRect & REGION, const sf::Color & COLOR);
 
     std::vector<Cell> cells() const { return m_cells; }
 
@@ -34,4 +34,4 @@ private:
     std::vector<std::vector<Cell>> m_history;
 };
 
-#endif // LIGHTS_OUT_GAME_HPP_INCLUDED
+#endif // LIGHTS_OUT_GAME_BOARD_HPP_INCLUDED

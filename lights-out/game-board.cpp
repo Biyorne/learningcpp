@@ -1,18 +1,19 @@
-#include "game.hpp"
+#include "game-board.hpp"
 
-GameBoard::GameBoard(const unsigned int SCREEN_WIDTH, const unsigned int SCREEN_HEIGHT)
+GameBoard::GameBoard(const sf::FloatRect & REGION, const sf::Color & COLOR)
     : m_cells()
 {
     const std::size_t CELL_COUNT_HORIZ(3);
     const std::size_t CELL_COUNT_VERT(CELL_COUNT_HORIZ);
     const std::size_t CELL_COUNT(CELL_COUNT_HORIZ * CELL_COUNT_VERT);
+    m_cells.reserve(CELL_COUNT);
 
     const float PAD_SCREEN_FRACTION(0.01f);
-    const float SCREEN_DIMENSION_AVG(static_cast<float>(SCREEN_WIDTH + SCREEN_HEIGHT) * 0.5f);
+    const float SCREEN_DIMENSION_AVG((REGION.width + REGION.height) * 0.5f);
     const float CELL_PAD(SCREEN_DIMENSION_AVG * PAD_SCREEN_FRACTION);
 
-    const float CELL_WIDTH((SCREEN_WIDTH - ((CELL_COUNT_HORIZ + 1) * CELL_PAD)) / CELL_COUNT_HORIZ);
-    const float CELL_HEIGHT((SCREEN_HEIGHT - ((CELL_COUNT_VERT + 1) * CELL_PAD)) / CELL_COUNT_VERT);
+    const float CELL_WIDTH((REGION.width - ((CELL_COUNT_HORIZ + 1) * CELL_PAD)) / CELL_COUNT_HORIZ);
+    const float CELL_HEIGHT((REGION.height - ((CELL_COUNT_VERT + 1) * CELL_PAD)) / CELL_COUNT_VERT);
 
     const sf::Vector2f CELL_SIZE_V(CELL_WIDTH, CELL_HEIGHT);
 
@@ -24,13 +25,16 @@ GameBoard::GameBoard(const unsigned int SCREEN_WIDTH, const unsigned int SCREEN_
         {
             const float COLUMN_FLOAT(static_cast<float>(column));
 
-            const float LEFT((CELL_PAD * (COLUMN_FLOAT + 1.0f)) + (CELL_WIDTH * COLUMN_FLOAT));
-            const float TOP((CELL_PAD * (ROW_FLOAT + 1.0f)) + (CELL_HEIGHT * ROW_FLOAT));
-            const sf::Vector2f CELL_POSITION_V(LEFT, TOP);
+            const float LEFT_OFFSET(
+                (CELL_PAD * (COLUMN_FLOAT + 1.0f)) + (CELL_WIDTH * COLUMN_FLOAT));
+            const float TOP_OFFSET((CELL_PAD * (ROW_FLOAT + 1.0f)) + (CELL_HEIGHT * ROW_FLOAT));
+            const sf::Vector2f CELL_POSITION_V(
+                (REGION.left + LEFT_OFFSET), (REGION.top + TOP_OFFSET));
 
             const GridPos_t CELL_GRID_POSITION_V(static_cast<int>(column), static_cast<int>(row));
 
-            Cell cell(CELL_SIZE_V, CELL_POSITION_V, CELL_GRID_POSITION_V);
+            const sf::FloatRect CELL_REGION(CELL_POSITION_V, CELL_SIZE_V);
+            Cell cell(CELL_REGION, CELL_GRID_POSITION_V, COLOR);
 
             m_cells.push_back(cell);
         }

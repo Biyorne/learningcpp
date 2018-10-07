@@ -1,5 +1,5 @@
 #include "cell.hpp"
-#include "game.hpp"
+#include "game-board.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -11,12 +11,13 @@ void eventHandler(const sf::Event & EVENT, sf::RenderWindow & window, GameBoard 
 
 int main()
 {
-    const unsigned int SCREEN_WIDTH(800);
-    const unsigned int SCREEN_HEIGHT(600);
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Lights Out");
+    const sf::Vector2f WHOLE_SCREEN_SIZE_V(window.getSize());
+    const sf::FloatRect WHOLE_SCREEN_REGION(
+        sf::Vector2f(100.0f, 100.0f),
+        sf::Vector2f((WHOLE_SCREEN_SIZE_V.x - 200.0f), (WHOLE_SCREEN_SIZE_V.y - 200.0f)));
 
-    sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Lights Out");
-
-    GameBoard gameBoard(SCREEN_WIDTH, SCREEN_HEIGHT);
+    GameBoard gameBoard(WHOLE_SCREEN_REGION, sf::Color(121, 50, 105));
 
     const sf::Color CELL_OUTLINE_COLOR(sf::Color::Black);
 

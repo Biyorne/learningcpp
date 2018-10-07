@@ -8,15 +8,15 @@ using GridPos_t = sf::Vector2i;
 class Cell
 {
 public:
-    Cell(const sf::Vector2f & SIZE_V, const sf::Vector2f & POS_V, const GridPos_t & GRID_POS_V)
+    Cell(const sf::FloatRect & REGION, const GridPos_t & GRID_POS_V, const sf::Color & COLOR)
         : m_isOn(false)
         , m_rectangle()
         , m_gridPosV(GRID_POS_V)
-        , m_colorOn(255, 0, 0)
-        , m_colorOff(255, 0, 0, 127)
+        , m_colorOn(COLOR)
+        , m_colorOff((m_colorOn.r / 2), (m_colorOn.g / 2), (m_colorOn.b / 2), m_colorOn.a)
     {
-        m_rectangle.setSize(SIZE_V);
-        m_rectangle.setPosition(POS_V);
+        m_rectangle.setSize(sf::Vector2f(REGION.width, REGION.height));
+        m_rectangle.setPosition(sf::Vector2f(REGION.left, REGION.top));
         change();
     }
 
