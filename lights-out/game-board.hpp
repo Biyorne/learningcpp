@@ -8,30 +8,41 @@
 #include <algorithm>
 #include <vector>
 
-class GameBoard
+namespace lightsout
 {
-public:
-    GameBoard(const sf::FloatRect & REGION, const sf::Color & COLOR);
 
-    std::vector<Cell> cells() const { return m_cells; }
+    class GameBoard
+    {
+    public:
+        GameBoard(const sf::FloatRect & REGION, const sf::Color & COLOR);
 
-    bool isGameBoardOver() const;
+        std::vector<Cell> cells() const { return m_cells; }
 
-    void handleMouseClick(const sf::Vector2f MOUSE_POSITION_V);
+        bool isGameOver() const { return m_isGameOver; }
 
-    void undo();
+        void handleMouseClick(const sf::Vector2f MOUSE_POSITION_V);
 
-    void flip();
+        void eventHandler(const sf::Event & EVENT);
 
-    void reset();
+    private:
+        void undo();
 
-private:
-    std::vector<GridPos_t> makeGridPosToChange(const GridPos_t & GRID_POS_OF_CLICKED_CELL) const;
+        void flip();
 
-    void changeCellsWithTheseGridPositions(const std::vector<GridPos_t> & GRID_POS_TO_CHANGE);
+        void reset();
 
-    std::vector<Cell> m_cells;
-    std::vector<std::vector<Cell>> m_history;
-};
+        bool areAllCellsOff() const;
+
+        std::vector<GridPos_t>
+            makeGridPosToChange(const GridPos_t & GRID_POS_OF_CLICKED_CELL) const;
+
+        void changeCellsWithTheseGridPositions(const std::vector<GridPos_t> & GRID_POS_TO_CHANGE);
+
+        std::vector<Cell> m_cells;
+        std::vector<std::vector<Cell>> m_history;
+        bool m_isGameOver;
+    };
+
+} // namespace lightsout
 
 #endif // LIGHTS_OUT_GAME_BOARD_HPP_INCLUDED

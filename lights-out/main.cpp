@@ -7,76 +7,71 @@
 #include <iostream>
 #include <vector>
 
-void eventHandler(const sf::Event & EVENT, sf::RenderWindow & window, GameBoard & gameBoard);
+namespace lightsout
+{
+    class Window
+    {
+    public:
+        Window(
+            const std::string & TITLE,
+            const unsigned int WIDTH,
+            const unsigned int HEIGHT,
+            const sf::Color & COLOR)
+            : m_renderWindow(sf::VideoMode(WIDTH, HEIGHT), TITLE)
+            , m_backgroundColor(COLOR)
+        {}
+
+        sf::Vector2f size() const { return sf::Vector2f(m_renderWindow.getSize()); }
+
+        bool isOpen() const { return m_renderWindow.isOpen(); }
+
+        void handleEvents(GameBoard & gameBoard)
+        {
+            sf::Event event;
+            while (m_renderWindow.pollEvent(event))
+            {
+                if (event.type == sf::Event::Closed)
+                {
+                    m_renderWindow.close();
+                }
+
+                gameBoard.eventHandler(event);
+            }
+        }
+
+        void draw(const GameBoard & GAME_BOARD)
+        {
+            m_renderWindow.clear(m_backgroundColor);
+
+            for (const lightsout::Cell & CELL : GAME_BOARD.cells())
+            {
+                m_renderWindow.draw(CELL.rectangle());
+            }
+
+            m_renderWindow.display();
+        }
+
+    private:
+        sf::RenderWindow m_renderWindow;
+        sf::Color m_backgroundColor;
+    };
+} // namespace lightsout
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Lights Out");
-    const sf::Vector2f WHOLE_SCREEN_SIZE_V(window.getSize());
+    // sf::RenderWindow window(sf::VideoMode(800, 600), "Lights Out");
+    lightsout::Window window("Lights Out", 800, 600, sf::Color::Black);
+
     const sf::FloatRect WHOLE_SCREEN_REGION(
-        sf::Vector2f(100.0f, 100.0f),
-        sf::Vector2f((WHOLE_SCREEN_SIZE_V.x - 200.0f), (WHOLE_SCREEN_SIZE_V.y - 200.0f)));
+        sf::Vector2f(100.0f, 100.0f), (window.size() - sf::Vector2f(200.0f, 200.0f)));
 
-    GameBoard gameBoard(WHOLE_SCREEN_REGION, sf::Color(121, 50, 105));
+    lightsout::GameBoard gameBoard(WHOLE_SCREEN_REGION, sf::Color(121, 50, 105));
 
-    const sf::Color CELL_OUTLINE_COLOR(sf::Color::Black);
-
-    while (window.isOpen())
+    while (window.isOpen() && (gameBoard.isGameOver() == false))
     {
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            eventHandler(event, window, gameBoard);
-        }
-
-        window.clear(CELL_OUTLINE_COLOR);
-
-        for (const Cell & CELL : gameBoard.cells())
-        {
-            window.draw(CELL.rectangle());
-        }
-
-        window.display();
+        window.handleEvents(gameBoard);
+        window.draw(gameBoard);
     }
 
     return EXIT_SUCCESS;
-}
-
-void eventHandler(const sf::Event & EVENT, sf::RenderWindow & window, GameBoard & gameBoard)
-{
-    if (EVENT.type == sf::Event::Closed)
-    {
-        window.close();
-    }
-
-    if (EVENT.type == sf::Event::KeyPressed)
-    {
-        if (EVENT.key.code == sf::Keyboard::U)
-        {
-            gameBoard.undo();
-        }
-        else if (EVENT.key.code == sf::Keyboard::F)
-        {
-            gameBoard.flip();
-        }
-        else if (EVENT.key.code == sf::Keyboard::R)
-        {
-            gameBoard.reset();
-        }
-        else
-        {
-            window.close();
-        }
-    }
-
-    if (EVENT.type == sf::Event::MouseButtonPressed)
-    {
-        const sf::Vector2f MOUSE_POSITION_V(sf::Vector2i(EVENT.mouseButton.x, EVENT.mouseButton.y));
-        gameBoard.handleMouseClick(MOUSE_POSITION_V);
-    }
-
-    if (gameBoard.isGameBoardOver())
-    {
-        window.close();
-    }
 }
