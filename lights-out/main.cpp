@@ -62,10 +62,8 @@ int main()
     // sf::RenderWindow window(sf::VideoMode(800, 600), "Lights Out");
     lightsout::Window window("Lights Out", 800, 600, sf::Color::Black);
 
-    const sf::FloatRect WHOLE_SCREEN_REGION(
-        sf::Vector2f(100.0f, 100.0f), (window.size() - sf::Vector2f(200.0f, 200.0f)));
-
-    lightsout::GameBoard gameBoard(WHOLE_SCREEN_REGION, sf::Color(121, 50, 105));
+    lightsout::GameBoard gameBoard(
+        sf::FloatRect(sf::Vector2f(), window.size()), sf::Color(121, 50, 105));
 
     while (window.isOpen() && (gameBoard.isGameOver() == false))
     {
