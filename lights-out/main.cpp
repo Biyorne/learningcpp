@@ -1,61 +1,12 @@
 #include "cell.hpp"
 #include "game-board.hpp"
+#include "window.hpp"
 
 #include <SFML/Graphics.hpp>
 
 #include <algorithm>
 #include <iostream>
 #include <vector>
-
-namespace lightsout
-{
-    class Window
-    {
-    public:
-        Window(
-            const std::string & TITLE,
-            const unsigned int WIDTH,
-            const unsigned int HEIGHT,
-            const sf::Color & COLOR)
-            : m_renderWindow(sf::VideoMode(WIDTH, HEIGHT), TITLE)
-            , m_backgroundColor(COLOR)
-        {}
-
-        sf::Vector2f size() const { return sf::Vector2f(m_renderWindow.getSize()); }
-
-        bool isOpen() const { return m_renderWindow.isOpen(); }
-
-        void handleEvents(GameBoard & gameBoard)
-        {
-            sf::Event event;
-            while (m_renderWindow.pollEvent(event))
-            {
-                if (event.type == sf::Event::Closed)
-                {
-                    m_renderWindow.close();
-                }
-
-                gameBoard.eventHandler(event);
-            }
-        }
-
-        void draw(const GameBoard & GAME_BOARD)
-        {
-            m_renderWindow.clear(m_backgroundColor);
-
-            for (const lightsout::Cell & CELL : GAME_BOARD.cells())
-            {
-                m_renderWindow.draw(CELL.rectangle());
-            }
-
-            m_renderWindow.display();
-        }
-
-    private:
-        sf::RenderWindow m_renderWindow;
-        sf::Color m_backgroundColor;
-    };
-} // namespace lightsout
 
 int main()
 {
