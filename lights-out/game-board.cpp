@@ -1,4 +1,5 @@
 #include "game-board.hpp"
+#include "screen-util.hpp"
 
 namespace lightsout
 {
@@ -7,46 +8,10 @@ namespace lightsout
         : m_cells()
         , m_isGameOver(false)
     {
-        const std::size_t CELL_COUNT_HORIZ(3);
-        const std::size_t CELL_COUNT_VERT(CELL_COUNT_HORIZ);
-        const std::size_t CELL_COUNT(CELL_COUNT_HORIZ * CELL_COUNT_VERT);
-        m_cells.reserve(CELL_COUNT);
-
-        const float PAD_SCREEN_FRACTION(0.01f);
-        const float SCREEN_DIMENSION_AVG((REGION.width + REGION.height) * 0.5f);
-        const float CELL_PAD(SCREEN_DIMENSION_AVG * PAD_SCREEN_FRACTION);
-
-        const float CELL_WIDTH(
-            (REGION.width - ((CELL_COUNT_HORIZ + 1) * CELL_PAD)) / CELL_COUNT_HORIZ);
-        const float CELL_HEIGHT(
-            (REGION.height - ((CELL_COUNT_VERT + 1) * CELL_PAD)) / CELL_COUNT_VERT);
-
-        const sf::Vector2f CELL_SIZE_V(CELL_WIDTH, CELL_HEIGHT);
-
-        for (std::size_t row(0); row < CELL_COUNT_VERT; ++row)
+        for (const GridRegion & GRID_REGION : splitRegionIntoGrids(REGION, 3, 3))
         {
-            const float ROW_FLOAT(static_cast<float>(row));
-
-            for (std::size_t column(0); column < CELL_COUNT_HORIZ; ++column)
-            {
-                const float COLUMN_FLOAT(static_cast<float>(column));
-
-                const float LEFT_OFFSET(
-                    (CELL_PAD * (COLUMN_FLOAT + 1.0f)) + (CELL_WIDTH * COLUMN_FLOAT));
-
-                const float TOP_OFFSET((CELL_PAD * (ROW_FLOAT + 1.0f)) + (CELL_HEIGHT * ROW_FLOAT));
-
-                const sf::Vector2f CELL_POSITION_V(
-                    (REGION.left + LEFT_OFFSET), (REGION.top + TOP_OFFSET));
-
-                const GridPos_t CELL_GRID_POSITION_V(
-                    static_cast<int>(column), static_cast<int>(row));
-
-                const sf::FloatRect CELL_REGION(CELL_POSITION_V, CELL_SIZE_V);
-                Cell cell(CELL_REGION, CELL_GRID_POSITION_V, COLOR);
-
-                m_cells.push_back(cell);
-            }
+            Cell cell(GRID_REGION.region, GRID_REGION.grid_pos, COLOR);
+            m_cells.push_back(cell);
         }
     }
 

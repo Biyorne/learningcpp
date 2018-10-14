@@ -9,8 +9,8 @@ namespace lightsout
 
     struct GridRegion
     {
-        sf::FloatRect region;
         GridPos_t grid_pos;
+        sf::FloatRect region;
     };
 
     inline std::vector<GridRegion> splitRegionIntoGrids(
