@@ -10,7 +10,9 @@ namespace lightsout
         const sf::Color & COLOR)
         : m_renderWindow(sf::VideoMode(WIDTH, HEIGHT), TITLE)
         , m_backgroundColor(COLOR)
-    {}
+    {
+        m_renderWindow.setFramerateLimit(60);
+    }
 
     void Window::handleEvents(GameBoard & gameBoard)
     {

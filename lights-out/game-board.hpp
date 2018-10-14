@@ -24,6 +24,14 @@ namespace lightsout
 
         void eventHandler(const sf::Event & EVENT);
 
+        void update(const float ELAPSED_TIME)
+        {
+            for (Cell & cell : m_cells)
+            {
+                cell.update(ELAPSED_TIME);
+            }
+        }
+
     private:
         void undo();
 
