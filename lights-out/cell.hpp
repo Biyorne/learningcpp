@@ -28,7 +28,7 @@ namespace lightsout
 
         void update(const float ELAPSED_TIME)
         {
-            const float ANIMATION_SPEED(20.0f);
+            const float ANIMATION_SPEED(500.0f);
             if (m_isOn)
             {
                 m_valueRed += (ELAPSED_TIME * ANIMATION_SPEED);

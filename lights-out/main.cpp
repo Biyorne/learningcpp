@@ -16,14 +16,17 @@ int main()
         sf::FloatRect(sf::Vector2f(), window.size()), sf::Color::Red); // sf::Color(121, 50, 105));
 
     sf::Clock clock;
+    sf::Clock frameClock;
     std::size_t frameCounter(0);
 
     while (window.isOpen() && (gameBoard.isGameOver() == false))
     {
-        const float ELAPSED_TIME_SEC(clock.getElapsedTime().asSeconds());
-        const float FPS((frameCounter / ELAPSED_TIME_SEC));
+        const float FPS_TIME_SEC(clock.getElapsedTime().asSeconds());
+        const float FRAME_TIME_SEC(frameClock.getElapsedTime().asSeconds());
+        frameClock.restart();
+        const float FPS((frameCounter / FPS_TIME_SEC));
 
-        if (ELAPSED_TIME_SEC > 1.0f)
+        if (FPS_TIME_SEC > 1.0f)
         {
             std::cout << FPS << "\n";
             frameCounter = 0;
@@ -31,8 +34,9 @@ int main()
         }
 
         window.handleEvents(gameBoard);
-        gameBoard.update(ELAPSED_TIME_SEC);
+        gameBoard.update(FRAME_TIME_SEC);
         window.draw(gameBoard);
+        std::cout << FRAME_TIME_SEC << "\n";
 
         ++frameCounter;
     }
