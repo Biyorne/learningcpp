@@ -1,0 +1,31 @@
+Software design/development is iterative, where each iteration does not have to be smaller than the last.
+
+Hide the complicated behind the simple.
+
+Priorities:
+Simple
+	80% of programmer time is spent understanding other code.
+	Easier to spot bugs.
+	Easier to test.
+	Less experienced developers can develop/maintain it.
+Correct
+Fast
+(Tested)
+
+"Early optimization is the root of all evil."
+	Picking the right standard algorithms/containers is NOT an early optimization.
+	Changing something standardized or adding code that requires a comment IS an early optimization.
+	
+Names:
+	Class names are nouns.
+	Function names are verbs.
+	Pronouncable.
+	Searchable.
+	Avoid name noise such as: info/data/var/manager
+	Beware of the following names: and/also/might/maybe
+	Struggle to reveal intention(what) not operations(how).
+	
+Class:
+	High cohesion: Cohesion is a measure of how related everything is.
+	A class should have one clear responsibility.
+	Low Coupling: Coupling is a measure of how much different pieces of code have to know about each other.
