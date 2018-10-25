@@ -30,7 +30,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     
         target_compile_options(${PROJECT_NAME} PUBLIC -fsanitize=address -fno-omit-frame-pointer)
 
-        target_link_libraries(${PROJECT_NAME} PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+        target_link_libraries(${PROJECT_NAME} -fsanitize=address -fno-omit-frame-pointer)
     endif()
 
 else()
