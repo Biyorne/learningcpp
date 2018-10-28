@@ -33,6 +33,10 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_link_libraries(${PROJECT_NAME} -fsanitize=address -fno-omit-frame-pointer)
     endif()
 
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+
+target_compile_options(${PROJECT_NAME} PUBLIC -DNDEBUG -O3 -std=c++17 -lstdc++ -ffast-math -DBOOST_NO_AUTO_PTR -pedantic -Wall -Wextra -Wshadow -Wfloat-equal -Wundef -Wswitch-default -Wswitch-enum -Wunreachable-code -Weffc++ -Wunused-parameter -Wfatal-errors -Wstrict-null-sentinel -Wconversion -Wsign-conversion)
+
 else()
 
     message(FATAL_ERROR " Unknwon Compiler: ${CMAKE_CXX_COMPILER_ID}")
