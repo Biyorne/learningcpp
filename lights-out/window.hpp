@@ -1,7 +1,7 @@
 #ifndef LIGHTS_OUT_WINDOW_UTIL_HPP_INCLUDED
 #define LIGHTS_OUT_WINDOW_UTIL_HPP_INCLUDED
 
-#include "game-board.hpp"
+#include "game-board-model.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -20,9 +20,13 @@ namespace lightsout
 
         bool isOpen() const { return m_renderWindow.isOpen(); }
 
-        void handleEvents(GameBoard & gameBoard);
+        void handleEvents(GameBoardModel & gameBoardModel);
 
-        void draw(const GameBoard & GAME_BOARD);
+        void drawRectangle(const sf::FloatRect & REGION, const sf::Color & COLOR);
+
+        void clear();
+
+        void display();
 
     private:
         sf::RenderWindow m_renderWindow;

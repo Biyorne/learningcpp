@@ -14,7 +14,7 @@ namespace lightsout
         m_renderWindow.setFramerateLimit(60);
     }
 
-    void Window::handleEvents(GameBoard & gameBoard)
+    void Window::handleEvents(GameBoardModel & gameBoardModel)
     {
         sf::Event event;
         while (m_renderWindow.pollEvent(event))
@@ -24,20 +24,21 @@ namespace lightsout
                 m_renderWindow.close();
             }
 
-            gameBoard.eventHandler(event);
+            gameBoardModel.eventHandler(event);
         }
     }
 
-    void Window::draw(const GameBoard & GAME_BOARD)
+    void Window::clear() { m_renderWindow.clear(m_backgroundColor); }
+
+    void Window::display() { m_renderWindow.display(); }
+
+    void Window::drawRectangle(const sf::FloatRect & REGION, const sf::Color & COLOR)
     {
-        m_renderWindow.clear(m_backgroundColor);
-
-        for (const lightsout::Cell & CELL : GAME_BOARD.cells())
-        {
-            m_renderWindow.draw(CELL.rectangle());
-        }
-
-        m_renderWindow.display();
+        sf::RectangleShape rectangle;
+        rectangle.setFillColor(COLOR);
+        rectangle.setPosition(REGION.left, REGION.top);
+        rectangle.setSize(sf::Vector2f(REGION.width, REGION.height));
+        m_renderWindow.draw(rectangle);
     }
 
 } // namespace lightsout

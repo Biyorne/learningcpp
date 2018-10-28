@@ -11,10 +11,10 @@
 namespace lightsout
 {
 
-    class GameBoard
+    class GameBoardModel
     {
     public:
-        GameBoard(const sf::FloatRect & REGION, const sf::Color & COLOR);
+        GameBoardModel(const sf::FloatRect & REGION);
 
         std::vector<Cell> cells() const { return m_cells; }
 
@@ -24,13 +24,13 @@ namespace lightsout
 
         void eventHandler(const sf::Event & EVENT);
 
-        void update(const float ELAPSED_TIME)
-        {
-            for (Cell & cell : m_cells)
-            {
-                cell.update(ELAPSED_TIME);
-            }
-        }
+        // void update(const float ELAPSED_TIME)
+        //{
+        //    for (Cell & cell : m_cells)
+        //    {
+        //        cell.update(ELAPSED_TIME);
+        //    }
+        //}
 
     private:
         void undo();

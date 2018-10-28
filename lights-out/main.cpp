@@ -1,5 +1,5 @@
 #include "cell.hpp"
-#include "game-board.hpp"
+#include "game-board-model.hpp"
 #include "window.hpp"
 
 #include <SFML/Graphics.hpp>
@@ -8,37 +8,53 @@
 #include <iostream>
 #include <vector>
 
+namespace lightsout
+{
+    class GameBoardView
+    {
+    public:
+        void draw(const GameBoardModel & GAME_BOARD, Window & window) const
+        {
+            window.clear();
+            // for loop over every cell
+            for (const Cell & CELL : GAME_BOARD.cells())
+            {
+                if (CELL.isOn())
+                {
+                    window.drawRectangle(CELL.region(), sf::Color::Red);
+                }
+                else
+                {
+                    window.drawRectangle(CELL.region(), sf::Color::Blue);
+                }
+            }
+            window.display();
+        }
+
+    private:
+    };
+} // namespace lightsout
+
 int main()
 {
     lightsout::Window window("Lights Out", 800, 600, sf::Color::Black);
 
-    lightsout::GameBoard gameBoard(
-        sf::FloatRect(sf::Vector2f(), window.size()), sf::Color::Red); // sf::Color(121, 50, 105));
+    lightsout::GameBoardModel gameBoardModel(
+        sf::FloatRect(sf::Vector2f(), window.size())); // sf::Color(121, 50, 105));
 
-    sf::Clock clock;
-    sf::Clock frameClock;
-    std::size_t frameCounter(0);
+    lightsout::GameBoardView gameBoardView;
 
-    while (window.isOpen() && (gameBoard.isGameOver() == false))
+    // sf::Clock frameClock;
+
+    while (window.isOpen() && (gameBoardModel.isGameOver() == false))
     {
-        const float FPS_TIME_SEC(clock.getElapsedTime().asSeconds());
-        const float FRAME_TIME_SEC(frameClock.getElapsedTime().asSeconds());
-        frameClock.restart();
-        const float FPS((frameCounter / FPS_TIME_SEC));
+        // const float FRAME_TIME_SEC(frameClock.getElapsedTime().asSeconds());
+        // frameClock.restart();
 
-        if (FPS_TIME_SEC > 1.0f)
-        {
-            std::cout << FPS << "\n";
-            frameCounter = 0;
-            clock.restart();
-        }
+        window.handleEvents(gameBoardModel);
+        // gameBoard.update(FRAME_TIME_SEC);
 
-        window.handleEvents(gameBoard);
-        gameBoard.update(FRAME_TIME_SEC);
-        window.draw(gameBoard);
-        std::cout << FRAME_TIME_SEC << "\n";
-
-        ++frameCounter;
+        gameBoardView.draw(gameBoardModel, window);
     }
 
     return EXIT_SUCCESS;

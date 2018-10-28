@@ -1,27 +1,27 @@
-#include "game-board.hpp"
+#include "game-board-model.hpp"
 #include "screen-util.hpp"
 
 namespace lightsout
 {
 
-    GameBoard::GameBoard(const sf::FloatRect & REGION, const sf::Color & COLOR)
+    GameBoardModel::GameBoardModel(const sf::FloatRect & REGION)
         : m_cells()
         , m_isGameOver(false)
     {
         for (const GridRegion & GRID_REGION : splitRegionIntoGrids(REGION, 3, 3))
         {
-            Cell cell(GRID_REGION.region, GRID_REGION.grid_pos, COLOR);
+            Cell cell(GRID_REGION.region, GRID_REGION.grid_pos);
             m_cells.push_back(cell);
         }
     }
 
-    bool GameBoard::areAllCellsOff() const
+    bool GameBoardModel::areAllCellsOff() const
     {
         return std::none_of(
             std::begin(m_cells), std::end(m_cells), [](const Cell & CELL) { return CELL.isOn(); });
     }
 
-    void GameBoard::handleMouseClick(const sf::Vector2f MOUSE_POSITION_V)
+    void GameBoardModel::handleMouseClick(const sf::Vector2f MOUSE_POSITION_V)
     {
         const std::vector<Cell>::const_iterator ITER_TO_CELL_CLICKED(std::find_if(
             std::begin(m_cells), std::end(m_cells), [&MOUSE_POSITION_V](const Cell & CELL) {
@@ -39,7 +39,7 @@ namespace lightsout
         }
     }
 
-    void GameBoard::undo()
+    void GameBoardModel::undo()
     {
         if (m_history.empty() == false)
         {
@@ -48,7 +48,7 @@ namespace lightsout
         }
     }
 
-    void GameBoard::flip()
+    void GameBoardModel::flip()
     {
         m_history.push_back(m_cells);
         for (Cell & cell : m_cells)
@@ -57,7 +57,7 @@ namespace lightsout
         }
     }
 
-    void GameBoard::reset()
+    void GameBoardModel::reset()
     {
         while (m_history.empty() == false)
         {
@@ -66,7 +66,7 @@ namespace lightsout
     }
 
     std::vector<GridPos_t>
-        GameBoard::makeGridPosToChange(const GridPos_t & GRID_POS_OF_CLICKED_CELL) const
+        GameBoardModel::makeGridPosToChange(const GridPos_t & GRID_POS_OF_CLICKED_CELL) const
     {
         std::vector<GridPos_t> cellGridPosToChange;
         for (int row(-1); row <= 1; ++row)
@@ -82,7 +82,7 @@ namespace lightsout
         return cellGridPosToChange;
     }
 
-    void GameBoard::changeCellsWithTheseGridPositions(
+    void GameBoardModel::changeCellsWithTheseGridPositions(
         const std::vector<GridPos_t> & GRID_POS_TO_CHANGE)
     {
         m_history.push_back(m_cells);
@@ -101,7 +101,7 @@ namespace lightsout
         }
     }
 
-    void GameBoard::eventHandler(const sf::Event & EVENT)
+    void GameBoardModel::eventHandler(const sf::Event & EVENT)
     {
         if (EVENT.type == sf::Event::KeyPressed)
         {
