@@ -6,6 +6,7 @@ namespace lightsout
 
     GameBoardModel::GameBoardModel(const sf::FloatRect & REGION)
         : m_cells()
+        , m_history()
         , m_isGameOver(false)
     {
         for (const GridRegion & GRID_REGION : splitRegionIntoGrids(REGION, 3, 3))

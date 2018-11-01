@@ -9,6 +9,11 @@ namespace lightsout
 
     struct GridRegion
     {
+        GridRegion()
+            : grid_pos(0, 0)
+            , region(0.0f, 0.0f, 0.0f, 0.0f)
+        {}
+
         GridPos_t grid_pos;
         sf::FloatRect region;
     };
@@ -25,9 +30,13 @@ namespace lightsout
         const float SCREEN_DIMENSION_AVG((REGION.width + REGION.height) * 0.5f);
         const float CELL_PAD(SCREEN_DIMENSION_AVG * PAD_SCREEN_FRACTION);
 
-        const float CELL_WIDTH((REGION.width - ((HORIZ + 1) * CELL_PAD)) / HORIZ);
+        const float CELL_WIDTH(
+            (REGION.width - ((static_cast<float>(HORIZ) + 1.0f) * CELL_PAD))
+            / static_cast<float>(HORIZ));
 
-        const float CELL_HEIGHT((REGION.height - ((VERT + 1) * CELL_PAD)) / VERT);
+        const float CELL_HEIGHT(
+            (REGION.height - ((static_cast<float>(VERT) + 1.0f) * CELL_PAD))
+            / static_cast<float>(VERT));
 
         const sf::Vector2f CELL_SIZE_V(CELL_WIDTH, CELL_HEIGHT);
 
