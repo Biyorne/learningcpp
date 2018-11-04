@@ -1,4 +1,5 @@
 #include "cell-model.hpp"
+#include "cell-view.hpp"
 #include "game-board-model.hpp"
 #include "window.hpp"
 
@@ -10,13 +11,6 @@
 
 namespace lightsout
 {
-    class CellView
-    {
-    public:
-    private:
-        sf::Color m_currentColor;
-        sf::Color m_valueRed;
-    };
 
     class GameBoardViewBasic
     {
@@ -24,7 +18,7 @@ namespace lightsout
         void draw(const GameBoardModel & GAME_BOARD, Window & window) const
         {
             window.clear();
-            // for loop over every cell
+            // For loop over every cell
             for (const CellModel & CELL : GAME_BOARD.cells())
             {
                 if (CELL.isOn())
@@ -48,6 +42,7 @@ namespace lightsout
         GameBoardViewFade(const sf::Color & ON_COLOR)
             : m_colorOn(ON_COLOR)
             , m_colorOff(calcOffColor(ON_COLOR))
+            , m_cellViews()
         {}
 
         sf::Color calcOffColor(const sf::Color ON_COLOR) const
@@ -68,26 +63,36 @@ namespace lightsout
         {
             window.clear();
 
-            for (const CellModel & CELL : GAME_BOARD.cells())
+            for (const CellModel & CELL_MODEL : GAME_BOARD.cells())
             {
-                // Draw current cell at its current color.
-                // Temp code to get basic functionality before we implement fading.
-                if (CELL.isOn())
+                GridPos_t GRID_POSITION_V(CELL_MODEL.gridPos());
+
+                auto iterToFoundCellView(std::find_if(
+                    std::begin(m_cellViews),
+                    std::end(m_cellViews),
+                    [&GRID_POSITION_V](const CellView & CELL_VIEW) {
+                        return (CELL_VIEW.gridPosition() == GRID_POSITION_V);
+                    }));
+
+                if (std::end(m_cellViews) == iterToFoundCellView)
                 {
-                    window.drawRectangle(CELL.region(), sf::Color::Red);
+                    const CellView CELL_VIEW(m_colorOn, m_colorOff, CELL_MODEL.gridPos());
+                    m_cellViews.push_back(CELL_VIEW);
+                    window.drawRectangle(CELL_MODEL.region(), CELL_VIEW.currentColor());
                 }
                 else
                 {
-                    window.drawRectangle(CELL.region(), sf::Color::Blue);
+                    const sf::Color CURRENT_COLOR(iterToFoundCellView->currentColor());
+                    window.drawRectangle(CELL_MODEL.region(), CURRENT_COLOR);
                 }
             }
-
             window.display();
         }
 
     private:
         sf::Color m_colorOn;
         sf::Color m_colorOff;
+        mutable std::vector<CellView> m_cellViews;
     };
 
 } // namespace lightsout
