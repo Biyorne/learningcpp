@@ -1,7 +1,7 @@
-#ifndef LIGHTS_OUT_GAME_BOARD_HPP_INCLUDED
-#define LIGHTS_OUT_GAME_BOARD_HPP_INCLUDED
+#ifndef LIGHTS_OUT_GAME_BOARD_MODEL_HPP_INCLUDED
+#define LIGHTS_OUT_GAME_BOARD_MODEL_HPP_INCLUDED
 
-#include "cell.hpp"
+#include "cell-model.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -16,7 +16,7 @@ namespace lightsout
     public:
         GameBoardModel(const sf::FloatRect & REGION);
 
-        std::vector<Cell> cells() const { return m_cells; }
+        std::vector<CellModel> cells() const { return m_cells; }
 
         bool isGameOver() const { return m_isGameOver; }
 
@@ -26,7 +26,7 @@ namespace lightsout
 
         // void update(const float ELAPSED_TIME)
         //{
-        //    for (Cell & cell : m_cells)
+        //    for (CellModel & cell : m_cells)
         //    {
         //        cell.update(ELAPSED_TIME);
         //    }
@@ -46,11 +46,11 @@ namespace lightsout
 
         void changeCellsWithTheseGridPositions(const std::vector<GridPos_t> & GRID_POS_TO_CHANGE);
 
-        std::vector<Cell> m_cells;
-        std::vector<std::vector<Cell>> m_history;
+        std::vector<CellModel> m_cells;
+        std::vector<std::vector<CellModel>> m_history;
         bool m_isGameOver;
     };
 
 } // namespace lightsout
 
-#endif // LIGHTS_OUT_GAME_BOARD_HPP_INCLUDED
+#endif // LIGHTS_OUT_GAME_BOARD_MODEL_HPP_INCLUDED

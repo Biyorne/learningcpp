@@ -1,5 +1,5 @@
-#ifndef LIGHTS_OUT_CELL_HPP_INCLUDED
-#define LIGHTS_OUT_CELL_HPP_INCLUDED
+#ifndef LIGHTS_OUT_CELL_MODEL_HPP_INCLUDED
+#define LIGHTS_OUT_CELL_MODEL_HPP_INCLUDED
 
 #include <SFML/Graphics.hpp>
 
@@ -10,10 +10,10 @@ namespace lightsout
 
     using GridPos_t = sf::Vector2i;
 
-    class Cell
+    class CellModel
     {
     public:
-        Cell(const sf::FloatRect & REGION, const GridPos_t & GRID_POS_V)
+        CellModel(const sf::FloatRect & REGION, const GridPos_t & GRID_POS_V)
             : m_isOn(true)
             //, m_rectangle()
             , m_gridPosV(GRID_POS_V)
@@ -71,4 +71,4 @@ namespace lightsout
 
 } // namespace lightsout
 
-#endif // LIGHTS_OUT_CELL_HPP_INCLUDED
+#endif // LIGHTS_OUT_CELL_MODEL_HPP_INCLUDED

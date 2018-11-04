@@ -11,21 +11,22 @@ namespace lightsout
     {
         for (const GridRegion & GRID_REGION : splitRegionIntoGrids(REGION, 3, 3))
         {
-            Cell cell(GRID_REGION.region, GRID_REGION.grid_pos);
+            CellModel cell(GRID_REGION.region, GRID_REGION.grid_pos);
             m_cells.push_back(cell);
         }
     }
 
     bool GameBoardModel::areAllCellsOff() const
     {
-        return std::none_of(
-            std::begin(m_cells), std::end(m_cells), [](const Cell & CELL) { return CELL.isOn(); });
+        return std::none_of(std::begin(m_cells), std::end(m_cells), [](const CellModel & CELL) {
+            return CELL.isOn();
+        });
     }
 
     void GameBoardModel::handleMouseClick(const sf::Vector2f MOUSE_POSITION_V)
     {
-        const std::vector<Cell>::const_iterator ITER_TO_CELL_CLICKED(std::find_if(
-            std::begin(m_cells), std::end(m_cells), [&MOUSE_POSITION_V](const Cell & CELL) {
+        const std::vector<CellModel>::const_iterator ITER_TO_CELL_CLICKED(std::find_if(
+            std::begin(m_cells), std::end(m_cells), [&MOUSE_POSITION_V](const CellModel & CELL) {
                 return CELL.doesContain(MOUSE_POSITION_V);
             }));
 
@@ -52,7 +53,7 @@ namespace lightsout
     void GameBoardModel::flip()
     {
         m_history.push_back(m_cells);
-        for (Cell & cell : m_cells)
+        for (CellModel & cell : m_cells)
         {
             cell.change();
         }
@@ -91,7 +92,7 @@ namespace lightsout
         for (const GridPos_t & GRID_POS_V : GRID_POS_TO_CHANGE)
         {
             auto iterToCellWithGridPos(std::find_if(
-                std::begin(m_cells), std::end(m_cells), [&GRID_POS_V](const Cell & CELL) {
+                std::begin(m_cells), std::end(m_cells), [&GRID_POS_V](const CellModel & CELL) {
                     return (CELL.gridPos() == GRID_POS_V);
                 }));
 
