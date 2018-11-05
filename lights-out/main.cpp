@@ -54,7 +54,7 @@ namespace lightsout
             return offColor;
         }
 
-        void update(const float FRAME_TIME_SEC)
+        void update(const float)
         {
             // Gradually change the color of the cells.
         }
@@ -76,12 +76,16 @@ namespace lightsout
 
                 if (std::end(m_cellViews) == iterToFoundCellView)
                 {
-                    const CellView CELL_VIEW(m_colorOn, m_colorOff, CELL_MODEL.gridPos());
+                    const CellView CELL_VIEW(
+                        m_colorOn, m_colorOff, CELL_MODEL.gridPos(), CELL_MODEL.isOn());
+
                     m_cellViews.push_back(CELL_VIEW);
                     window.drawRectangle(CELL_MODEL.region(), CELL_VIEW.currentColor());
                 }
                 else
                 {
+                    iterToFoundCellView->setIsOn(CELL_MODEL.isOn());
+
                     const sf::Color CURRENT_COLOR(iterToFoundCellView->currentColor());
                     window.drawRectangle(CELL_MODEL.region(), CURRENT_COLOR);
                 }
