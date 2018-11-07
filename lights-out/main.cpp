@@ -39,11 +39,19 @@ namespace lightsout
     class GameBoardViewFade
     {
     public:
-        GameBoardViewFade(const sf::Color & ON_COLOR)
+        GameBoardViewFade(const sf::Color & ON_COLOR, const GameBoardModel & GAME_BOARD_MODEL)
             : m_colorOn(ON_COLOR)
             , m_colorOff(calcOffColor(ON_COLOR))
             , m_cellViews()
-        {}
+        {
+            for (const CellModel & CELL_MODEL : GAME_BOARD_MODEL.cells())
+            {
+                const CellView CELL_VIEW(
+                    m_colorOn, m_colorOff, CELL_MODEL.gridPos(), CELL_MODEL.isOn());
+
+                m_cellViews.push_back(CELL_VIEW);
+            }
+        }
 
         sf::Color calcOffColor(const sf::Color ON_COLOR) const
         {
@@ -54,9 +62,27 @@ namespace lightsout
             return offColor;
         }
 
-        void update(const float)
+        void update(const float, const GameBoardModel & GAME_BOARD)
         {
             // Gradually change the color of the cells.
+            // Change all cell views to on/off depending on the corresponding cell model.
+
+            for (const CellModel & CELL_MODEL : GAME_BOARD.cells())
+            {
+                GridPos_t GRID_POSITION_V(CELL_MODEL.gridPos());
+
+                auto iterToFoundCellView(std::find_if(
+                    std::begin(m_cellViews),
+                    std::end(m_cellViews),
+                    [&GRID_POSITION_V](const CellView & CELL_VIEW) {
+                        return (CELL_VIEW.gridPosition() == GRID_POSITION_V);
+                    }));
+
+                if (std::end(m_cellViews) != iterToFoundCellView)
+                {
+                    iterToFoundCellView->setIsOn(CELL_MODEL.isOn());
+                }
+            }
         }
 
         void draw(const GameBoardModel & GAME_BOARD, Window & window) const
@@ -74,29 +100,20 @@ namespace lightsout
                         return (CELL_VIEW.gridPosition() == GRID_POSITION_V);
                     }));
 
-                if (std::end(m_cellViews) == iterToFoundCellView)
+                if (std::end(m_cellViews) != iterToFoundCellView)
                 {
-                    const CellView CELL_VIEW(
-                        m_colorOn, m_colorOff, CELL_MODEL.gridPos(), CELL_MODEL.isOn());
-
-                    m_cellViews.push_back(CELL_VIEW);
-                    window.drawRectangle(CELL_MODEL.region(), CELL_VIEW.currentColor());
-                }
-                else
-                {
-                    iterToFoundCellView->setIsOn(CELL_MODEL.isOn());
-
                     const sf::Color CURRENT_COLOR(iterToFoundCellView->currentColor());
                     window.drawRectangle(CELL_MODEL.region(), CURRENT_COLOR);
                 }
             }
+
             window.display();
         }
 
     private:
         sf::Color m_colorOn;
         sf::Color m_colorOff;
-        mutable std::vector<CellView> m_cellViews;
+        std::vector<CellView> m_cellViews;
     };
 
 } // namespace lightsout
@@ -107,7 +124,8 @@ int main()
 
     lightsout::GameBoardModel gameBoardModel(sf::FloatRect(sf::Vector2f(), window.size()));
 
-    lightsout::GameBoardViewFade gameBoardView(sf::Color::Red); // sf::Color(121, 50, 105));
+    lightsout::GameBoardViewFade gameBoardView(
+        sf::Color::Red, gameBoardModel); // sf::Color(121, 50, 105));
 
     sf::Clock frameClock;
 
@@ -117,7 +135,7 @@ int main()
         frameClock.restart();
 
         window.handleEvents(gameBoardModel);
-        gameBoardView.update(FRAME_TIME_SEC);
+        gameBoardView.update(FRAME_TIME_SEC, gameBoardModel);
         gameBoardView.draw(gameBoardModel, window);
     }
 
