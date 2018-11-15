@@ -120,8 +120,7 @@ int main()
 
     lightsout::GameBoardModel gameBoardModel(sf::FloatRect(sf::Vector2f(), window.size()));
 
-    lightsout::GameBoardViewFade gameBoardView(
-        sf::Color::Red, gameBoardModel); // sf::Color(121, 50, 105));
+    lightsout::GameBoardViewFade gameBoardView(sf::Color(121, 50, 105), gameBoardModel);
 
     sf::Clock frameClock;
 
