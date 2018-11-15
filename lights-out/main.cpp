@@ -18,7 +18,6 @@ namespace lightsout
         void draw(const GameBoardModel & GAME_BOARD, Window & window) const
         {
             window.clear();
-            // For loop over every cell
             for (const CellModel & CELL : GAME_BOARD.cells())
             {
                 if (CELL.isOn())
@@ -40,14 +39,14 @@ namespace lightsout
     {
     public:
         GameBoardViewFade(const sf::Color & ON_COLOR, const GameBoardModel & GAME_BOARD_MODEL)
-            : m_colorOn(ON_COLOR)
-            , m_colorOff(calcOffColor(ON_COLOR))
-            , m_cellViews()
+            : m_cellViews()
+            , m_fadeSpeed(500.0f)
         {
+            const sf::Color OFF_COLOR(calcOffColor(ON_COLOR));
             for (const CellModel & CELL_MODEL : GAME_BOARD_MODEL.cells())
             {
                 const CellView CELL_VIEW(
-                    m_colorOn, m_colorOff, CELL_MODEL.gridPos(), CELL_MODEL.isOn());
+                    ON_COLOR, OFF_COLOR, CELL_MODEL.gridPos(), CELL_MODEL.isOn());
 
                 m_cellViews.push_back(CELL_VIEW);
             }
@@ -62,11 +61,8 @@ namespace lightsout
             return offColor;
         }
 
-        void update(const float, const GameBoardModel & GAME_BOARD)
+        void update(const float ELAPSED_TIME_SEC, const GameBoardModel & GAME_BOARD)
         {
-            // Gradually change the color of the cells.
-            // Change all cell views to on/off depending on the corresponding cell model.
-
             for (const CellModel & CELL_MODEL : GAME_BOARD.cells())
             {
                 GridPos_t GRID_POSITION_V(CELL_MODEL.gridPos());
@@ -81,6 +77,7 @@ namespace lightsout
                 if (std::end(m_cellViews) != iterToFoundCellView)
                 {
                     iterToFoundCellView->setIsOn(CELL_MODEL.isOn());
+                    iterToFoundCellView->updateCurrentColor(ELAPSED_TIME_SEC, m_fadeSpeed);
                 }
             }
         }
@@ -111,9 +108,8 @@ namespace lightsout
         }
 
     private:
-        sf::Color m_colorOn;
-        sf::Color m_colorOff;
         std::vector<CellView> m_cellViews;
+        float m_fadeSpeed;
     };
 
 } // namespace lightsout
