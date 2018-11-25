@@ -1,0 +1,29 @@
+TODO:
+
+Homework: 
+	Make separate files for gameboard views
+	Draw a call tree diagram
+	Create a class for KeyBinding (Put this class above main)
+		sf::Keyboard::Key m_key;
+		enum m_todo;
+
+- Only change cardinal directions
+- Switch to 5x5 grid
+- Random configuration of on/off at startup
+- Change reset key to reset to random starting point
+- Communicate with player by fading text in and out (ignore input while displaying text except escape)
+	- H for help
+- State chart
+	
+New Feature Ideas:
+
+- Timer
+- Pause
+- Allow user to choose color of cells
+- Score
+- Surly insults
+- Flickering lights on inactivity
+- Score each cell
+- Power-ups
+- Sound effects
+- Make cells prettier
