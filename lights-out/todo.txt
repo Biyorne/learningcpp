@@ -27,3 +27,4 @@ New Feature Ideas:
 - Power-ups
 - Sound effects
 - Make cells prettier
+- Win/Loss history

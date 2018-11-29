@@ -8,7 +8,8 @@ namespace lightsout
         const unsigned int WIDTH,
         const unsigned int HEIGHT,
         const sf::Color & COLOR)
-        : m_renderWindow(sf::VideoMode(WIDTH, HEIGHT), TITLE)
+        : m_renderWindow(
+            sf::VideoMode(WIDTH, HEIGHT), TITLE, (sf::Style::Close | sf::Style::Titlebar))
         , m_backgroundColor(COLOR)
     {
         m_renderWindow.setFramerateLimit(60);
