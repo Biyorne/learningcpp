@@ -9,7 +9,7 @@ namespace lightsout
         , m_history()
         , m_isGameOver(false)
     {
-        for (const GridRegion & GRID_REGION : splitRegionIntoGrids(REGION, 3, 3))
+        for (const GridRegion & GRID_REGION : splitRegionIntoGrids(REGION, 5, 5))
         {
             CellModel cell(GRID_REGION.region, GRID_REGION.grid_pos);
             m_cells.push_back(cell);
@@ -71,16 +71,13 @@ namespace lightsout
         GameBoardModel::makeGridPosToChange(const GridPos_t & GRID_POS_OF_CLICKED_CELL) const
     {
         std::vector<GridPos_t> cellGridPosToChange;
-        for (int row(-1); row <= 1; ++row)
-        {
-            for (int column(-1); column <= 1; ++column)
-            {
-                const GridPos_t GRID_POS_V(
-                    GRID_POS_OF_CLICKED_CELL.x + column, GRID_POS_OF_CLICKED_CELL.y + row);
 
-                cellGridPosToChange.push_back(GRID_POS_V);
-            }
-        }
+        cellGridPosToChange.push_back(GRID_POS_OF_CLICKED_CELL);
+        cellGridPosToChange.push_back(GRID_POS_OF_CLICKED_CELL + GridPos_t(-1, 0));
+        cellGridPosToChange.push_back(GRID_POS_OF_CLICKED_CELL + GridPos_t(1, 0));
+        cellGridPosToChange.push_back(GRID_POS_OF_CLICKED_CELL + GridPos_t(0, -1));
+        cellGridPosToChange.push_back(GRID_POS_OF_CLICKED_CELL + GridPos_t(0, 1));
+
         return cellGridPosToChange;
     }
 
