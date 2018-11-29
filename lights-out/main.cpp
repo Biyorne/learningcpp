@@ -12,7 +12,20 @@
 
 int main()
 {
+
+    sf::Font font;
+    font.loadFromFile("bpdots.otf");
+
+    sf::Text text;
+    text.setFont(font);
+    text.setCharacterSize(60);
+    text.setFillColor(sf::Color::White);
+    text.setString("LIGHTS OUT");
+    text.setOrigin(text.getLocalBounds().left, text.getLocalBounds().top);
+
     lightsout::Window window("Lights Out", 800, 600, sf::Color::Black);
+
+    text.setPosition(window.centerPositionOf(text.getGlobalBounds()));
 
     lightsout::GameBoardModel gameBoardModel(sf::FloatRect(sf::Vector2f(), window.size()));
 
@@ -22,12 +35,17 @@ int main()
 
     while (window.isOpen() && (gameBoardModel.isGameOver() == false))
     {
+        window.clear();
         const float FRAME_TIME_SEC(frameClock.getElapsedTime().asSeconds());
         frameClock.restart();
 
         window.handleEvents(gameBoardModel);
         gameBoardView.update(FRAME_TIME_SEC, gameBoardModel);
         gameBoardView.draw(gameBoardModel, window);
+
+        window.draw(text);
+
+        window.display();
     }
 
     return EXIT_SUCCESS;

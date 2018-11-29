@@ -17,8 +17,6 @@ namespace lightsout
             : m_cellViews()
             , m_fadeSpeed(500.0f)
         {
-            sf::Keyboard::Key whichKey;
-
             const sf::Color OFF_COLOR(calcOffColor(ON_COLOR));
             for (const CellModel & CELL_MODEL : GAME_BOARD_MODEL.cells())
             {
@@ -61,8 +59,6 @@ namespace lightsout
 
         void draw(const GameBoardModel & GAME_BOARD, Window & window) const
         {
-            window.clear();
-
             for (const CellModel & CELL_MODEL : GAME_BOARD.cells())
             {
                 GridPos_t GRID_POSITION_V(CELL_MODEL.gridPos());
@@ -80,8 +76,6 @@ namespace lightsout
                     window.drawRectangle(CELL_MODEL.region(), CURRENT_COLOR);
                 }
             }
-
-            window.display();
         }
 
     private:

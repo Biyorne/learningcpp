@@ -24,9 +24,23 @@ namespace lightsout
 
         void drawRectangle(const sf::FloatRect & REGION, const sf::Color & COLOR);
 
+        void draw(const sf::Drawable & DRAWABLE) { m_renderWindow.draw(DRAWABLE); }
+
         void clear();
 
         void display();
+
+        sf::Vector2f centerPositionOf(const sf::Vector2f & SIZE_V)
+        {
+            const sf::Vector2f WINDOW_CENTER_V(size() * 0.5f);
+            const sf::Vector2f SIZE_HALF_V(SIZE_V * 0.5f);
+            return (WINDOW_CENTER_V - SIZE_HALF_V);
+        }
+
+        sf::Vector2f centerPositionOf(const sf::FloatRect & RECT)
+        {
+            return centerPositionOf(sf::Vector2f(RECT.width, RECT.height));
+        }
 
     private:
         sf::RenderWindow m_renderWindow;
