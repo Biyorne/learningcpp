@@ -116,10 +116,6 @@ namespace lightsout
             {
                 reset();
             }
-            else
-            {
-                m_isGameOver = true;
-            }
         }
 
         if (EVENT.type == sf::Event::MouseButtonPressed)

@@ -42,6 +42,13 @@ namespace lightsout
             return centerPositionOf(sf::Vector2f(RECT.width, RECT.height));
         }
 
+        void spriteFitHorizontalAndCenter(sf::Sprite & sprite)
+        {
+            const float SCALE(size().y / sprite.getLocalBounds().height);
+            sprite.setScale(SCALE, SCALE);
+            sprite.setPosition(centerPositionOf(sprite.getGlobalBounds()));
+        }
+
     private:
         sf::RenderWindow m_renderWindow;
         sf::Color m_backgroundColor;

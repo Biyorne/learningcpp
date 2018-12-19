@@ -1,8 +1,4 @@
-#include "cell-model.hpp"
-#include "cell-view.hpp"
-#include "game-board-model.hpp"
-#include "game-board-view-fade.hpp"
-#include "window.hpp"
+#include "game-controller.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -10,42 +6,43 @@
 #include <iostream>
 #include <vector>
 
+//    if (lightsout::GameState::Lose == m_state)
+//    {
+//
+//        sf::Texture loseTexture;
+//        if (!loseTexture.loadFromFile("image\\lose.png"))
+//        {
+//            std::cerr << "Failed to load image: image\\lose.png" << std::endl;
+//            return EXIT_FAILURE;
+//        }
+//
+//        sf::Sprite loseSprite;
+//        loseSprite.setTexture(loseTexture);
+//        window.spriteFitHorizontalAndCenter(loseSprite);
+//        const float DISPLAY_TIME_SEC(displayClock.getElapsedTime().asSeconds());
+//        window.drawRectangle(
+//            sf::FloatRect(sf::Vector2f(), window.size()), sf::Color(0, 0, 0, 127));
+//        window.draw(loseSprite);
+//
+//        if (DISPLAY_TIME_SEC > 2.0f)
+//        {
+//            break;
+//        }
+//    }
+
 int main()
 {
-
-    sf::Font font;
-    font.loadFromFile("bpdots.otf");
-
-    sf::Text text;
-    text.setFont(font);
-    text.setCharacterSize(60);
-    text.setFillColor(sf::Color::White);
-    text.setString("LIGHTS OUT");
-    text.setOrigin(text.getLocalBounds().left, text.getLocalBounds().top);
-
-    lightsout::Window window("Lights Out", 800, 600, sf::Color::Black);
-
-    text.setPosition(window.centerPositionOf(text.getGlobalBounds()));
-
-    lightsout::GameBoardModel gameBoardModel(sf::FloatRect(sf::Vector2f(), window.size()));
-
-    lightsout::GameBoardViewFade gameBoardView(sf::Color(121, 50, 105), gameBoardModel);
+    lightsout::GameController gameController;
 
     sf::Clock frameClock;
 
-    while (window.isOpen() && (gameBoardModel.isGameOver() == false))
+    while (gameController.isRunning())
     {
-        window.clear();
         const float FRAME_TIME_SEC(frameClock.getElapsedTime().asSeconds());
         frameClock.restart();
 
-        window.handleEvents(gameBoardModel);
-        gameBoardView.update(FRAME_TIME_SEC, gameBoardModel);
-        gameBoardView.draw(gameBoardModel, window);
-
-        window.draw(text);
-
-        window.display();
+        gameController.handleEvents();
+        gameController.draw(FRAME_TIME_SEC);
     }
 
     return EXIT_SUCCESS;

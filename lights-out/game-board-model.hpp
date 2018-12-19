@@ -14,7 +14,7 @@ namespace lightsout
     class GameBoardModel
     {
     public:
-        GameBoardModel(const sf::FloatRect & REGION);
+        explicit GameBoardModel(const sf::FloatRect & REGION);
 
         std::vector<CellModel> cells() const { return m_cells; }
 
@@ -23,14 +23,6 @@ namespace lightsout
         void handleMouseClick(const sf::Vector2f MOUSE_POSITION_V);
 
         void eventHandler(const sf::Event & EVENT);
-
-        // void update(const float ELAPSED_TIME)
-        //{
-        //    for (CellModel & cell : m_cells)
-        //    {
-        //        cell.update(ELAPSED_TIME);
-        //    }
-        //}
 
     private:
         void undo();
