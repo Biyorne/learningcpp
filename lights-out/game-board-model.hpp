@@ -22,12 +22,12 @@ namespace lightsout
 
         bool areAllCellsOff() const;
 
+        void reset();
+
     private:
         void undo();
 
         void flip();
-
-        void reset();
 
         std::vector<GridPos_t>
             makeGridPosToChange(const GridPos_t & GRID_POS_OF_CLICKED_CELL) const;

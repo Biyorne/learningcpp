@@ -38,40 +38,17 @@ namespace lightsout
 
             for (const sf::Event & EVENT : events)
             {
-                if (EVENT.type == sf::Event::Closed)
+                if ((m_state == GameState::Win) || (m_state == GameState::Lose))
                 {
-                    m_state = GameState::Lose;
-                    return;
+                    handleEventGameOver(EVENT);
                 }
-
-                if (EVENT.type == sf::Event::MouseButtonPressed)
+                else if (m_state == GameState::Play)
                 {
-                    const sf::Vector2f MOUSE_POSITION_V(
-                        sf::Vector2i(EVENT.mouseButton.x, EVENT.mouseButton.y));
-
-                    m_boardModel.handleMouseClick(MOUSE_POSITION_V);
-
-                    if (m_boardModel.areAllCellsOff())
-                    {
-                        m_state = GameState::Win;
-                        return;
-                    }
+                    handleEventPlay(EVENT);
                 }
-
-                if (EVENT.type == sf::Event::KeyPressed)
+                else if (m_state == GameState::Help)
                 {
-                    if (EVENT.key.code == sf::Keyboard::Escape)
-                    {
-                        m_state = GameState::Lose;
-                    }
-                    else if (EVENT.key.code == sf::Keyboard::F1)
-                    {
-                        m_state = GameState::Win;
-                    }
-                    // else if (EVENT.key.code == sf::Keyboard::H)
-                    //{
-                    //    m_state = GameState::Help;
-                    //}
+                    handleEventHelp(EVENT);
                 }
             }
         }
@@ -82,6 +59,74 @@ namespace lightsout
             m_boardView.update(FRAME_TIME_SEC, m_boardModel);
             m_boardView.draw(m_boardModel, m_window);
             m_window.display();
+        }
+
+    private:
+        void handleEventClose(const sf::Event & EVENT)
+        {
+            if (EVENT.type == sf::Event::Closed)
+            {
+                m_state = GameState::Lose;
+            }
+        }
+
+        void handleEventGameOver(const sf::Event &) {}
+
+        void handleEventPlay(const sf::Event & EVENT)
+        {
+            if (EVENT.type == sf::Event::MouseButtonPressed)
+            {
+                const sf::Vector2f MOUSE_POSITION_V(
+                    sf::Vector2i(EVENT.mouseButton.x, EVENT.mouseButton.y));
+
+                m_boardModel.handleMouseClick(MOUSE_POSITION_V);
+
+                if (m_boardModel.areAllCellsOff())
+                {
+                    m_state = GameState::Win;
+                    return;
+                }
+            }
+
+            if (EVENT.type == sf::Event::KeyPressed)
+            {
+                if (EVENT.key.code == sf::Keyboard::Escape)
+                {
+                    m_state = GameState::Lose;
+                }
+                else if (EVENT.key.code == sf::Keyboard::F1)
+                {
+                    m_state = GameState::Win;
+                }
+                else if (EVENT.key.code == sf::Keyboard::H)
+                {
+                    m_state = GameState::Help;
+                }
+            }
+
+            handleEventClose(EVENT);
+        }
+
+        void handleEventHelp(const sf::Event & EVENT)
+        {
+            if (EVENT.type == sf::Event::KeyPressed)
+            {
+                if (EVENT.key.code == sf::Keyboard::Escape)
+                {
+                    m_state = GameState::Lose;
+                }
+                else if (EVENT.key.code == sf::Keyboard::H)
+                {
+                    m_state = GameState::Play;
+                }
+                else if (EVENT.key.code == sf::Keyboard::N)
+                {
+                    m_boardModel.reset();
+                    m_state = GameState::Play;
+                }
+            }
+
+            handleEventClose(EVENT);
         }
 
     private:
