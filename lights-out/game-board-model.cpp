@@ -7,7 +7,6 @@ namespace lightsout
     GameBoardModel::GameBoardModel(const sf::FloatRect & REGION)
         : m_cells()
         , m_history()
-        , m_isGameOver(false)
     {
         for (const GridRegion & GRID_REGION : splitRegionIntoGrids(REGION, 5, 5))
         {
@@ -97,38 +96,6 @@ namespace lightsout
             {
                 iterToCellWithGridPos->change();
             }
-        }
-    }
-
-    void GameBoardModel::eventHandler(const sf::Event & EVENT)
-    {
-        if (EVENT.type == sf::Event::KeyPressed)
-        {
-            if (EVENT.key.code == sf::Keyboard::U)
-            {
-                undo();
-            }
-            else if (EVENT.key.code == sf::Keyboard::F)
-            {
-                flip();
-            }
-            else if (EVENT.key.code == sf::Keyboard::R)
-            {
-                reset();
-            }
-        }
-
-        if (EVENT.type == sf::Event::MouseButtonPressed)
-        {
-            const sf::Vector2f MOUSE_POSITION_V(
-                sf::Vector2i(EVENT.mouseButton.x, EVENT.mouseButton.y));
-
-            handleMouseClick(MOUSE_POSITION_V);
-        }
-
-        if (areAllCellsOff())
-        {
-            m_isGameOver = true;
         }
     }
 

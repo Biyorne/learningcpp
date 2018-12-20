@@ -28,10 +28,53 @@ namespace lightsout
 
         bool isRunning() const
         {
-            return (m_window.isOpen() && (m_boardModel.isGameOver() == false));
+            return (
+                m_window.isOpen() && (m_state != GameState::Win) && (m_state != GameState::Lose));
         }
 
-        void handleEvents() { m_window.handleEvents(m_boardModel); }
+        void handleEvents()
+        {
+            std::vector<sf::Event> events(m_window.gatherEvents());
+
+            for (const sf::Event & EVENT : events)
+            {
+                if (EVENT.type == sf::Event::Closed)
+                {
+                    m_state = GameState::Lose;
+                    return;
+                }
+
+                if (EVENT.type == sf::Event::MouseButtonPressed)
+                {
+                    const sf::Vector2f MOUSE_POSITION_V(
+                        sf::Vector2i(EVENT.mouseButton.x, EVENT.mouseButton.y));
+
+                    m_boardModel.handleMouseClick(MOUSE_POSITION_V);
+
+                    if (m_boardModel.areAllCellsOff())
+                    {
+                        m_state = GameState::Win;
+                        return;
+                    }
+                }
+
+                if (EVENT.type == sf::Event::KeyPressed)
+                {
+                    if (EVENT.key.code == sf::Keyboard::Escape)
+                    {
+                        m_state = GameState::Lose;
+                    }
+                    else if (EVENT.key.code == sf::Keyboard::F1)
+                    {
+                        m_state = GameState::Win;
+                    }
+                    // else if (EVENT.key.code == sf::Keyboard::H)
+                    //{
+                    //    m_state = GameState::Help;
+                    //}
+                }
+            }
+        }
 
         void draw(const float FRAME_TIME_SEC)
         {

@@ -18,11 +18,9 @@ namespace lightsout
 
         std::vector<CellModel> cells() const { return m_cells; }
 
-        bool isGameOver() const { return m_isGameOver; }
-
         void handleMouseClick(const sf::Vector2f MOUSE_POSITION_V);
 
-        void eventHandler(const sf::Event & EVENT);
+        bool areAllCellsOff() const;
 
     private:
         void undo();
@@ -31,8 +29,6 @@ namespace lightsout
 
         void reset();
 
-        bool areAllCellsOff() const;
-
         std::vector<GridPos_t>
             makeGridPosToChange(const GridPos_t & GRID_POS_OF_CLICKED_CELL) const;
 
@@ -40,7 +36,6 @@ namespace lightsout
 
         std::vector<CellModel> m_cells;
         std::vector<std::vector<CellModel>> m_history;
-        bool m_isGameOver;
     };
 
 } // namespace lightsout

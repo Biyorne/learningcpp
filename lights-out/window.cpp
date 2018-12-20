@@ -15,18 +15,15 @@ namespace lightsout
         m_renderWindow.setFramerateLimit(60);
     }
 
-    void Window::handleEvents(GameBoardModel & gameBoardModel)
+    std::vector<sf::Event> Window::gatherEvents()
     {
+        std::vector<sf::Event> events;
         sf::Event event;
         while (m_renderWindow.pollEvent(event))
         {
-            if (event.type == sf::Event::Closed)
-            {
-                m_renderWindow.close();
-            }
-
-            gameBoardModel.eventHandler(event);
+            events.push_back(event);
         }
+        return events;
     }
 
     void Window::clear() { m_renderWindow.clear(m_backgroundColor); }

@@ -20,7 +20,7 @@ namespace lightsout
 
         bool isOpen() const { return m_renderWindow.isOpen(); }
 
-        void handleEvents(GameBoardModel & gameBoardModel);
+        std::vector<sf::Event> gatherEvents();
 
         void drawRectangle(const sf::FloatRect & REGION, const sf::Color & COLOR);
 
