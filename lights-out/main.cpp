@@ -30,22 +30,6 @@
 //        }
 //    }
 
-// if (EVENT.type == sf::Event::KeyPressed)
-//{
-//    if (EVENT.key.code == sf::Keyboard::U)
-//    {
-//        undo();
-//    }
-//    else if (EVENT.key.code == sf::Keyboard::F)
-//    {
-//        flip();
-//    }
-//    else if (EVENT.key.code == sf::Keyboard::R)
-//    {
-//        reset();
-//    }
-//}
-
 int main()
 {
     lightsout::GameController gameController;

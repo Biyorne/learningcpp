@@ -30,19 +30,19 @@ namespace lightsout
 
         void display();
 
-        sf::Vector2f centerPositionOf(const sf::Vector2f & SIZE_V)
+        sf::Vector2f centerPositionOf(const sf::Vector2f & SIZE_V) const
         {
             const sf::Vector2f WINDOW_CENTER_V(size() * 0.5f);
             const sf::Vector2f SIZE_HALF_V(SIZE_V * 0.5f);
             return (WINDOW_CENTER_V - SIZE_HALF_V);
         }
 
-        sf::Vector2f centerPositionOf(const sf::FloatRect & RECT)
+        sf::Vector2f centerPositionOf(const sf::FloatRect & RECT) const
         {
             return centerPositionOf(sf::Vector2f(RECT.width, RECT.height));
         }
 
-        void spriteFitHorizontalAndCenter(sf::Sprite & sprite)
+        void spriteFitHorizontalAndCenter(sf::Sprite & sprite) const
         {
             const float SCALE(size().y / sprite.getLocalBounds().height);
             sprite.setScale(SCALE, SCALE);

@@ -4,9 +4,12 @@
 #include "cell-model.hpp"
 #include "cell-view.hpp"
 #include "game-board-model.hpp"
+#include "game-state-enum.hpp"
 #include "window.hpp"
 
 #include <SFML/Graphics.hpp>
+
+#include <iostream>
 
 namespace lightsout
 {
@@ -16,6 +19,10 @@ namespace lightsout
         GameBoardViewFade(const sf::Color & ON_COLOR, const GameBoardModel & GAME_BOARD_MODEL)
             : m_cellViews()
             , m_fadeSpeed(500.0f)
+            , m_loseTexture()
+            , m_winTexture()
+            , m_helpTexture()
+            , m_sprite()
         {
             const sf::Color OFF_COLOR(calcOffColor(ON_COLOR));
             for (const CellModel & CELL_MODEL : GAME_BOARD_MODEL.cells())
@@ -25,6 +32,48 @@ namespace lightsout
 
                 m_cellViews.push_back(CELL_VIEW);
             }
+
+            if (!m_loseTexture.loadFromFile("image\\lose.png"))
+            {
+                std::cerr << "Failed to load image: image\\lose.png" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            if (!m_winTexture.loadFromFile("image\\win.png"))
+            {
+                std::cerr << "Failed to load image: image\\win.png" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            if (!m_helpTexture.loadFromFile("image\\help.png"))
+            {
+                std::cerr << "Failed to load image: image\\help.png" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        void setupOverlay(const GameState STATE, const Window & WINDOW)
+        {
+            if (STATE == GameState::Help)
+            {
+                m_sprite.setTexture(m_helpTexture);
+            }
+            else if (STATE == GameState::Win)
+            {
+                m_sprite.setTexture(m_winTexture);
+            }
+            else if (STATE == GameState::Lose)
+            {
+                m_sprite.setTexture(m_loseTexture);
+            }
+            else
+            {
+                m_sprite = sf::Sprite();
+            }
+
+            WINDOW.spriteFitHorizontalAndCenter(m_sprite);
+            // WINDOW.drawRectangle(
+            //    sf::FloatRect(sf::Vector2f(), WINDOW.size()), sf::Color(0, 0, 0, 127));
         }
 
         sf::Color calcOffColor(const sf::Color ON_COLOR) const
@@ -76,11 +125,17 @@ namespace lightsout
                     window.drawRectangle(CELL_MODEL.region(), CURRENT_COLOR);
                 }
             }
+
+            window.draw(m_sprite);
         }
 
     private:
         std::vector<CellView> m_cellViews;
         float m_fadeSpeed;
+        sf::Texture m_loseTexture;
+        sf::Texture m_winTexture;
+        sf::Texture m_helpTexture;
+        sf::Sprite m_sprite;
     };
 
 } // namespace lightsout

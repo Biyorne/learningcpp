@@ -17,11 +17,17 @@ namespace lightsout
 
     std::vector<sf::Event> Window::gatherEvents()
     {
+
         std::vector<sf::Event> events;
         sf::Event event;
+
         while (m_renderWindow.pollEvent(event))
         {
-            events.push_back(event);
+            if ((event.type == sf::Event::MouseButtonPressed)
+                || (event.type == sf::Event::KeyPressed) || (event.type == sf::Event::Closed))
+            {
+                events.push_back(event);
+            }
         }
         return events;
     }

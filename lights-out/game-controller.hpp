@@ -4,18 +4,11 @@
 #include "cell-model.hpp"
 #include "game-board-model.hpp"
 #include "game-board-view-fade.hpp"
+#include "game-state-enum.hpp"
 #include "window.hpp"
 
 namespace lightsout
 {
-    enum class GameState
-    {
-        Help = 0,
-        Play,
-        Win,
-        Lose
-    };
-
     class GameController
     {
     public:
@@ -24,7 +17,9 @@ namespace lightsout
             , m_window("Lights Out", 800, 600, sf::Color::Black)
             , m_boardModel(sf::FloatRect(sf::Vector2f(), m_window.size()))
             , m_boardView(sf::Color(121, 50, 105), m_boardModel)
-        {}
+        {
+            changeState(GameState::Help);
+        }
 
         bool isRunning() const
         {
@@ -42,13 +37,13 @@ namespace lightsout
                 {
                     handleEventGameOver(EVENT);
                 }
-                else if (m_state == GameState::Play)
-                {
-                    handleEventPlay(EVENT);
-                }
                 else if (m_state == GameState::Help)
                 {
                     handleEventHelp(EVENT);
+                }
+                else if (m_state == GameState::Play)
+                {
+                    handleEventPlay(EVENT);
                 }
             }
         }
@@ -62,11 +57,17 @@ namespace lightsout
         }
 
     private:
+        void changeState(const GameState NEW_STATE)
+        {
+            m_state = NEW_STATE;
+            m_boardView.setupOverlay(m_state, m_window);
+        }
+
         void handleEventClose(const sf::Event & EVENT)
         {
             if (EVENT.type == sf::Event::Closed)
             {
-                m_state = GameState::Lose;
+                changeState(GameState::Lose);
             }
         }
 
@@ -83,24 +84,23 @@ namespace lightsout
 
                 if (m_boardModel.areAllCellsOff())
                 {
-                    m_state = GameState::Win;
+                    changeState(GameState::Win);
                     return;
                 }
             }
-
-            if (EVENT.type == sf::Event::KeyPressed)
+            else if (EVENT.type == sf::Event::KeyPressed)
             {
                 if (EVENT.key.code == sf::Keyboard::Escape)
                 {
-                    m_state = GameState::Lose;
+                    changeState(GameState::Lose);
                 }
                 else if (EVENT.key.code == sf::Keyboard::F1)
                 {
-                    m_state = GameState::Win;
+                    changeState(GameState::Win);
                 }
                 else if (EVENT.key.code == sf::Keyboard::H)
                 {
-                    m_state = GameState::Help;
+                    changeState(GameState::Help);
                 }
             }
 
@@ -113,16 +113,16 @@ namespace lightsout
             {
                 if (EVENT.key.code == sf::Keyboard::Escape)
                 {
-                    m_state = GameState::Lose;
+                    changeState(GameState::Lose);
                 }
                 else if (EVENT.key.code == sf::Keyboard::H)
                 {
-                    m_state = GameState::Play;
+                    changeState(GameState::Play);
                 }
                 else if (EVENT.key.code == sf::Keyboard::N)
                 {
                     m_boardModel.reset();
-                    m_state = GameState::Play;
+                    changeState(GameState::Play);
                 }
             }
 
