@@ -26,9 +26,9 @@ namespace lightsout
 
         void draw(const sf::Drawable & DRAWABLE) { m_renderWindow.draw(DRAWABLE); }
 
-        void clear();
+        void Window::clear() { m_renderWindow.clear(m_backgroundColor); }
 
-        void display();
+        void Window::display() { m_renderWindow.display(); }
 
         sf::Vector2f centerPositionOf(const sf::Vector2f & SIZE_V) const
         {
@@ -42,12 +42,7 @@ namespace lightsout
             return centerPositionOf(sf::Vector2f(RECT.width, RECT.height));
         }
 
-        void spriteFitHorizontalAndCenter(sf::Sprite & sprite) const
-        {
-            const float SCALE(size().y / sprite.getLocalBounds().height);
-            sprite.setScale(SCALE, SCALE);
-            sprite.setPosition(centerPositionOf(sprite.getGlobalBounds()));
-        }
+        void spriteFitHorizontalAndCenter(sf::Sprite & sprite) const;
 
     private:
         sf::RenderWindow m_renderWindow;

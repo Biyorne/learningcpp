@@ -17,24 +17,16 @@ namespace lightsout
 
     std::vector<sf::Event> Window::gatherEvents()
     {
-
         std::vector<sf::Event> events;
         sf::Event event;
 
         while (m_renderWindow.pollEvent(event))
         {
-            if ((event.type == sf::Event::MouseButtonPressed)
-                || (event.type == sf::Event::KeyPressed) || (event.type == sf::Event::Closed))
-            {
-                events.push_back(event);
-            }
+            events.push_back(event);
         }
+
         return events;
     }
-
-    void Window::clear() { m_renderWindow.clear(m_backgroundColor); }
-
-    void Window::display() { m_renderWindow.display(); }
 
     void Window::drawRectangle(const sf::FloatRect & REGION, const sf::Color & COLOR)
     {
@@ -43,6 +35,18 @@ namespace lightsout
         rectangle.setPosition(REGION.left, REGION.top);
         rectangle.setSize(sf::Vector2f(REGION.width, REGION.height));
         m_renderWindow.draw(rectangle);
+    }
+
+    void Window::spriteFitHorizontalAndCenter(sf::Sprite & sprite) const
+    {
+        if ((0.0f < sprite.getLocalBounds().height) == false)
+        {
+            return;
+        }
+
+        const float SCALE(size().y / sprite.getLocalBounds().height);
+        sprite.setScale(SCALE, SCALE);
+        sprite.setPosition(centerPositionOf(sprite.getGlobalBounds()));
     }
 
 } // namespace lightsout
