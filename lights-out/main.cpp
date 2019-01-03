@@ -34,15 +34,22 @@ int main()
 {
     lightsout::GameController gameController;
 
-    sf::Clock frameClock;
+    sf::Clock clock;
 
     while (gameController.isRunning())
     {
-        const float FRAME_TIME_SEC(frameClock.getElapsedTime().asSeconds());
-        frameClock.restart();
+        const float FRAME_TIME_SEC(clock.getElapsedTime().asSeconds());
+        clock.restart();
 
         gameController.handleEvents();
         gameController.draw(FRAME_TIME_SEC);
+    }
+
+    clock.restart();
+    const float HOLD_TIME(3.0f);
+    while (clock.getElapsedTime().asSeconds() < HOLD_TIME)
+    {
+        sf::sleep(sf::seconds(0.25f));
     }
 
     return EXIT_SUCCESS;
