@@ -10,6 +10,7 @@ namespace lightsout
         , m_winTexture()
         , m_helpTexture()
         , m_sprite()
+        , m_fadeRectangle()
     {
         const sf::Color OFF_COLOR(calcOffColor(ON_COLOR));
         for (const CellModel & CELL_MODEL : GAME_BOARD_MODEL.cells())
@@ -63,8 +64,16 @@ namespace lightsout
 
         WINDOW.spriteFitHorizontalAndCenter(m_sprite);
 
-        // WINDOW.drawRectangle(
-        //    sf::FloatRect(sf::Vector2f(), WINDOW.size()), sf::Color(0, 0, 0, 127));
+        m_fadeRectangle.setSize(WINDOW.size());
+
+        if (STATE == GameState::Play)
+        {
+            m_fadeRectangle.setFillColor(sf::Color::Transparent);
+        }
+        else
+        {
+            m_fadeRectangle.setFillColor(sf::Color(0, 0, 0, 140));
+        }
     }
 
     sf::Color GameBoardViewFade::calcOffColor(const sf::Color ON_COLOR) const
@@ -116,7 +125,7 @@ namespace lightsout
                 window.drawRectangle(CELL_MODEL.region(), CURRENT_COLOR);
             }
         }
-
+        window.draw(m_fadeRectangle);
         window.draw(m_sprite);
     }
 } // namespace lightsout

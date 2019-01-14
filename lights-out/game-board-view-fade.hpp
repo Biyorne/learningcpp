@@ -33,6 +33,7 @@ namespace lightsout
         sf::Texture m_winTexture;
         sf::Texture m_helpTexture;
         sf::Sprite m_sprite;
+        sf::RectangleShape m_fadeRectangle;
     };
 
 } // namespace lightsout
