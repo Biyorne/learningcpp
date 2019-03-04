@@ -5,6 +5,8 @@
 #include <iostream>
 #include <random>
 
+#include "random.hpp"
+
 // Randomness - A lack of pattern and predictability.
 // Entropy - The randomness of a closed system.
 // True Randomness - Infinite entropy.
@@ -55,8 +57,8 @@
 // In general, combining multiple random sources does not add the entropy together. Usually, it
 // cancels them out. Picks from the best available options in the computer
 
-//Distribution
-//How likely some numbers are vs others to come out of the prng
+// Distribution
+// How likely some numbers are vs others to come out of the prng
 
 // Non-Uniformity
 //
@@ -84,112 +86,124 @@
 //   - All other situations where you want non-truly-random behavior can and should be defined with
 //     a probability distribution.
 
-//The old C rand() way.
+// The old C rand() way.
 #include <cstdlib>
 #include <ctime>
 void tenRandomNumbers_theOldCrandWay()
 {
-	srand(time(nullptr));
-	for (int i(0); i < 10; ++i)
-	{
-		std::cout << (1+ (rand() %4)) << std::endl;
-	}
+    srand(static_cast<unsigned int>(time(nullptr)));
+    for (int i(0); i < 10; ++i)
+    {
+        std::cout << (1 + (rand() % 4)) << std::endl;
+    }
 }
 
-//Quick and dirty c++11 way
-//Not good enough for: encryption, statistics, unpredictability, if you need too many numbers or need them too quickly
+// Quick and dirty c++11 way
+// Not good enough for: encryption, statistics, unpredictability, if you need too many numbers or
+// need them too quickly
 #include <random>
 void tenRandomNumbers_quickAndDirtyCpp11Way()
 {
-	//Decides where to get the seed from and gives us as many uints as we ask from it.
-	std::random_device randomDevice;
+    // Decides where to get the seed from and gives us as many uints as we ask from it.
+    std::random_device randomDevice;
 
-	//Takes a small number of seeds and stretches it into however many the prng needs.
-	//(note:  this is the worst way to use seed_seq, but good enough for casual apps.)
-	std::seed_seq seedSequence{ randomDevice() };
+    // Takes a small number of seeds and stretches it into however many the prng needs.
+    //(note:  this is the worst way to use seed_seq, but good enough for casual apps.)
+    std::seed_seq seedSequence { randomDevice() };
 
-	//make the mt19937 PRNG and give it the seed  (seed_seq)
-	std::mt19937 engine;
-	engine.seed(seedSequence);
+    // make the mt19937 PRNG and give it the seed  (seed_seq)
+    std::mt19937 engine;
+    engine.seed(seedSequence);
 
-	//this is both the distribution and the range limited over [1, 4]
-	std::uniform_int_distribution<int> distribution(1, 4);
+    // this is both the distribution and the range limited over [1, 4]
+    std::uniform_int_distribution<int> distribution(1, 4);
 
-	for (int i(0); i < 10; ++i)
-	{
-		std::cout << distribution(engine) << std::endl;
-	}
+    for (int i(0); i < 10; ++i)
+    {
+        std::cout << distribution(engine) << std::endl;
+    }
 }
 
-//Best possible use of mt19937
-//yes we lose some entropy but this is still a kick ass mt19937
+// Best possible use of mt19937
+// yes we lose some entropy but this is still a kick ass mt19937
 #include <array>
 #include <random>
 
 void tenRandomNumber_bestCpp11Way()
 {
-	std::mt19937 engine;
+    std::mt19937 engine;
 
-	//create the the full state/seed from best seed sources
-	std::random_device seedSource;
-	std::array<unsigned int, engine.state_size> seedArray;
-	std::generate(std::begin(seedArray), std::end(seedArray), std::ref(seedSource));
+    // create the the full state/seed from best seed sources
+    std::random_device seedSource;
+    std::array<unsigned int, engine.state_size> seedArray;
+    std::generate(std::begin(seedArray), std::end(seedArray), std::ref(seedSource));
 
-	//put our perfect seed into seed_seq which makes no sense and loses entropy but we have to because the engine only takes a seed_seq
-	std::seed_seq seedSequence(std::begin(seedArray), std::end(seedArray));
-	engine.seed(seedSequence);
+    // put our perfect seed into seed_seq which makes no sense and loses entropy but we have to
+    // because the engine only takes a seed_seq
+    std::seed_seq seedSequence(std::begin(seedArray), std::end(seedArray));
+    engine.seed(seedSequence);
 
-	std::uniform_int_distribution< int> dist{ 1, 4 };
+    std::uniform_int_distribution<int> dist { 1, 4 };
 
-	for (std::size_t i(0); i < 10; ++i)
-	{
-		std::cout << dist(engine) << std::endl;
-	}
+    for (std::size_t i(0); i < 10; ++i)
+    {
+        std::cout << dist(engine) << std::endl;
+    }
 }
 
 void diceRoller()
 {
-	while (true)
-	{
-		std::cout << "How many sides?" << std::endl;
-		int dieSideCount(0);
-		std::cin >> dieSideCount;
+    while (true)
+    {
+        std::cout << "How many sides?" << std::endl;
+        int dieSideCount(0);
+        std::cin >> dieSideCount;
 
-		if (dieSideCount < 0)
-		{
-			return;
-		}
+        if (dieSideCount < 0)
+        {
+            return;
+        }
 
-		std::cout << "How many times?" << std::endl;
-		std::size_t count(0);
-		std::cin >> count;
+        std::cout << "How many times?" << std::endl;
+        std::size_t count(0);
+        std::cin >> count;
 
-		std::mt19937 engine;
+        std::mt19937 engine;
 
-		std::random_device seedSource;
-		std::array<unsigned int, engine.state_size> seedArray;
-		std::generate(std::begin(seedArray), std::end(seedArray), std::ref(seedSource));
+        std::random_device seedSource;
+        std::array<unsigned int, engine.state_size> seedArray;
+        std::generate(std::begin(seedArray), std::end(seedArray), std::ref(seedSource));
 
-		std::seed_seq seedSequence(std::begin(seedArray), std::end(seedArray));
-		engine.seed(seedSequence);
+        std::seed_seq seedSequence(std::begin(seedArray), std::end(seedArray));
+        engine.seed(seedSequence);
 
-		std::uniform_int_distribution< int> dist{ 1, dieSideCount };
+        std::uniform_int_distribution<int> dist { 1, dieSideCount };
 
-		for (std::size_t i(0); i < count; ++i)
-		{
-			std::cout << count << "d" << dieSideCount << ": " << dist(engine) << std::endl;
-		}
-	}
+        for (std::size_t i(0); i < count; ++i)
+        {
+            std::cout << count << "d" << dieSideCount << ": " << dist(engine) << std::endl;
+        }
+    }
 }
 
+void randomRollExamples()
+{
+    RandomRoll random;
+    std::cout << "1d6: " << random.rollInt(1, 6) << std::endl;
+    std::cout << "1d6: " << random.rollInt(6, 1) << std::endl;
+    std::cout << "1d6: " << random.rollInt(6, 6) << std::endl;
+
+    std::cout << "1d6: " << random.rollDouble(1.0, 6.0) << std::endl;
+}
 
 int main(void)
 {
-	//diceRoller();
-	//tenRandomNumbers_theOldCrandWay();
-	tenRandomNumbers_quickAndDirtyCpp11Way();
+    // diceRoller();
+    // tenRandomNumbers_theOldCrandWay();
+    // tenRandomNumber_bestCpp11Way()
+    randomRollExamples();
 
-	char ignore('a');
-	std::cin >> ignore;
-	return EXIT_SUCCESS;
+    char ignore('a');
+    std::cin >> ignore;
+    return EXIT_SUCCESS;
 }
