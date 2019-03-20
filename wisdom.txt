@@ -29,3 +29,10 @@ Class:
 	High cohesion: Cohesion is a measure of how related everything is.
 	A class should have one clear responsibility.
 	Low Coupling: Coupling is a measure of how much different pieces of code have to know about each other.
+	
+Functions:
+	Is this changing something or returning something?
+	What are all the ways it could fail? Handle each one either by: 
+		Doing nothing with an early return
+		Doing the one and only obvious default thing
+		Throw an exception
