@@ -8,6 +8,7 @@ namespace lightsout
         , m_window("Lights Out", 800, 600, sf::Color::Black)
         , m_boardModel(sf::FloatRect(sf::Vector2f(), m_window.size()))
         , m_boardView(sf::Color(121, 50, 105), m_boardModel)
+        , m_hasGameStarted(false)
     {
         changeState(GameState::Help);
     }
@@ -101,10 +102,14 @@ namespace lightsout
             }
             else if (EVENT.key.code == sf::Keyboard::H)
             {
-                changeState(GameState::Play);
+                if (m_hasGameStarted)
+                {
+                    changeState(GameState::Play);
+                }
             }
             else if (EVENT.key.code == sf::Keyboard::N)
             {
+                m_hasGameStarted = true;
                 m_boardModel.reset();
                 changeState(GameState::Play);
             }

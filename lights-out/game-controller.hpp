@@ -40,6 +40,7 @@ namespace lightsout
         Window m_window;
         GameBoardModel m_boardModel;
         GameBoardViewFade m_boardView;
+        bool m_hasGameStarted;
     };
 } // namespace lightsout
 

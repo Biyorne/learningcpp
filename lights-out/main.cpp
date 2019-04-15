@@ -45,12 +45,7 @@ int main()
         gameController.draw(FRAME_TIME_SEC);
     }
 
-    clock.restart();
-    const float HOLD_TIME(3.0f);
-    while (clock.getElapsedTime().asSeconds() < HOLD_TIME)
-    {
-        sf::sleep(sf::seconds(0.25f));
-    }
+    sf::sleep(sf::seconds(3.0f));
 
     return EXIT_SUCCESS;
 }

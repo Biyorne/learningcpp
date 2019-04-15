@@ -3,7 +3,6 @@ TODO:
 Homework: 
 	Learn what the five P's are
 
-- Random configuration of on/off at startup
 - Random configuration on new game
 
 New Feature Ideas:
