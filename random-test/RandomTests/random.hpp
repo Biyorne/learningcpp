@@ -1,25 +1,31 @@
 #ifndef RANDOM_HPP_INCLUDED
 #define RANDOM_HPP_INCLUDED
 
+#include <limits>
 #include <random>
 
-class RandomRoll
+class Random
 {
 
 public:
-    RandomRoll()
+    Random()
         : m_engine()
     {
+
         std::random_device randomDevice;
         std::seed_seq seedSequence { randomDevice() };
         m_engine.seed(seedSequence);
+
+        const unsigned long long WARMUP_SKIP(10000);
+        m_engine.discard(WARMUP_SKIP);
     }
 
-    int rollInt(const int RANGE_MIN, const int RANGE_MAX) const
+    template <typename T>
+    T rollInteger(const T RANGE_MIN, const T RANGE_MAX) const
     {
         if (RANGE_MAX < RANGE_MIN)
         {
-            return rollInt(RANGE_MAX, RANGE_MIN);
+            return rollInteger(RANGE_MAX, RANGE_MIN);
         }
 
         if (RANGE_MAX == RANGE_MIN)
@@ -27,25 +33,64 @@ public:
             return RANGE_MAX;
         }
 
-        std::uniform_int_distribution<int> intDistribution(RANGE_MIN, RANGE_MAX);
-        return intDistribution(m_engine);
+        std::uniform_int_distribution<T> TDistribution(RANGE_MIN, RANGE_MAX);
+        return TDistribution(m_engine);
     }
 
-    double rollDouble(const double RANGE_MIN, const double RANGE_MAX) const
+    template <typename T>
+    T rollInteger(const T RANGE_MAX) const
+    {
+        return rollInteger(static_cast<T>(0), RANGE_MAX);
+    }
+
+    template <typename T>
+    T rollReal(const T RANGE_MIN, const T RANGE_MAX) const
     {
         if (RANGE_MAX < RANGE_MIN)
         {
-            return rollDouble(RANGE_MAX, RANGE_MIN);
+            return rollReal(RANGE_MAX, RANGE_MIN);
         }
 
-        // Todo: fix for floats
-        // if (RANGE_MAX == RANGE_MIN)
-        //{
-        //    return RANGE_MAX;
-        //}
+        if (isRealClose(RANGE_MAX, RANGE_MIN))
+        {
+            return RANGE_MAX;
+        }
 
-        std::uniform_real_distribution<double> doubleDistribution;
-        return doubleDistribution(m_engine);
+        std::uniform_real_distribution<T> TDistribution(
+            RANGE_MIN, std::nextafter(RANGE_MAX, std::numeric_limits<T>::max()));
+
+        return TDistribution(m_engine);
+    }
+
+    template <typename T>
+    T rollReal(const T RANGE_MAX) const
+    {
+        return rollReal(static_cast<T>(0), RANGE_MAX);
+    }
+
+    bool rollBool() const { return (rollInteger(0, 1) == 1); }
+
+    template <typename T>
+    T select(const std::vector<T> & CONTAINER) const
+    {
+        return CONTAINER.at(rollInteger(static_cast<std::size_t>(0), (CONTAINER.size() - 1)));
+    }
+
+    template <typename T>
+    void shuffle(T & container) const
+    {
+        std::shuffle(std::begin(container), std::end(container), m_engine);
+    }
+
+private:
+    template <typename T>
+    bool isRealClose(const T A, const T B) const
+    {
+        const T STRIDE_SIZE(
+            ((B < 1.0) ? std::numeric_limits<T>::epsilon()
+                       : (B * std::numeric_limits<T>::epsilon())));
+
+        return (std::abs(B - A) < STRIDE_SIZE);
     }
 
 private:

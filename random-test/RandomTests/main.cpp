@@ -1,9 +1,9 @@
-
 #include <algorithm>
 #include <array>
 #include <cstdlib>
 #include <iostream>
 #include <random>
+#include <vector>
 
 #include "random.hpp"
 
@@ -188,20 +188,29 @@ void diceRoller()
 
 void randomRollExamples()
 {
-    RandomRoll random;
-    std::cout << "1d6: " << random.rollInt(1, 6) << std::endl;
-    std::cout << "1d6: " << random.rollInt(6, 1) << std::endl;
-    std::cout << "1d6: " << random.rollInt(6, 6) << std::endl;
+    Random random;
+    std::cout << "1d6: " << random.rollInteger(1, 6) << std::endl;
+    std::cout << "1d6: " << random.rollInteger(6, 1) << std::endl;
+    std::cout << "1d6: " << random.rollInteger(6, 6) << std::endl;
 
-    std::cout << "1d6: " << random.rollDouble(1.0, 6.0) << std::endl;
+    std::cout << "1d6: " << random.rollReal(1.0, 6.0) << std::endl;
 }
 
 int main(void)
 {
+
     // diceRoller();
     // tenRandomNumbers_theOldCrandWay();
     // tenRandomNumber_bestCpp11Way()
-    randomRollExamples();
+    // randomRollExamples();
+
+    Random random;
+
+    for (int i(0); i < 10; ++i)
+    {
+        std::cout << random.rollInteger(10) << std::endl;
+        std::cout << random.rollReal(10.0f) << std::endl;
+    }
 
     char ignore('a');
     std::cin >> ignore;
