@@ -1,4 +1,5 @@
 #include "game-board-model.hpp"
+
 #include "screen-util.hpp"
 
 namespace lightsout
@@ -7,6 +8,7 @@ namespace lightsout
     GameBoardModel::GameBoardModel(const sf::FloatRect & REGION)
         : m_cells()
         , m_history()
+        , m_random()
     {
         for (const GridRegion & GRID_REGION : splitRegionIntoGrids(REGION, 5, 5))
         {
@@ -60,9 +62,11 @@ namespace lightsout
 
     void GameBoardModel::reset()
     {
-        while (m_history.empty() == false)
+        m_history.clear();
+
+        for (auto & cell : m_cells)
         {
-            undo();
+            cell.set(m_random.rollBool());
         }
     }
 

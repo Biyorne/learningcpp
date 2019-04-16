@@ -2,6 +2,7 @@
 #define LIGHTS_OUT_GAME_BOARD_MODEL_HPP_INCLUDED
 
 #include "cell-model.hpp"
+#include "random.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -36,6 +37,7 @@ namespace lightsout
 
         std::vector<CellModel> m_cells;
         std::vector<std::vector<CellModel>> m_history;
+        Random m_random;
     };
 
 } // namespace lightsout

@@ -32,6 +32,8 @@ namespace lightsout
 
         void change() { m_isOn = !m_isOn; }
 
+        void set(const bool WILL_TURN_ON) { m_isOn = WILL_TURN_ON; }
+
     private:
         bool m_isOn;
         GridPos_t m_gridPosV;

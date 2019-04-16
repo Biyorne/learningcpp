@@ -79,14 +79,14 @@ namespace lightsout
             {
                 changeState(GameState::Lose);
             }
-            else if (EVENT.key.code == sf::Keyboard::F1)
-            {
-                changeState(GameState::Win);
-            }
             else if (EVENT.key.code == sf::Keyboard::H)
             {
                 changeState(GameState::Help);
             }
+            // else if (EVENT.key.code == sf::Keyboard::F1)
+            //{
+            //    changeState(GameState::Win);
+            //}
         }
 
         handleEventClose(EVENT);
