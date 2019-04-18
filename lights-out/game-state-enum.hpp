@@ -8,7 +8,8 @@ namespace lightsout
         Help = 0,
         Play,
         Win,
-        Lose
+        Lose,
+        NewGameAnim
     };
 }
 

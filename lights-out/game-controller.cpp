@@ -9,15 +9,18 @@ namespace lightsout
         , m_boardModel(sf::FloatRect(sf::Vector2f(), m_window.size()))
         , m_boardView(sf::Color(121, 50, 105), m_boardModel)
         , m_hasGameStarted(false)
+        , m_animTimer()
+        , m_animDelaySec(2.0f)
     {
+        // This is because changeState() sets up our overlay.
         changeState(GameState::Help);
     }
 
     void GameController::handleEvents()
     {
-        std::vector<sf::Event> events(m_window.gatherEvents());
+        const std::vector<sf::Event> EVENTS(m_window.gatherEvents());
 
-        for (const sf::Event & EVENT : events)
+        for (const sf::Event & EVENT : EVENTS)
         {
             if ((m_state == GameState::Win) || (m_state == GameState::Lose))
             {
@@ -31,15 +34,33 @@ namespace lightsout
             {
                 handleEventPlay(EVENT);
             }
+
+            // no need to handle events during this state
+            // else if (m_state == GameState::NewGameAnim)
+            //{
+            //    handleEventNewGameAnim(EVENT);
+            //}
         }
     }
 
     void GameController::draw(const float FRAME_TIME_SEC)
     {
         m_window.clear();
+
+        if (GameState::NewGameAnim == m_state)
+        {
+            m_boardModel.reset();
+        }
+
         m_boardView.update(FRAME_TIME_SEC, m_boardModel);
         m_boardView.draw(m_boardModel, m_window);
         m_window.display();
+
+        if ((m_animTimer.getElapsedTime().asSeconds() > m_animDelaySec)
+            && (GameState::NewGameAnim == m_state))
+        {
+            changeState(GameState::Play);
+        }
     }
 
     void GameController::changeState(const GameState NEW_STATE)
@@ -111,7 +132,8 @@ namespace lightsout
             {
                 m_hasGameStarted = true;
                 m_boardModel.reset();
-                changeState(GameState::Play);
+                changeState(GameState::NewGameAnim);
+                m_animTimer.restart();
             }
         }
 

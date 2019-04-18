@@ -41,6 +41,8 @@ namespace lightsout
         GameBoardModel m_boardModel;
         GameBoardViewFade m_boardView;
         bool m_hasGameStarted;
+        sf::Clock m_animTimer;
+        const float m_animDelaySec;
     };
 } // namespace lightsout
 

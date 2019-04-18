@@ -64,9 +64,12 @@ namespace lightsout
     {
         m_history.clear();
 
-        for (auto & cell : m_cells)
+        for (int i(0); i < 4; ++i)
         {
-            cell.set(m_random.rollBool());
+            for (auto & cell : m_cells)
+            {
+                cell.set(m_random.rollBool());
+            }
         }
     }
 
