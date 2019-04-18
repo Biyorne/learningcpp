@@ -60,15 +60,22 @@ namespace lightsout
         }
     }
 
-    void GameBoardModel::reset()
+    void GameBoardModel::resetForValidNewGame()
     {
         m_history.clear();
 
-        for (int i(0); i < 4; ++i)
+        for (auto & cell : m_cells)
         {
-            for (auto & cell : m_cells)
+            cell.set(m_random.rollBool());
+        }
+
+        if (areAllCellsOff())
+        {
+            const std::size_t CELLS_TO_TURN_ON(m_random.rollInteger(m_cells.size() - 1) + 1);
+
+            for (std::size_t i(0); i < CELLS_TO_TURN_ON; ++i)
             {
-                cell.set(m_random.rollBool());
+                m_random.select(m_cells).set(true);
             }
         }
     }

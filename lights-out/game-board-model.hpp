@@ -23,7 +23,7 @@ namespace lightsout
 
         bool areAllCellsOff() const;
 
-        void reset();
+        void resetForValidNewGame();
 
     private:
         void undo();

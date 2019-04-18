@@ -10,7 +10,7 @@ namespace lightsout
         , m_boardView(sf::Color(121, 50, 105), m_boardModel)
         , m_hasGameStarted(false)
         , m_animTimer()
-        , m_animDelaySec(2.0f)
+        , m_animDelaySec(0.8f)
     {
         // This is because changeState() sets up our overlay.
         changeState(GameState::Help);
@@ -49,7 +49,7 @@ namespace lightsout
 
         if (GameState::NewGameAnim == m_state)
         {
-            m_boardModel.reset();
+            m_boardModel.resetForValidNewGame();
         }
 
         m_boardView.update(FRAME_TIME_SEC, m_boardModel);
@@ -131,7 +131,7 @@ namespace lightsout
             else if (EVENT.key.code == sf::Keyboard::N)
             {
                 m_hasGameStarted = true;
-                m_boardModel.reset();
+                m_boardModel.resetForValidNewGame();
                 changeState(GameState::NewGameAnim);
                 m_animTimer.restart();
             }
