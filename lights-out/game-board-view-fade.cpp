@@ -24,21 +24,21 @@ namespace lightsout
         m_winTexture.setSmooth(true);
         m_helpTexture.setSmooth(true);
 
-        if (!m_loseTexture.loadFromFile("image\\lose.png"))
+        if (!m_loseTexture.loadFromFile("image/lose.png"))
         {
-            std::cerr << "Failed to load image: image\\lose.png" << std::endl;
+            std::cerr << "Failed to load image: image/lose.png" << std::endl;
             exit(EXIT_FAILURE);
         }
 
-        if (!m_winTexture.loadFromFile("image\\win.png"))
+        if (!m_winTexture.loadFromFile("image/win.png"))
         {
-            std::cerr << "Failed to load image: image\\win.png" << std::endl;
+            std::cerr << "Failed to load image: image/win.png" << std::endl;
             exit(EXIT_FAILURE);
         }
 
-        if (!m_helpTexture.loadFromFile("image\\help.png"))
+        if (!m_helpTexture.loadFromFile("image/help.png"))
         {
-            std::cerr << "Failed to load image: image\\help.png" << std::endl;
+            std::cerr << "Failed to load image: image/help.png" << std::endl;
             exit(EXIT_FAILURE);
         }
     }
