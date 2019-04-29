@@ -73,15 +73,21 @@ namespace lightsout
         bool rollBool() const { return (rollInteger(0, 1) == 1); }
 
         template <typename T>
+        std::size_t indexFrom(const std::vector<T> & CONTAINER) const
+        {
+            return rollInteger(0U, (CONTAINER.size() - 1));
+        }
+
+        template <typename T>
         T & select(std::vector<T> & container) const
         {
-            return container.at(rollInteger(static_cast<std::size_t>(0), (container.size() - 1)));
+            return container.at(indexFrom(container));
         }
 
         template <typename T>
         const T & select(const std::vector<T> & CONTAINER) const
         {
-            return CONTAINER.at(rollInteger(static_cast<std::size_t>(0), (CONTAINER.size() - 1)));
+            return CONTAINER.at(indexFrom(CONTAINER));
         }
 
         template <typename T>
