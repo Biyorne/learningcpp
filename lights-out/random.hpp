@@ -77,7 +77,7 @@ namespace lightsout
         template <typename T>
         std::size_t indexFrom(const std::vector<T> & CONTAINER) const
         {
-            return rollInteger(0U, (CONTAINER.size() - 1));
+            return rollInteger(std::size_t(0), (CONTAINER.size() - 1));
         }
 
         template <typename T>
