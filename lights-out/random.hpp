@@ -1,8 +1,10 @@
 #ifndef LIGHTS_OUT_RANDOM_HPP_INCLUDED
 #define LIGHTS_OUT_RANDOM_HPP_INCLUDED
 
+#include <array>
 #include <limits>
 #include <random>
+#include <vector>
 
 namespace lightsout
 {
@@ -88,6 +90,58 @@ namespace lightsout
         void shuffle(T & container) const
         {
             std::shuffle(std::begin(container), std::end(container), m_engine);
+        }
+
+        const std::array<unsigned char, 3> randomRGB()
+        {
+            std::array<int, 3> values;
+
+            values[0] = rollInteger(255);
+
+            const int LOW { 63 };
+            const int MED { 127 };
+            const int HIGH { 191 };
+
+            auto pickExtremeDifferentValue = [&](const int X) {
+                if (X < MED)
+                {
+                    return (HIGH + rollInteger(LOW));
+                }
+                else
+                {
+                    return rollInteger(LOW);
+                }
+            };
+
+            values[1] = pickExtremeDifferentValue(values[0]);
+
+            if (std::abs(values[0] - values[1]) > HIGH)
+            {
+                values[2] = rollInteger(255);
+            }
+            else
+            {
+                const auto AVG = ((values[0] + values[1]) / 2);
+
+                if (AVG < LOW)
+                {
+                    values[2] = (HIGH + rollInteger(LOW));
+                }
+                else if (AVG > HIGH)
+                {
+                    values[2] = rollInteger(LOW);
+                }
+                else
+                {
+                    values[2] = pickExtremeDifferentValue(AVG);
+                }
+            }
+
+            shuffle(values);
+
+            return { static_cast<unsigned char>(values[0]),
+                     static_cast<unsigned char>(values[1]),
+                     static_cast<unsigned char>(values[2]) };
         }
 
     private:
