@@ -20,7 +20,7 @@ namespace lightsout
 
         void setupOverlay(const GameState STATE, const Window & WINDOW);
 
-        sf::Color calcOffColor(const sf::Color ON_COLOR) const;
+        sf::Color calcOffColor(const sf::Color & ON_COLOR) const;
 
         void update(const float ELAPSED_TIME_SEC, const GameBoardModel & GAME_BOARD);
 

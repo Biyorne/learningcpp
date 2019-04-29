@@ -78,7 +78,7 @@ namespace lightsout
         }
     }
 
-    sf::Color GameBoardViewFade::calcOffColor(const sf::Color ON_COLOR) const
+    sf::Color GameBoardViewFade::calcOffColor(const sf::Color & ON_COLOR) const
     {
         sf::Color offColor(ON_COLOR);
         offColor.r = (ON_COLOR.r / 2);

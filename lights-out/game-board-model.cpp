@@ -26,7 +26,7 @@ namespace lightsout
         });
     }
 
-    void GameBoardModel::handleMouseClick(const sf::Vector2f MOUSE_POSITION_V)
+    void GameBoardModel::handleMouseClick(const sf::Vector2f & MOUSE_POSITION_V)
     {
         const std::vector<CellModel>::const_iterator ITER_TO_CELL_CLICKED(std::find_if(
             std::begin(m_cells), std::end(m_cells), [&MOUSE_POSITION_V](const CellModel & CELL) {

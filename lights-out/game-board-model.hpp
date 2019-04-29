@@ -19,7 +19,7 @@ namespace lightsout
 
         std::vector<CellModel> cells() const { return m_cells; }
 
-        void handleMouseClick(const sf::Vector2f MOUSE_POSITION_V);
+        void handleMouseClick(const sf::Vector2f & MOUSE_POSITION_V);
 
         bool areAllCellsOff() const;
 
