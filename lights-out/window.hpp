@@ -26,9 +26,9 @@ namespace lightsout
 
         void draw(const sf::Drawable & DRAWABLE) { m_renderWindow.draw(DRAWABLE); }
 
-        void Window::clear() { m_renderWindow.clear(m_backgroundColor); }
+        void clear() { m_renderWindow.clear(m_backgroundColor); }
 
-        void Window::display() { m_renderWindow.display(); }
+        void display() { m_renderWindow.display(); }
 
         sf::Vector2f centerPositionOf(const sf::Vector2f & SIZE_V) const
         {
