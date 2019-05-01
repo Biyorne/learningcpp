@@ -17,6 +17,6 @@
 #include <tuple>
 int main(void)
 {
-    school::runRandomTests();
+    runRngTests();
     return EXIT_SUCCESS;
 }

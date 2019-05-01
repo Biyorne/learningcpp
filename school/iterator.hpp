@@ -1,6 +1,8 @@
 #ifndef ITERATOR_HPP_INCLUDED
 #define ITERATOR_HPP_INCLUDED
 
+#include <iostream>
+
 namespace school
 {
     void printVector(const std::vector<int> & VECTOR)
