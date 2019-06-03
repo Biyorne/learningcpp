@@ -94,6 +94,55 @@ private:
     }
 };
 
+void scoreBarSetup(
+    std::size_t lazyScore,
+    std::size_t greedyScore,
+    sf::RectangleShape & lazyScoreRectangle,
+    sf::RectangleShape & greedyScoreRectangle,
+    const DisplayConstants & displayConstants)
+{
+    if (lazyScore > greedyScore)
+    {
+        if (0 == lazyScore)
+        {
+            lazyScore = 1;
+        }
+
+        const float heightRatio(static_cast<float>(greedyScore) / static_cast<float>(lazyScore));
+
+        lazyScoreRectangle.setSize(
+            sf::Vector2f(displayConstants.score_rectangle_width, displayConstants.window_size.y));
+
+        greedyScoreRectangle.setSize(sf::Vector2f(
+            displayConstants.score_rectangle_width,
+            (lazyScoreRectangle.getSize().y * heightRatio)));
+    }
+    else
+    {
+        if (0 == greedyScore)
+        {
+            greedyScore = 1;
+        }
+
+        const float heightRatio(static_cast<float>(lazyScore) / static_cast<float>(greedyScore));
+
+        greedyScoreRectangle.setSize(
+            sf::Vector2f(displayConstants.score_rectangle_width, displayConstants.window_size.y));
+
+        lazyScoreRectangle.setSize(sf::Vector2f(
+            displayConstants.score_rectangle_width,
+            (greedyScoreRectangle.getSize().y * heightRatio)));
+    }
+
+    lazyScoreRectangle.setPosition(
+        displayConstants.score_region.left,
+        (displayConstants.score_region.height - lazyScoreRectangle.getSize().y));
+
+    greedyScoreRectangle.setPosition(
+        (displayConstants.score_region.left + displayConstants.score_rectangle_width),
+        (displayConstants.score_region.height - greedyScoreRectangle.getSize().y));
+}
+
 int main()
 {
     sf::Texture lazyMethHeadTexture;
@@ -134,26 +183,11 @@ int main()
             }
         }
 
-        // Setup Score Rectangles
-
         lazyScore += 2;
         greedyScore += 3;
 
-        lazyScoreRectangle.setSize(
-            sf::Vector2f(displayConstants.score_rectangle_width, static_cast<float>(lazyScore)));
-
-        greedyScoreRectangle.setSize(
-            sf::Vector2f(displayConstants.score_rectangle_width, static_cast<float>(greedyScore)));
-
-        float greedyHeightRatio(greedyScoreRectangle.getSize().y / lazyScoreRectangle.getSize().y);
-
-        lazyScoreRectangle.setPosition(
-            displayConstants.score_region.left,
-            (displayConstants.score_region.height - lazyScoreRectangle.getSize().y));
-
-        greedyScoreRectangle.setPosition(
-            (displayConstants.score_region.left + displayConstants.score_rectangle_width),
-            (displayConstants.score_region.height - greedyScoreRectangle.getSize().y));
+        scoreBarSetup(
+            lazyScore, greedyScore, lazyScoreRectangle, greedyScoreRectangle, displayConstants);
 
         window.clear();
         for (const auto & rectangle : displayConstants.rectangles)
