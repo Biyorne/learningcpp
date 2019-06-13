@@ -16,7 +16,8 @@ namespace methhead
         MethHead(
             const MethHeadIden iden,
             const std::string & imagePath,
-            const sf::Vector2i & startingCellPos);
+            const sf::Vector2i & startingCellPos,
+            const sf::FloatRect & screenRegion);
 
     private:
         MethHeadIden m_iden;

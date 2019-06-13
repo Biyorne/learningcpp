@@ -1,5 +1,6 @@
 #include "meth-head-enum.hpp"
 #include "meth-head.hpp"
+#include "utils.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -143,6 +144,8 @@ int main()
     }
 
     cellPosToContent.find(sf::Vector2i(1, 1))->second.loot = 100;
+    cellPosToContent.find(sf::Vector2i(5, 5))->second.loot = 100;
+    cellPosToContent.find(sf::Vector2i(10, 10))->second.loot = 100;
 
     // Score Column Drawing Here
     std::size_t lazyScore(1);
@@ -184,10 +187,7 @@ int main()
         {
             if (posContentPair.second.loot > 0)
             {
-                lootSprite.setPosition(
-                    posContentPair.second.region.left, posContentPair.second.region.top);
-                // TODO sprite scale = (posContentPair.second.region.left /
-                // lootSprite.getLocalBounds().width)
+                methhead::setSpriteRegion(lootSprite, posContentPair.second.region);
                 window.draw(lootSprite);
             }
         }
