@@ -2,22 +2,13 @@
 #include "meth-head.hpp"
 #include "utils.hpp"
 
-#include <SFML/Graphics.hpp>
-
 #include <cmath>
 #include <iostream>
 #include <map>
 #include <tuple>
 #include <vector>
 
-// Factors in lazy vs greedy
-//    Simulation run time
-//    Value maximum
-//    Number of cell spaces
-//    Number of loot items on screen at a time
-
-// Things that can be in a single cell
-//    sf::FloatRect AND Loot value OR one Meth Head
+#include <SFML/Graphics.hpp>
 
 namespace sf
 {
@@ -53,6 +44,8 @@ struct DisplayConstants
         , prize_color { 255, 255, 100 }
         , column_count { 20 }
         , row_count { column_count }
+        , cellCountU(static_cast<unsigned int>(column_count), static_cast<unsigned int>(row_count))
+        , cellCountI(cellCountU)
         , line_thickness_ratio(1.0f / 600.0f)
         , line_thickness(line_thickness_ratio * window_size.y)
         , cell_dimm(window_size.y / static_cast<float>(std::max(column_count, row_count)))
@@ -73,6 +66,8 @@ struct DisplayConstants
     sf::Color prize_color;
     std::size_t column_count;
     std::size_t row_count;
+    sf::Vector2u cellCountU;
+    sf::Vector2i cellCountI;
     float line_thickness_ratio;
     float line_thickness;
     float cell_dimm;
@@ -94,15 +89,24 @@ private:
 
 struct CellContent
 {
+    CellContent()
+        : region()
+        , meth_head_iden(methhead::MethHeadIden::none)
+        , loot(0)
+        , isValid(false)
+    {}
+
     CellContent(const sf::Vector2f & pos, const sf::Vector2f & size)
         : region(pos, size)
         , meth_head_iden(methhead::MethHeadIden::none)
         , loot(0)
+        , isValid(true)
     {}
 
     sf::FloatRect region;
     methhead::MethHeadIden meth_head_iden;
     int loot;
+    bool isValid;
 };
 
 // function declarations
@@ -118,34 +122,44 @@ void scoreBarSetup(
 
 int main()
 {
+    // Banana b;
+    // doSomethingTo(&b);
+
     sf::Texture lootTexture;
-
-    sf::Texture lazyMethHeadTexture;
-    sf::Texture greedyMethHeadTexture;
-
-    lazyMethHeadTexture.loadFromFile("head-1.png");
-    greedyMethHeadTexture.loadFromFile("head-2.png");
     lootTexture.loadFromFile("loot.png");
 
-    sf::Sprite lazyMethHeadSprite(lazyMethHeadTexture);
-    sf::Sprite greedyMethHeadSprite(greedyMethHeadTexture);
     sf::Sprite lootSprite(lootTexture);
 
-    sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Meth Heads", sf::Style::Fullscreen);
+    sf::VideoMode videoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel);
+    sf::RenderWindow window(videoMode, "Meth Heads", sf::Style::Fullscreen);
+    window.setVerticalSyncEnabled(false);
+    // window.setFramerateLimit(60);
 
     const DisplayConstants displayConstants(window.getSize());
 
-    std::map<sf::Vector2i, CellContent> cellPosToContent;
+    std::map<sf::Vector2i, CellContent> gameBoard;
+
+    methhead::MethHead lazy(
+        methhead::MethHeadIden::lazy,
+        "head-1.png",
+        sf::Vector2i(0, 0),
+        gameBoard[sf::Vector2i(0, 0)].region);
+
+    methhead::MethHead greedy(
+        methhead::MethHeadIden::greedy,
+        "head-2.png",
+        displayConstants.cellCountI,
+        gameBoard[displayConstants.cellCountI].region);
 
     for (const CellPositions & cellPositions : displayConstants.positions)
     {
-        cellPosToContent.insert(std::make_pair(
+        gameBoard.insert(std::make_pair(
             cellPositions.board, CellContent(cellPositions.screen, displayConstants.cell_size)));
     }
 
-    cellPosToContent.find(sf::Vector2i(1, 1))->second.loot = 100;
-    cellPosToContent.find(sf::Vector2i(5, 5))->second.loot = 100;
-    cellPosToContent.find(sf::Vector2i(10, 10))->second.loot = 100;
+    gameBoard.find(sf::Vector2i(1, 1))->second.loot = 100;
+    gameBoard.find(sf::Vector2i(5, 5))->second.loot = 100;
+    gameBoard.find(sf::Vector2i(10, 10))->second.loot = 100;
 
     // Score Column Drawing Here
     std::size_t lazyScore(1);
@@ -156,6 +170,12 @@ int main()
 
     sf::RectangleShape greedyScoreRectangle;
     greedyScoreRectangle.setFillColor(displayConstants.greedy_color);
+
+    const float secondsPerTurn(1.0f);
+
+    sf::Clock frameClock;
+
+    float elapsedTimeSec(0.0f);
 
     while (window.isOpen())
     {
@@ -168,8 +188,18 @@ int main()
             }
         }
 
-        lazyScore += 2;
-        greedyScore += 3;
+        elapsedTimeSec += frameClock.getElapsedTime().asSeconds();
+        std::cout << elapsedTimeSec << std::endl;
+
+        if (elapsedTimeSec > secondsPerTurn)
+        {
+            // Take turn
+            frameClock.restart();
+            elapsedTimeSec = 0.0f;
+            lazyScore += 2;
+            greedyScore += 3;
+            std::cout << "Taking Turn Now" << std::endl;
+        }
 
         scoreBarSetup(
             lazyScore, greedyScore, lazyScoreRectangle, greedyScoreRectangle, displayConstants);
@@ -183,7 +213,7 @@ int main()
         window.draw(lazyScoreRectangle);
         window.draw(greedyScoreRectangle);
 
-        for (const auto & posContentPair : cellPosToContent)
+        for (const auto & posContentPair : gameBoard)
         {
             if (posContentPair.second.loot > 0)
             {
@@ -191,6 +221,8 @@ int main()
                 window.draw(lootSprite);
             }
         }
+
+        // window.draw(lazy);
 
         // window.draw(lazyMethHeadSprite);
         // window.draw(greedyMethHeadSprite);
