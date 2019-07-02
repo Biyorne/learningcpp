@@ -1,0 +1,94 @@
+Mod operator %
+
+Operation between two numbers
+
+	A % B returns remander of division A / B
+	Zero % by anything is always zero, just like 0 / X
+	A % 0 crashes, just like X / 0
+	A % B returns A if B > A
+	(A % B can only return [0, A])
+	
+	0	1	2	3	4	5	6
+0	!	0	0	0	0	0	0
+1	!	0	1	1	1	1	1
+2	!	0	0   2	2	2	2
+3 	!	0	1	0	3	3	3
+4	!	0	0	1	0	4	4
+5	!	0	1	2	1	0	5
+6	!	0	0	0	2	1	0
+7	!	0	1	1	3	2	1
+8	!	0	0	2	0	3	2
+
+Can use % to create counting patterns: i.e. 0,1,2,3,0,1,2,3,0...
+
+//Print 0,1,2,3 pattern
+{
+	int i(0);
+	while(true)
+	{
+		std::cout << (i % 4) << std::endl;
+		++i;
+	}
+}
+
+void printCountingPatternZeroTo(const int maxiumum) 
+{
+	int i(0);
+	while(true)
+	{
+		std::cout << (i % (maximum + 1)) << std::endl;
+		++i;
+	}
+}
+
+
+-----
+
+10X10 BOARD
+
+for(y)
+	for(x)
+
+0		0,0
+1		1,0
+2		2,0	
+3       3,0
+4       4,0
+5       5,0
+6       6,0
+7       7,0
+8       8,0
+9       9,0
+10		0,1
+11		1,1
+12		2,1
+13		3,1
+14      4,1
+15      5,1
+16      6,1
+17      7,1
+18      8,1
+19      9,1
+20		0,2
+21		1,2	
+
+From vector index to x,y position (cell pos):
+
+void setXYPosition(const int index)
+{
+	int x(index % 10);
+	int y(index / 10);
+}
+
+0  / N = 0
+10 / N = 1
+20 / N = 2
+30 / N = 3
+
+
+int calcIndexPositionFromCellPos(const int x, const int y)
+{
+	int base(x / 10);
+	int remainder(y % 10 );
+	return base + remainder;
+}

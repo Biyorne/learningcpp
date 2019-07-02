@@ -36,3 +36,5 @@ Functions:
 		Doing nothing with an early return
 		Doing the one and only obvious default thing
 		Throw an exception
+		
+It is harder to read code than to write it.
