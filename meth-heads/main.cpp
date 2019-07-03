@@ -131,8 +131,8 @@ int main()
     sf::Sprite lootSprite(lootTexture);
 
     sf::VideoMode videoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel);
-    sf::RenderWindow window(videoMode, "Meth Heads", sf::Style::Fullscreen);
-    window.setVerticalSyncEnabled(false);
+    sf::RenderWindow window(videoMode, "Meth Heads", sf::Style::Default);
+    // window.setVerticalSyncEnabled(true);
     // window.setFramerateLimit(60);
 
     const DisplayConstants displayConstants(window.getSize());
@@ -174,8 +174,7 @@ int main()
     const float secondsPerTurn(1.0f);
 
     sf::Clock frameClock;
-
-    float elapsedTimeSec(0.0f);
+    std::size_t frameCount(0);
 
     while (window.isOpen())
     {
@@ -188,17 +187,21 @@ int main()
             }
         }
 
-        elapsedTimeSec += frameClock.getElapsedTime().asSeconds();
-        std::cout << elapsedTimeSec << std::endl;
+        ++frameCount;
+        const float elapsedTimeSec(frameClock.getElapsedTime().asSeconds());
 
         if (elapsedTimeSec > secondsPerTurn)
         {
+            std::cout << "FPS: " << (static_cast<float>(frameCount) / elapsedTimeSec) << std::endl;
+
+            frameCount = 0;
+
             // Take turn
             frameClock.restart();
-            elapsedTimeSec = 0.0f;
+
+            // Temp changing score to make framerate visible
             lazyScore += 2;
             greedyScore += 3;
-            std::cout << "Taking Turn Now" << std::endl;
         }
 
         scoreBarSetup(
