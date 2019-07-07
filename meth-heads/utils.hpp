@@ -3,6 +3,11 @@
 
 #include <SFML/Graphics.hpp>
 
+namespace sf
+{
+    bool operator<(const sf::Vector2i & L, const sf::Vector2i & R);
+}
+
 namespace methhead
 {
     inline void setSpriteRegion(sf::Sprite & sprite, const sf::FloatRect & region)

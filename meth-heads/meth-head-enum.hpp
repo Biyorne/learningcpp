@@ -1,9 +1,9 @@
-#ifndef METH_HEAD_IDEN_ENUM_HPP_INCLUDED
-#define METH_HEAD_IDEN_ENUM_HPP_INCLUDED
+#ifndef METH_HEAD_MOTIVATION_ENUM_HPP_INCLUDED
+#define METH_HEAD_MOTIVATION_ENUM_HPP_INCLUDED
 
 namespace methhead
 {
-    enum class MethHeadIden
+    enum class Motivation
     {
         none,
         lazy,
@@ -11,4 +11,4 @@ namespace methhead
     };
 
 } // namespace methhead
-#endif // METH_HEAD_IDEN_ENUM_HPP_INCLUDED
+#endif // METH_HEAD_MOTIVATION_ENUM_HPP_INCLUDED

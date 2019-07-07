@@ -1,3 +1,4 @@
+#include "cell-content.hpp"
 #include "meth-head-enum.hpp"
 #include "meth-head.hpp"
 #include "utils.hpp"
@@ -9,11 +10,6 @@
 #include <vector>
 
 #include <SFML/Graphics.hpp>
-
-namespace sf
-{
-    bool operator<(const sf::Vector2i & L, const sf::Vector2i & R);
-}
 
 struct CellPositions
 {
@@ -87,28 +83,6 @@ private:
     std::vector<sf::RectangleShape> makeGrid();
 };
 
-struct CellContent
-{
-    CellContent()
-        : region()
-        , meth_head_iden(methhead::MethHeadIden::none)
-        , loot(0)
-        , isValid(false)
-    {}
-
-    CellContent(const sf::Vector2f & pos, const sf::Vector2f & size)
-        : region(pos, size)
-        , meth_head_iden(methhead::MethHeadIden::none)
-        , loot(0)
-        , isValid(true)
-    {}
-
-    sf::FloatRect region;
-    methhead::MethHeadIden meth_head_iden;
-    int loot;
-    bool isValid;
-};
-
 // function declarations
 
 void scoreBarSetup(
@@ -132,46 +106,46 @@ int main()
 
     sf::VideoMode videoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel);
     sf::RenderWindow window(videoMode, "Meth Heads", sf::Style::Default);
-    // window.setVerticalSyncEnabled(true);
+    window.setVerticalSyncEnabled(true);
     // window.setFramerateLimit(60);
 
     const DisplayConstants displayConstants(window.getSize());
 
-    std::map<sf::Vector2i, CellContent> gameBoard;
-
-    methhead::MethHead lazy(
-        methhead::MethHeadIden::lazy,
-        "head-1.png",
-        sf::Vector2i(0, 0),
-        gameBoard[sf::Vector2i(0, 0)].region);
-
-    methhead::MethHead greedy(
-        methhead::MethHeadIden::greedy,
-        "head-2.png",
-        displayConstants.cellCountI,
-        gameBoard[displayConstants.cellCountI].region);
+    std::map<sf::Vector2i, methhead::CellContent> gameBoard;
 
     for (const CellPositions & cellPositions : displayConstants.positions)
     {
         gameBoard.insert(std::make_pair(
-            cellPositions.board, CellContent(cellPositions.screen, displayConstants.cell_size)));
+            cellPositions.board,
+            methhead::CellContent(cellPositions.screen, displayConstants.cell_size)));
     }
+
+    methhead::MethHead lazy(
+        methhead::Motivation::lazy,
+        "head-1.png",
+        sf::Vector2i(0, 0),
+        gameBoard[sf::Vector2i(0, 0)].region);
+
+    const sf::Vector2i greedyStartingPos(displayConstants.cellCountI - sf::Vector2i(1, 1));
+
+    methhead::MethHead greedy(
+        methhead::Motivation::greedy,
+        "head-2.png",
+        greedyStartingPos,
+        gameBoard[greedyStartingPos].region);
 
     gameBoard.find(sf::Vector2i(1, 1))->second.loot = 100;
     gameBoard.find(sf::Vector2i(5, 5))->second.loot = 100;
     gameBoard.find(sf::Vector2i(10, 10))->second.loot = 100;
 
     // Score Column Drawing Here
-    std::size_t lazyScore(1);
-    std::size_t greedyScore(1);
-
     sf::RectangleShape lazyScoreRectangle;
     lazyScoreRectangle.setFillColor(displayConstants.lazy_color);
 
     sf::RectangleShape greedyScoreRectangle;
     greedyScoreRectangle.setFillColor(displayConstants.greedy_color);
 
-    const float secondsPerTurn(1.0f);
+    const float secondsPerTurn(0.5f);
 
     sf::Clock frameClock;
     std::size_t frameCount(0);
@@ -195,17 +169,18 @@ int main()
             std::cout << "FPS: " << (static_cast<float>(frameCount) / elapsedTimeSec) << std::endl;
 
             frameCount = 0;
-
-            // Take turn
             frameClock.restart();
 
-            // Temp changing score to make framerate visible
-            lazyScore += 2;
-            greedyScore += 3;
+            lazy.act(gameBoard);
+            greedy.act(gameBoard);
         }
 
         scoreBarSetup(
-            lazyScore, greedyScore, lazyScoreRectangle, greedyScoreRectangle, displayConstants);
+            lazy.getScore(),
+            greedy.getScore(),
+            lazyScoreRectangle,
+            greedyScoreRectangle,
+            displayConstants);
 
         window.clear();
         for (const auto & rectangle : displayConstants.rectangles)
@@ -225,11 +200,9 @@ int main()
             }
         }
 
-        // window.draw(lazy);
+        window.draw(lazy);
+        window.draw(greedy);
 
-        // window.draw(lazyMethHeadSprite);
-        // window.draw(greedyMethHeadSprite);
-        // window.draw(lootSprite);
         window.display();
     }
 }
