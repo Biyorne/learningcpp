@@ -11,7 +11,6 @@
 
 namespace methhead
 {
-
     class MethHead : public sf::Drawable
     {
     public:
@@ -23,9 +22,34 @@ namespace methhead
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
-        void act(std::map<sf::Vector2i, CellContent> & gameBoard);
+        void act(BoardMap_t & gameBoard);
+
+        void actOldBroken(BoardMap_t & gameBoard);
 
         std::size_t getScore() const { return m_score; }
+
+    private:
+        int calcDistance(const sf::Vector2i & from, const sf::Vector2i & to) const
+        {
+            return (std::abs(to.x - from.x) + std::abs(to.y - from.y));
+        }
+
+        struct LootPos
+        {
+            LootPos(const int lootParam, const sf::Vector2i & cellPos)
+                : loot(lootParam)
+                , cell_pos(cellPos)
+            {}
+
+            int loot;
+            sf::Vector2i cell_pos;
+        };
+
+        std::vector<LootPos> findAllLoot(const BoardMap_t & gameBoard) const;
+
+        sf::Vector2i findTarget(const BoardMap_t & gameBoard) const;
+        sf::Vector2i findTargetLazy(const std::vector<MethHead::LootPos> & allLootPos) const;
+        sf::Vector2i findTargetGreedy(const std::vector<MethHead::LootPos> & allLootPos) const;
 
     private:
         Motivation m_motivation;
@@ -35,4 +59,5 @@ namespace methhead
         sf::Vector2i m_pos;
     };
 } // namespace methhead
+
 #endif // METH_HEAD_HPP_INCLUDED

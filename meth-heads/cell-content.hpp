@@ -28,6 +28,9 @@ namespace methhead
         int loot;
         bool isValid;
     };
+
+    using BoardMap_t = std::map<sf::Vector2i, CellContent>;
+
 } // namespace methhead
 
 #endif // METH_HEAD_CELL_CONTENT_HPP_INCLUDED

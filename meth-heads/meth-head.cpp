@@ -5,6 +5,7 @@
 
 #include "utils.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
@@ -23,6 +24,11 @@ namespace methhead
         , m_sprite()
         , m_pos(startingCellPos)
     {
+        if (Motivation::none == m_motivation)
+        {
+            throw std::runtime_error("Tried to create meth head with no motivation.");
+        }
+
         if (!m_texture.loadFromFile(imagePath))
         {
             throw std::runtime_error("Unable to load image: " + imagePath);
@@ -44,7 +50,12 @@ namespace methhead
         target.draw(m_sprite, states);
     }
 
-    void MethHead::act(std::map<sf::Vector2i, CellContent> & gameBoard)
+    void MethHead::act(BoardMap_t &)
+    {
+        // moveToward(findTarget());
+    }
+
+    void MethHead::actOldBroken(BoardMap_t & gameBoard)
     {
         // Find target loot
         sf::Vector2i lootPos(-1, -1);
@@ -107,6 +118,92 @@ namespace methhead
         // Calculate which cell moves self closer to target loot
         // Move sprite
         // If pick up loot, take old new loot off board, put new loot on, update score
+    }
+
+    std::vector<MethHead::LootPos> MethHead::findAllLoot(const BoardMap_t & gameBoard) const
+    {
+        std::vector<MethHead::LootPos> allLootPos;
+
+        // loop over all cells and make a container of LootPos for all cells where loot > 0
+        transform_if(
+            std::begin(gameBoard),
+            std::end(gameBoard),
+            std::back_inserter(allLootPos),
+            [](const auto & cellPair) { return (cellPair.second.loot > 0); },
+            [](const auto & cellPair) { return LootPos(cellPair.second.loot, cellPair.first); });
+
+        return allLootPos;
+    }
+
+    sf::Vector2i MethHead::findTarget(const BoardMap_t & gameBoard) const
+    {
+        if (Motivation::lazy == m_motivation)
+        {
+            return findTargetLazy(findAllLoot(gameBoard));
+        }
+        else
+        {
+            return findTargetGreedy(findAllLoot(gameBoard));
+        }
+    }
+
+    sf::Vector2i
+        MethHead::findTargetLazy(const std::vector<MethHead::LootPos> & allLootPosParam) const
+    {
+        auto allLootPos = allLootPosParam;
+
+        // bail if empty
+        if (allLootPos.empty())
+        {
+            return { -1, -1 };
+        }
+
+        // sort by distance ascending (<)
+        std::sort(
+            std::begin(allLootPos), std::end(allLootPos), [&](const auto & A, const auto & B) {
+                const auto distToA(calcDistance(m_pos, A.cell_pos));
+                const auto distToB(calcDistance(m_pos, B.cell_pos));
+
+                if (distToA != distToB)
+                {
+                    return (distToA < distToB);
+                }
+                else
+                {
+                    return (A.loot > B.loot);
+                }
+            });
+
+        return allLootPos.front().cell_pos;
+    }
+
+    sf::Vector2i
+        MethHead::findTargetGreedy(const std::vector<MethHead::LootPos> & allLootPosParam) const
+    {
+        auto allLootPos = allLootPosParam;
+
+        // bail if empty
+        if (allLootPos.empty())
+        {
+            return { -1, -1 };
+        }
+
+        // sort by distance ascending (<)
+        std::sort(
+            std::begin(allLootPos), std::end(allLootPos), [&](const auto & A, const auto & B) {
+                if (A.loot != B.loot)
+                {
+                    return (A.loot > B.loot);
+                }
+                else
+                {
+                    const auto distToA(calcDistance(m_pos, A.cell_pos));
+                    const auto distToB(calcDistance(m_pos, B.cell_pos));
+                    return (distToA < distToB);
+                }
+            });
+
+        return allLootPos.front().cell_pos;
     }
 
 } // namespace methhead
