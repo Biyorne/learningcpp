@@ -7,10 +7,9 @@
 #include "two-dimm-arrays-and-nested-for-loops.hpp"
 
 #include <cstdlib>
-#include <iostream>
 
 int main(void)
 {
-    TwoDimmArraysAndNestedForLoops::runAndTestAll();
+    TwoDimmArraysAndNestedForLoops::runAll();
     return EXIT_SUCCESS;
 }
