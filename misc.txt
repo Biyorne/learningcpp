@@ -67,7 +67,7 @@ Loose vs Strong Typed Programming Languages
 Bitwise Operations
 
 AND/OR: If both bits are the same, that is the result.
-		They are only opposites when the bits are different.
+	They are only opposites when the bits are different.
 		
 AND is how we check
 OR is how we set
