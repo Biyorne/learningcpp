@@ -37,4 +37,6 @@ Functions:
 		Doing the one and only obvious default thing
 		Throw an exception
 		
-It is harder to read code than to write it.
+"It is harder to read code than to write it."
+
+"An if() is always worth correct behavior."
