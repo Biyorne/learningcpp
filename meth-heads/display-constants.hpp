@@ -45,4 +45,4 @@ namespace methhead
 
 } // namespace methhead
 
-#endif METH_HEAD_DISPLAY_CONSTANTS_HPP_INCLUDED
+#endif // METH_HEAD_DISPLAY_CONSTANTS_HPP_INCLUDED

@@ -13,20 +13,20 @@ namespace methhead
             : region()
             , motivation(methhead::Motivation::none)
             , loot(0)
-            , isValid(false)
+            , is_valid(false)
         {}
 
         CellContent(const sf::Vector2f & pos, const sf::Vector2f & size)
             : region(pos, size)
             , motivation(methhead::Motivation::none)
             , loot(0)
-            , isValid(true)
+            , is_valid(true)
         {}
 
         sf::FloatRect region;
         methhead::Motivation motivation;
         int loot;
-        bool isValid;
+        bool is_valid;
     };
 
     using BoardMap_t = std::map<sf::Vector2i, CellContent>;

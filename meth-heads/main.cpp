@@ -1,3 +1,4 @@
+#include "audio.hpp"
 #include "cell-content.hpp"
 #include "display-constants.hpp"
 #include "meth-head-enum.hpp"
@@ -14,8 +15,10 @@
 
 int main()
 {
+    methhead::Audio audio;
+
     sf::Texture lootTexture;
-    lootTexture.loadFromFile("loot.png");
+    lootTexture.loadFromFile("image/loot.png");
 
     sf::Sprite lootSprite(lootTexture);
 
@@ -37,20 +40,18 @@ int main()
 
     methhead::MethHead lazy(
         methhead::Motivation::lazy,
-        "head-1.png",
-        sf::Vector2i(0, 0),
-        gameBoard[sf::Vector2i(0, 0)].region);
-
-    const sf::Vector2i greedyStartingPos(displayConstants.cellCountI - sf::Vector2i(1, 1));
+        "image/head-1.png",
+        sf::Vector2i(9, 0),
+        gameBoard[sf::Vector2i(9, 0)].region);
 
     methhead::MethHead greedy(
         methhead::Motivation::greedy,
-        "head-2.png",
-        greedyStartingPos,
-        gameBoard[greedyStartingPos].region);
+        "image/head-2.png",
+        sf::Vector2i(11, 0),
+        gameBoard[sf::Vector2i(11, 0)].region);
 
-    gameBoard.find(sf::Vector2i(1, 1))->second.loot = 100;
-    gameBoard.find(sf::Vector2i(5, 5))->second.loot = 100;
+    gameBoard.find(sf::Vector2i(1, 1))->second.loot = 1;
+    gameBoard.find(sf::Vector2i(5, 5))->second.loot = 10;
     gameBoard.find(sf::Vector2i(10, 10))->second.loot = 100;
 
     // Score Column Drawing Here
@@ -74,6 +75,18 @@ int main()
             {
                 window.close();
             }
+
+            if (sf::Event::KeyPressed == event.type)
+            {
+                if (sf::Keyboard::Up == event.key.code)
+                {
+                    audio.volumeUp();
+                }
+                else if (sf::Keyboard::Down == event.key.code)
+                {
+                    audio.volumeDown();
+                }
+            }
         }
 
         ++frameCount;
@@ -86,8 +99,8 @@ int main()
             frameCount = 0;
             frameClock.restart();
 
-            lazy.act(gameBoard);
-            greedy.act(gameBoard);
+            lazy.act(gameBoard, audio);
+            greedy.act(gameBoard, audio);
         }
 
         scoreBarSetup(

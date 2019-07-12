@@ -1,6 +1,7 @@
 #ifndef METH_HEAD_HPP_INCLUDED
 #define METH_HEAD_HPP_INCLUDED
 
+#include "audio.hpp"
 #include "cell-content.hpp"
 #include "meth-head-enum.hpp"
 
@@ -22,13 +23,15 @@ namespace methhead
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
-        void act(BoardMap_t & gameBoard);
+        void act(BoardMap_t & gameBoard, Audio & audio);
 
         void actOldBroken(BoardMap_t & gameBoard);
 
         std::size_t getScore() const { return m_score; }
 
     private:
+        void moveToward(BoardMap_t & gameBoard, Audio & audio, const sf::Vector2i & targetCellPos);
+
         int calcDistance(const sf::Vector2i & from, const sf::Vector2i & to) const
         {
             return (std::abs(to.x - from.x) + std::abs(to.y - from.y));
