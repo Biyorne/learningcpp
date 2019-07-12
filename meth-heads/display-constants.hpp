@@ -31,6 +31,8 @@ namespace methhead
         float score_rectangle_width;
         std::vector<CellPositions> positions;
         std::vector<sf::RectangleShape> rectangles;
+        sf::Font font;
+        sf::Text default_text;
 
     private:
         const sf::Vector2f cellToScreenPos(const sf::Vector2i & cellPos);

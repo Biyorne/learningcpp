@@ -14,6 +14,7 @@ namespace methhead
 {
 
     MethHead::MethHead(
+        const DisplayConstants & displayConstants,
         const Motivation motivation,
         const std::string & imagePath,
         const sf::Vector2i & startingCellPos,
@@ -23,6 +24,7 @@ namespace methhead
         , m_texture()
         , m_sprite()
         , m_pos(startingCellPos)
+        , m_text()
     {
         if (Motivation::none == m_motivation)
         {
@@ -35,77 +37,40 @@ namespace methhead
         }
 
         m_sprite.setTexture(m_texture, true);
+        m_sprite.setColor(sf::Color(255, 255, 255, 127));
         setSpriteRegion(m_sprite, screenRegion);
+
+        m_text = displayConstants.default_text;
+
+        if (Motivation::lazy == m_motivation)
+        {
+            m_text.setString("L");
+            m_text.setFillColor(displayConstants.lazy_color);
+        }
+        else
+        {
+            m_text.setString("G");
+            m_text.setFillColor(displayConstants.greedy_color);
+        }
+
+        setTextToRegion(m_text, screenRegion);
     }
 
     void MethHead::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {
         target.draw(m_sprite, states);
+        target.draw(m_text, states);
     }
 
-    void MethHead::act(BoardMap_t & gameBoard, Audio & audio)
+    void MethHead::act(
+        const DisplayConstants & displayConstants, BoardMap_t & gameBoard, Audio & audio)
     {
-        moveToward(gameBoard, audio, findTarget(gameBoard));
+        moveToward(displayConstants, gameBoard, audio, findTarget(gameBoard));
     }
 
-    void MethHead::moveToward(
-        BoardMap_t & gameBoard, Audio & audio, const sf::Vector2i & targetCellPos)
+    void MethHead::moveToward(const DisplayConstants &, BoardMap_t &, Audio &, const sf::Vector2i &)
     {
-        // bail if the target position is invalid or the same as where we already are
-        if ((targetCellPos.x < 0) || (targetCellPos.y < 0) || (targetCellPos == m_pos))
-        {
-            return;
-        }
-
-        // where we were
-        const sf::Vector2i oldCellPos(m_pos);
-        CellContent & oldCellContent(gameBoard[oldCellPos]);
-
-        // where we are moving to
-        sf::Vector2i newCellPos(oldCellPos);
-        if (oldCellPos.x < targetCellPos.x)
-        {
-            ++newCellPos.x;
-        }
-        else if (oldCellPos.x > targetCellPos.x)
-        {
-            --newCellPos.x;
-        }
-        else if (oldCellPos.y < targetCellPos.y)
-        {
-            ++newCellPos.y;
-        }
-        else if (oldCellPos.y > targetCellPos.y)
-        {
-            --newCellPos.y;
-        }
-
-        CellContent & newCellContent(gameBoard[newCellPos]);
-
-        // do everything it takes to actually move
-        audio.playWalk();
-        m_pos = newCellPos;
-        oldCellContent.motivation = Motivation::none;
-        newCellContent.motivation = m_motivation;
-        methhead::setSpriteRegion(m_sprite, newCellContent.region);
-
-        // handle loot
-        if (newCellContent.loot > 0)
-        {
-            if (Motivation::lazy == m_motivation)
-            {
-                audio.playCoin1();
-            }
-            else
-            {
-                audio.playCoin2();
-            }
-
-            m_score += static_cast<std::size_t>(newCellContent.loot);
-            newCellContent.loot = 0;
-
-            // TODO place new loot on the board
-        }
+        // TODO
     }
 
     void MethHead::actOldBroken(BoardMap_t & gameBoard)

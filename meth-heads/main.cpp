@@ -21,9 +21,10 @@ int main()
     lootTexture.loadFromFile("image/loot.png");
 
     sf::Sprite lootSprite(lootTexture);
+    lootSprite.setColor(sf::Color(255, 255, 255, 127));
 
-    sf::VideoMode videoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel);
-    sf::RenderWindow window(videoMode, "Meth Heads", sf::Style::Default);
+    sf::VideoMode videoMode(sf::VideoMode::getDesktopMode());
+    sf::RenderWindow window(videoMode, "Meth Heads", sf::Style::Fullscreen);
     window.setVerticalSyncEnabled(true);
     // window.setFramerateLimit(60);
 
@@ -39,12 +40,14 @@ int main()
     }
 
     methhead::MethHead lazy(
+        displayConstants,
         methhead::Motivation::lazy,
         "image/head-1.png",
         sf::Vector2i(9, 0),
         gameBoard[sf::Vector2i(9, 0)].region);
 
     methhead::MethHead greedy(
+        displayConstants,
         methhead::Motivation::greedy,
         "image/head-2.png",
         sf::Vector2i(11, 0),
@@ -66,6 +69,9 @@ int main()
     sf::Clock frameClock;
     std::size_t frameCount(0);
 
+    sf::Text lootText(displayConstants.default_text);
+    lootText.setFillColor(sf::Color::Yellow);
+
     while (window.isOpen())
     {
         sf::Event event;
@@ -86,6 +92,10 @@ int main()
                 {
                     audio.volumeDown();
                 }
+                else
+                {
+                    window.close();
+                }
             }
         }
 
@@ -99,8 +109,8 @@ int main()
             frameCount = 0;
             frameClock.restart();
 
-            lazy.act(gameBoard, audio);
-            greedy.act(gameBoard, audio);
+            lazy.act(displayConstants, gameBoard, audio);
+            greedy.act(displayConstants, gameBoard, audio);
         }
 
         scoreBarSetup(
@@ -125,6 +135,10 @@ int main()
             {
                 methhead::setSpriteRegion(lootSprite, posContentPair.second.region);
                 window.draw(lootSprite);
+
+                lootText.setString(std::to_string(posContentPair.second.loot));
+                methhead::setTextToRegion(lootText, posContentPair.second.region);
+                window.draw(lootText);
             }
         }
 

@@ -2,6 +2,9 @@
 
 #include "cell-position.hpp"
 
+#include <cmath>
+#include <iostream>
+
 namespace methhead
 {
     DisplayConstants::DisplayConstants(const sf::Vector2u & windowSize)
@@ -15,7 +18,7 @@ namespace methhead
               score_region.height)
         , cell_background_color { 32, 32, 32 }
         , cell_line_color { 220, 220, 220 }
-        , lazy_color { 100, 100, 255 }
+        , lazy_color { 80, 80, 255 }
         , greedy_color { 100, 255, 100 }
         , prize_color { 255, 255, 100 }
         , column_count { 20 }
@@ -29,7 +32,19 @@ namespace methhead
         , score_rectangle_width(score_region.width * 0.5f)
         , positions(makeCellPositions())
         , rectangles(makeGrid())
-    {}
+        , font()
+        , default_text()
+    {
+        const auto FONT_FILE_PATH("font/gentium-plus.ttf");
+
+        if (!font.loadFromFile(FONT_FILE_PATH))
+        {
+            std::cerr << "Failed to load font: \"" << FONT_FILE_PATH << "\"" << std::endl;
+        }
+
+        default_text.setCharacterSize(static_cast<unsigned int>(std::sqrt(window_size.x)));
+        default_text.setFont(font);
+    }
 
     const sf::Vector2f DisplayConstants::cellToScreenPos(const sf::Vector2i & cellPos)
     {

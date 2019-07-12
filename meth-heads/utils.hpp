@@ -34,6 +34,36 @@ namespace methhead
         sprite.setScale(widthRatio, heightRatio);
     }
 
+    inline void setTextToRegion(sf::Text & text, const sf::FloatRect & region)
+    {
+        if (text.getString().isEmpty())
+        {
+            return;
+        }
+
+        // scale to fit inside region
+        float scale(1.0f);
+        if (text.getLocalBounds().width > text.getLocalBounds().height)
+        {
+            scale = (region.width / text.getLocalBounds().width);
+        }
+        else
+        {
+            scale = (region.height / text.getLocalBounds().height);
+        }
+        text.setScale(scale, scale);
+        text.setOrigin(text.getLocalBounds().left, text.getLocalBounds().top);
+
+        // position to center of cell (region)
+        const sf::Vector2f finalTextSize(
+            text.getGlobalBounds().width, text.getGlobalBounds().height);
+
+        const sf::Vector2f regionPos(region.left, region.top);
+        const sf::Vector2f regionSize(region.width, region.height);
+        const sf::Vector2f regionPosCenter(regionPos + (regionSize * 0.5f));
+        text.setPosition(regionPosCenter - (finalTextSize * 0.5f));
+    }
+
     template <
         typename InputIterator,
         typename OutputIterator,

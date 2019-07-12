@@ -3,6 +3,7 @@
 
 #include "audio.hpp"
 #include "cell-content.hpp"
+#include "display-constants.hpp"
 #include "meth-head-enum.hpp"
 
 #include <SFML/Graphics.hpp>
@@ -16,6 +17,7 @@ namespace methhead
     {
     public:
         MethHead(
+            const DisplayConstants & displayConstants,
             const Motivation motivation,
             const std::string & imagePath,
             const sf::Vector2i & startingCellPos,
@@ -23,14 +25,18 @@ namespace methhead
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
-        void act(BoardMap_t & gameBoard, Audio & audio);
+        void act(const DisplayConstants & displayConstants, BoardMap_t & gameBoard, Audio & audio);
 
         void actOldBroken(BoardMap_t & gameBoard);
 
         std::size_t getScore() const { return m_score; }
 
     private:
-        void moveToward(BoardMap_t & gameBoard, Audio & audio, const sf::Vector2i & targetCellPos);
+        void moveToward(
+            const DisplayConstants & displayConstants,
+            BoardMap_t & gameBoard,
+            Audio & audio,
+            const sf::Vector2i & targetCellPos);
 
         int calcDistance(const sf::Vector2i & from, const sf::Vector2i & to) const
         {
@@ -60,6 +66,7 @@ namespace methhead
         sf::Texture m_texture;
         sf::Sprite m_sprite;
         sf::Vector2i m_pos;
+        sf::Text m_text;
     };
 } // namespace methhead
 
