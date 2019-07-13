@@ -66,7 +66,15 @@ namespace methhead
         {
             if ((sound.getBuffer() != nullptr) && (m_volume > 0.0f))
             {
-                sound.setVolume(m_volume);
+                if (sound.getBuffer() == &m_bufferWalk)
+                {
+                    sound.setVolume(m_volume * 0.1f);
+                }
+                else
+                {
+                    sound.setVolume(m_volume * 2.0f);
+                }
+
                 sound.play();
             }
         }

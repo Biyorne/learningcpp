@@ -68,9 +68,68 @@ namespace methhead
         moveToward(displayConstants, gameBoard, audio, findTarget(gameBoard));
     }
 
-    void MethHead::moveToward(const DisplayConstants &, BoardMap_t &, Audio &, const sf::Vector2i &)
+    void MethHead::moveToward(
+        const DisplayConstants & displayConstants,
+        BoardMap_t & gameboard,
+        Audio & audio,
+        const sf::Vector2i & targetCellPos)
     {
-        // TODO
+        if ((targetCellPos.x < 0) || (targetCellPos.y < 0))
+        {
+            return;
+        }
+
+        const sf::Vector2i oldCellPos(m_pos);
+        sf::Vector2i newCellPos(m_pos);
+
+        if (targetCellPos.x < oldCellPos.x)
+        {
+            --newCellPos.x;
+        }
+        else if (targetCellPos.x > oldCellPos.x)
+        {
+            ++newCellPos.x;
+        }
+        else if (targetCellPos.y < oldCellPos.y)
+        {
+            --newCellPos.y;
+        }
+        else if (targetCellPos.y > oldCellPos.y)
+        {
+            ++newCellPos.y;
+        }
+
+        if (newCellPos == oldCellPos)
+        {
+            return;
+        }
+
+        m_pos = newCellPos;
+
+        gameboard[oldCellPos].motivation = Motivation::none;
+        gameboard[newCellPos].motivation = m_motivation;
+
+        setSpriteRegion(m_sprite, gameboard[newCellPos].region);
+        setTextToRegion(m_text, gameboard[newCellPos].region);
+
+        audio.playWalk();
+
+        if (gameboard[newCellPos].loot > 0)
+        {
+            m_score += static_cast<std::size_t>(gameboard[newCellPos].loot);
+            gameboard[newCellPos].loot = 0;
+
+            if (Motivation::lazy == m_motivation)
+            {
+                audio.playCoin1();
+            }
+            else
+            {
+                audio.playCoin2();
+            }
+
+            // TODO spawn new loot
+        }
     }
 
     void MethHead::actOldBroken(BoardMap_t & gameBoard)
@@ -91,46 +150,46 @@ namespace methhead
             && "Can't move methhead because no loot on the board.");
 
         // move toward loot
-        const sf::Vector2i currentSelfCellPos(m_pos);
-        sf::Vector2i newSelfCellPos(m_pos);
+        const sf::Vector2i oldCellPos(m_pos);
+        sf::Vector2i newCellPos(m_pos);
 
-        if (lootPos.x < currentSelfCellPos.x)
+        if (lootPos.x < oldCellPos.x)
         {
-            --newSelfCellPos.x;
+            --newCellPos.x;
         }
-        else if (lootPos.x > currentSelfCellPos.x)
+        else if (lootPos.x > oldCellPos.x)
         {
-            ++newSelfCellPos.x;
+            ++newCellPos.x;
         }
-        else if (lootPos.y < currentSelfCellPos.y)
+        else if (lootPos.y < oldCellPos.y)
         {
-            --newSelfCellPos.y;
+            --newCellPos.y;
         }
-        else if (lootPos.y > currentSelfCellPos.y)
+        else if (lootPos.y > oldCellPos.y)
         {
-            ++newSelfCellPos.y;
+            ++newCellPos.y;
         }
 
         assert(
-            (newSelfCellPos != currentSelfCellPos)
+            (newCellPos != oldCellPos)
             && "Can't move methhead because methhead started its turn already on top of loot.");
 
         // change current CellContent motivation to none
-        gameBoard[currentSelfCellPos].motivation = Motivation::none;
+        gameBoard[oldCellPos].motivation = Motivation::none;
 
         // change local m_pos
-        m_pos = newSelfCellPos;
+        m_pos = newCellPos;
 
         // change new CellContent motivation to ours
-        gameBoard[newSelfCellPos].motivation = m_motivation;
+        gameBoard[newCellPos].motivation = m_motivation;
 
-        setSpriteRegion(m_sprite, gameBoard[newSelfCellPos].region);
+        setSpriteRegion(m_sprite, gameBoard[newCellPos].region);
 
         // update score
-        m_score += static_cast<std::size_t>(gameBoard[newSelfCellPos].loot);
+        m_score += static_cast<std::size_t>(gameBoard[newCellPos].loot);
 
         // remove loot from board
-        gameBoard[newSelfCellPos].loot = 0;
+        gameBoard[newCellPos].loot = 0;
 
         // TODO for later
         // Calculate which cell moves self closer to target loot

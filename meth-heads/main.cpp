@@ -56,6 +56,9 @@ int main()
     gameBoard.find(sf::Vector2i(1, 1))->second.loot = 1;
     gameBoard.find(sf::Vector2i(5, 5))->second.loot = 10;
     gameBoard.find(sf::Vector2i(10, 10))->second.loot = 100;
+    gameBoard.find(sf::Vector2i(17, 11))->second.loot = 5;
+    gameBoard.find(sf::Vector2i(15, 2))->second.loot = 75;
+    gameBoard.find(sf::Vector2i(12, 19))->second.loot = 50;
 
     // Score Column Drawing Here
     sf::RectangleShape lazyScoreRectangle;
