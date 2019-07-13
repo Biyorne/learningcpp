@@ -5,6 +5,7 @@
 #include "cell-content.hpp"
 #include "display-constants.hpp"
 #include "meth-head-enum.hpp"
+#include "random.hpp"
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -25,17 +26,23 @@ namespace methhead
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
-        void act(const DisplayConstants & displayConstants, BoardMap_t & gameBoard, Audio & audio);
-
-        void actOldBroken(BoardMap_t & gameBoard);
+        void
+            act(const DisplayConstants & displayConstants,
+                BoardMap_t & gameBoard,
+                Audio & audio,
+                const Random & random);
 
         std::size_t getScore() const { return m_score; }
+
+        // TODO move to somewhere I belong...
+        static void spawnLoot(BoardMap_t & gameBoard, const Random & random);
 
     private:
         void moveToward(
             const DisplayConstants & displayConstants,
             BoardMap_t & gameBoard,
             Audio & audio,
+            const Random & random,
             const sf::Vector2i & targetCellPos);
 
         int calcDistance(const sf::Vector2i & from, const sf::Vector2i & to) const

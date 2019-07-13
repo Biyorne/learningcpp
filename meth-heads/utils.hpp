@@ -15,53 +15,38 @@ namespace sf
 
 namespace methhead
 {
-    inline void setSpriteRegion(sf::Sprite & sprite, const sf::FloatRect & region)
+
+    template <typename T>
+    void placeInRegion(T & sfThing, const sf::FloatRect & region)
     {
-        sprite.setPosition(region.left, region.top);
+        const auto localBounds(sfThing.getLocalBounds());
 
-        float widthRatio(1.0f);
-        if (sprite.getLocalBounds().width > 1.0f)
-        {
-            widthRatio = (region.width / sprite.getLocalBounds().width);
-        }
-
-        float heightRatio(1.0f);
-        if (sprite.getLocalBounds().height > 1.0f)
-        {
-            heightRatio = (region.height / sprite.getLocalBounds().height);
-        }
-
-        sprite.setScale(widthRatio, heightRatio);
-    }
-
-    inline void setTextToRegion(sf::Text & text, const sf::FloatRect & region)
-    {
-        if (text.getString().isEmpty())
+        if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
         {
             return;
         }
 
         // scale to fit inside region
         float scale(1.0f);
-        if (text.getLocalBounds().width > text.getLocalBounds().height)
+        if (localBounds.width > localBounds.height)
         {
-            scale = (region.width / text.getLocalBounds().width);
+            scale = (region.width / localBounds.width);
         }
         else
         {
-            scale = (region.height / text.getLocalBounds().height);
+            scale = (region.height / localBounds.height);
         }
-        text.setScale(scale, scale);
-        text.setOrigin(text.getLocalBounds().left, text.getLocalBounds().top);
+        sfThing.setScale(scale, scale);
+        sfThing.setOrigin(localBounds.left, localBounds.top);
 
         // position to center of cell (region)
         const sf::Vector2f finalTextSize(
-            text.getGlobalBounds().width, text.getGlobalBounds().height);
+            sfThing.getGlobalBounds().width, sfThing.getGlobalBounds().height);
 
         const sf::Vector2f regionPos(region.left, region.top);
         const sf::Vector2f regionSize(region.width, region.height);
         const sf::Vector2f regionPosCenter(regionPos + (regionSize * 0.5f));
-        text.setPosition(regionPosCenter - (finalTextSize * 0.5f));
+        sfThing.setPosition(regionPosCenter - (finalTextSize * 0.5f));
     }
 
     template <

@@ -38,7 +38,7 @@ namespace methhead
 
         m_sprite.setTexture(m_texture, true);
         m_sprite.setColor(sf::Color(255, 255, 255, 127));
-        setSpriteRegion(m_sprite, screenRegion);
+        placeInRegion(m_sprite, screenRegion);
 
         m_text = displayConstants.default_text;
 
@@ -53,7 +53,7 @@ namespace methhead
             m_text.setFillColor(displayConstants.greedy_color);
         }
 
-        setTextToRegion(m_text, screenRegion);
+        placeInRegion(m_text, screenRegion);
     }
 
     void MethHead::draw(sf::RenderTarget & target, sf::RenderStates states) const
@@ -63,15 +63,45 @@ namespace methhead
     }
 
     void MethHead::act(
-        const DisplayConstants & displayConstants, BoardMap_t & gameBoard, Audio & audio)
+        const DisplayConstants & displayConstants,
+        BoardMap_t & gameBoard,
+        Audio & audio,
+        const Random & random)
     {
-        moveToward(displayConstants, gameBoard, audio, findTarget(gameBoard));
+        moveToward(displayConstants, gameBoard, audio, random, findTarget(gameBoard));
+    }
+
+    void MethHead::spawnLoot(BoardMap_t & gameBoard, const Random & random)
+    {
+        // loop over all in gameBoard, and populate a vector<sf::Vector2i> with all valid
+        // cellPositions to spawn loot
+        std::vector<sf::Vector2i> cellPositions;
+
+        transform_if(
+            std::begin(gameBoard),
+            std::end(gameBoard),
+            std::back_inserter(cellPositions),
+            [](const auto & cellPair) {
+                return (
+                    cellPair.second.is_valid && (Motivation::none == cellPair.second.motivation)
+                    && (cellPair.second.loot <= 0));
+            },
+            [](const auto & cellPair) { return cellPair.first; });
+
+        if (cellPositions.empty())
+        {
+            return;
+        }
+
+        const sf::Vector2i cellPos(random.select(cellPositions));
+        gameBoard[cellPos].loot = random.rollInteger(1, 100);
     }
 
     void MethHead::moveToward(
-        const DisplayConstants & displayConstants,
-        BoardMap_t & gameboard,
+        const DisplayConstants &,
+        BoardMap_t & gameBoard,
         Audio & audio,
+        const Random & random,
         const sf::Vector2i & targetCellPos)
     {
         if ((targetCellPos.x < 0) || (targetCellPos.y < 0))
@@ -82,6 +112,7 @@ namespace methhead
         const sf::Vector2i oldCellPos(m_pos);
         sf::Vector2i newCellPos(m_pos);
 
+        // TODO make move decision random
         if (targetCellPos.x < oldCellPos.x)
         {
             --newCellPos.x;
@@ -106,18 +137,18 @@ namespace methhead
 
         m_pos = newCellPos;
 
-        gameboard[oldCellPos].motivation = Motivation::none;
-        gameboard[newCellPos].motivation = m_motivation;
+        gameBoard[oldCellPos].motivation = Motivation::none;
+        gameBoard[newCellPos].motivation = m_motivation;
 
-        setSpriteRegion(m_sprite, gameboard[newCellPos].region);
-        setTextToRegion(m_text, gameboard[newCellPos].region);
+        placeInRegion(m_sprite, gameBoard[newCellPos].region);
+        placeInRegion(m_text, gameBoard[newCellPos].region);
 
-        audio.playWalk();
+        // audio.playWalk();
 
-        if (gameboard[newCellPos].loot > 0)
+        if (gameBoard[newCellPos].loot > 0)
         {
-            m_score += static_cast<std::size_t>(gameboard[newCellPos].loot);
-            gameboard[newCellPos].loot = 0;
+            m_score += static_cast<std::size_t>(gameBoard[newCellPos].loot);
+            gameBoard[newCellPos].loot = 0;
 
             if (Motivation::lazy == m_motivation)
             {
@@ -128,73 +159,8 @@ namespace methhead
                 audio.playCoin2();
             }
 
-            // TODO spawn new loot
+            spawnLoot(gameBoard, random);
         }
-    }
-
-    void MethHead::actOldBroken(BoardMap_t & gameBoard)
-    {
-        // Find target loot
-        sf::Vector2i lootPos(-1, -1);
-        for (const auto & posContentPair : gameBoard)
-        {
-            if (posContentPair.second.loot > 0)
-            {
-                lootPos = posContentPair.first;
-                break;
-            }
-        }
-
-        assert(
-            ((lootPos.x >= 0) && (lootPos.y >= 0))
-            && "Can't move methhead because no loot on the board.");
-
-        // move toward loot
-        const sf::Vector2i oldCellPos(m_pos);
-        sf::Vector2i newCellPos(m_pos);
-
-        if (lootPos.x < oldCellPos.x)
-        {
-            --newCellPos.x;
-        }
-        else if (lootPos.x > oldCellPos.x)
-        {
-            ++newCellPos.x;
-        }
-        else if (lootPos.y < oldCellPos.y)
-        {
-            --newCellPos.y;
-        }
-        else if (lootPos.y > oldCellPos.y)
-        {
-            ++newCellPos.y;
-        }
-
-        assert(
-            (newCellPos != oldCellPos)
-            && "Can't move methhead because methhead started its turn already on top of loot.");
-
-        // change current CellContent motivation to none
-        gameBoard[oldCellPos].motivation = Motivation::none;
-
-        // change local m_pos
-        m_pos = newCellPos;
-
-        // change new CellContent motivation to ours
-        gameBoard[newCellPos].motivation = m_motivation;
-
-        setSpriteRegion(m_sprite, gameBoard[newCellPos].region);
-
-        // update score
-        m_score += static_cast<std::size_t>(gameBoard[newCellPos].loot);
-
-        // remove loot from board
-        gameBoard[newCellPos].loot = 0;
-
-        // TODO for later
-        // Calculate which cell moves self closer to target loot
-        // Move sprite
-        // If pick up loot, take old new loot off board, put new loot on, update score
     }
 
     std::vector<MethHead::LootPos> MethHead::findAllLoot(const BoardMap_t & gameBoard) const

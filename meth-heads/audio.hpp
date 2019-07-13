@@ -75,7 +75,10 @@ namespace methhead
                     sound.setVolume(m_volume * 2.0f);
                 }
 
-                sound.play();
+                if (sound.getStatus() != sf::Sound::Status::Playing)
+                {
+                    sound.play();
+                }
             }
         }
 
