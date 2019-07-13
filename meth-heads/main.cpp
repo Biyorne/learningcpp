@@ -42,23 +42,12 @@ int main()
             cellPositions.board, CellContent(cellPositions.screen, displayConstants.cell_size)));
     }
 
-    MethHead lazy(
-        displayConstants,
-        Motivation::lazy,
-        "image/head-1.png",
-        sf::Vector2i(9, 0),
-        gameBoard[sf::Vector2i(9, 0)].region);
-
-    MethHead greedy(
-        displayConstants,
-        Motivation::greedy,
-        "image/head-2.png",
-        sf::Vector2i(11, 0),
-        gameBoard[sf::Vector2i(11, 0)].region);
+    Lazy lazy(displayConstants, "image/head-1.png", sf::Vector2i(9, 0), gameBoard);
+    Greedy greedy(displayConstants, "image/head-2.png", sf::Vector2i(11, 0), gameBoard);
 
     for (int i(0); i < 5; ++i)
     {
-        MethHead::spawnLoot(gameBoard, random);
+        MethHeadBase::spawnLoot(gameBoard, random);
     }
 
     // Score Column Drawing Here

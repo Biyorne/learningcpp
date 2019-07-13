@@ -13,20 +13,19 @@
 namespace methhead
 {
 
-    MethHead::MethHead(
+    MethHeadBase::MethHeadBase(
         const DisplayConstants & displayConstants,
         const Motivation motivation,
         const std::string & imagePath,
         const sf::Vector2i & startingCellPos,
-        const sf::FloatRect & screenRegion)
-        : m_motivation(motivation)
-        , m_score(0)
+        BoardMap_t & gameBoard)
+        : m_score(0)
         , m_texture()
         , m_sprite()
         , m_pos(startingCellPos)
         , m_text()
     {
-        if (Motivation::none == m_motivation)
+        if (Motivation::none == motivation)
         {
             throw std::runtime_error("Tried to create meth head with no motivation.");
         }
@@ -38,11 +37,11 @@ namespace methhead
 
         m_sprite.setTexture(m_texture, true);
         m_sprite.setColor(sf::Color(255, 255, 255, 127));
-        placeInRegion(m_sprite, screenRegion);
+        placeInRegion(m_sprite, gameBoard[startingCellPos].region);
 
         m_text = displayConstants.default_text;
 
-        if (Motivation::lazy == m_motivation)
+        if (Motivation::lazy == motivation)
         {
             m_text.setString("L");
             m_text.setFillColor(displayConstants.lazy_color);
@@ -53,25 +52,25 @@ namespace methhead
             m_text.setFillColor(displayConstants.greedy_color);
         }
 
-        placeInRegion(m_text, screenRegion);
+        placeInRegion(m_text, gameBoard[startingCellPos].region);
     }
 
-    void MethHead::draw(sf::RenderTarget & target, sf::RenderStates states) const
+    void MethHeadBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {
         target.draw(m_sprite, states);
         target.draw(m_text, states);
     }
 
-    void MethHead::act(
+    void MethHeadBase::act(
         const DisplayConstants & displayConstants,
         BoardMap_t & gameBoard,
         Audio & audio,
         const Random & random)
     {
-        moveToward(displayConstants, gameBoard, audio, random, findTarget(gameBoard));
+        moveToward(displayConstants, gameBoard, audio, random, pickTarget(gameBoard));
     }
 
-    void MethHead::spawnLoot(BoardMap_t & gameBoard, const Random & random)
+    void MethHeadBase::spawnLoot(BoardMap_t & gameBoard, const Random & random)
     {
         // loop over all in gameBoard, and populate a vector<sf::Vector2i> with all valid
         // cellPositions to spawn loot
@@ -97,7 +96,7 @@ namespace methhead
         gameBoard[cellPos].loot = random.rollInteger(1, 100);
     }
 
-    void MethHead::moveToward(
+    void MethHeadBase::moveToward(
         const DisplayConstants &,
         BoardMap_t & gameBoard,
         Audio & audio,
@@ -138,7 +137,7 @@ namespace methhead
         m_pos = newCellPos;
 
         gameBoard[oldCellPos].motivation = Motivation::none;
-        gameBoard[newCellPos].motivation = m_motivation;
+        gameBoard[newCellPos].motivation = getMotivation();
 
         placeInRegion(m_sprite, gameBoard[newCellPos].region);
         placeInRegion(m_text, gameBoard[newCellPos].region);
@@ -150,7 +149,7 @@ namespace methhead
             m_score += static_cast<std::size_t>(gameBoard[newCellPos].loot);
             gameBoard[newCellPos].loot = 0;
 
-            if (Motivation::lazy == m_motivation)
+            if (Motivation::lazy == getMotivation())
             {
                 audio.playCoin1();
             }
@@ -163,9 +162,9 @@ namespace methhead
         }
     }
 
-    std::vector<MethHead::LootPos> MethHead::findAllLoot(const BoardMap_t & gameBoard) const
+    std::vector<MethHeadBase::LootPos> MethHeadBase::findAllLoot(const BoardMap_t & gameBoard) const
     {
-        std::vector<MethHead::LootPos> allLootPos;
+        std::vector<MethHeadBase::LootPos> allLootPos;
 
         // loop over all cells and make a container of LootPos for all cells where loot > 0
         transform_if(
@@ -178,74 +177,16 @@ namespace methhead
         return allLootPos;
     }
 
-    sf::Vector2i MethHead::findTarget(const BoardMap_t & gameBoard) const
+    sf::Vector2i MethHeadBase::pickTarget(const BoardMap_t & gameBoard) const
     {
-        if (Motivation::lazy == m_motivation)
-        {
-            return findTargetLazy(findAllLoot(gameBoard));
-        }
-        else
-        {
-            return findTargetGreedy(findAllLoot(gameBoard));
-        }
-    }
+        auto allLootPos = MethHeadBase::findAllLoot(gameBoard);
 
-    sf::Vector2i
-        MethHead::findTargetLazy(const std::vector<MethHead::LootPos> & allLootPosParam) const
-    {
-        auto allLootPos = allLootPosParam;
-
-        // bail if empty
         if (allLootPos.empty())
         {
             return { -1, -1 };
         }
 
-        // sort by distance ascending (<)
-        std::sort(
-            std::begin(allLootPos), std::end(allLootPos), [&](const auto & A, const auto & B) {
-                const auto distToA(calcDistance(m_pos, A.cell_pos));
-                const auto distToB(calcDistance(m_pos, B.cell_pos));
-
-                if (distToA != distToB)
-                {
-                    return (distToA < distToB);
-                }
-                else
-                {
-                    return (A.loot > B.loot);
-                }
-            });
-
-        return allLootPos.front().cell_pos;
-    }
-
-    sf::Vector2i
-        MethHead::findTargetGreedy(const std::vector<MethHead::LootPos> & allLootPosParam) const
-    {
-        auto allLootPos = allLootPosParam;
-
-        // bail if empty
-        if (allLootPos.empty())
-        {
-            return { -1, -1 };
-        }
-
-        // sort by distance ascending (<)
-        std::sort(
-            std::begin(allLootPos), std::end(allLootPos), [&](const auto & A, const auto & B) {
-                if (A.loot != B.loot)
-                {
-                    return (A.loot > B.loot);
-                }
-                else
-                {
-                    const auto distToA(calcDistance(m_pos, A.cell_pos));
-                    const auto distToB(calcDistance(m_pos, B.cell_pos));
-                    return (distToA < distToB);
-                }
-            });
-
+        sortAllLoot(allLootPos);
         return allLootPos.front().cell_pos;
     }
 
