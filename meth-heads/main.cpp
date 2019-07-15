@@ -7,12 +7,15 @@
 #include "utils.hpp"
 
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <tuple>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
+
+void printResults(const std::size_t lazyFinalScore, const std::size_t greedyFinalScore);
 
 int main()
 {
@@ -57,13 +60,13 @@ int main()
     sf::RectangleShape greedyScoreRectangle;
     greedyScoreRectangle.setFillColor(displayConstants.greedy_color);
 
-    float secondsPerTurn(0.5f);
-
     sf::Clock frameClock;
     std::size_t frameCount(0);
 
     sf::Text lootText(displayConstants.default_text);
     lootText.setFillColor(sf::Color::Yellow);
+
+    std::size_t turnsPerSecMax(0);
 
     while (window.isOpen())
     {
@@ -85,19 +88,6 @@ int main()
                 {
                     audio.volumeDown();
                 }
-                else if (sf::Keyboard::Left == event.key.code)
-                {
-                    secondsPerTurn *= 1.1f;
-
-                    if (secondsPerTurn > 2.0f)
-                    {
-                        secondsPerTurn = 2.0f;
-                    }
-                }
-                else if (sf::Keyboard::Right == event.key.code)
-                {
-                    secondsPerTurn *= 0.9f;
-                }
                 else
                 {
                     window.close();
@@ -105,19 +95,29 @@ int main()
             }
         }
 
+        if (!window.isOpen())
+        {
+            break;
+        }
+
         ++frameCount;
         const float elapsedTimeSec(frameClock.getElapsedTime().asSeconds());
 
-        if (elapsedTimeSec > secondsPerTurn)
+        if (elapsedTimeSec > 1.0f)
         {
-            std::cout << "FPS: " << (static_cast<float>(frameCount) / elapsedTimeSec) << std::endl;
+            std::cout << "FPS: " << frameCount << std::endl;
+
+            if (turnsPerSecMax < frameCount)
+            {
+                turnsPerSecMax = frameCount;
+            }
 
             frameCount = 0;
             frameClock.restart();
-
-            lazy.act(displayConstants, gameBoard, audio, random);
-            greedy.act(displayConstants, gameBoard, audio, random);
         }
+
+        lazy.act(displayConstants, gameBoard, audio, random);
+        greedy.act(displayConstants, gameBoard, audio, random);
 
         scoreBarSetup(
             lazy.getScore(),
@@ -152,5 +152,40 @@ int main()
         window.draw(greedy);
 
         window.display();
+    }
+
+    std::cout << "Maximum turns per second was: " << turnsPerSecMax << std::endl;
+
+    printResults(lazy.getScore(), greedy.getScore());
+}
+
+void printResults(const std::size_t lazyFinalScore, const std::size_t greedyFinalScore)
+{
+    if (lazyFinalScore == greedyFinalScore)
+    {
+        std::cout << "Lazy and Greedy tied at " << lazyFinalScore << std::endl;
+    }
+    else
+    {
+        std::cout << "Lazy Score = " << lazyFinalScore << ", "
+                  << "Greedy Score = " << greedyFinalScore << ", "
+                  << ((greedyFinalScore > lazyFinalScore) ? "Greedy" : "Lazy");
+
+        if ((lazyFinalScore == 0) || (greedyFinalScore == 0))
+        {
+            std::cout << " wins!" << std::endl;
+        }
+        else
+        {
+            const float loserScoreRatio(
+                static_cast<float>(std::min(lazyFinalScore, greedyFinalScore))
+                / static_cast<float>(std::max(lazyFinalScore, greedyFinalScore)));
+
+            const float winnerScoreRatio(1.0f - loserScoreRatio);
+            const float winnerScorePercent(winnerScoreRatio * 100.0f);
+
+            std::cout << " wins by " << std::setprecision(3) << winnerScorePercent << "%"
+                      << std::endl;
+        }
     }
 }
