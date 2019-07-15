@@ -55,7 +55,7 @@ All names should be:
 		Avoid single letter names and anything else that will make it hard to search for.
 	
 	Remove noisy and redundant stuff:
-		Such as: info/data/var/manager/member
+		Such as: info/data/var/manager/member/packet
 	
 	DON'T put the type in the name:
 		Such as: vec/vector/int/float
@@ -91,7 +91,9 @@ Class Design
 	
 	Coupling
 		How many ways can other code connect to or use this class?
-		How much do users of this class have to know about it works to use it correctly?
+		How much do users of this class have to know about how it works to use it correctly?
+		 
+-
 		 
 Function Design
 
@@ -105,14 +107,14 @@ Function Design
 
 	Second, you need to figure out all the ways the function could fail, and handle them all. (or at least clearly comment them all...)
 		
-	Consider how to handle:
+	Consider:
 		Empty/bad/invalid/non-sensical input/parameters/dependancies
 		Exceptions
 		Running out of memory
 		Looping too many times
 		Waiting too long for required resources from other code
 		
-	Handle by:
+	How to deal with it:
 		Doing nothing with some early returns at the very top of the function
 		Returning or creating the one and only obvious default thing
 		Throw an exception
