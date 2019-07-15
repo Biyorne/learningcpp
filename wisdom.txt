@@ -1,42 +1,140 @@
-Software design/development is iterative, where each iteration does not have to be smaller than the last.
+"Think of programming as iterative."
 
-Hide the complicated behind the simple.
-
-Priorities:
-Simple
-	80% of programmer time is spent understanding other code.
-	Easier to spot bugs.
-	Easier to test.
-	Less experienced developers can develop/maintain it.
-Correct
-Fast
-(Tested)
+"Simple, correct, fast.  In that order."
 
 "Early optimization is the root of all evil."
-	Picking the right standard algorithms/containers is NOT an early optimization.
-	Changing something standardized or adding code that requires a comment IS an early optimization.
-	
-Names:
-	Class names are nouns.
-	Function names are verbs.
-	Pronouncable.
-	Searchable.
-	Avoid name noise such as: info/data/var/manager
-	Beware of the following names: and/also/might/maybe
-	Struggle to reveal intention(what) not operations(how).
-	
-Class:
-	High cohesion: Cohesion is a measure of how related everything is.
-	A class should have one clear responsibility.
-	Low Coupling: Coupling is a measure of how much different pieces of code have to know about each other.
-	
-Functions:
-	Is this changing something or returning something?
-	What are all the ways it could fail? Handle each one either by: 
-		Doing nothing with an early return
-		Doing the one and only obvious default thing
-		Throw an exception
-		
-"It is harder to read code than to write it."
 
-"An if() is always worth correct behavior."
+"Names must be quick/easy/intuitive to say out loud, search for, and say WHAT they are, instead of HOW they got there."
+
+"Everything should have a singular, clear, and intuitive responsibility."
+
+"Functions should do one thing, and error handling is often one thing."
+
+"Hide the complicated behind the simple."
+
+"It is easier to write code than it is to read it."
+
+"An if() is small price to pay for intuitive/well-defined/correct/stable behavior."
+
+"A print/cout/log-entry is a small price to pay compared to hours of confused rage-fueled debugging."
+
+-
+
+Programming Priorities
+	Your code should be, in this order:
+
+	Simple
+		80% of a programmer's time is spent understanding other code.
+		It is MUCH easier to SEE and TEST for bugs/assumptions/vulnerabilities in simple code.
+		Simpler code means less experienced developers can create and maintain it.
+
+	Tested/Correct
+		Code that works perfectly is NOT the first priority.
+		It is wise to write a first version in very simple code, that either does only ONE thing correctly, or that does everything correctly but is too slow.  If this first incomplete version is simple and comes with a test suite that clearly shows what is lacking, then your overall project is VASTLY more likely to succeed, on time, and under budget. 
+		Just the act of taking the time to write tests ALWAYS ends up helping others to understand your code, but also ALMOST always finds and fixes bugs.
+
+	Fast
+		Typically only 1-10% of your code needs to be fast.
+		Clearly documenting these places in the code is CRITICAL. 
+		Writing faster code ALMOST ALWAYS makes the code more complicated, which makes it MUCH harder to test/maintain.  (this kills big projects all the time)
+		It is MUCH quicker/easier to make pre-existing simple/slow code faster. 
+		Start with a version that is slow, but simple with LOTS of tests, THEN add a new version that is faster and more complex -but still passes all the same tests!  
+
+-
+
+Names
+
+Picking good names is difficult, iterative, and partially an art form, but absolutely every programmer must devote themselves to the life-long pursuit of perfect names.  Good names make the code simpler, and just look above for all the amazing rewards that brings by itself.  Good names also make your code self-documenting with no real need for comments.  Finally, good names mean FAR fewer bugs. 
+
+All names should be:
+
+	Pronouncable
+		All names should be quick/easy/intuitive to say out loud.
+	
+	Searchable
+		Avoid single letter names and anything else that will make it hard to search for.
+	
+	Remove noisy and redundant stuff:
+		Such as: info/data/var/manager/member
+	
+	DON'T put the type in the name:
+		Such as: vec/vector/int/float
+		UNLESS it is for convenience/short-hand, such as IActorVec_t, or PilotNameToProfileMap_t
+	
+	DO put the unit in the name:
+		Such as: seconds/sec/feet/ft/
+	
+	These names are code smell that indicates problems with the code:
+		and/also/might/maybe
+	
+	Names should reveal intention (the 'what'), not operations (the 'how').
+		Prefer "ageSum" or "ageTotal" to "agesAddedTogether"
+	
+	Class names are nouns
+		Except for pure-virtual interfaces whose names start with a capital 'I' and often include verbs:  IActor, IDrawable, etc.
+	
+	Function names are verbs
+		Start with "is" if they return a bool.
+	
+	Avoid plural names as much as you can while still being simple to understand.
+
+-
+	
+Class Design
+
+	Every class should have a singular, clear, and intuitive responsibility.
+	That responsibility should translate into member variables and functions that are not accessible or even visible to the user.
+	You should not be able to use the class the wrong way.
+
+	Cohesion
+		A measure of how related everything in the class is to each other, and to the singular purpose of the class.
+	
+	Coupling
+		How many ways can other code connect to or use this class?
+		How much do users of this class have to know about it works to use it correctly?
+		 
+Function Design
+
+	First, you need to figure out what category of function you are writing:
+		Making something?
+		Calculating something?
+		Controlling or causing something to happen somewhere else?
+		Acting like a switch, or start/stop pattern?
+		Orchestrating a long/complicated process under the guise of a short/clear/simple function name?
+		Error handling?
+
+	Second, you need to figure out all the ways the function could fail, and handle them all. (or at least clearly comment them all...)
+		
+	Consider how to handle:
+		Empty/bad/invalid/non-sensical input/parameters/dependancies
+		Exceptions
+		Running out of memory
+		Looping too many times
+		Waiting too long for required resources from other code
+		
+	Handle by:
+		Doing nothing with some early returns at the very top of the function
+		Returning or creating the one and only obvious default thing
+		Throw an exception
+		Assert
+
+-
+
+Why do so many large/experienced/well-funded software projects not just fail, but completely fail with nothing to show for it -nothing.
+
+	Software project design/development is ITERATIVE, even if you try to avoid it, and much more difficult than most other kinds of projects.
+
+	Usually, you know an iterative project is going well if each iteration is shorter/easier than the last.  However, this is NOT the case with software projects.  Half of the time this is because the software was not designed/developed/maintained correctly.  The other half of the time it is because software 'just works that way'.  Adding just one new feature could require most of the code to be changed.  This happens (primarily) for these reasons:
+
+	1. For every one thing that you can assume will never change, means there are ten-to-a-hundred things you now don't have to write code for.
+	2. Anyone can make a blueprint/flowchart/UML/etc that shows what some software does, but VERY FEW know how to also show what the design assumes, and thusly, what will be hard/costly to change later.
+	3. It is VERY tempting for programmers to write more code than is required, because it feels more robust and useful that way. ("Look boss!  Now the code also does all this other stuff!  Isn't that great?")
+	4. It is VERY tempting for EVERYONE involved to implement new features by cutting-corners and hacking them into place, instead of taking the time/money to change the whole design in a way that will not easily break when the next change/feature arrives.
+
+	So software projects often suffer in time, cost, or just flat-out fail because:
+	
+	- Everyone makes a ton of huge assumptions that save time/money in the short term, But since they are not documented or known to planners/sales/marketing/managment/etc, new features often end up violating those assumptions costing tons of time/money. 
+	
+	- This is only made worse by programmers who write more code than is required, thinking that they are making the code better, but in the end they just add more bugs, testing time, and worst of all, assumptions.
+
+
