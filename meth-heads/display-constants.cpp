@@ -1,6 +1,6 @@
 #include "display-constants.hpp"
 
-#include "cell-position.hpp"
+#include "utils.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -10,12 +10,12 @@ namespace methhead
     DisplayConstants::DisplayConstants(const sf::Vector2u & windowSize)
         : pad_ratio(0.1f)
         , window_size(windowSize)
-        , score_region(0.0f, 0.0f, (0.2f * window_size.x), window_size.y)
-        , board_region(
-              (score_region.left + score_region.width),
-              score_region.top,
-              (window_size.x - score_region.width),
-              score_region.height)
+        , score_bounds(0.0f, 0.0f, (0.2f * window_size.x), window_size.y)
+        , board_bounds(
+              (score_bounds.left + score_bounds.width),
+              score_bounds.top,
+              (window_size.x - score_bounds.width),
+              score_bounds.height)
         , cell_background_color { 32, 32, 32 }
         , cell_line_color { 220, 220, 220 }
         , lazy_color { 80, 80, 255 }
@@ -29,9 +29,7 @@ namespace methhead
         , line_thickness(line_thickness_ratio * window_size.y)
         , cell_dimm(window_size.y / static_cast<float>(std::max(column_count, row_count)))
         , cell_size(cell_dimm, cell_dimm)
-        , score_rectangle_width(score_region.width * 0.5f)
-        , positions(makeCellPositions())
-        , rectangles(makeGrid())
+        , score_rectangle_width(score_bounds.width * 0.5f)
         , font()
         , default_text()
     {
@@ -46,16 +44,16 @@ namespace methhead
         default_text.setFont(font);
     }
 
-    const sf::Vector2f DisplayConstants::cellToScreenPos(const sf::Vector2i & cellPos)
+    const sf::Vector2f DisplayConstants::cellToWindowPos(const sf::Vector2i & cellPos) const
     {
-        const sf::Vector2f boardPos(board_region.left, board_region.top);
+        const sf::Vector2f boardPos(board_bounds.left, board_bounds.top);
 
         const sf::Vector2f gridTotalSize(
             (cell_size.x * static_cast<float>(column_count)),
             (cell_size.y * static_cast<float>(row_count)));
 
-        const float centerOffsetHoriz((board_region.width - gridTotalSize.x) * 0.5f);
-        const float centerOffsetVert((board_region.height - gridTotalSize.y) * 0.5f);
+        const float centerOffsetHoriz((board_bounds.width - gridTotalSize.x) * 0.5f);
+        const float centerOffsetVert((board_bounds.height - gridTotalSize.y) * 0.5f);
         const sf::Vector2f centerOffset(centerOffsetHoriz, centerOffsetVert);
 
         sf::Vector2f pos(
@@ -77,31 +75,24 @@ namespace methhead
         return temporary;
     }
 
-    std::vector<CellPositions> DisplayConstants::makeCellPositions()
+    BoardMap_t DisplayConstants::makeGameBoard() const
     {
-        std::vector<CellPositions> cellPositions;
+        BoardMap_t gameBoard;
+
         for (std::size_t c(0); c < column_count; ++c)
         {
             for (std::size_t r(0); r < row_count; ++r)
             {
-                const sf::Vector2i cellPos(static_cast<int>(c), static_cast<int>(r));
-                const sf::Vector2f cellScreenPos(cellToScreenPos(cellPos));
-                const CellPositions cellPosition(cellPos, cellScreenPos);
-                cellPositions.push_back(cellPosition);
+                const sf::Vector2i boardPos(static_cast<int>(c), static_cast<int>(r));
+                const sf::Vector2f windowPos(cellToWindowPos(boardPos));
+                const sf::RectangleShape rectangle(makeGridRectangleShape(windowPos, cell_size));
+                const Cell cell(boardPos, rectangle);
+
+                gameBoard.insert(std::make_pair(cell.board_pos, cell));
             }
         }
-        return cellPositions;
+
+        return gameBoard;
     }
 
-    std::vector<sf::RectangleShape> DisplayConstants::makeGrid()
-    {
-        std::vector<sf::RectangleShape> rectangleStack;
-
-        for (const CellPositions & cellPositions : positions)
-        {
-            rectangleStack.push_back(makeGridRectangleShape((cellPositions.screen), cell_size));
-        }
-
-        return rectangleStack;
-    }
 } // namespace methhead

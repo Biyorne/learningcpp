@@ -1,7 +1,7 @@
 #ifndef METH_HEAD_DISPLAY_CONSTANTS_HPP_INCLUDED
 #define METH_HEAD_DISPLAY_CONSTANTS_HPP_INCLUDED
 
-#include "cell-position.hpp"
+#include "cell.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -13,8 +13,8 @@ namespace methhead
 
         float pad_ratio;
         sf::Vector2f window_size;
-        sf::FloatRect score_region;
-        sf::FloatRect board_region;
+        sf::FloatRect score_bounds;
+        sf::FloatRect board_bounds;
         sf::Color cell_background_color;
         sf::Color cell_line_color;
         sf::Color lazy_color;
@@ -29,20 +29,16 @@ namespace methhead
         float cell_dimm;
         sf::Vector2f cell_size;
         float score_rectangle_width;
-        std::vector<CellPositions> positions;
-        std::vector<sf::RectangleShape> rectangles;
         sf::Font font;
         sf::Text default_text;
 
+        BoardMap_t makeGameBoard() const;
+
     private:
-        const sf::Vector2f cellToScreenPos(const sf::Vector2i & cellPos);
+        const sf::Vector2f cellToWindowPos(const sf::Vector2i & cellPos) const;
 
         const sf::RectangleShape
             makeGridRectangleShape(const sf::Vector2f & pos, const sf::Vector2f & size) const;
-
-        std::vector<CellPositions> makeCellPositions();
-
-        std::vector<sf::RectangleShape> makeGrid();
     };
 
 } // namespace methhead

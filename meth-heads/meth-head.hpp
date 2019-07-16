@@ -1,8 +1,8 @@
-#ifndef METH_HEAD_HPP_INCLUDED
-#define METH_HEAD_HPP_INCLUDED
+#ifndef METH_HEAD_BASE_HPP_INCLUDED
+#define METH_HEAD_BASE_HPP_INCLUDED
 
 #include "audio.hpp"
-#include "cell-content.hpp"
+#include "cell.hpp"
 #include "display-constants.hpp"
 #include "meth-head-enum.hpp"
 #include "random.hpp"
@@ -151,4 +151,4 @@ namespace methhead
 
 } // namespace methhead
 
-#endif // METH_HEAD_HPP_INCLUDED
+#endif // METH_HEAD_BASE_HPP_INCLUDED

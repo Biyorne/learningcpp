@@ -17,7 +17,7 @@ namespace methhead
 {
 
     template <typename T>
-    void placeInRegion(T & sfThing, const sf::FloatRect & region)
+    void placeInBounds(T & sfThing, const sf::FloatRect & region)
     {
         const auto localBounds(sfThing.getLocalBounds());
 
@@ -118,12 +118,12 @@ namespace methhead
         }
 
         lazyScoreRectangle.setPosition(
-            displayConstants.score_region.left,
-            (displayConstants.score_region.height - lazyScoreRectangle.getSize().y));
+            displayConstants.score_bounds.left,
+            (displayConstants.score_bounds.height - lazyScoreRectangle.getSize().y));
 
         greedyScoreRectangle.setPosition(
-            (displayConstants.score_region.left + displayConstants.score_rectangle_width),
-            (displayConstants.score_region.height - greedyScoreRectangle.getSize().y));
+            (displayConstants.score_bounds.left + displayConstants.score_rectangle_width),
+            (displayConstants.score_bounds.height - greedyScoreRectangle.getSize().y));
     }
 
 } // namespace methhead

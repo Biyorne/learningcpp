@@ -1,5 +1,5 @@
 #include "audio.hpp"
-#include "cell-content.hpp"
+#include "cell.hpp"
 #include "display-constants.hpp"
 #include "meth-head-enum.hpp"
 #include "meth-head.hpp"
@@ -37,21 +37,19 @@ int main()
 
     const DisplayConstants displayConstants(window.getSize());
 
-    std::map<sf::Vector2i, CellContent> gameBoard;
-
-    for (const CellPositions & cellPositions : displayConstants.positions)
-    {
-        gameBoard.insert(std::make_pair(
-            cellPositions.board, CellContent(cellPositions.screen, displayConstants.cell_size)));
-    }
+    BoardMap_t gameBoard(displayConstants.makeGameBoard());
 
     Lazy lazy(displayConstants, "image/head-1.png", sf::Vector2i(9, 0), gameBoard);
     Greedy greedy(displayConstants, "image/head-2.png", sf::Vector2i(11, 0), gameBoard);
 
+    // loot creation
     for (int i(0); i < 5; ++i)
     {
         MethHeadBase::spawnLoot(gameBoard, random);
     }
+
+    sf::Text lootText(displayConstants.default_text);
+    lootText.setFillColor(sf::Color::Yellow);
 
     // Score Column Drawing Here
     sf::RectangleShape lazyScoreRectangle;
@@ -62,10 +60,6 @@ int main()
 
     sf::Clock frameClock;
     std::size_t frameCount(0);
-
-    sf::Text lootText(displayConstants.default_text);
-    lootText.setFillColor(sf::Color::Yellow);
-
     std::size_t turnsPerSecMax(0);
 
     while (window.isOpen())
@@ -100,6 +94,8 @@ int main()
             break;
         }
 
+        // sf::sleep(sf::seconds(1.0f));
+
         ++frameCount;
         const float elapsedTimeSec(frameClock.getElapsedTime().asSeconds());
 
@@ -127,26 +123,23 @@ int main()
             displayConstants);
 
         window.clear();
-        for (const auto & rectangle : displayConstants.rectangles)
+        for (const auto & cellPair : gameBoard)
         {
-            window.draw(rectangle);
+            window.draw(cellPair.second.rectangle);
+
+            if (cellPair.second.loot > 0)
+            {
+                placeInBounds(lootSprite, cellPair.second.bounds());
+                window.draw(lootSprite);
+
+                lootText.setString(std::to_string(cellPair.second.loot));
+                placeInBounds(lootText, cellPair.second.bounds());
+                window.draw(lootText);
+            }
         }
 
         window.draw(lazyScoreRectangle);
         window.draw(greedyScoreRectangle);
-
-        for (const auto & posContentPair : gameBoard)
-        {
-            if (posContentPair.second.loot > 0)
-            {
-                placeInRegion(lootSprite, posContentPair.second.region);
-                window.draw(lootSprite);
-
-                lootText.setString(std::to_string(posContentPair.second.loot));
-                placeInRegion(lootText, posContentPair.second.region);
-                window.draw(lootText);
-            }
-        }
 
         window.draw(lazy);
         window.draw(greedy);

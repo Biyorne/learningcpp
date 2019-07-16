@@ -37,7 +37,7 @@ namespace methhead
 
         m_sprite.setTexture(m_texture, true);
         m_sprite.setColor(sf::Color(255, 255, 255, 127));
-        placeInRegion(m_sprite, gameBoard[startingCellPos].region);
+        placeInBounds(m_sprite, gameBoard[startingCellPos].bounds());
 
         m_text = displayConstants.default_text;
 
@@ -52,7 +52,7 @@ namespace methhead
             m_text.setFillColor(displayConstants.greedy_color);
         }
 
-        placeInRegion(m_text, gameBoard[startingCellPos].region);
+        placeInBounds(m_text, gameBoard[startingCellPos].bounds());
     }
 
     void MethHeadBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
@@ -139,8 +139,8 @@ namespace methhead
         gameBoard[oldCellPos].motivation = Motivation::none;
         gameBoard[newCellPos].motivation = getMotivation();
 
-        placeInRegion(m_sprite, gameBoard[newCellPos].region);
-        placeInRegion(m_text, gameBoard[newCellPos].region);
+        placeInBounds(m_sprite, gameBoard[newCellPos].bounds());
+        placeInBounds(m_text, gameBoard[newCellPos].bounds());
 
         // audio.playWalk();
 
