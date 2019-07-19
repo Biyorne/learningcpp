@@ -3,6 +3,7 @@
 //
 #include "meth-head.hpp"
 
+#include "error-handling.hpp"
 #include "utils.hpp"
 
 #include <algorithm>
@@ -103,10 +104,9 @@ namespace methhead
         const Random & random,
         const sf::Vector2i & targetCellPos)
     {
-        if ((targetCellPos.x < 0) || (targetCellPos.y < 0))
-        {
-            return;
-        }
+        assertOrThrow(
+            (targetCellPos.x >= 0) && (targetCellPos.y >= 0),
+            "Target Cell Position is invalid (x or y was negative).");
 
         const sf::Vector2i oldCellPos(m_pos);
         sf::Vector2i newCellPos(m_pos);
@@ -129,10 +129,10 @@ namespace methhead
             ++newCellPos.y;
         }
 
-        if (newCellPos == oldCellPos)
-        {
-            return;
-        }
+        assertOrThrow(
+            (newCellPos != oldCellPos),
+            "MethHead::moveToward() failed because target_cellPos was the same as "
+            "current_cellPos.");
 
         m_pos = newCellPos;
 
