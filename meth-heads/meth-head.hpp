@@ -9,12 +9,29 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-
 #include <string>
 
 namespace methhead
 {
-    class MethHeadBase : public sf::Drawable
+    struct IActor
+    {
+        virtual ~IActor() = default;
+
+        virtual void draw(sf::RenderTarget & target, sf::RenderStates states) const = 0;
+
+        virtual void
+            act(const DisplayConstants & displayConstants,
+                BoardMap_t & gameBoard,
+                Audio & audio,
+                const Random & random)
+            = 0;
+
+        virtual std::size_t getScore() const = 0;
+
+        virtual Motivation getMotivation() const = 0;
+    };
+
+    class MethHeadBase : public IActor
     {
     protected:
         MethHeadBase(
@@ -24,6 +41,8 @@ namespace methhead
             const sf::Vector2i & startingCellPos,
             BoardMap_t & gameBoard);
 
+        virtual ~MethHeadBase();
+
     public:
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
@@ -31,14 +50,12 @@ namespace methhead
             act(const DisplayConstants & displayConstants,
                 BoardMap_t & gameBoard,
                 Audio & audio,
-                const Random & random);
+                const Random & random) override;
 
-        std::size_t getScore() const { return m_score; }
+        std::size_t getScore() const final { return m_score; }
 
         // TODO move to somewhere I belong...
         static void spawnLoot(BoardMap_t & gameBoard, const Random & random);
-
-        virtual Motivation getMotivation() const = 0;
 
     protected:
         void moveToward(
@@ -93,6 +110,8 @@ namespace methhead
             gameBoard[startingCellPos].motivation = getMotivation();
         }
 
+        virtual ~Lazy() = default;
+
         Motivation getMotivation() const final { return Motivation::lazy; }
 
     private:
@@ -127,6 +146,8 @@ namespace methhead
         {
             gameBoard[startingCellPos].motivation = getMotivation();
         }
+
+        virtual ~Greedy() = default;
 
         Motivation getMotivation() const final { return Motivation::greedy; }
 

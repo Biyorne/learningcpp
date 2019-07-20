@@ -54,7 +54,11 @@ namespace methhead
         }
 
         placeInBounds(m_text, gameBoard[startingCellPos].bounds());
+
+        std::cout << "MethHead Constructed" << std::endl;
     }
+
+    MethHeadBase::~MethHeadBase() { std::cout << " MethHead Destructed" << std::endl; }
 
     void MethHeadBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {

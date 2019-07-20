@@ -10,16 +10,21 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <tuple>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
 
+using namespace methhead;
+
+using IActorUPtr_t = std::unique_ptr<IActor>;
+using IActorUVec_t = std::vector<IActorUPtr_t>;
+
 void printResults(const std::size_t lazyFinalScore, const std::size_t greedyFinalScore);
 
 int main()
 {
-    using namespace methhead;
 
     Random random;
     Audio audio;
@@ -39,8 +44,7 @@ int main()
 
     BoardMap_t gameBoard(displayConstants.makeGameBoard());
 
-    Lazy lazy(displayConstants, "image/head-1.png", sf::Vector2i(9, 0), gameBoard);
-    Greedy greedy(displayConstants, "image/head-2.png", sf::Vector2i(11, 0), gameBoard);
+    std::vector<IActorUPtr_t> actors;
 
     // loot creation
     for (int i(0); i < 5; ++i)
@@ -62,6 +66,9 @@ int main()
     std::size_t frameCount(0);
     std::size_t turnsPerSecMax(0);
 
+    std::size_t firstLazyScore(0);
+    std::size_t firstGreedyScore(0);
+
     while (window.isOpen())
     {
         sf::Event event;
@@ -81,6 +88,16 @@ int main()
                 else if (sf::Keyboard::Down == event.key.code)
                 {
                     audio.volumeDown();
+                }
+                else if (sf::Keyboard::L == event.key.code)
+                {
+                    actors.push_back(std::make_unique<Lazy>(
+                        displayConstants, "image/head-1.png", sf::Vector2i(9, 0), gameBoard));
+                }
+                else if (sf::Keyboard::G == event.key.code)
+                {
+                    actors.push_back(std::make_unique<Greedy>(
+                        displayConstants, "image/head-2.png", sf::Vector2i(11, 0), gameBoard));
                 }
                 else
                 {
@@ -112,12 +129,31 @@ int main()
             frameClock.restart();
         }
 
-        lazy.act(displayConstants, gameBoard, audio, random);
-        greedy.act(displayConstants, gameBoard, audio, random);
+        for (IActorUPtr_t & uptr : actors)
+        {
+            uptr->act(displayConstants, gameBoard, audio, random);
+        }
+
+        // TODO quick hack to get scores on the screen, if any
+
+        for (const IActorUPtr_t & uptr : actors)
+        {
+            const auto score(uptr->getScore());
+
+            if ((uptr->getMotivation() == Motivation::lazy) && (score > firstLazyScore))
+            {
+                firstLazyScore = score;
+            }
+
+            if ((uptr->getMotivation() == Motivation::greedy) && (score > firstGreedyScore))
+            {
+                firstGreedyScore = score;
+            }
+        }
 
         scoreBarSetup(
-            lazy.getScore(),
-            greedy.getScore(),
+            firstLazyScore,
+            firstGreedyScore,
             lazyScoreRectangle,
             greedyScoreRectangle,
             displayConstants);
@@ -141,15 +177,17 @@ int main()
         window.draw(lazyScoreRectangle);
         window.draw(greedyScoreRectangle);
 
-        window.draw(lazy);
-        window.draw(greedy);
+        for (IActorUPtr_t & uptr : actors)
+        {
+            uptr->draw(window, sf::RenderStates());
+        }
 
         window.display();
     }
 
     std::cout << "Maximum turns per second was: " << turnsPerSecMax << std::endl;
 
-    printResults(lazy.getScore(), greedy.getScore());
+    printResults(firstLazyScore, firstGreedyScore);
 }
 
 void printResults(const std::size_t lazyFinalScore, const std::size_t greedyFinalScore)
