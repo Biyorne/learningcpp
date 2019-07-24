@@ -1,13 +1,13 @@
-#ifndef EXAMPLES_TWO_DIMM_ARRAYS_AND_NESTED_FOR_LOOPS_HPP_INCLUDED
-#define EXAMPLES_TWO_DIMM_ARRAYS_AND_NESTED_FOR_LOOPS_HPP_INCLUDED
+#ifndef EXAMPLES_NESTED_FOR_HPP_INCLUDED
+#define EXAMPLES_NESTED_FOR_HPP_INCLUDED
 //
-// two-dimm-arrays-and-nested-for-loops.hpp
+// nested-for.hpp
 //
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 
-namespace TwoDimmArraysAndNestedForLoops
+namespace nested_for
 {
     // Expected Output:
     //
@@ -27,8 +27,7 @@ namespace TwoDimmArraysAndNestedForLoops
         // TODO
     }
 
-    inline void
-        Ex2_print__Grid_XxY__FullOf_Param(const int columns, const int rows, const char fill)
+    inline void Ex2_print__Grid_XxY__FullOf_Param(const int, const int, const char)
     {
         // TODO
     }
@@ -137,6 +136,6 @@ namespace TwoDimmArraysAndNestedForLoops
         std::cout << std::endl << std::endl;
     }
 
-} // namespace TwoDimmArraysAndNestedForLoops
+} // namespace nested_for
 
-#endif // EXAMPLES_TWO_DIMM_ARRAYS_AND_NESTED_FOR_LOOPS_HPP_INCLUDED
+#endif // EXAMPLES_NESTED_FOR_HPP_INCLUDED

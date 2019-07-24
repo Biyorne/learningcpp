@@ -4,12 +4,14 @@
 // main.cpp
 //  Examples and practice problems
 //
-#include "two-dimm-arrays-and-nested-for-loops.hpp"
+#include "nested-for.hpp"
+#include "vector-capacity.hpp"
 
 #include <cstdlib>
 
 int main(void)
 {
-    TwoDimmArraysAndNestedForLoops::runAll();
+    // nested_for::runAll();
+    vector_capacity::runAll();
     return EXIT_SUCCESS;
 }
