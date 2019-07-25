@@ -10,7 +10,7 @@ namespace methhead
 {
     // TODO
     // Macros providing __FILE__ __func__ and __LINE__
-    // Streamable error messages
+    //  Macros providing streamable error messages
     inline void assertOrThrow(const bool expression, const std::string & message)
     {
         if (!expression)

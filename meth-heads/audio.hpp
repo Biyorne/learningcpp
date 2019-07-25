@@ -64,22 +64,23 @@ namespace methhead
     private:
         void play(sf::Sound & sound)
         {
-            if ((sound.getBuffer() != nullptr) && (m_volume > 0.0f))
-            {
-                if (sound.getBuffer() == &m_bufferWalk)
-                {
-                    sound.setVolume(m_volume * 0.1f);
-                }
-                else
-                {
-                    sound.setVolume(m_volume * 2.0f);
-                }
-
-                if (sound.getStatus() != sf::Sound::Status::Playing)
-                {
-                    sound.play();
-                }
-            }
+            // TODO turn sound back on here
+            // if ((sound.getBuffer() != nullptr) && (m_volume > 0.0f))
+            //{
+            //    if (sound.getBuffer() == &m_bufferWalk)
+            //    {
+            //        sound.setVolume(m_volume * 0.1f);
+            //    }
+            //    else
+            //    {
+            //        sound.setVolume(m_volume * 2.0f);
+            //    }
+            //
+            //    if (sound.getStatus() != sf::Sound::Status::Playing)
+            //    {
+            //        sound.play();
+            //    }
+            //}
         }
 
         void load(const std::string & filePath, sf::SoundBuffer & buffer, sf::Sound & sound)

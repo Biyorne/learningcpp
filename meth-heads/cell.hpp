@@ -28,6 +28,9 @@ namespace methhead
 
         sf::FloatRect bounds() const { return rectangle.getGlobalBounds(); }
 
+        // TODO checking is_valid not intuitive or a good idea, but expecting to eliminate is_valid
+        bool isOccupied() const { return (Motivation::none != motivation) || (loot > 0); }
+
         sf::Vector2i board_pos;
         sf::RectangleShape rectangle;
         methhead::Motivation motivation;

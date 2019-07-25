@@ -21,7 +21,7 @@ namespace methhead
 
         virtual void
             act(const DisplayConstants & displayConstants,
-                BoardMap_t & gameBoard,
+                BoardMap_t & board,
                 Audio & audio,
                 const Random & random)
             = 0;
@@ -39,28 +39,30 @@ namespace methhead
             const Motivation motivation,
             const std::string & imagePath,
             const sf::Vector2i & startingCellPos,
-            BoardMap_t & gameBoard);
+            BoardMap_t & board);
 
-        virtual ~MethHeadBase();
+        virtual ~MethHeadBase() = default;
 
     public:
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
         void
             act(const DisplayConstants & displayConstants,
-                BoardMap_t & gameBoard,
+                BoardMap_t & board,
                 Audio & audio,
                 const Random & random) override;
 
         std::size_t getScore() const final { return m_score; }
 
-        // TODO move to somewhere I belong...
-        static void spawnLoot(BoardMap_t & gameBoard, const Random & random);
+        // TODO make board class and move spawn loot there.
+        static void spawnLoot(BoardMap_t & board, const Random & random);
+
+        static std::vector<sf::Vector2i> makeUnoccupiedCellPositions(BoardMap_t & board);
 
     protected:
         void moveToward(
             const DisplayConstants & displayConstants,
-            BoardMap_t & gameBoard,
+            BoardMap_t & board,
             Audio & audio,
             const Random & random,
             const sf::Vector2i & targetCellPos);
@@ -81,9 +83,9 @@ namespace methhead
             sf::Vector2i cell_pos;
         };
 
-        std::vector<LootPos> findAllLoot(const BoardMap_t & gameBoard) const;
+        std::vector<LootPos> findAllLoot(const BoardMap_t & board) const;
 
-        sf::Vector2i pickTarget(const BoardMap_t & gameBoard) const;
+        sf::Vector2i pickTarget(const BoardMap_t & board) const;
 
         virtual void sortAllLoot(std::vector<LootPos> & allLoot) const = 0;
 
@@ -104,10 +106,10 @@ namespace methhead
             const DisplayConstants & displayConstants,
             const std::string & imagePath,
             const sf::Vector2i & startingCellPos,
-            BoardMap_t & gameBoard)
-            : MethHeadBase(displayConstants, getMotivation(), imagePath, startingCellPos, gameBoard)
+            BoardMap_t & board)
+            : MethHeadBase(displayConstants, getMotivation(), imagePath, startingCellPos, board)
         {
-            gameBoard[startingCellPos].motivation = getMotivation();
+            board[startingCellPos].motivation = getMotivation();
         }
 
         virtual ~Lazy() = default;
@@ -141,10 +143,10 @@ namespace methhead
             const DisplayConstants & displayConstants,
             const std::string & imagePath,
             const sf::Vector2i & startingCellPos,
-            BoardMap_t & gameBoard)
-            : MethHeadBase(displayConstants, getMotivation(), imagePath, startingCellPos, gameBoard)
+            BoardMap_t & board)
+            : MethHeadBase(displayConstants, getMotivation(), imagePath, startingCellPos, board)
         {
-            gameBoard[startingCellPos].motivation = getMotivation();
+            board[startingCellPos].motivation = getMotivation();
         }
 
         virtual ~Greedy() = default;

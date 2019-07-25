@@ -32,7 +32,7 @@ namespace methhead
         sf::Font font;
         sf::Text default_text;
 
-        BoardMap_t makeGameBoard() const;
+        BoardMap_t makeBoard() const;
 
     private:
         const sf::Vector2f cellToWindowPos(const sf::Vector2i & cellPos) const;

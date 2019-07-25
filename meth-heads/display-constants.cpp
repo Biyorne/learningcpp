@@ -75,9 +75,9 @@ namespace methhead
         return temporary;
     }
 
-    BoardMap_t DisplayConstants::makeGameBoard() const
+    BoardMap_t DisplayConstants::makeBoard() const
     {
-        BoardMap_t gameBoard;
+        BoardMap_t board;
 
         for (std::size_t c(0); c < column_count; ++c)
         {
@@ -88,11 +88,11 @@ namespace methhead
                 const sf::RectangleShape rectangle(makeGridRectangleShape(windowPos, cell_size));
                 const Cell cell(boardPos, rectangle);
 
-                gameBoard.insert(std::make_pair(cell.board_pos, cell));
+                board.insert(std::make_pair(cell.board_pos, cell));
             }
         }
 
-        return gameBoard;
+        return board;
     }
 
 } // namespace methhead
