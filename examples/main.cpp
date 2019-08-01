@@ -16,7 +16,7 @@ void printNumberRollover()
     std::cout << std::numeric_limits<T>::lowest() << ", " << std::numeric_limits<T>::max()
               << std::endl;
 
-    T r = ((std::numeric_limits<T>::max() - 10) * (std::numeric_limits<T>::max() - 10));
+    T r = (std::numeric_limits<T>::lowest() - std::numeric_limits<T>::max());
 
     std::cout << r << std::endl;
 }
