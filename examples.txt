@@ -25,3 +25,13 @@ bool isLootAtPosOverTen(
 
     return false;
 }
+
+
+
+// RAII - (Resource Acquisition (new) is instantiation (during construction))
+//
+// The acronym should be:
+//  CNDD - Constructors call new, destrucors call delete
+//
+//  You never write new or delete again!
+//
