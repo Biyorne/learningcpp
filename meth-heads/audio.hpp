@@ -62,7 +62,7 @@ namespace methhead
         }
 
     private:
-        void play(sf::Sound & sound)
+        void play(sf::Sound &)
         {
             // TODO turn sound back on here
             // if ((sound.getBuffer() != nullptr) && (m_volume > 0.0f))
@@ -92,7 +92,7 @@ namespace methhead
             }
             else
             {
-                std::cerr << "Failed to load sfx: \"" << filePath
+                std::cout << "Failed to load sfx: \"" << filePath
                           << "\".  That sfx will not play during the sim." << std::endl;
 
                 sound.resetBuffer();

@@ -34,11 +34,25 @@ void spawnMethHead(
 {
     assertOrThrow((motive != Motivation::none), "Tried to spawn a None meth head.");
 
-    const auto cellPositions(MethHeadBase::makeUnoccupiedCellPositions(board));
+    // TODO only added to find a bug REMOVE
+    std::vector<sf::Vector2i> cellPositions;
+
+    try
+    {
+        cellPositions = MethHeadBase::makeUnoccupiedCellPositions(board);
+    }
+    catch (...)
+    {
+        std::cout << "makeUnoccupiedCellPositions() threw the execption, but was called by "
+                     "spawnMethHead()"
+                  << std::endl;
+
+        throw;
+    }
 
     if (cellPositions.empty())
     {
-        std::cerr << "spawnMethHead() failed to find any unoccupied cells." << std::endl;
+        std::cout << "spawnMethHead() failed to find any unoccupied cells." << std::endl;
     }
     else
     {
@@ -110,8 +124,11 @@ int main()
 
     if (!isDisplayEnabled)
     {
-        spawnMethHead(Motivation::lazy, actors, board, displayConstants, random);
-        spawnMethHead(Motivation::greedy, actors, board, displayConstants, random);
+        for (int i(0); i < 10; ++i)
+        {
+            spawnMethHead(Motivation::lazy, actors, board, displayConstants, random);
+            spawnMethHead(Motivation::greedy, actors, board, displayConstants, random);
+        }
     }
 
     while (window.isOpen())
@@ -197,6 +214,10 @@ int main()
         for (IActorUPtr_t & uptr : actors)
         {
             uptr->act(displayConstants, board, audio, random);
+
+            assertOrThrow(
+                (board[uptr->getCellPos()].motivation == uptr->getMotivation()),
+                "after MethHead::act() that meth head did NOT put itself on the board correctly.");
         }
 
         if (isDisplayEnabled)

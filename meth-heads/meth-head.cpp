@@ -74,15 +74,31 @@ namespace methhead
     // TODO make board class and move spawn loot there.
     void MethHeadBase::spawnLoot(BoardMap_t & board, const Random & random)
     {
-        const auto cellPositions(makeUnoccupiedCellPositions(board));
+        std::vector<sf::Vector2i> cellPositions;
+
+        // TODO only added to find a bug REMOVE
+        try
+        {
+            cellPositions = makeUnoccupiedCellPositions(board);
+        }
+        catch (...)
+        {
+            std::cout << "makeUnoccupiedCellPositions() threw the execption, but was called by "
+                         "spawnLoot()"
+                      << std::endl;
+
+            throw;
+        }
 
         if (cellPositions.empty())
         {
-            std::cerr << "MethHead::spawnLoot() failed to find any unoccupied cells." << std::endl;
+            std::cout << "MethHead::spawnLoot() failed to find any unoccupied cells." << std::endl;
         }
         else
         {
-            board[random.select(cellPositions)].loot = random.rollInteger(1, 100);
+            const auto & cellPos(random.select(cellPositions));
+            board[cellPos].throwIfOccupied();
+            board[cellPos].loot = random.rollInteger(1, 100);
         }
     }
 
@@ -97,6 +113,12 @@ namespace methhead
             std::back_inserter(unoccupiedCellPositions),
             [](const auto & cellPair) { return !cellPair.second.isOccupied(); },
             [](const auto & cellPair) { return cellPair.first; });
+
+        // TODO only added to find a bug REMOVE
+        for (const sf::Vector2i & cellPos : unoccupiedCellPositions)
+        {
+            board[cellPos].throwIfOccupied();
+        }
 
         return unoccupiedCellPositions;
     }
@@ -133,30 +155,36 @@ namespace methhead
             ++newCellPos.y;
         }
 
-        // assertOrThrow(
-        //    (newCellPos != oldCellPos),
-        //    "MethHead::moveToward() failed because target_cellPos was the same as "
-        //    "current_cellPos.");
-
-        if (oldCellPos == newCellPos)
-        {
-            return;
-        }
+        assertOrThrow(
+            (newCellPos != oldCellPos),
+            "MethHead::moveToward() failed because target_cellPos was the same as "
+            "current_cellPos.");
 
         m_pos = newCellPos;
 
         board[oldCellPos].motivation = Motivation::none;
-        board[newCellPos].motivation = getMotivation();
+
+        Cell & newCell(board[newCellPos]);
+        newCell.motivation = getMotivation();
 
         // placeInBounds(m_sprite, board[newCellPos].bounds());
         // placeInBounds(m_text, board[newCellPos].bounds());
 
         // audio.playWalk();
 
-        if (board[newCellPos].loot > 0)
+        if (newCell.loot > 0)
         {
-            m_score += static_cast<std::size_t>(board[newCellPos].loot);
-            board[newCellPos].loot = 0;
+            assertOrThrow(
+                (newCell.is_valid),
+                "MethHead::moveToward()'s moved onto loot but that newCellPos is not valid.");
+
+            assertOrThrow(
+                (newCell.motivation != Motivation::none),
+                "MethHead::moveToward()'s moved onto loot but that newCellPos does not have us on "
+                "it?!");
+
+            m_score += static_cast<std::size_t>(newCell.loot);
+            newCell.loot = 0;
 
             if (Motivation::lazy == getMotivation())
             {
@@ -191,12 +219,62 @@ namespace methhead
     {
         auto allLootPos = MethHeadBase::findAllLoot(board);
 
+        // TODO only added to find a bug REMOVE
+        for (const LootPos & lootPos : allLootPos)
+        {
+            const auto & cell(board.find(lootPos.cell_pos)->second);
+
+            assertOrThrow(
+                (cell.is_valid),
+                "MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
+                "positions was invalid.");
+
+            assertOrThrow(
+                (cell.motivation == Motivation::none),
+                "MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
+                "positions had a methhead in it.");
+
+            assertOrThrow(
+                (cell.isOccupied()),
+                "MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
+                "positions was !isOccupied().");
+
+            assertOrThrow(
+                (cell.loot > 0),
+                "MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
+                "positions had no loot in it.");
+        }
+
         if (allLootPos.empty())
         {
             return { -1, -1 };
         }
 
         sortAllLoot(allLootPos);
+
+        {
+            const auto & cell(board.find(allLootPos.front().cell_pos)->second);
+
+            assertOrThrow(
+                (cell.is_valid),
+                "***MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
+                "positions was invalid.");
+
+            assertOrThrow(
+                (cell.motivation == Motivation::none),
+                "***MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
+                "positions had a methhead in it.");
+
+            assertOrThrow(
+                (cell.isOccupied()),
+                "***MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
+                "positions was !isOccupied().");
+
+            assertOrThrow(
+                (cell.loot > 0),
+                "***MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
+                "positions had no loot in it.");
+        }
         return allLootPos.front().cell_pos;
     }
 

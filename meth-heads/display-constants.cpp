@@ -37,7 +37,7 @@ namespace methhead
 
         if (!font.loadFromFile(FONT_FILE_PATH))
         {
-            std::cerr << "Failed to load font: \"" << FONT_FILE_PATH << "\"" << std::endl;
+            std::cout << "Failed to load font: \"" << FONT_FILE_PATH << "\"" << std::endl;
         }
 
         default_text.setCharacterSize(static_cast<unsigned int>(std::sqrt(window_size.x)));

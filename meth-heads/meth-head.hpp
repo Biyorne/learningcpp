@@ -29,6 +29,8 @@ namespace methhead
         virtual std::size_t getScore() const = 0;
 
         virtual Motivation getMotivation() const = 0;
+
+        virtual sf::Vector2i getCellPos() const = 0;
     };
 
     class MethHeadBase : public IActor
@@ -59,6 +61,8 @@ namespace methhead
 
         static std::vector<sf::Vector2i> makeUnoccupiedCellPositions(BoardMap_t & board);
 
+        sf::Vector2i getCellPos() const final { return m_pos; }
+
     protected:
         void moveToward(
             const DisplayConstants & displayConstants,
@@ -88,8 +92,6 @@ namespace methhead
         sf::Vector2i pickTarget(const BoardMap_t & board) const;
 
         virtual void sortAllLoot(std::vector<LootPos> & allLoot) const = 0;
-
-        sf::Vector2i getCellPos() const { return m_pos; }
 
     private:
         std::size_t m_score;

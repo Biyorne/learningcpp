@@ -15,7 +15,7 @@ namespace methhead
     {
         if (!expression)
         {
-            std::cerr << "assertOrThrow(" << message << ")" << std::endl;
+            std::cout << "assertOrThrow(" << message << ")" << std::endl;
 
 #ifdef NDEBUG
             throw std::runtime_error(message);
