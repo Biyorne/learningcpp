@@ -4,29 +4,15 @@
 // main.cpp
 //  Examples and practice problems
 //
-#include "nested-for.hpp"
-#include "vector-capacity.hpp"
+//#include "nested-for.hpp"
+#include "strings.hpp"
+//#include "vector-capacity.hpp"
 
 #include <cstdlib>
 #include <limits>
 
-template <typename T>
-void printNumberRollover()
-{
-    std::cout << std::numeric_limits<T>::lowest() << ", " << std::numeric_limits<T>::max()
-              << std::endl;
-
-    T r = (std::numeric_limits<T>::lowest() - std::numeric_limits<T>::max());
-
-    std::cout << r << std::endl;
-}
-
 int main(void)
 {
-
-    printNumberRollover<short>();
-    printNumberRollover<int>();
-    // nested_for::runAll();
-    // vector_capacity::runAll();
+    strings::runAll();
     return EXIT_SUCCESS;
 }
