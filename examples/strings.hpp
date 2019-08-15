@@ -11,49 +11,67 @@
 namespace strings
 {
 
-    inline std::size_t Ex1_getCStringLength_StdStr(const std::string &)
-    {
-        // TODO
-        return 0;
-    }
+    inline std::size_t Ex1_getStringLength_StdStr(const std::string & str) { return str.length(); }
 
-    inline std::size_t Ex1_getStringLength_Cstr(const char * const)
+    inline std::size_t Ex1_getStringLength_Cstr(const char * cstrPtr)
     {
-        // TODO
-        return 0;
+        if (nullptr == cstrPtr)
+        {
+            return 0;
+        }
+
+        std::size_t count(0);
+        while ((*cstrPtr) != 0)
+        {
+            ++cstrPtr;
+            ++count;
+        }
+
+        return count;
     }
 
     inline void Ex1()
     {
         auto testStrLength = [&](const std::size_t length) {
-            std::string str;
-            str.reserve(length + 64);
+            std::string str(length, 'a');
 
-            while (str.length() < length)
+            const auto stdLength { Ex1_getStringLength_StdStr(str) };
+            if (stdLength == length)
             {
-                str += "abcdefghijklmnopqrstuvwxyz0123456789";
+                std::cout << "PASS!" << std::endl;
             }
-
-            str.resize(length);
-
-            const auto stdLength { Ex1_getCStringLength_StdStr(str) };
-            if (stdLength != length)
+            else
             {
-                std::cout << "FAIL:  Ex1_getCStringLength_StdStr() = " << stdLength
-                          << " instead of " << length << "." << std::endl;
+                std::cout << "FAIL:  Ex1_getStringLength_StdStr() = " << stdLength << " instead of "
+                          << length << "." << std::endl;
 
                 // exit(1);
             }
 
             const auto cLength { Ex1_getStringLength_Cstr(str.c_str()) };
-            if (cLength != length)
+            if (cLength == length)
             {
-                std::cout << "FAIL:  Ex1_getStringLength_Cstr()    = " << cLength << " instead of "
+                std::cout << "PASS! :)" << std::endl;
+            }
+            else
+            {
+                std::cout << "FAIL:  Ex1_getStringLength_Cstr()   = " << cLength << " instead of "
                           << length << "." << std::endl;
 
                 // exit(1);
             }
         };
+
+        const auto cEmptyLength { Ex1_getStringLength_Cstr(nullptr) };
+        if (cEmptyLength == 0)
+        {
+            std::cout << "PASS! :)" << std::endl;
+        }
+        else
+        {
+            std::cout << "FAIL:  Ex1_getStringLength_Cstr(nulptr)   = " << cEmptyLength
+                      << " instead of " << 0 << "." << std::endl;
+        }
 
         testStrLength(0);
         testStrLength(1);
