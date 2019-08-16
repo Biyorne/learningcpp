@@ -140,8 +140,8 @@ namespace strings
             }
             else
             {
-                std::cout << "FAIL:  " << functionName << "(str, "
-                          << ", " << lengthLimit << ")\n\t" << makeShortString(strToCopy) << "\n\t"
+                std::cout << "FAIL:  " << functionName << "(" << makeShortString(strToCopy) << ", "
+                          << lengthLimit << ")\n\t" << makeShortString(strToCopy) << "\n\t"
                           << makeShortString(strActual) << std::endl
                           << std::endl;
 
@@ -156,12 +156,12 @@ namespace strings
             {
                 if (strActualPtr == nullptr)
                 {
-                    std::cout << "PASS Ex2_copyString_StdStr(nullptr, " << lengthLimit << ")"
+                    std::cout << "PASS testResultsCStr(nullptr, " << lengthLimit << ")"
                               << std::endl;
                 }
                 else
                 {
-                    std::cout << "FAIL:  Ex2_copyString_StdStr(nullptr, lenLimit=" << lengthLimit
+                    std::cout << "FAIL:  testResultsCStr(nullptr, lenLimit=" << lengthLimit
                               << ") did not return nullptr." << std::endl;
 
                     exit(1);
@@ -171,17 +171,15 @@ namespace strings
             {
                 if (strActualPtr == nullptr)
                 {
-                    std::cout << "PASS Ex2_copyString_StdStr(\"\", " << lengthLimit << ")"
-                              << std::endl;
+                    std::cout << "PASS testResultsCStr(\"\", " << lengthLimit << ")" << std::endl;
                 }
                 else if (*strActualPtr == '\0')
                 {
-                    std::cout << "PASS Ex2_copyString_StdStr(\"\", " << lengthLimit << ")"
-                              << std::endl;
+                    std::cout << "PASS testResultsCStr(\"\", " << lengthLimit << ")" << std::endl;
                 }
                 else
                 {
-                    std::cout << "FAIL:  Ex2_copyString_StdStr(\"\\0\", lenLimit=" << lengthLimit
+                    std::cout << "FAIL:  testResultsCStr(\"\\0\", lenLimit=" << lengthLimit
                               << ") did NOT return nullptr." << std::endl;
 
                     exit(1);
