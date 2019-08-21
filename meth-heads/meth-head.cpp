@@ -167,10 +167,10 @@ namespace methhead
         Cell & newCell(board[newCellPos]);
         newCell.motivation = getMotivation();
 
-        // placeInBounds(m_sprite, board[newCellPos].bounds());
-        // placeInBounds(m_text, board[newCellPos].bounds());
+        placeInBounds(m_sprite, board[newCellPos].bounds());
+        placeInBounds(m_text, board[newCellPos].bounds());
 
-        // audio.playWalk();
+        audio.playWalk();
 
         if (newCell.loot > 0)
         {

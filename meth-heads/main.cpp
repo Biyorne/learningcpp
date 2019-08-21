@@ -120,16 +120,10 @@ int main()
     std::size_t firstLazyScore(0);
     std::size_t firstGreedyScore(0);
 
-    bool isDisplayEnabled(false);
+    bool isDisplayEnabled(true);
 
-    if (!isDisplayEnabled)
-    {
-        for (int i(0); i < 10; ++i)
-        {
-            spawnMethHead(Motivation::lazy, actors, board, displayConstants, random);
-            spawnMethHead(Motivation::greedy, actors, board, displayConstants, random);
-        }
-    }
+    spawnMethHead(Motivation::lazy, actors, board, displayConstants, random);
+    spawnMethHead(Motivation::greedy, actors, board, displayConstants, random);
 
     while (window.isOpen())
     {
@@ -185,17 +179,10 @@ int main()
             window.pollEvent(e);
         }
 
-        // sf::sleep(sf::seconds(1.0f));
-
-        // if (!isDisplayEnabled && (fiveSecClock.getElapsedTime().asSeconds() > 15.0f))
-        //{
-        //    window.close();
-        //}
-
         ++frameCount;
         const float elapsedTimeSec(frameClock.getElapsedTime().asSeconds());
 
-        if (elapsedTimeSec > 1.0f)
+        if (!isDisplayEnabled && (elapsedTimeSec > 1.0f))
         {
             if (turnsPerSecMax < frameCount)
             {
@@ -222,6 +209,8 @@ int main()
 
         if (isDisplayEnabled)
         {
+            sf::sleep(sf::seconds(1.0f));
+
             // TODO quick hack to get scores on the screen, if any
             for (const IActorUPtr_t & uptr : actors)
             {
