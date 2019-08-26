@@ -6,17 +6,23 @@
 #include "display-constants.hpp"
 #include "meth-head-enum.hpp"
 #include "random.hpp"
+#include "utils.hpp"
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+
 #include <string>
+#include <vector>
 
 namespace methhead
 {
+    // TODO put in own file
     struct IActor
     {
         virtual ~IActor() = default;
 
+        virtual std::size_t getScore() const = 0;
+        virtual Motivation getMotivation() const = 0;
         virtual void draw(sf::RenderTarget & target, sf::RenderStates states) const = 0;
 
         virtual void
@@ -25,13 +31,10 @@ namespace methhead
                 Audio & audio,
                 const Random & random)
             = 0;
-
-        virtual std::size_t getScore() const = 0;
-
-        virtual Motivation getMotivation() const = 0;
-
-        virtual sf::Vector2i getCellPos() const = 0;
     };
+
+    using IActorUPtr_t = std::unique_ptr<IActor>;
+    using IActorUVec_t = std::vector<IActorUPtr_t>;
 
     class MethHeadBase : public IActor
     {
@@ -61,7 +64,7 @@ namespace methhead
 
         static std::vector<sf::Vector2i> makeUnoccupiedCellPositions(BoardMap_t & board);
 
-        sf::Vector2i getCellPos() const final { return m_pos; }
+        sf::Vector2i getCellPos() const { return m_pos; }
 
     protected:
         void moveToward(
