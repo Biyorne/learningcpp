@@ -14,19 +14,22 @@ namespace methhead
     class Simulator
     {
     public:
+        Simulator();
+
         void run();
 
     private:
-        void spawnMethHead(
-            const Motivation motive,
-            std::vector<IActorUPtr_t> & actors,
-            BoardMap_t & board,
-            const DisplayConstants & displayConstants,
-            const Random & random);
+        void spawnMethHead(const Motivation motive);
 
         void printResults(const std::size_t lazyFinalScore, const std::size_t greedyFinalScore);
 
     private:
+        sf::RenderWindow m_window;
+        Audio m_audio;
+        Random m_random;
+        const DisplayConstants m_displayConstants;
+        BoardMap_t m_board;
+        std::vector<IActorUPtr_t> m_actors;
     };
 
 } // namespace methhead
