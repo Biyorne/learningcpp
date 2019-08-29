@@ -4,9 +4,11 @@
 
 #include <cstddef>
 
+using namespace methhead;
+
 int main()
 {
-    methhead::Simulator simulator;
+    Simulator simulator(1280, 1024);
     simulator.run();
 
     return EXIT_SUCCESS;

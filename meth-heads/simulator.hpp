@@ -11,10 +11,16 @@
 
 namespace methhead
 {
+    enum class Visuals
+    {
+        Enabled,
+        Disabled
+    };
+
     class Simulator
     {
     public:
-        Simulator();
+        explicit Simulator(const unsigned int windowWidth, const unsigned int windowHeight);
 
         void run();
 
@@ -23,13 +29,22 @@ namespace methhead
 
         void printResults(const std::size_t lazyFinalScore, const std::size_t greedyFinalScore);
 
+        void handleEvents();
+        void handleEvent(const sf::Event & event);
+
+        void update(std::size_t & frameCount, sf::Clock & frameClock);
+        void draw();
+        void printFinalResults();
+
     private:
+        Visuals m_visuals;
         sf::RenderWindow m_window;
         Audio m_audio;
         Random m_random;
         const DisplayConstants m_displayConstants;
         BoardMap_t m_board;
         std::vector<IActorUPtr_t> m_actors;
+        std::size_t m_maxIterationsPerSec;
     };
 
 } // namespace methhead
