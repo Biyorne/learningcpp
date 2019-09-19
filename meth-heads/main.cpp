@@ -8,7 +8,7 @@ using namespace methhead;
 
 int main()
 {
-    Simulator simulator(1280, 1024);
+    Simulator simulator(Visuals::Enabled);
     simulator.run();
 
     return EXIT_SUCCESS;

@@ -19,22 +19,32 @@ namespace methhead
 
     class Simulator
     {
+        struct Scores
+        {
+            std::size_t lazy = 0;
+            std::size_t greedy = 0;
+        };
+
     public:
-        explicit Simulator(const unsigned int windowWidth, const unsigned int windowHeight);
+        explicit Simulator(const Visuals visuals);
 
         void run();
 
     private:
         void spawnMethHead(const Motivation motive);
 
-        void printResults(const std::size_t lazyFinalScore, const std::size_t greedyFinalScore);
+        void printResults(const Scores & scores);
 
         void handleEvents();
         void handleEvent(const sf::Event & event);
 
         void update(std::size_t & frameCount, sf::Clock & frameClock);
         void draw();
-        void printFinalResults();
+
+        bool printOncePerSecondConsoleStatus(
+            const float elapsedTimeSec, const std::size_t frameCount);
+
+        Scores calcScores() const;
 
     private:
         Visuals m_visuals;
@@ -44,7 +54,7 @@ namespace methhead
         const DisplayConstants m_displayConstants;
         BoardMap_t m_board;
         std::vector<IActorUPtr_t> m_actors;
-        std::size_t m_maxIterationsPerSec;
+        std::size_t m_maxTurnsPerSec;
     };
 
 } // namespace methhead

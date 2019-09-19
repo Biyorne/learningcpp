@@ -18,25 +18,22 @@
 
 namespace methhead
 {
-    Simulator::Simulator(const unsigned int windowWidth, const unsigned int windowHeight)
-        : m_visuals(
-              ((windowWidth > 0) && (windowHeight > 0)) ? Visuals::Enabled : Visuals::Disabled)
-        , m_window()
+    Simulator::Simulator(const Visuals visuals)
+        : m_visuals(visuals)
+        , m_window(
+              ((visuals == Visuals::Enabled) ? sf::VideoMode::getDesktopMode() : sf::VideoMode()),
+              "Meth Heads",
+              sf::Style::Fullscreen)
         , m_audio()
         , m_random()
-        , m_displayConstants(sf::Vector2u(windowWidth, windowHeight))
+        , m_displayConstants(m_window.getSize())
         , m_board(m_displayConstants.makeBoard())
         , m_actors()
-        , m_maxIterationsPerSec(0)
+        , m_maxTurnsPerSec(0)
     {
-        if (m_visuals == Visuals::Enabled)
+        if (!m_window.isOpen())
         {
-            m_window.create(sf::VideoMode::getDesktopMode(), "Meth Heads", sf::Style::Fullscreen);
-        }
-        else
-        {
-            std::cout << "Window size of " << windowWidth << "x" << windowHeight
-                      << " not valid, so visuals are disabled." << std::endl;
+            std::cout << "Visuals are disabled.  No window." << std::endl;
         }
 
         // loot creation
@@ -59,84 +56,77 @@ namespace methhead
         {
             handleEvents();
             update(frameCount, frameClock);
-            draw();
+
+            if (m_visuals == Visuals::Enabled)
+            {
+                draw();
+                sf::sleep(sf::seconds(1.0f));
+            }
         }
 
-        printFinalResults();
+        printResults(calcScores());
     }
 
     void Simulator::spawnMethHead(const Motivation motive)
     {
+        // TODO when cleanup is finished, we shouldn't have a none motive.
         assertOrThrow((motive != Motivation::none), "Tried to spawn a None meth head.");
 
-        // TODO only added to find a bug REMOVE
-        std::vector<sf::Vector2i> cellPositions;
-
-        try
-        {
-            cellPositions = MethHeadBase::makeUnoccupiedCellPositions(m_board);
-        }
-        catch (...)
-        {
-            std::cout << "makeUnoccupiedCellPositions() threw the execption, but was called by "
-                         "spawnMethHead()"
-                      << std::endl;
-
-            throw;
-        }
+        std::vector<sf::Vector2i> cellPositions(MethHeadBase::makeUnoccupiedCellPositions(m_board));
 
         if (cellPositions.empty())
         {
             std::cout << "spawnMethHead() failed to find any unoccupied cells." << std::endl;
+            return;
+        }
+
+        const sf::Vector2i randomCellPos(m_random.select(cellPositions));
+        m_board[randomCellPos].motivation = motive;
+
+        if (motive == Motivation::lazy)
+        {
+            m_actors.push_back(std::make_unique<Lazy>(
+                m_displayConstants, "image/head-1.png", randomCellPos, m_board));
         }
         else
         {
-            const sf::Vector2i randomCellPos(m_random.select(cellPositions));
-            m_board[randomCellPos].motivation = motive;
-
-            if (motive == Motivation::lazy)
-            {
-                m_actors.push_back(std::make_unique<Lazy>(
-                    m_displayConstants, "image/head-1.png", randomCellPos, m_board));
-            }
-            else
-            {
-                m_actors.push_back(std::make_unique<Greedy>(
-                    m_displayConstants, "image/head-2.png", randomCellPos, m_board));
-            }
+            m_actors.push_back(std::make_unique<Greedy>(
+                m_displayConstants, "image/head-2.png", randomCellPos, m_board));
         }
     }
 
-    void Simulator::printResults(
-        const std::size_t lazyFinalScore, const std::size_t greedyFinalScore)
+    void Simulator::printResults(const Scores & scores)
     {
-        if (lazyFinalScore == greedyFinalScore)
+        const std::size_t lazyFinalScore(scores.lazy);
+        const std::size_t greedyFinalScore(scores.greedy);
+
+        const std::size_t lowScore { std::min(lazyFinalScore, greedyFinalScore) };
+        const std::size_t highScore { std::max(lazyFinalScore, greedyFinalScore) };
+
+        float winnerScorePercent { 0.0f };
+
+        if (highScore > 0)
         {
-            std::cout << "Lazy and Greedy tied at " << lazyFinalScore << std::endl;
+            const float loserScoreRatio(
+                static_cast<float>(lowScore) / static_cast<float>(highScore));
+
+            const float winnerScoreRatio(1.0f - loserScoreRatio);
+            winnerScorePercent = (winnerScoreRatio * 100.0f);
         }
-        else
+
+        std::cout << "Lazy Score:   " << std::setw(10) << std::right << lazyFinalScore;
+        if (lazyFinalScore > greedyFinalScore)
         {
-            std::cout << "Lazy Score = " << lazyFinalScore << ", "
-                      << "Greedy Score = " << greedyFinalScore << ", "
-                      << ((greedyFinalScore > lazyFinalScore) ? "Greedy" : "Lazy");
-
-            if ((lazyFinalScore == 0) || (greedyFinalScore == 0))
-            {
-                std::cout << " wins!" << std::endl;
-            }
-            else
-            {
-                const float loserScoreRatio(
-                    static_cast<float>(std::min(lazyFinalScore, greedyFinalScore))
-                    / static_cast<float>(std::max(lazyFinalScore, greedyFinalScore)));
-
-                const float winnerScoreRatio(1.0f - loserScoreRatio);
-                const float winnerScorePercent(winnerScoreRatio * 100.0f);
-
-                std::cout << " wins by " << std::setprecision(3) << winnerScorePercent << "%"
-                          << std::endl;
-            }
+            std::cout << " " << std::setprecision(3) << winnerScorePercent << "%";
         }
+        std::cout << std::endl;
+
+        std::cout << "Greedy Score: " << std::setw(10) << std::right << greedyFinalScore;
+        if (lazyFinalScore < greedyFinalScore)
+        {
+            std::cout << " " << std::setprecision(3) << winnerScorePercent << "%";
+        }
+        std::cout << std::endl;
     }
 
     void Simulator::handleEvents()
@@ -155,7 +145,7 @@ namespace methhead
             return;
         }
 
-        if ((event.type == sf::Event::Closed) || (event.type == sf::Event::MouseButtonPressed))
+        if (event.type == sf::Event::Closed)
         {
             m_window.close();
         }
@@ -183,7 +173,7 @@ namespace methhead
                 spawnMethHead(Motivation::lazy);
                 spawnMethHead(Motivation::greedy);
             }
-            else
+            else if (sf::Keyboard::Escape == event.key.code)
             {
                 m_window.close();
             }
@@ -192,72 +182,63 @@ namespace methhead
 
     void Simulator::update(std::size_t & frameCount, sf::Clock & frameClock)
     {
-        ++frameCount;
-        const float elapsedTimeSec { frameClock.getElapsedTime().asSeconds() };
-
-        if ((m_visuals == Visuals::Disabled) && (elapsedTimeSec > 1.0f))
-        {
-            if (m_maxIterationsPerSec < frameCount)
-            {
-                m_maxIterationsPerSec = frameCount;
-            }
-
-            std::cout << "turns_per_sec=" << frameCount
-                      << ", lazy_score=" << m_actors.front()->getScore()
-                      << ", greedy_score=" << m_actors.back()->getScore()
-                      << ", turns_per_sec_max=" << m_maxIterationsPerSec << std::endl;
-
-            frameCount = 0;
-            frameClock.restart();
-        }
-
         for (IActorUPtr_t & uptr : m_actors)
         {
             uptr->act(m_displayConstants, m_board, m_audio, m_random);
+        }
+
+        if (printOncePerSecondConsoleStatus(frameClock.getElapsedTime().asSeconds(), ++frameCount))
+        {
+            frameCount = 0;
+            frameClock.restart();
+        }
+    }
+
+    bool Simulator::printOncePerSecondConsoleStatus(
+        const float elapsedTimeSec, const std::size_t frameCount)
+    {
+        if (elapsedTimeSec > 1.0f)
+        {
+            if (m_maxTurnsPerSec < frameCount)
+            {
+                m_maxTurnsPerSec = frameCount;
+            }
+
+            const Scores scores(calcScores());
+
+            std::cout << "turns_per_sec=" << frameCount << ", lazy_score=" << scores.lazy
+                      << ", greedy_score=" << scores.greedy
+                      << ", turns_per_sec_max=" << m_maxTurnsPerSec << std::endl;
+
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 
     void Simulator::draw()
     {
-        if (m_visuals == Visuals::Disabled)
-        {
-            return;
-        }
+        const Scores scores(calcScores());
 
-        sf::sleep(sf::seconds(1.0f));
-
-        // TODO quick hack to get scores on the screen, if any
-        std::size_t firstLazyScore(10);
-        std::size_t firstGreedyScore(20);
-        for (const IActorUPtr_t & uptr : m_actors)
-        {
-            const auto score(uptr->getScore());
-
-            if ((uptr->getMotivation() == Motivation::lazy) && (score > firstLazyScore))
-            {
-                firstLazyScore = score;
-            }
-
-            if ((uptr->getMotivation() == Motivation::greedy) && (score > firstGreedyScore))
-            {
-                firstGreedyScore = score;
-            }
-        }
-
-        // Score Column Objects Here
+        // TODO score stuff is display stuff that is NOT constant
+        // this score stuff should not be created/destroyed on the stack every frame
+        // if only we had a DisplayNonConstants class or DisplayVars or DisplayState
+        //..this all would go in there...TODO
         sf::RectangleShape lazyScoreRectangle;
         sf::RectangleShape greedyScoreRectangle;
         lazyScoreRectangle.setFillColor(m_displayConstants.lazy_color);
         greedyScoreRectangle.setFillColor(m_displayConstants.greedy_color);
 
         scoreBarSetup(
-            firstLazyScore,
-            firstGreedyScore,
+            scores.lazy,
+            scores.greedy,
             lazyScoreRectangle,
             greedyScoreRectangle,
             m_displayConstants);
 
-        // TODO Put in a display thing
+        // TODO put somewhere else, look at the TODO above for where
         sf::Texture lootTexture;
         lootTexture.loadFromFile("image/loot.png");
         sf::Sprite lootSprite(lootTexture);
@@ -266,6 +247,10 @@ namespace methhead
         lootText.setFillColor(sf::Color::Yellow);
 
         m_window.clear();
+
+        m_window.draw(lazyScoreRectangle);
+        m_window.draw(greedyScoreRectangle);
+
         for (const auto & cellPair : m_board)
         {
             m_window.draw(cellPair.second.rectangle);
@@ -281,9 +266,6 @@ namespace methhead
             }
         }
 
-        m_window.draw(lazyScoreRectangle);
-        m_window.draw(greedyScoreRectangle);
-
         for (IActorUPtr_t & uptr : m_actors)
         {
             uptr->draw(m_window, sf::RenderStates());
@@ -292,20 +274,23 @@ namespace methhead
         m_window.display();
     }
 
-    void Simulator::printFinalResults()
+    Simulator::Scores Simulator::calcScores() const
     {
-        std::cout << "Maximum turns per second was: " << m_maxIterationsPerSec << std::endl;
-        //
-        // TODO Fix so that the same scores are shown at the end of every run regardless of
-        // display.
-        if (m_visuals == Visuals::Enabled)
+        Scores scores;
+
+        for (const IActorUPtr_t & actorUPtr : m_actors)
         {
-            // TODO
+            if (actorUPtr->getMotivation() == Motivation::lazy)
+            {
+                scores.lazy = actorUPtr->getScore();
+            }
+            else
+            {
+                scores.greedy = actorUPtr->getScore();
+            }
         }
-        else
-        {
-            // TODO
-        }
+
+        return scores;
     }
 
 } // namespace methhead
