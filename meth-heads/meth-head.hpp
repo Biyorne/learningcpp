@@ -101,7 +101,6 @@ namespace methhead
         sf::Texture m_texture;
         sf::Sprite m_sprite;
         sf::Vector2i m_pos;
-        sf::Text m_text;
     };
 
     class Lazy : public MethHeadBase

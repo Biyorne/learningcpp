@@ -26,8 +26,8 @@ namespace methhead
               sf::Style::Fullscreen)
         , m_audio()
         , m_random()
-        , m_displayConstants(m_window.getSize())
-        , m_board(m_displayConstants.makeBoard())
+        , m_displayVars(m_window.getSize())
+        , m_board(m_displayVars.makeBoard())
         , m_actors()
         , m_maxTurnsPerSec(0)
     {
@@ -86,12 +86,12 @@ namespace methhead
         if (motive == Motivation::lazy)
         {
             m_actors.push_back(std::make_unique<Lazy>(
-                m_displayConstants, "image/head-1.png", randomCellPos, m_board));
+                m_displayVars.constants(), "image/head-1.png", randomCellPos, m_board));
         }
         else
         {
             m_actors.push_back(std::make_unique<Greedy>(
-                m_displayConstants, "image/head-2.png", randomCellPos, m_board));
+                m_displayVars.constants(), "image/head-2.png", randomCellPos, m_board));
         }
     }
 
@@ -184,7 +184,7 @@ namespace methhead
     {
         for (IActorUPtr_t & uptr : m_actors)
         {
-            uptr->act(m_displayConstants, m_board, m_audio, m_random);
+            uptr->act(m_displayVars.constants(), m_board, m_audio, m_random);
         }
 
         if (printOncePerSecondConsoleStatus(frameClock.getElapsedTime().asSeconds(), ++frameCount))
@@ -228,22 +228,22 @@ namespace methhead
         //..this all would go in there...TODO
         sf::RectangleShape lazyScoreRectangle;
         sf::RectangleShape greedyScoreRectangle;
-        lazyScoreRectangle.setFillColor(m_displayConstants.lazy_color);
-        greedyScoreRectangle.setFillColor(m_displayConstants.greedy_color);
+        lazyScoreRectangle.setFillColor(m_displayVars.constants().lazy_color);
+        greedyScoreRectangle.setFillColor(m_displayVars.constants().greedy_color);
 
         scoreBarSetup(
             scores.lazy,
             scores.greedy,
             lazyScoreRectangle,
             greedyScoreRectangle,
-            m_displayConstants);
+            m_displayVars.constants());
 
         // TODO put somewhere else, look at the TODO above for where
         sf::Texture lootTexture;
         lootTexture.loadFromFile("image/loot.png");
         sf::Sprite lootSprite(lootTexture);
         lootSprite.setColor(sf::Color(255, 255, 255, 127));
-        sf::Text lootText(m_displayConstants.default_text);
+        sf::Text lootText(m_displayVars.constants().default_text);
         lootText.setFillColor(sf::Color::Yellow);
 
         m_window.clear();

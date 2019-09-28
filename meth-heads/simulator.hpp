@@ -2,7 +2,7 @@
 #define METH_HEAD_SIMULATOR_HPP_INCLUDED
 
 #include "cell.hpp"
-#include "display-constants.hpp"
+#include "display-variables.hpp"
 #include "meth-head-enum.hpp"
 #include "meth-head.hpp"
 #include "random.hpp"
@@ -51,7 +51,7 @@ namespace methhead
         sf::RenderWindow m_window;
         Audio m_audio;
         Random m_random;
-        const DisplayConstants m_displayConstants;
+        DisplayVariables m_displayVars;
         BoardMap_t m_board;
         std::vector<IActorUPtr_t> m_actors;
         std::size_t m_maxTurnsPerSec;

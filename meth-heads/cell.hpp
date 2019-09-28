@@ -8,8 +8,10 @@
 
 namespace methhead
 {
+    // TODO this should be a class.
     struct Cell
     {
+        // TODO Get rid of this.
         Cell()
             : board_pos(-1, -1)
             , rectangle()
@@ -18,49 +20,36 @@ namespace methhead
             , is_valid(false)
         {}
 
-        Cell(const sf::Vector2i & boardPos, const sf::RectangleShape & rectangleParam)
+        Cell(
+            const sf::Vector2i & boardPos,
+            const sf::Vector2f & windowPos,
+            const sf::Vector2f & size,
+            const float lineThickness)
             : board_pos(boardPos)
-            , rectangle(rectangleParam)
+            , rectangle()
             , motivation(methhead::Motivation::none)
             , loot(0)
             , is_valid(true)
-
-        {}
+        {
+            rectangle.setPosition(windowPos);
+            rectangle.setSize(size);
+            rectangle.setOutlineThickness(lineThickness);
+            rectangle.setFillColor(background_color);
+            rectangle.setOutlineColor(line_color);
+        }
 
         sf::FloatRect bounds() const { return rectangle.getGlobalBounds(); }
 
-        // TODO checking is_valid not intuitive or a good idea, but expecting to eliminate is_valid
         bool isOccupied() const { return (Motivation::none != motivation) || (loot > 0); }
-
-        // TODO only added to find a bug REMOVE
-        void throwIfOccupied() const
-        {
-            assertOrThrow(
-                (is_valid),
-                "MethHead::spawnLoot()'s makeUnoccupiedCellPositions() failed, because one of the "
-                "returned positions was invalid.");
-
-            assertOrThrow(
-                (motivation == Motivation::none),
-                "MethHead::spawnLoot()'s makeUnoccupiedCellPositions() failed, because one of the "
-                "returned positions had a methhead in it.");
-
-            assertOrThrow(
-                (loot == 0),
-                "MethHead::spawnLoot()'s makeUnoccupiedCellPositions() failed, because one of the "
-                "returned positions had loot.");
-
-            assertOrThrow(
-                (!isOccupied()),
-                "MethHead::spawnLoot()'s makeUnoccupiedCellPositions() failed, because one of the "
-                "returned THOUGHT it was isOccupied() when it really was not!");
-        }
 
         sf::Vector2i board_pos;
         sf::RectangleShape rectangle;
-        methhead::Motivation motivation;
+        methhead::Motivation motivation; // TODO is this the right way to track where actors are?
         int loot;
-        bool is_valid;
+        bool is_valid; // TODO this should go away
+
+        static inline sf::Color background_color { 32, 32, 32 };
+        static inline sf::Color line_color { 220, 220, 220 };
     };
 
     using BoardMap_t = std::map<sf::Vector2i, Cell>;

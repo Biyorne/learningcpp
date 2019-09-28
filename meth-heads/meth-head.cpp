@@ -26,7 +26,6 @@ namespace methhead
         , m_texture()
         , m_sprite()
         , m_pos(startingCellPos)
-        , m_text()
     {
         if (Motivation::none == motivation)
         {
@@ -39,29 +38,12 @@ namespace methhead
         }
 
         m_sprite.setTexture(m_texture, true);
-        m_sprite.setColor(sf::Color(255, 255, 255, 127));
         placeInBounds(m_sprite, board[startingCellPos].bounds());
-
-        m_text = displayConstants.default_text;
-
-        if (Motivation::lazy == motivation)
-        {
-            m_text.setString("L");
-            m_text.setFillColor(displayConstants.lazy_color);
-        }
-        else
-        {
-            m_text.setString("G");
-            m_text.setFillColor(displayConstants.greedy_color);
-        }
-
-        placeInBounds(m_text, board[startingCellPos].bounds());
     }
 
     void MethHeadBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {
         target.draw(m_sprite, states);
-        target.draw(m_text, states);
     }
 
     void MethHeadBase::act(
@@ -99,7 +81,6 @@ namespace methhead
         else
         {
             const auto & cellPos(random.select(cellPositions));
-            board[cellPos].throwIfOccupied();
             board[cellPos].loot = random.rollInteger(1, 100);
         }
     }
@@ -115,12 +96,6 @@ namespace methhead
             std::back_inserter(unoccupiedCellPositions),
             [](const auto & cellPair) { return !cellPair.second.isOccupied(); },
             [](const auto & cellPair) { return cellPair.first; });
-
-        // TODO only added to find a bug REMOVE
-        for (const sf::Vector2i & cellPos : unoccupiedCellPositions)
-        {
-            board[cellPos].throwIfOccupied();
-        }
 
         return unoccupiedCellPositions;
     }
@@ -170,7 +145,6 @@ namespace methhead
         newCell.motivation = getMotivation();
 
         placeInBounds(m_sprite, board[newCellPos].bounds());
-        placeInBounds(m_text, board[newCellPos].bounds());
 
         audio.playWalk();
 
