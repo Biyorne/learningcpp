@@ -1,7 +1,5 @@
-#ifndef METH_HEAD_DISPLAY_CONSTANTS_HPP_INCLUDED
-#define METH_HEAD_DISPLAY_CONSTANTS_HPP_INCLUDED
-
-#include "cell.hpp"
+#ifndef METHHEADS_DISPLAY_CONSTANTS_HPP_INCLUDED
+#define METHHEADS_DISPLAY_CONSTANTS_HPP_INCLUDED
 
 #include <SFML/Graphics.hpp>
 
@@ -12,23 +10,22 @@ namespace methhead
         explicit DisplayConstants(const sf::Vector2u & windowSize);
 
         sf::Vector2f window_size;
-        sf::FloatRect score_bounds;
-        sf::FloatRect board_bounds;
 
-        sf::Color lazy_color;
-        sf::Color greedy_color;
-        std::size_t column_count;
-        std::size_t row_count;
-        sf::Vector2u cellCountsU;
-        sf::Vector2i cellCountsI;
-        float line_thickness;
-        float cell_dimm;
+        sf::FloatRect score_window_bounds;
+        sf::FloatRect board_window_bounds;
+
         sf::Vector2f cell_size;
-        float score_rectangle_width;
+        std::size_t horiz_cell_count;
+        std::size_t vert_cell_count;
+
         sf::Font font;
         sf::Text default_text;
+
+        // TODO these two probably don't belong here
+        sf::Color lazy_color;
+        sf::Color greedy_color;
     };
 
 } // namespace methhead
 
-#endif // METH_HEAD_DISPLAY_CONSTANTS_HPP_INCLUDED
+#endif // METHHEADS_DISPLAY_CONSTANTS_HPP_INCLUDED

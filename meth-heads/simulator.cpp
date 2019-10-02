@@ -18,28 +18,40 @@
 
 namespace methhead
 {
-    Simulator::Simulator(const Visuals visuals)
-        : m_visuals(visuals)
-        , m_window(
-              ((visuals == Visuals::Enabled) ? sf::VideoMode::getDesktopMode() : sf::VideoMode()),
-              "Meth Heads",
-              sf::Style::Fullscreen)
-        , m_audio()
+    Simulator::Simulator(const Mode mode)
+        : m_mode(mode)
+        , m_videoMode(1280u, 1024u, sf::VideoMode::getDesktopMode().bitsPerPixel)
+        , m_window()
         , m_random()
-        , m_displayVars(m_window.getSize())
+        , m_audio(mode, m_random)
+        , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_board(m_displayVars.makeBoard())
+        , m_actorTurnIndex(0)
         , m_actors()
-        , m_maxTurnsPerSec(0)
+        , m_secondsPerTurn(1.0f)
+        , m_secondsPerTurnMultipler(1.0f)
+        , m_consoleStatusClock()
+        , m_consoleStatusFrameCount(0)
+        , m_consoleStatusFrameCountMax(0)
+        , m_lootTexture()
     {
-        if (!m_window.isOpen())
+        if (Mode::Normal == m_mode)
         {
-            std::cout << "Visuals are disabled.  No window." << std::endl;
+            m_window.create(m_videoMode, "Meth Heads", sf::Style::Fullscreen);
+        }
+        else
+        {
+            std::cout << "Graphics disabled during speed tests." << std::endl;
         }
 
-        // loot creation
-        for (int i(0); i < 5; ++i)
+        if (!m_lootTexture.loadFromFile("image/loot.png"))
         {
-            // TODO make board class and move spawn loot there.
+            std::cout << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
+        }
+
+        const std::size_t initialLootCount(5);
+        for (std::size_t i(0); i < initialLootCount; ++i)
+        {
             MethHeadBase::spawnLoot(m_board, m_random);
         }
 
@@ -49,22 +61,69 @@ namespace methhead
 
     void Simulator::run()
     {
-        sf::Clock frameClock;
-        std::size_t frameCount(0);
-
-        while (m_window.isOpen())
+        while (willKeepRunning())
         {
             handleEvents();
-            update(frameCount, frameClock);
+            update();
 
-            if (m_visuals == Visuals::Enabled)
+            if (m_mode == Mode::Normal)
             {
                 draw();
-                sf::sleep(sf::seconds(1.0f));
+                sf::sleep(sf::seconds(m_secondsPerTurn));
+            }
+            else
+            {
+                consoleStatus();
             }
         }
+    }
 
-        printResults(calcScores());
+    bool Simulator::willKeepRunning() const
+    {
+        if (Mode::Normal == m_mode)
+        {
+            return m_window.isOpen();
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    void Simulator::updateSecondsPerTurn()
+    {
+        if ((Mode::SpeedTest == m_mode) || m_actors.empty())
+        {
+            m_secondsPerTurn = 1.0f;
+            m_secondsPerTurnMultipler = 1.0f;
+        }
+        else
+        {
+            m_secondsPerTurnMultipler = std::clamp(m_secondsPerTurnMultipler, 0.0001f, 10000.0f);
+
+            m_secondsPerTurn = (1.0f / static_cast<float>(m_actors.size()));
+            m_secondsPerTurn *= m_secondsPerTurnMultipler;
+
+            m_secondsPerTurn = std::clamp(m_secondsPerTurn, 0.0001f, 0.5f);
+        }
+    }
+
+    void Simulator::consoleStatus()
+    {
+        ++m_consoleStatusFrameCount;
+
+        if (m_consoleStatusClock.getElapsedTime().asSeconds() > 1.0f)
+        {
+            if (m_consoleStatusFrameCountMax < m_consoleStatusFrameCount)
+            {
+                m_consoleStatusFrameCountMax = m_consoleStatusFrameCount;
+            }
+
+            printConsoleStatus();
+
+            m_consoleStatusFrameCount = 0;
+            m_consoleStatusClock.restart();
+        }
     }
 
     void Simulator::spawnMethHead(const Motivation motive)
@@ -80,53 +139,22 @@ namespace methhead
             return;
         }
 
-        const sf::Vector2i randomCellPos(m_random.select(cellPositions));
-        m_board[randomCellPos].motivation = motive;
+        const sf::Vector2i boardPos(m_random.from(cellPositions));
+
+        Cell & cell(m_board[boardPos]);
+        cell.motivation = motive;
 
         if (motive == Motivation::lazy)
         {
-            m_actors.push_back(std::make_unique<Lazy>(
-                m_displayVars.constants(), "image/head-1.png", randomCellPos, m_board));
+            m_actors.push_back(std::make_unique<Lazy>("image/head-1.png", boardPos, cell.bounds()));
         }
         else
         {
-            m_actors.push_back(std::make_unique<Greedy>(
-                m_displayVars.constants(), "image/head-2.png", randomCellPos, m_board));
-        }
-    }
-
-    void Simulator::printResults(const Scores & scores)
-    {
-        const std::size_t lazyFinalScore(scores.lazy);
-        const std::size_t greedyFinalScore(scores.greedy);
-
-        const std::size_t lowScore { std::min(lazyFinalScore, greedyFinalScore) };
-        const std::size_t highScore { std::max(lazyFinalScore, greedyFinalScore) };
-
-        float winnerScorePercent { 0.0f };
-
-        if (highScore > 0)
-        {
-            const float loserScoreRatio(
-                static_cast<float>(lowScore) / static_cast<float>(highScore));
-
-            const float winnerScoreRatio(1.0f - loserScoreRatio);
-            winnerScorePercent = (winnerScoreRatio * 100.0f);
+            m_actors.push_back(
+                std::make_unique<Greedy>("image/head-2.png", boardPos, cell.bounds()));
         }
 
-        std::cout << "Lazy Score:   " << std::setw(10) << std::right << lazyFinalScore;
-        if (lazyFinalScore > greedyFinalScore)
-        {
-            std::cout << " " << std::setprecision(3) << winnerScorePercent << "%";
-        }
-        std::cout << std::endl;
-
-        std::cout << "Greedy Score: " << std::setw(10) << std::right << greedyFinalScore;
-        if (lazyFinalScore < greedyFinalScore)
-        {
-            std::cout << " " << std::setprecision(3) << winnerScorePercent << "%";
-        }
-        std::cout << std::endl;
+        updateSecondsPerTurn();
     }
 
     void Simulator::handleEvents()
@@ -140,7 +168,7 @@ namespace methhead
 
     void Simulator::handleEvent(const sf::Event & event)
     {
-        if (m_visuals == Visuals::Disabled)
+        if (m_mode == Mode::SpeedTest)
         {
             return;
         }
@@ -159,6 +187,16 @@ namespace methhead
             else if (sf::Keyboard::Down == event.key.code)
             {
                 m_audio.volumeDown();
+            }
+            else if (sf::Keyboard::Left == event.key.code)
+            {
+                m_secondsPerTurnMultipler *= 1.25f;
+                updateSecondsPerTurn();
+            }
+            else if (sf::Keyboard::Right == event.key.code)
+            {
+                m_secondsPerTurnMultipler *= 0.75f;
+                updateSecondsPerTurn();
             }
             else if (sf::Keyboard::L == event.key.code)
             {
@@ -180,42 +218,60 @@ namespace methhead
         }
     }
 
-    void Simulator::update(std::size_t & frameCount, sf::Clock & frameClock)
+    void Simulator::update()
     {
-        for (IActorUPtr_t & uptr : m_actors)
+        if (m_actors.empty())
         {
-            uptr->act(m_displayVars.constants(), m_board, m_audio, m_random);
+            return;
         }
 
-        if (printOncePerSecondConsoleStatus(frameClock.getElapsedTime().asSeconds(), ++frameCount))
+        if (m_actorTurnIndex >= m_actors.size())
         {
-            frameCount = 0;
-            frameClock.restart();
+            m_actorTurnIndex = 0;
         }
+
+        m_actors.at(m_actorTurnIndex)->act(m_board, m_audio, m_random);
+
+        ++m_actorTurnIndex;
     }
 
-    bool Simulator::printOncePerSecondConsoleStatus(
-        const float elapsedTimeSec, const std::size_t frameCount)
+    void Simulator::printConsoleStatus()
     {
-        if (elapsedTimeSec > 1.0f)
-        {
-            if (m_maxTurnsPerSec < frameCount)
+        auto printWinnerPercentString = [&](const Scores & scores) {
+            const std::size_t lowScore(std::min(scores.lazy, scores.greedy));
+            if (0 == lowScore)
             {
-                m_maxTurnsPerSec = frameCount;
+                return;
             }
 
-            const Scores scores(calcScores());
+            const float highScoreF(static_cast<float>(std::max(scores.lazy, scores.greedy)));
+            const float lowScoreF(static_cast<float>(lowScore));
 
-            std::cout << "turns_per_sec=" << frameCount << ", lazy_score=" << scores.lazy
-                      << ", greedy_score=" << scores.greedy
-                      << ", turns_per_sec_max=" << m_maxTurnsPerSec << std::endl;
+            const float winRatio(1.0f - (lowScoreF / highScoreF));
+            const std::size_t winPercent(static_cast<std::size_t>(winRatio * 100.0f));
 
-            return true;
-        }
-        else
+            std::cout << winPercent << "%";
+        };
+
+        const Scores scores(calcScores());
+
+        std::cout << "fps=" << m_consoleStatusFrameCount;
+        std::cout << " (" << m_consoleStatusFrameCountMax << ")";
+        std::cout << ",   lazy=" << scores.lazy;
+        std::cout << ",   greedy=" << scores.lazy;
+
+        if (scores.greedy > scores.lazy)
         {
-            return false;
+            std::cout << "\t\t GREEDY winning by ";
+            printWinnerPercentString(scores);
         }
+        else if (scores.lazy > scores.greedy)
+        {
+            std::cout << "\t\t LAZY winning by ";
+            printWinnerPercentString(scores);
+        }
+
+        std::cout << std::endl;
     }
 
     void Simulator::draw()
@@ -231,22 +287,16 @@ namespace methhead
         lazyScoreRectangle.setFillColor(m_displayVars.constants().lazy_color);
         greedyScoreRectangle.setFillColor(m_displayVars.constants().greedy_color);
 
-        scoreBarSetup(
-            scores.lazy,
-            scores.greedy,
-            lazyScoreRectangle,
-            greedyScoreRectangle,
-            m_displayVars.constants());
+        m_displayVars.scoreBarSetup(
+            scores.lazy, scores.greedy, lazyScoreRectangle, greedyScoreRectangle);
 
         // TODO put somewhere else, look at the TODO above for where
-        sf::Texture lootTexture;
-        lootTexture.loadFromFile("image/loot.png");
-        sf::Sprite lootSprite(lootTexture);
+        sf::Sprite lootSprite(m_lootTexture);
         lootSprite.setColor(sf::Color(255, 255, 255, 127));
         sf::Text lootText(m_displayVars.constants().default_text);
         lootText.setFillColor(sf::Color::Yellow);
 
-        m_window.clear();
+        m_window.clear(sf::Color(64, 64, 64));
 
         m_window.draw(lazyScoreRectangle);
         m_window.draw(greedyScoreRectangle);

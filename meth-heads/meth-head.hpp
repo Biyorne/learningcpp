@@ -1,21 +1,20 @@
-#ifndef METH_HEAD_BASE_HPP_INCLUDED
-#define METH_HEAD_BASE_HPP_INCLUDED
+#ifndef METHHEADS_BASE_HPP_INCLUDED
+#define METHHEADS_BASE_HPP_INCLUDED
 
 #include "audio.hpp"
 #include "cell.hpp"
-#include "display-constants.hpp"
-#include "meth-head-enum.hpp"
 #include "random.hpp"
-#include "utils.hpp"
 
 #include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
 
+#include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace methhead
 {
+
     // TODO put in own file
     struct IActor
     {
@@ -25,37 +24,27 @@ namespace methhead
         virtual Motivation getMotivation() const = 0;
         virtual void draw(sf::RenderTarget & target, sf::RenderStates states) const = 0;
 
-        virtual void
-            act(const DisplayConstants & displayConstants,
-                BoardMap_t & board,
-                Audio & audio,
-                const Random & random)
-            = 0;
+        virtual void act(BoardMap_t & board, Audio & audio, const Random & random) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
     using IActorUVec_t = std::vector<IActorUPtr_t>;
 
+    //
+
     class MethHeadBase : public IActor
     {
     protected:
         MethHeadBase(
-            const DisplayConstants & displayConstants,
-            const Motivation motivation,
             const std::string & imagePath,
-            const sf::Vector2i & startingCellPos,
-            BoardMap_t & board);
+            const sf::Vector2i & boardPos,
+            const sf::FloatRect & windowBounds);
 
         virtual ~MethHeadBase() = default;
 
     public:
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
-
-        void
-            act(const DisplayConstants & displayConstants,
-                BoardMap_t & board,
-                Audio & audio,
-                const Random & random) override;
+        void act(BoardMap_t & board, Audio & audio, const Random & random) override;
 
         std::size_t getScore() const final { return m_score; }
 
@@ -64,17 +53,16 @@ namespace methhead
 
         static std::vector<sf::Vector2i> makeUnoccupiedCellPositions(BoardMap_t & board);
 
-        sf::Vector2i getCellPos() const { return m_pos; }
+        sf::Vector2i getCellPos() const { return m_boardPos; }
 
     protected:
         void moveToward(
-            const DisplayConstants & displayConstants,
             BoardMap_t & board,
             Audio & audio,
             const Random & random,
             const sf::Vector2i & targetCellPos);
 
-        int calcDistance(const sf::Vector2i & from, const sf::Vector2i & to) const
+        inline int calcDistance(const sf::Vector2i & from, const sf::Vector2i & to) const
         {
             return (std::abs(to.x - from.x) + std::abs(to.y - from.y));
         }
@@ -100,21 +88,20 @@ namespace methhead
         std::size_t m_score;
         sf::Texture m_texture;
         sf::Sprite m_sprite;
-        sf::Vector2i m_pos;
+        sf::Vector2i m_boardPos;
     };
+
+    //
 
     class Lazy : public MethHeadBase
     {
     public:
         Lazy(
-            const DisplayConstants & displayConstants,
             const std::string & imagePath,
-            const sf::Vector2i & startingCellPos,
-            BoardMap_t & board)
-            : MethHeadBase(displayConstants, getMotivation(), imagePath, startingCellPos, board)
-        {
-            board[startingCellPos].motivation = getMotivation();
-        }
+            const sf::Vector2i & boardPos,
+            const sf::FloatRect & windowBounds)
+            : MethHeadBase(imagePath, boardPos, windowBounds)
+        {}
 
         virtual ~Lazy() = default;
 
@@ -140,18 +127,17 @@ namespace methhead
         }
     };
 
+    //
+
     class Greedy : public MethHeadBase
     {
     public:
         Greedy(
-            const DisplayConstants & displayConstants,
             const std::string & imagePath,
-            const sf::Vector2i & startingCellPos,
-            BoardMap_t & board)
-            : MethHeadBase(displayConstants, getMotivation(), imagePath, startingCellPos, board)
-        {
-            board[startingCellPos].motivation = getMotivation();
-        }
+            const sf::Vector2i & boardPos,
+            const sf::FloatRect & windowBounds)
+            : MethHeadBase(imagePath, boardPos, windowBounds)
+        {}
 
         virtual ~Greedy() = default;
 
@@ -178,4 +164,4 @@ namespace methhead
 
 } // namespace methhead
 
-#endif // METH_HEAD_BASE_HPP_INCLUDED
+#endif // METHHEADS_BASE_HPP_INCLUDED

@@ -4,11 +4,11 @@
 
 #include <cstddef>
 
-using namespace methhead;
-
 int main()
 {
-    Simulator simulator(Visuals::Enabled);
+    using namespace methhead;
+
+    Simulator simulator(Mode::Normal);
     simulator.run();
 
     return EXIT_SUCCESS;

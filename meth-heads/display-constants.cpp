@@ -11,34 +11,59 @@ namespace methhead
 {
     DisplayConstants::DisplayConstants(const sf::Vector2u & windowSize)
         : window_size(windowSize)
-        , score_bounds(0.0f, 0.0f, (0.2f * window_size.x), window_size.y)
-        , board_bounds(
-              (score_bounds.left + score_bounds.width),
-              score_bounds.top,
-              (window_size.x - score_bounds.width),
-              score_bounds.height)
-        , lazy_color { 80, 80, 255 } // TODO
-        , greedy_color { 100, 255, 100 } // TODO
-        , column_count { 20 }
-        , row_count { column_count }
-        , cellCountsU(static_cast<unsigned int>(column_count), static_cast<unsigned int>(row_count))
-        , cellCountsI(cellCountsU)
-        , line_thickness((1.0f / 600.0f) * window_size.y)
-        , cell_dimm(window_size.y / static_cast<float>(std::max(column_count, row_count)))
-        , cell_size(cell_dimm, cell_dimm)
-        , score_rectangle_width(score_bounds.width * 0.5f)
+        , score_window_bounds(0.0f, 0.0f, 0.0f, 0.0f)
+        , board_window_bounds(0.0f, 0.0f, 0.0f, 0.0f)
+        , horiz_cell_count(0)
+        , vert_cell_count(0)
+        , cell_size(0.0f, 0.0f)
         , font()
         , default_text()
     {
-        const auto FONT_FILE_PATH("font/gentium-plus.ttf");
+        // partition the window into a region for drawing scores on the left and board on the right
+        score_window_bounds.width = (0.1f * window_size.x);
+        score_window_bounds.height = window_size.y;
 
-        if (!font.loadFromFile(FONT_FILE_PATH))
+        board_window_bounds.left = score_window_bounds.width;
+        board_window_bounds.width = (window_size.x - score_window_bounds.width);
+        board_window_bounds.height = window_size.y;
+
+        // shrink these regions a bit to give them a small pad preventing them from touching
+        const float windowBoundsPad(window_size.x * 0.025f);
+        resizeInPlace(score_window_bounds, -windowBoundsPad);
+        resizeInPlace(board_window_bounds, -windowBoundsPad);
+        score_window_bounds.width += windowBoundsPad;
+
+        // figure out the cell size (must be square)
+        horiz_cell_count = 20;
+        vert_cell_count = 20;
+        const std::size_t maxCellCount(std::max(horiz_cell_count, vert_cell_count));
+
+        const float minBoardWindowBounds(
+            std::min(board_window_bounds.width, board_window_bounds.height));
+
+        const float cellSideLength(minBoardWindowBounds / static_cast<float>(maxCellCount));
+
+        cell_size.x = cellSideLength;
+        cell_size.y = cellSideLength;
+
+        // load the font and setup the default text options
+        const std::string fontFilePath("font/gentium-plus.ttf");
+
+        if (font.loadFromFile(fontFilePath))
         {
-            std::cout << "Failed to load font: \"" << FONT_FILE_PATH << "\"" << std::endl;
+            default_text.setFont(font);
+        }
+        else
+        {
+            std::cout << "Failed to load font: \"" << fontFilePath << "\"" << std::endl;
         }
 
+        // this is a handy trick to calc the right font size when working with sfml
         default_text.setCharacterSize(static_cast<unsigned int>(std::sqrt(window_size.x)));
-        default_text.setFont(font);
+
+        // these colors should move after cleanup
+        lazy_color = sf::Color(80, 80, 255);
+        greedy_color = sf::Color(100, 255, 100);
     }
 
 } // namespace methhead

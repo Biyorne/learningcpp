@@ -17,28 +17,21 @@ namespace methhead
 {
 
     MethHeadBase::MethHeadBase(
-        const DisplayConstants & displayConstants,
-        const Motivation motivation,
         const std::string & imagePath,
-        const sf::Vector2i & startingCellPos,
-        BoardMap_t & board)
+        const sf::Vector2i & boardPos,
+        const sf::FloatRect & windowBounds)
         : m_score(0)
         , m_texture()
         , m_sprite()
-        , m_pos(startingCellPos)
+        , m_boardPos(boardPos)
     {
-        if (Motivation::none == motivation)
-        {
-            throw std::runtime_error("Tried to create meth head with no motivation.");
-        }
-
         if (!m_texture.loadFromFile(imagePath))
         {
             throw std::runtime_error("Unable to load image: " + imagePath);
         }
 
         m_sprite.setTexture(m_texture, true);
-        placeInBounds(m_sprite, board[startingCellPos].bounds());
+        placeInBounds(m_sprite, windowBounds);
     }
 
     void MethHeadBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
@@ -46,13 +39,9 @@ namespace methhead
         target.draw(m_sprite, states);
     }
 
-    void MethHeadBase::act(
-        const DisplayConstants & displayConstants,
-        BoardMap_t & board,
-        Audio & audio,
-        const Random & random)
+    void MethHeadBase::act(BoardMap_t & board, Audio & audio, const Random & random)
     {
-        moveToward(displayConstants, board, audio, random, pickTarget(board));
+        moveToward(board, audio, random, pickTarget(board));
     }
 
     // TODO make board class and move spawn loot there.
@@ -80,8 +69,8 @@ namespace methhead
         }
         else
         {
-            const auto & cellPos(random.select(cellPositions));
-            board[cellPos].loot = random.rollInteger(1, 100);
+            const auto & cellPos(random.from(cellPositions));
+            board[cellPos].loot = random.fromTo(1, 100);
         }
     }
 
@@ -101,7 +90,6 @@ namespace methhead
     }
 
     void MethHeadBase::moveToward(
-        const DisplayConstants &,
         BoardMap_t & board,
         Audio & audio,
         const Random & random,
@@ -111,8 +99,8 @@ namespace methhead
             (targetCellPos.x >= 0) && (targetCellPos.y >= 0),
             "Target Cell Position is invalid (x or y was negative).");
 
-        const sf::Vector2i oldCellPos(m_pos);
-        sf::Vector2i newCellPos(m_pos);
+        const sf::Vector2i oldCellPos(m_boardPos);
+        sf::Vector2i newCellPos(m_boardPos);
 
         // TODO make move decision random
         if (targetCellPos.x < oldCellPos.x)
@@ -137,16 +125,21 @@ namespace methhead
             "MethHead::moveToward() failed because target_cellPos was the same as "
             "current_cellPos.");
 
-        m_pos = newCellPos;
+        m_boardPos = newCellPos;
 
         board[oldCellPos].motivation = Motivation::none;
 
         Cell & newCell(board[newCellPos]);
+
+        if ((getMotivation() != newCell.motivation) && (Motivation::none != newCell.motivation))
+        {
+            std::vector<std::string> soundNames { "ouch", "punch", "collide" };
+            audio.play(random.from(soundNames));
+        }
+
         newCell.motivation = getMotivation();
 
         placeInBounds(m_sprite, board[newCellPos].bounds());
-
-        audio.playWalk();
 
         if (newCell.loot > 0)
         {
@@ -162,15 +155,7 @@ namespace methhead
             m_score += static_cast<std::size_t>(newCell.loot);
             newCell.loot = 0;
 
-            if (Motivation::lazy == getMotivation())
-            {
-                audio.playCoin1();
-            }
-            else
-            {
-                audio.playCoin2();
-            }
-
+            audio.play("coin");
             spawnLoot(board, random);
         }
     }
@@ -195,32 +180,6 @@ namespace methhead
     {
         auto allLootPos = MethHeadBase::findAllLoot(board);
 
-        // TODO only added to find a bug REMOVE
-        for (const LootPos & lootPos : allLootPos)
-        {
-            const auto & cell(board.find(lootPos.cell_pos)->second);
-
-            assertOrThrow(
-                (cell.is_valid),
-                "MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
-                "positions was invalid.");
-
-            assertOrThrow(
-                (cell.motivation == Motivation::none),
-                "MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
-                "positions had a methhead in it.");
-
-            assertOrThrow(
-                (cell.isOccupied()),
-                "MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
-                "positions was !isOccupied().");
-
-            assertOrThrow(
-                (cell.loot > 0),
-                "MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
-                "positions had no loot in it.");
-        }
-
         if (allLootPos.empty())
         {
             return { -1, -1 };
@@ -228,29 +187,6 @@ namespace methhead
 
         sortAllLoot(allLootPos);
 
-        {
-            const auto & cell(board.find(allLootPos.front().cell_pos)->second);
-
-            assertOrThrow(
-                (cell.is_valid),
-                "***MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
-                "positions was invalid.");
-
-            assertOrThrow(
-                (cell.motivation == Motivation::none),
-                "***MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
-                "positions had a methhead in it.");
-
-            assertOrThrow(
-                (cell.isOccupied()),
-                "***MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
-                "positions was !isOccupied().");
-
-            assertOrThrow(
-                (cell.loot > 0),
-                "***MethHead::pickTarget()'s findAllLoot() failed, because one of the returned "
-                "positions had no loot in it.");
-        }
         return allLootPos.front().cell_pos;
     }
 

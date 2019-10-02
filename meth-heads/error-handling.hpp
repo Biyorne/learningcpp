@@ -1,5 +1,5 @@
-#ifndef METH_HEAD_ERROR_HANDLING_HPP_INCLUDED
-#define METH_HEAD_ERROR_HANDLING_HPP_INCLUDED
+#ifndef METHHEADS_ERROR_HANDLING_HPP_INCLUDED
+#define METHHEADS_ERROR_HANDLING_HPP_INCLUDED
 
 #include <cassert>
 #include <iostream>
@@ -27,4 +27,4 @@ namespace methhead
 
 } // namespace methhead
 
-#endif // METH_HEAD_ERROR_HANDLING_HPP_INCLUDED
+#endif // METHHEADS_ERROR_HANDLING_HPP_INCLUDED

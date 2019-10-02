@@ -1,20 +1,77 @@
-#ifndef METH_HEAD_UTIL_HPP_INCLUDED
-#define METH_HEAD_UTIL_HPP_INCLUDED
+#ifndef METHHEADS_UTIL_HPP_INCLUDED
+#define METHHEADS_UTIL_HPP_INCLUDED
 
-#include "display-constants.hpp"
+#include <cmath>
+#include <limits>
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Rect.hpp> // also includes Vector2.hpp
 
 namespace sf
 {
-    inline bool operator<(const sf::Vector2i & L, const sf::Vector2i & R)
+
+    template <typename T>
+    inline bool operator<(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
     {
-        return std::tie(L.x, L.y) < std::tie(R.x, R.y);
+        if (left.x != right.x)
+        {
+            return (left.x < right.x);
+        }
+        else
+        {
+            return (left.y < right.y);
+        }
     }
+
 } // namespace sf
+
+//
 
 namespace methhead
 {
+
+    enum class Mode
+    {
+        Normal,
+        SpeedTest
+    };
+
+    template <typename T>
+    [[nodiscard]] constexpr T constexprAbs(const T number) noexcept
+    {
+        static_assert(std::is_arithmetic_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>);
+
+        if constexpr (std::is_signed_v<T>)
+        {
+            if (number < T(0))
+            {
+                return -number;
+            }
+            else
+            {
+                return number;
+            }
+        }
+        else
+        {
+            return number;
+        }
+    }
+
+    template <typename T>
+    [[nodiscard]] constexpr bool
+        isRealClose(const T left, const T right, const T within = std::numeric_limits<T>::epsilon())
+    {
+        const T absDiff(constexprAbs(right - left));
+
+        if (right < 1.0)
+        {
+            return (absDiff < within);
+        }
+        else
+        {
+            return (absDiff < (right * within));
+        }
+    }
 
     template <typename T>
     void placeInBounds(T & sfThing, const sf::FloatRect & region)
@@ -49,6 +106,14 @@ namespace methhead
         sfThing.setPosition(regionPosCenter - (finalTextSize * 0.5f));
     }
 
+    inline void resizeInPlace(sf::FloatRect & rect, const float amount)
+    {
+        rect.left -= (amount * 0.5f);
+        rect.top -= (amount * 0.5f);
+        rect.width += amount;
+        rect.height += amount;
+    }
+
     template <
         typename InputIterator,
         typename OutputIterator,
@@ -75,57 +140,6 @@ namespace methhead
         return destIter;
     }
 
-    inline void scoreBarSetup(
-        std::size_t lazyScore,
-        std::size_t greedyScore,
-        sf::RectangleShape & lazyScoreRectangle,
-        sf::RectangleShape & greedyScoreRectangle,
-        const DisplayConstants & displayConstants)
-    {
-        if (lazyScore > greedyScore)
-        {
-            if (0 == lazyScore)
-            {
-                lazyScore = 1;
-            }
-
-            const float heightRatio(
-                static_cast<float>(greedyScore) / static_cast<float>(lazyScore));
-
-            lazyScoreRectangle.setSize(sf::Vector2f(
-                displayConstants.score_rectangle_width, displayConstants.window_size.y));
-
-            greedyScoreRectangle.setSize(sf::Vector2f(
-                displayConstants.score_rectangle_width,
-                (lazyScoreRectangle.getSize().y * heightRatio)));
-        }
-        else
-        {
-            if (0 == greedyScore)
-            {
-                greedyScore = 1;
-            }
-
-            const float heightRatio(
-                static_cast<float>(lazyScore) / static_cast<float>(greedyScore));
-
-            greedyScoreRectangle.setSize(sf::Vector2f(
-                displayConstants.score_rectangle_width, displayConstants.window_size.y));
-
-            lazyScoreRectangle.setSize(sf::Vector2f(
-                displayConstants.score_rectangle_width,
-                (greedyScoreRectangle.getSize().y * heightRatio)));
-        }
-
-        lazyScoreRectangle.setPosition(
-            displayConstants.score_bounds.left,
-            (displayConstants.score_bounds.height - lazyScoreRectangle.getSize().y));
-
-        greedyScoreRectangle.setPosition(
-            (displayConstants.score_bounds.left + displayConstants.score_rectangle_width),
-            (displayConstants.score_bounds.height - greedyScoreRectangle.getSize().y));
-    }
-
 } // namespace methhead
 
-#endif // METH_HEAD_UTIL_HPP_INCLUDED
+#endif // METHHEADS_UTIL_HPP_INCLUDED

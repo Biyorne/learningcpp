@@ -1,22 +1,20 @@
-#ifndef METH_HEAD_SIMULATOR_HPP_INCLUDED
-#define METH_HEAD_SIMULATOR_HPP_INCLUDED
+#ifndef METHHEADS_SIMULATOR_HPP_INCLUDED
+#define METHHEADS_SIMULATOR_HPP_INCLUDED
 
+#include "audio.hpp"
 #include "cell.hpp"
 #include "display-variables.hpp"
-#include "meth-head-enum.hpp"
 #include "meth-head.hpp"
 #include "random.hpp"
+#include "utils.hpp"
 
 #include <vector>
 
+#include <SFML/Graphics.hpp>
+#include <SFML/System/Clock.hpp>
+
 namespace methhead
 {
-    enum class Visuals
-    {
-        Enabled,
-        Disabled
-    };
-
     class Simulator
     {
         struct Scores
@@ -26,37 +24,51 @@ namespace methhead
         };
 
     public:
-        explicit Simulator(const Visuals visuals);
+        explicit Simulator(const Mode mode);
 
         void run();
 
     private:
-        void spawnMethHead(const Motivation motive);
+        void updateSecondsPerTurn();
+        bool willKeepRunning() const;
 
-        void printResults(const Scores & scores);
+        void consoleStatus();
+        void printConsoleStatus();
+
+        void spawnMethHead(const Motivation motive);
 
         void handleEvents();
         void handleEvent(const sf::Event & event);
 
-        void update(std::size_t & frameCount, sf::Clock & frameClock);
+        void update();
         void draw();
-
-        bool printOncePerSecondConsoleStatus(
-            const float elapsedTimeSec, const std::size_t frameCount);
 
         Scores calcScores() const;
 
     private:
-        Visuals m_visuals;
+        Mode m_mode;
+        sf::VideoMode m_videoMode;
+
         sf::RenderWindow m_window;
-        Audio m_audio;
         Random m_random;
+        Audio m_audio;
         DisplayVariables m_displayVars;
         BoardMap_t m_board;
+
+        std::size_t m_actorTurnIndex;
         std::vector<IActorUPtr_t> m_actors;
-        std::size_t m_maxTurnsPerSec;
+
+        float m_secondsPerTurn;
+        float m_secondsPerTurnMultipler;
+        std::size_t m_frameCount;
+
+        sf::Clock m_consoleStatusClock;
+        std::size_t m_consoleStatusFrameCount;
+        std::size_t m_consoleStatusFrameCountMax;
+
+        sf::Texture m_lootTexture;
     };
 
 } // namespace methhead
 
-#endif // METH_HEAD_SIMULATOR_HPP_INCLUDED
+#endif // METHHEADS_SIMULATOR_HPP_INCLUDED

@@ -1,5 +1,5 @@
-#ifndef METH_HEAD_RANDOM_HPP_INCLUDED
-#define METH_HEAD_RANDOM_HPP_INCLUDED
+#ifndef METHHEADS_RANDOM_HPP_INCLUDED
+#define METHHEADS_RANDOM_HPP_INCLUDED
 
 #include <limits>
 #include <random>
@@ -17,114 +17,83 @@ namespace methhead
             std::seed_seq seedSequence { randomDevice() };
             m_engine.seed(seedSequence);
 
-            const unsigned long long WARMUP_SKIP(10000);
+            // anything from thousands to hundred-thousands will work here
+            const unsigned long long WARMUP_SKIP(12345);
             m_engine.discard(WARMUP_SKIP);
         }
 
         template <typename T>
-        T rollInteger(const T RANGE_MIN, const T RANGE_MAX) const
+        T fromTo(const T from, const T to) const
         {
-            if (RANGE_MAX < RANGE_MIN)
+            if (to < from)
             {
-                return rollInteger(RANGE_MAX, RANGE_MIN);
+                return fromTo(to, from);
             }
 
-            if (RANGE_MAX == RANGE_MIN)
+            if (isRealClose(to, from))
             {
-                return RANGE_MAX;
+                return to;
             }
 
-            std::uniform_int_distribution<T> TDistribution(RANGE_MIN, RANGE_MAX);
-            return TDistribution(m_engine);
-        }
-
-        template <typename T>
-        T rollInteger(const T RANGE_MAX) const
-        {
-            return rollInteger(static_cast<T>(0), RANGE_MAX);
-        }
-
-        template <typename T>
-        T rollReal(const T RANGE_MIN, const T RANGE_MAX) const
-        {
-            if (RANGE_MAX < RANGE_MIN)
+            if constexpr (std::is_floating_point_v<T>)
             {
-                return rollReal(RANGE_MAX, RANGE_MIN);
-            }
+                std::uniform_real_distribution<T> distribution(
+                    from, std::nextafter(to, std::numeric_limits<T>::max()));
 
-            if (isRealClose(RANGE_MAX, RANGE_MIN))
-            {
-                return RANGE_MAX;
-            }
-
-            std::uniform_real_distribution<T> TDistribution(
-                RANGE_MIN, std::nextafter(RANGE_MAX, std::numeric_limits<T>::max()));
-
-            return TDistribution(m_engine);
-        }
-
-        template <typename T>
-        T rollReal(const T RANGE_MAX) const
-        {
-            return rollReal(static_cast<T>(0), RANGE_MAX);
-        }
-
-        bool rollBool() const { return (rollInteger(0, 1) == 1); }
-
-        template <typename T>
-        std::size_t indexInto(const T & CONTAINER) const
-        {
-            if (CONTAINER.empty())
-            {
-                return 0;
+                return distribution(m_engine);
             }
             else
             {
-                return rollInteger(static_cast<std::size_t>(0), (CONTAINER.size() - 1));
+                static_assert(std::is_integral_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>);
+
+                std::uniform_int_distribution<T> distribution(from, to);
+                return distribution(m_engine);
             }
         }
 
         template <typename T>
-        std::size_t indexInto(T & container) const
+        T zeroTo(const T to) const
+        {
+            return fromTo(T(0), to);
+        }
+
+        bool boolean() const { return (zeroTo(1) == 1); }
+
+        template <typename T>
+        std::size_t index(const T & container) const
         {
             if (container.empty())
             {
-                return 0;
+                throw std::runtime_error("Random::index() but the container was empty!");
             }
-            else
-            {
-                return rollInteger(static_cast<std::size_t>(0), (container.size() - 1));
-            }
+
+            return zeroTo(container.size() - 1);
         }
 
         template <typename T>
-        const auto & select(const T & CONTAINER) const
-        {
-            if (CONTAINER.empty())
-            {
-                throw std::runtime_error("Random::select(const) but the container was empty!");
-            }
-            else
-            {
-                auto iter(std::begin(CONTAINER));
-                std::advance(iter, indexInto(CONTAINER));
-                return *iter;
-            }
-        }
-
-        template <typename T>
-        auto & select(T & container) const
+        const auto & from(const T & container) const
         {
             if (container.empty())
             {
-                throw std::runtime_error("Random::select(non-const) but the container was empty!");
+                throw std::runtime_error("Random::from(const) but the container was empty!");
             }
-            else
+
+            auto iter(std::begin(container));
+            std::advance(iter, index(container));
+            return *iter;
+        }
+
+        template <typename T>
+        auto & from(T & container) const
+        {
+            if (container.empty())
             {
-                auto iter(std::begin(container));
-                std::advance(iter, indexInto(container));
-                return *iter;
+                throw std::runtime_error("Random::from(non-const) but the container was empty!");
             }
+
+            auto iter(std::begin(container));
+            std::advance(iter, index(container));
+            return *iter;
         }
 
         template <typename T>
@@ -134,20 +103,9 @@ namespace methhead
         }
 
     private:
-        template <typename T>
-        bool isRealClose(const T A, const T B) const
-        {
-            const T STRIDE_SIZE(
-                ((B < 1.0) ? std::numeric_limits<T>::epsilon()
-                           : (B * std::numeric_limits<T>::epsilon())));
-
-            return (std::abs(B - A) < STRIDE_SIZE);
-        }
-
-    private:
         mutable std::mt19937 m_engine;
     };
 
 } // namespace methhead
 
-#endif // METH_HEAD_RANDOM_HPP_INCLUDED
+#endif // METHHEADS_RANDOM_HPP_INCLUDED
