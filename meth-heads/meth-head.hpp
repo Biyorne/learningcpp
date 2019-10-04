@@ -1,9 +1,9 @@
 #ifndef METHHEADS_BASE_HPP_INCLUDED
 #define METHHEADS_BASE_HPP_INCLUDED
 
-#include "audio.hpp"
 #include "cell.hpp"
 #include "random.hpp"
+#include "sound-player.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -24,7 +24,7 @@ namespace methhead
         virtual Motivation getMotivation() const = 0;
         virtual void draw(sf::RenderTarget & target, sf::RenderStates states) const = 0;
 
-        virtual void act(BoardMap_t & board, Audio & audio, const Random & random) = 0;
+        virtual void act(BoardMap_t & board, SoundPlayer & soundPlayer, const Random & random) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
@@ -44,7 +44,7 @@ namespace methhead
 
     public:
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
-        void act(BoardMap_t & board, Audio & audio, const Random & random) override;
+        void act(BoardMap_t & board, SoundPlayer & soundPlayer, const Random & random) override;
 
         std::size_t getScore() const final { return m_score; }
 
@@ -58,7 +58,7 @@ namespace methhead
     protected:
         void moveToward(
             BoardMap_t & board,
-            Audio & audio,
+            SoundPlayer & soundPlayer,
             const Random & random,
             const sf::Vector2i & targetCellPos);
 

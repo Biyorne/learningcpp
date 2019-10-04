@@ -39,9 +39,9 @@ namespace methhead
         target.draw(m_sprite, states);
     }
 
-    void MethHeadBase::act(BoardMap_t & board, Audio & audio, const Random & random)
+    void MethHeadBase::act(BoardMap_t & board, SoundPlayer & soundPlayer, const Random & random)
     {
-        moveToward(board, audio, random, pickTarget(board));
+        moveToward(board, soundPlayer, random, pickTarget(board));
     }
 
     // TODO make board class and move spawn loot there.
@@ -91,7 +91,7 @@ namespace methhead
 
     void MethHeadBase::moveToward(
         BoardMap_t & board,
-        Audio & audio,
+        SoundPlayer & soundPlayer,
         const Random & random,
         const sf::Vector2i & targetCellPos)
     {
@@ -134,7 +134,7 @@ namespace methhead
         if ((getMotivation() != newCell.motivation) && (Motivation::none != newCell.motivation))
         {
             std::vector<std::string> soundNames { "ouch", "punch", "collide" };
-            audio.play(random.from(soundNames));
+            soundPlayer.play(random.from(soundNames));
         }
 
         newCell.motivation = getMotivation();
@@ -155,7 +155,7 @@ namespace methhead
             m_score += static_cast<std::size_t>(newCell.loot);
             newCell.loot = 0;
 
-            audio.play("coin");
+            soundPlayer.play("coin");
             spawnLoot(board, random);
         }
     }

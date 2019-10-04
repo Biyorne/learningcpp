@@ -1,10 +1,11 @@
-#ifndef METHHEADS_UTIL_HPP_INCLUDED
-#define METHHEADS_UTIL_HPP_INCLUDED
+#ifndef METHHEADS_UTILS_HPP_INCLUDED
+#define METHHEADS_UTILS_HPP_INCLUDED
 
 #include <cmath>
 #include <limits>
+#include <string>
 
-#include <SFML/Graphics/Rect.hpp> // also includes Vector2.hpp
+#include <SFML/Graphics.hpp>
 
 namespace sf
 {
@@ -35,14 +36,27 @@ namespace methhead
         SpeedTest
     };
 
-    template <typename T>
-    [[nodiscard]] constexpr T constexprAbs(const T number) noexcept
+    inline bool startsWith(const std::string & searchIn, const std::string & searchFor)
     {
-        static_assert(std::is_arithmetic_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>);
-
-        if constexpr (std::is_signed_v<T>)
+        if (searchFor.empty())
         {
-            if (number < T(0))
+            return false;
+        }
+
+        return (searchIn.find(searchFor) == 0);
+    }
+
+    // I actually have to write this because cmath does not use templates...
+    template <typename T>
+    [[nodiscard]] T constexpr simpleAbs(const T number) noexcept
+    {
+        if constexpr (std::is_unsigned_v<T>)
+        {
+            return number;
+        }
+        else
+        {
+            if (number < 0)
             {
                 return -number;
             }
@@ -51,67 +65,89 @@ namespace methhead
                 return number;
             }
         }
-        else
-        {
-            return number;
-        }
     }
 
     template <typename T>
-    [[nodiscard]] constexpr bool
-        isRealClose(const T left, const T right, const T within = std::numeric_limits<T>::epsilon())
+    [[nodiscard]] bool isRealClose(
+        const T left, const T right, const T closeEnough = std::numeric_limits<T>::epsilon())
     {
-        const T absDiff(constexprAbs(right - left));
+        const T absDiff(simpleAbs(right - left));
 
-        if (right < 1.0)
+        if (right < T(1))
         {
-            return (absDiff < within);
+            return !(absDiff > closeEnough);
         }
         else
         {
-            return (absDiff < (right * within));
+            return !(absDiff > (right * closeEnough));
         }
     }
 
-    template <typename T>
-    void placeInBounds(T & sfThing, const sf::FloatRect & region)
+    template <typename SfmlThing_t>
+    void placeInBounds(SfmlThing_t & thing, const sf::FloatRect & bounds)
     {
-        const auto localBounds(sfThing.getLocalBounds());
+        const auto localBounds(thing.getLocalBounds());
 
         if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
         {
             return;
         }
 
-        // scale to fit inside region
+        // scale to fit inside bounds
         float scale(1.0f);
         if (localBounds.width > localBounds.height)
         {
-            scale = (region.width / localBounds.width);
+            scale = (bounds.width / localBounds.width);
         }
         else
         {
-            scale = (region.height / localBounds.height);
+            scale = (bounds.height / localBounds.height);
         }
-        sfThing.setScale(scale, scale);
-        sfThing.setOrigin(localBounds.left, localBounds.top);
 
-        // position to center of cell (region)
+        thing.setScale(scale, scale);
+        thing.setOrigin(localBounds.left, localBounds.top);
+
+        // position to center of cell (bounds)
         const sf::Vector2f finalTextSize(
-            sfThing.getGlobalBounds().width, sfThing.getGlobalBounds().height);
+            thing.getGlobalBounds().width, thing.getGlobalBounds().height);
 
-        const sf::Vector2f regionPos(region.left, region.top);
-        const sf::Vector2f regionSize(region.width, region.height);
-        const sf::Vector2f regionPosCenter(regionPos + (regionSize * 0.5f));
-        sfThing.setPosition(regionPosCenter - (finalTextSize * 0.5f));
+        const sf::Vector2f boundsPos(bounds.left, bounds.top);
+        const sf::Vector2f boundsSize(bounds.width, bounds.height);
+        const sf::Vector2f boundsPosCenter(boundsPos + (boundsSize * 0.5f));
+        thing.setPosition(boundsPosCenter - (finalTextSize * 0.5f));
     }
 
-    inline void resizeInPlace(sf::FloatRect & rect, const float amount)
+    inline void scaleRectInPlace(sf::FloatRect & rect, const sf::Vector2f & scale)
     {
-        rect.left -= (amount * 0.5f);
-        rect.top -= (amount * 0.5f);
-        rect.width += amount;
-        rect.height += amount;
+        const float widthChange((rect.width * scale.x) - rect.width);
+        rect.width += widthChange;
+        rect.left -= (widthChange * 0.5f);
+
+        const float heightChange((rect.height * scale.y) - rect.height);
+        rect.height += heightChange;
+        rect.top -= (heightChange * 0.5f);
+    }
+
+    inline void scaleRectInPlace(sf::FloatRect & rect, const float scale)
+    {
+        scaleRectInPlace(rect, { scale, scale });
+    }
+
+    template <typename SfmlThing_t>
+    void scaleInPlace(SfmlThing_t & thing, const sf::Vector2f & scale)
+    {
+        const sf::Vector2f sizeOrig(thing.getSize());
+        thing.setScale(scale);
+        const sf::Vector2f sizeChange(thing.getSize() - sizeOrig);
+
+        const sf::Vector2f moveThatReCenters(sizeChange * 0.5f * -1.0f);
+        thing.move(moveThatReCenters);
+    }
+
+    template <typename SfmlThing_t>
+    void scaleInPlace(SfmlThing_t & thing, const float scale)
+    {
+        scaleInPlace(thing, { scale, scale });
     }
 
     template <
@@ -142,4 +178,4 @@ namespace methhead
 
 } // namespace methhead
 
-#endif // METHHEADS_UTIL_HPP_INCLUDED
+#endif // METHHEADS_UTILS_HPP_INCLUDED

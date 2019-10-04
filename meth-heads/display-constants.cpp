@@ -19,19 +19,21 @@ namespace methhead
         , font()
         , default_text()
     {
+        // shrink the drawable window bounds a bit to create nice looking border
+        const float windowBorderRatio(0.975f);
+        sf::FloatRect window_bounds({ 0.0f, 0.0f }, window_size);
+        scaleRectInPlace(window_bounds, windowBorderRatio);
+
         // partition the window into a region for drawing scores on the left and board on the right
-        score_window_bounds.width = (0.1f * window_size.x);
-        score_window_bounds.height = window_size.y;
+        score_window_bounds = window_bounds;
+        score_window_bounds.width *= 0.1f;
 
-        board_window_bounds.left = score_window_bounds.width;
-        board_window_bounds.width = (window_size.x - score_window_bounds.width);
-        board_window_bounds.height = window_size.y;
+        board_window_bounds = window_bounds;
 
-        // shrink these regions a bit to give them a small pad preventing them from touching
-        const float windowBoundsPad(window_size.x * 0.025f);
-        resizeInPlace(score_window_bounds, -windowBoundsPad);
-        resizeInPlace(board_window_bounds, -windowBoundsPad);
-        score_window_bounds.width += windowBoundsPad;
+        board_window_bounds.left
+            = (score_window_bounds.left + score_window_bounds.left + score_window_bounds.width);
+
+        board_window_bounds.width -= (score_window_bounds.width + score_window_bounds.left);
 
         // figure out the cell size (must be square)
         horiz_cell_count = 20;

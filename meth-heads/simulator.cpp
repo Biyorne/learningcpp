@@ -2,8 +2,9 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "simulator.hpp"
 
-#include "audio.hpp"
+#include "animation.hpp"
 #include "error-handling.hpp"
+#include "sound-player.hpp"
 #include "utils.hpp"
 
 #include <array>
@@ -23,7 +24,7 @@ namespace methhead
         , m_videoMode(1280u, 1024u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
         , m_random()
-        , m_audio(mode, m_random)
+        , m_soundPlayer(mode, m_random)
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_board(m_displayVars.makeBoard())
         , m_actorTurnIndex(0)
@@ -61,6 +62,17 @@ namespace methhead
 
     void Simulator::run()
     {
+        // TODO remove after lesson
+        // handleEvents();
+        //
+        // Animation anim(m_displayVars.constants().window_size);
+        //
+        // m_window.clear();
+        // m_window.draw(anim);
+        // m_window.display();
+        //
+        // sf::sleep(sf::seconds(3.0f));
+
         while (willKeepRunning())
         {
             handleEvents();
@@ -182,11 +194,11 @@ namespace methhead
         {
             if (sf::Keyboard::Up == event.key.code)
             {
-                m_audio.volumeUp();
+                m_soundPlayer.volumeUp();
             }
             else if (sf::Keyboard::Down == event.key.code)
             {
-                m_audio.volumeDown();
+                m_soundPlayer.volumeDown();
             }
             else if (sf::Keyboard::Left == event.key.code)
             {
@@ -230,7 +242,7 @@ namespace methhead
             m_actorTurnIndex = 0;
         }
 
-        m_actors.at(m_actorTurnIndex)->act(m_board, m_audio, m_random);
+        m_actors.at(m_actorTurnIndex)->act(m_board, m_soundPlayer, m_random);
 
         ++m_actorTurnIndex;
     }

@@ -1,11 +1,11 @@
 #ifndef METHHEADS_SIMULATOR_HPP_INCLUDED
 #define METHHEADS_SIMULATOR_HPP_INCLUDED
 
-#include "audio.hpp"
 #include "cell.hpp"
 #include "display-variables.hpp"
 #include "meth-head.hpp"
 #include "random.hpp"
+#include "sound-player.hpp"
 #include "utils.hpp"
 
 #include <vector>
@@ -51,7 +51,7 @@ namespace methhead
 
         sf::RenderWindow m_window;
         Random m_random;
-        Audio m_audio;
+        SoundPlayer m_soundPlayer;
         DisplayVariables m_displayVars;
         BoardMap_t m_board;
 

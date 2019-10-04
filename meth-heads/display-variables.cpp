@@ -36,13 +36,15 @@ namespace methhead
         sf::RectangleShape & lazyRectangle,
         sf::RectangleShape & greedyRectangle)
     {
-        const sf::FloatRect bounds(m_constants.score_window_bounds);
+        // split the bounds into two halves for lazy vs greedy
+        sf::FloatRect bounds(m_constants.score_window_bounds);
 
-        // start with both at full height but not quite full width
-        const sf::Vector2f barSizeFull((bounds.width * 0.475f), bounds.height);
+        // make the width just under half to put a space between that looks nice
+        sf::FloatRect lazyBounds(bounds);
+        lazyBounds.width *= 0.475f;
 
-        sf::Vector2f lazySize(barSizeFull);
-        sf::Vector2f greedySize(barSizeFull);
+        sf::FloatRect greedyBounds(lazyBounds);
+        greedyBounds.left = ((bounds.left + bounds.width) - greedyBounds.width);
 
         // shrink the height of the loser
         if (lazyScore != greedyScore)
@@ -50,27 +52,28 @@ namespace methhead
             const auto highScore(std::max(lazyScore, greedyScore));
             const auto lowScore(std::min(lazyScore, greedyScore));
 
-            const float heightShrinkRatio(
-                static_cast<float>(lowScore) / static_cast<float>(highScore));
+            const float shrinkRatio(static_cast<float>(lowScore) / static_cast<float>(highScore));
 
             if (lazyScore < greedyScore)
             {
-                lazySize.y *= heightShrinkRatio;
+                lazyBounds.height *= shrinkRatio;
             }
             else
             {
-                greedySize.y *= heightShrinkRatio;
+                greedyBounds.height *= shrinkRatio;
             }
         }
 
-        lazyRectangle.setPosition(bounds.left, ((bounds.top + bounds.height) - lazySize.y));
-        lazyRectangle.setSize(lazySize);
+        // position and size both rectangles
+        lazyRectangle.setPosition(
+            lazyBounds.left, ((bounds.top + bounds.height) - lazyBounds.height));
+
+        lazyRectangle.setSize({ lazyBounds.width, lazyBounds.height });
 
         greedyRectangle.setPosition(
-            ((bounds.left + bounds.width) - greedySize.x),
-            ((bounds.top + bounds.height) - greedySize.y));
+            greedyBounds.left, ((bounds.top + bounds.height) - greedyBounds.height));
 
-        greedyRectangle.setSize(greedySize);
+        greedyRectangle.setSize({ greedyBounds.width, greedyBounds.height });
     }
 
     sf::Vector2f DisplayVariables::cellPosToWindowPos(const sf::Vector2i & cellPos) const
