@@ -1,6 +1,7 @@
 #ifndef METHHEADS_SIMULATOR_HPP_INCLUDED
 #define METHHEADS_SIMULATOR_HPP_INCLUDED
 
+#include "animation.hpp"
 #include "cell.hpp"
 #include "display-variables.hpp"
 #include "meth-head.hpp"
@@ -52,6 +53,7 @@ namespace methhead
         sf::RenderWindow m_window;
         Random m_random;
         SoundPlayer m_soundPlayer;
+        AnimationPlayer m_animationPlayer;
         DisplayVariables m_displayVars;
         BoardMap_t m_board;
 

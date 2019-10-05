@@ -24,7 +24,8 @@ namespace methhead
         , m_videoMode(1280u, 1024u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
         , m_random()
-        , m_soundPlayer(mode, m_random)
+        , m_soundPlayer(m_random)
+        , m_animationPlayer(m_random)
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_board(m_displayVars.makeBoard())
         , m_actorTurnIndex(0)
@@ -38,16 +39,18 @@ namespace methhead
     {
         if (Mode::Normal == m_mode)
         {
-            m_window.create(m_videoMode, "Meth Heads", sf::Style::Fullscreen);
-        }
-        else
-        {
-            std::cout << "Graphics disabled during speed tests." << std::endl;
-        }
+            m_window.create(m_videoMode, "Meth Heads", sf::Style::Default);
 
-        if (!m_lootTexture.loadFromFile("image/loot.png"))
-        {
-            std::cout << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
+            m_window.clear();
+            m_window.display();
+
+            if (!m_lootTexture.loadFromFile("image/loot.png"))
+            {
+                std::cerr << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
+            }
+
+            m_soundPlayer.setup();
+            m_animationPlayer.setup();
         }
 
         const std::size_t initialLootCount(5);

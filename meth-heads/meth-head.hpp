@@ -16,13 +16,13 @@ namespace methhead
 {
 
     // TODO put in own file
-    struct IActor
+    struct IActor : public sf::Drawable
     {
         virtual ~IActor() = default;
 
         virtual std::size_t getScore() const = 0;
         virtual Motivation getMotivation() const = 0;
-        virtual void draw(sf::RenderTarget & target, sf::RenderStates states) const = 0;
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
 
         virtual void act(BoardMap_t & board, SoundPlayer & soundPlayer, const Random & random) = 0;
     };

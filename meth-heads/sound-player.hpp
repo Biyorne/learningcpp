@@ -7,6 +7,7 @@
 #include "utils.hpp"
 
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -15,21 +16,12 @@
 namespace methhead
 {
 
-    struct Sound
-    {
-        std::string toString() const;
-
-        std::string name;
-        sf::Sound sound;
-        sf::SoundBuffer buffer;
-    };
-
-    //
-
     class SoundPlayer
     {
     public:
-        SoundPlayer(const Mode mode, Random & random);
+        SoundPlayer(Random & random);
+
+        void setup();
 
         void play(const std::string & name);
 
@@ -46,6 +38,15 @@ namespace methhead
         void loadFiles();
         void loadFile(const std::filesystem::path & path);
         bool willLoad(const std::filesystem::directory_entry & entry);
+
+        struct Sound
+        {
+            std::string toString() const;
+
+            std::string name;
+            sf::Sound sound;
+            sf::SoundBuffer buffer;
+        };
 
     private:
         bool m_isMuted;

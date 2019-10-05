@@ -13,21 +13,21 @@
 namespace methhead
 {
 
-    std::string Sound::toString() const
+    std::string SoundPlayer::Sound::toString() const
     {
         std::ostringstream ss;
 
         ss << std::setw(22) << std::left;
         ss << name;
-        ss << std::setw(0) << std::right;
+        // ss << std::setw(0) << std::right;
 
         // duration in seconds
         const double durationMs(static_cast<double>(buffer.getDuration().asMilliseconds()));
         const double durationSec(durationMs / 1000.0);
 
-        ss << std::setprecision(2) << std::setfill('0') << std::setw(3) << std::fixed;
+        ss << " " << std::setprecision(2) << std::setfill('0') << std::setw(3) << std::fixed;
         ss << durationSec;
-        ss << std::setprecision(0) << std::setfill(' ') << std::setw(0) << std::defaultfloat;
+        // ss << std::setprecision(0) << std::setfill(' ') << std::setw(0) << std::defaultfloat;
 
         ss << "s ";
 
@@ -55,7 +55,7 @@ namespace methhead
         return ss.str();
     }
 
-    SoundPlayer::SoundPlayer(const Mode mode, Random & random)
+    SoundPlayer::SoundPlayer(Random & random)
         : m_isMuted(false)
         , m_volume(0.0f)
         , m_volumeMin(0.0f) // this is what sfml uses
@@ -64,15 +64,19 @@ namespace methhead
         , m_random(random)
         , m_supportedFileExtensions(".ogg/.flac/.wav")
         , m_sounds()
-    {
-        if (Mode::SpeedTest == mode)
-        {
-            muteButton();
-            std::cout << "SoundPlayer disabled during speed tests." << std::endl;
-            return;
-        }
+    {}
 
-        loadFiles();
+    void SoundPlayer::setup()
+    {
+        try
+        {
+            loadFiles();
+        }
+        catch (const std::exception & ex)
+        {
+            std::cerr << "SoundPlayer Error while trying to find and load audio files: \""
+                      << ex.what() << "\"" << std::endl;
+        }
 
         if (m_sounds.empty())
         {
@@ -107,7 +111,7 @@ namespace methhead
         if (nameMatchingIndexes.empty())
         {
             std::cerr << "SoundPlayer Error:  .play(\"" << name
-                      << "\") called, but no sounds were found that start with that name.\n";
+                      << "\") called, but none had that name." << std::endl;
 
             return;
         }
@@ -179,7 +183,7 @@ namespace methhead
 
         if (!soundUPtr->buffer.loadFromFile(path.string()))
         {
-            std::cerr << "SoundPlayer Error:  Found a supported sound file: \"" << path.string()
+            std::cerr << "SoundPlayer Error:  Found a supported file: \"" << path.string()
                       << "\", but an error occurred while loading it." << std::endl;
 
             return;
