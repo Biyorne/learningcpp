@@ -22,10 +22,8 @@ namespace methhead
             frameCount += image.rects.size();
         }
 
-        ss << " x" << frameCount;
-
-        ss << " " << static_cast<int>(frame_size.x) << "x" << static_cast<int>(frame_size.y)
-           << " frames";
+        ss << " " << frameCount << " frames at " << static_cast<int>(frame_size.x) << "x"
+           << static_cast<int>(frame_size.y);
 
         return ss.str();
     }
@@ -65,7 +63,7 @@ namespace methhead
         const sf::Color & color,
         const float secPerFrame)
     {
-        if (m_imageCaches.empty() || name.empty())
+        if (m_imageCaches.empty())
         {
             return;
         }
@@ -74,7 +72,7 @@ namespace methhead
 
         for (std::size_t i(0); i < m_imageCaches.size(); ++i)
         {
-            if (startsWith(m_imageCaches.at(i)->name, name))
+            if (name.empty() || startsWith(m_imageCaches.at(i)->name, name))
             {
                 nameMatchingIndexes.push_back(i);
             }
@@ -180,7 +178,10 @@ namespace methhead
     {
         for (const Animation & anim : m_animations)
         {
-            target.draw(anim.sprite, states);
+            if (!anim.is_finished_playing)
+            {
+                target.draw(anim.sprite, states);
+            }
         }
     }
 

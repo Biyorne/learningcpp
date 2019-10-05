@@ -1,6 +1,7 @@
 #ifndef METHHEADS_BASE_HPP_INCLUDED
 #define METHHEADS_BASE_HPP_INCLUDED
 
+#include "animation.hpp"
 #include "cell.hpp"
 #include "random.hpp"
 #include "sound-player.hpp"
@@ -22,9 +23,16 @@ namespace methhead
 
         virtual std::size_t getScore() const = 0;
         virtual Motivation getMotivation() const = 0;
+
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
 
-        virtual void act(BoardMap_t & board, SoundPlayer & soundPlayer, const Random & random) = 0;
+        virtual void
+            act(const float elapsedMs,
+                BoardMap_t & board,
+                SoundPlayer & soundPlayer,
+                const Random & random,
+                AnimationPlayer & animationPlayer)
+            = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
@@ -38,13 +46,20 @@ namespace methhead
         MethHeadBase(
             const std::string & imagePath,
             const sf::Vector2i & boardPos,
-            const sf::FloatRect & windowBounds);
+            const sf::FloatRect & windowBounds,
+            const float waitBetweenActionsSec = 0.333f);
 
         virtual ~MethHeadBase() = default;
 
     public:
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
-        void act(BoardMap_t & board, SoundPlayer & soundPlayer, const Random & random) override;
+
+        void
+            act(const float elapsedSec,
+                BoardMap_t & board,
+                SoundPlayer & soundPlayer,
+                const Random & random,
+                AnimationPlayer & animationPlayer) override;
 
         std::size_t getScore() const final { return m_score; }
 
@@ -60,6 +75,7 @@ namespace methhead
             BoardMap_t & board,
             SoundPlayer & soundPlayer,
             const Random & random,
+            AnimationPlayer & animationPlayer,
             const sf::Vector2i & targetCellPos);
 
         inline int calcDistance(const sf::Vector2i & from, const sf::Vector2i & to) const
@@ -89,6 +105,9 @@ namespace methhead
         sf::Texture m_texture;
         sf::Sprite m_sprite;
         sf::Vector2i m_boardPos;
+
+        float m_waitBetweenActionsSec;
+        float m_elapsedSinceLastActionSec;
     };
 
     //

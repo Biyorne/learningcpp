@@ -30,7 +30,6 @@ namespace methhead
         void run();
 
     private:
-        void updateSecondsPerTurn();
         bool willKeepRunning() const;
 
         void consoleStatus();
@@ -41,7 +40,7 @@ namespace methhead
         void handleEvents();
         void handleEvent(const sf::Event & event);
 
-        void update();
+        void update(const float elapsedSec);
         void draw();
 
         Scores calcScores() const;
@@ -57,11 +56,10 @@ namespace methhead
         DisplayVariables m_displayVars;
         BoardMap_t m_board;
 
-        std::size_t m_actorTurnIndex;
         std::vector<IActorUPtr_t> m_actors;
 
-        float m_secondsPerTurn;
-        float m_secondsPerTurnMultipler;
+        sf::Clock m_frameClock;
+        float m_timeMultiplier;
         std::size_t m_frameCount;
 
         sf::Clock m_consoleStatusClock;

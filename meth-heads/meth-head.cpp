@@ -19,11 +19,14 @@ namespace methhead
     MethHeadBase::MethHeadBase(
         const std::string & imagePath,
         const sf::Vector2i & boardPos,
-        const sf::FloatRect & windowBounds)
+        const sf::FloatRect & windowBounds,
+        const float waitBetweenActionsSec)
         : m_score(0)
         , m_texture()
         , m_sprite()
         , m_boardPos(boardPos)
+        , m_waitBetweenActionsSec(waitBetweenActionsSec)
+        , m_elapsedSinceLastActionSec(0.0f)
     {
         if (!m_texture.loadFromFile(imagePath))
         {
@@ -39,9 +42,19 @@ namespace methhead
         target.draw(m_sprite, states);
     }
 
-    void MethHeadBase::act(BoardMap_t & board, SoundPlayer & soundPlayer, const Random & random)
+    void MethHeadBase::act(
+        const float elapsedSec,
+        BoardMap_t & board,
+        SoundPlayer & soundPlayer,
+        const Random & random,
+        AnimationPlayer & animationPlayer)
     {
-        moveToward(board, soundPlayer, random, pickTarget(board));
+        m_elapsedSinceLastActionSec += elapsedSec;
+        if (m_elapsedSinceLastActionSec > m_waitBetweenActionsSec)
+        {
+            m_elapsedSinceLastActionSec = 0.0f;
+            moveToward(board, soundPlayer, random, animationPlayer, pickTarget(board));
+        }
     }
 
     // TODO make board class and move spawn loot there.
@@ -93,6 +106,7 @@ namespace methhead
         BoardMap_t & board,
         SoundPlayer & soundPlayer,
         const Random & random,
+        AnimationPlayer & animationPlayer,
         const sf::Vector2i & targetCellPos)
     {
         assertOrThrow(
@@ -131,10 +145,12 @@ namespace methhead
 
         Cell & newCell(board[newCellPos]);
 
-        if ((getMotivation() != newCell.motivation) && (Motivation::none != newCell.motivation))
+        if (Motivation::none != newCell.motivation)
         {
-            std::vector<std::string> soundNames { "ouch", "punch", "collide" };
-            soundPlayer.play(random.from(soundNames));
+            soundPlayer.play("");
+
+            animationPlayer.play(
+                "", newCell.rectangle.getPosition(), (newCell.rectangle.getSize() * 4.0f));
         }
 
         newCell.motivation = getMotivation();

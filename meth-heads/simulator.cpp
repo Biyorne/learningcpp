@@ -28,10 +28,10 @@ namespace methhead
         , m_animationPlayer(m_random)
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_board(m_displayVars.makeBoard())
-        , m_actorTurnIndex(0)
         , m_actors()
-        , m_secondsPerTurn(1.0f)
-        , m_secondsPerTurnMultipler(1.0f)
+        , m_frameClock()
+        , m_timeMultiplier(1.0f)
+        , m_frameCount(0)
         , m_consoleStatusClock()
         , m_consoleStatusFrameCount(0)
         , m_consoleStatusFrameCountMax(0)
@@ -39,7 +39,9 @@ namespace methhead
     {
         if (Mode::Normal == m_mode)
         {
-            m_window.create(m_videoMode, "Meth Heads", sf::Style::Default);
+            m_window.create(m_videoMode, "Meth Heads", sf::Style::Fullscreen);
+
+            m_window.setFramerateLimit(60);
 
             m_window.clear();
             m_window.display();
@@ -78,16 +80,24 @@ namespace methhead
 
         while (willKeepRunning())
         {
-            handleEvents();
-            update();
-
-            if (m_mode == Mode::Normal)
+            if (Mode::Normal == m_mode)
             {
+                handleEvents();
+
+                const float actualElapsedSec(m_frameClock.getElapsedTime().asSeconds());
+                m_frameClock.restart();
+                const float gameElapsedSec(actualElapsedSec * m_timeMultiplier);
+
+                if (gameElapsedSec > 0.0f)
+                {
+                    update(gameElapsedSec);
+                }
+
                 draw();
-                sf::sleep(sf::seconds(m_secondsPerTurn));
             }
             else
             {
+                update(1.0f);
                 consoleStatus();
             }
         }
@@ -102,24 +112,6 @@ namespace methhead
         else
         {
             return true;
-        }
-    }
-
-    void Simulator::updateSecondsPerTurn()
-    {
-        if ((Mode::SpeedTest == m_mode) || m_actors.empty())
-        {
-            m_secondsPerTurn = 1.0f;
-            m_secondsPerTurnMultipler = 1.0f;
-        }
-        else
-        {
-            m_secondsPerTurnMultipler = std::clamp(m_secondsPerTurnMultipler, 0.0001f, 10000.0f);
-
-            m_secondsPerTurn = (1.0f / static_cast<float>(m_actors.size()));
-            m_secondsPerTurn *= m_secondsPerTurnMultipler;
-
-            m_secondsPerTurn = std::clamp(m_secondsPerTurn, 0.0001f, 0.5f);
         }
     }
 
@@ -168,8 +160,6 @@ namespace methhead
             m_actors.push_back(
                 std::make_unique<Greedy>("image/head-2.png", boardPos, cell.bounds()));
         }
-
-        updateSecondsPerTurn();
     }
 
     void Simulator::handleEvents()
@@ -205,13 +195,11 @@ namespace methhead
             }
             else if (sf::Keyboard::Left == event.key.code)
             {
-                m_secondsPerTurnMultipler *= 1.25f;
-                updateSecondsPerTurn();
+                m_timeMultiplier = std::clamp((m_timeMultiplier *= 0.5f), 0.1f, 1000.0f);
             }
             else if (sf::Keyboard::Right == event.key.code)
             {
-                m_secondsPerTurnMultipler *= 0.75f;
-                updateSecondsPerTurn();
+                m_timeMultiplier = std::clamp((m_timeMultiplier *= 1.5f), 0.1f, 1000.0f);
             }
             else if (sf::Keyboard::L == event.key.code)
             {
@@ -233,21 +221,14 @@ namespace methhead
         }
     }
 
-    void Simulator::update()
+    void Simulator::update(const float elapsedSec)
     {
-        if (m_actors.empty())
+        for (auto & actor : m_actors)
         {
-            return;
+            actor->act(elapsedSec, m_board, m_soundPlayer, m_random, m_animationPlayer);
         }
 
-        if (m_actorTurnIndex >= m_actors.size())
-        {
-            m_actorTurnIndex = 0;
-        }
-
-        m_actors.at(m_actorTurnIndex)->act(m_board, m_soundPlayer, m_random);
-
-        ++m_actorTurnIndex;
+        m_animationPlayer.update(elapsedSec);
     }
 
     void Simulator::printConsoleStatus()
@@ -273,7 +254,7 @@ namespace methhead
         std::cout << "fps=" << m_consoleStatusFrameCount;
         std::cout << " (" << m_consoleStatusFrameCountMax << ")";
         std::cout << ",   lazy=" << scores.lazy;
-        std::cout << ",   greedy=" << scores.lazy;
+        std::cout << ",   greedy=" << scores.greedy;
 
         if (scores.greedy > scores.lazy)
         {
@@ -335,6 +316,8 @@ namespace methhead
         {
             uptr->draw(m_window, sf::RenderStates());
         }
+
+        m_animationPlayer.draw(m_window, sf::RenderStates());
 
         m_window.display();
     }

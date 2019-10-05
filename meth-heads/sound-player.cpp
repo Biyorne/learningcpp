@@ -93,7 +93,7 @@ namespace methhead
 
     void SoundPlayer::play(const std::string & name)
     {
-        if (m_isMuted || m_sounds.empty() || name.empty())
+        if (m_isMuted || m_sounds.empty())
         {
             return;
         }
@@ -102,7 +102,7 @@ namespace methhead
 
         for (std::size_t i(0); i < m_sounds.size(); ++i)
         {
-            if (startsWith(m_sounds.at(i)->name, name))
+            if (name.empty() || startsWith(m_sounds.at(i)->name, name))
             {
                 nameMatchingIndexes.push_back(i);
             }

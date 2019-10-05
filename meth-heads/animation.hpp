@@ -114,7 +114,7 @@ namespace methhead
         std::vector<CacheUPtr_t> m_imageCaches;
         std::string m_supportedFileExtensions;
 
-        static inline float m_defaultSecPerFrame = 0.055f;
+        static inline float m_defaultSecPerFrame = 0.05f;
     };
 
 } // namespace methhead
