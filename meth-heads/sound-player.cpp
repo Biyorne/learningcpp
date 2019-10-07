@@ -66,6 +66,14 @@ namespace methhead
         , m_sounds()
     {}
 
+    SoundPlayer::~SoundPlayer()
+    {
+        for (auto & sound : m_sounds)
+        {
+            sound->sound.stop();
+        }
+    }
+
     void SoundPlayer::setup()
     {
         try
@@ -93,7 +101,7 @@ namespace methhead
 
     void SoundPlayer::play(const std::string & name)
     {
-        if (m_isMuted || m_sounds.empty())
+        if (m_isMuted || m_sounds.empty() || (m_volume < 1.0f))
         {
             return;
         }

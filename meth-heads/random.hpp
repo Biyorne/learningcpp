@@ -30,9 +30,9 @@ namespace methhead
                 return fromTo(to, from);
             }
 
-            if (isRealClose(to, from))
+            if (isRealClose(from, to))
             {
-                return to;
+                return from;
             }
 
             if constexpr (std::is_floating_point_v<T>)
@@ -57,7 +57,7 @@ namespace methhead
             return fromTo(T(0), to);
         }
 
-        bool boolean() const { return (zeroTo(1) == 1); }
+        inline bool boolean() const { return (zeroTo(1) == 1); }
 
         template <typename T>
         std::size_t index(const T & container) const
@@ -70,37 +70,37 @@ namespace methhead
             return zeroTo(container.size() - 1);
         }
 
-        template <typename T>
-        const auto & from(const T & container) const
+        template <typename Iterator_t>
+        auto & from(Iterator_t first, const Iterator_t last) const
         {
-            if (container.empty())
+            if (last == first)
             {
-                throw std::runtime_error("Random::from(const) but the container was empty!");
+                throw std::runtime_error("Random::from() but the container was empty!");
             }
 
-            auto iter(std::begin(container));
-            std::advance(iter, index(container));
-            return *iter;
+            std::advance(first, zeroTo(std::distance(first, last) - 1));
+            return *first;
         }
 
         template <typename T>
         auto & from(T & container) const
         {
-            if (container.empty())
-            {
-                throw std::runtime_error("Random::from(non-const) but the container was empty!");
-            }
+            return from(std::begin(container), std::end(container));
+        }
 
-            auto iter(std::begin(container));
-            std::advance(iter, index(container));
-            return *iter;
+        template <typename Iterator_t>
+        void shuffle(const Iterator_t first, const Iterator_t last) const
+        {
+            std::shuffle(first, last, m_engine);
         }
 
         template <typename T>
         void shuffle(T & container) const
         {
-            std::shuffle(std::begin(container), std::end(container), m_engine);
+            shuffle(std::begin(container), std::end(container));
         }
+
+        //
 
     private:
         mutable std::mt19937 m_engine;

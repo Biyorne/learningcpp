@@ -20,6 +20,7 @@ namespace methhead
     {
     public:
         SoundPlayer(Random & random);
+        ~SoundPlayer();
 
         void setup();
 

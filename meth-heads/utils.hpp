@@ -50,25 +50,18 @@ namespace methhead
     template <typename T>
     [[nodiscard]] T constexpr simpleAbs(const T number) noexcept
     {
-        if constexpr (std::is_unsigned_v<T>)
+        if (number < T(0))
         {
-            return number;
+            return -number;
         }
         else
         {
-            if (number < 0)
-            {
-                return -number;
-            }
-            else
-            {
-                return number;
-            }
+            return number;
         }
     }
 
     template <typename T>
-    [[nodiscard]] bool isRealClose(
+    [[nodiscard]] constexpr bool isRealClose(
         const T left, const T right, const T closeEnough = std::numeric_limits<T>::epsilon())
     {
         const T absDiff(simpleAbs(right - left));
