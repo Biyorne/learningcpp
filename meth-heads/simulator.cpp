@@ -31,7 +31,6 @@ namespace methhead
         , m_actors()
         , m_frameClock()
         , m_timeMultiplier(1.0f)
-        , m_frameCount(0)
         , m_consoleStatusClock()
         , m_consoleStatusFrameCount(0)
         , m_consoleStatusFrameCountMax(0)

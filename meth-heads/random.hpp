@@ -1,6 +1,8 @@
 #ifndef METHHEADS_RANDOM_HPP_INCLUDED
 #define METHHEADS_RANDOM_HPP_INCLUDED
 
+#include "utils.hpp"
+
 #include <limits>
 #include <random>
 #include <stdexcept>

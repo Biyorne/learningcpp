@@ -13,9 +13,9 @@ namespace methhead
         : window_size(windowSize)
         , score_window_bounds(0.0f, 0.0f, 0.0f, 0.0f)
         , board_window_bounds(0.0f, 0.0f, 0.0f, 0.0f)
+        , cell_size(0.0f, 0.0f)
         , horiz_cell_count(0)
         , vert_cell_count(0)
-        , cell_size(0.0f, 0.0f)
         , font()
         , default_text()
     {

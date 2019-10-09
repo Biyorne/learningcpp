@@ -60,7 +60,6 @@ namespace methhead
 
         sf::Clock m_frameClock;
         float m_timeMultiplier;
-        std::size_t m_frameCount;
 
         sf::Clock m_consoleStatusClock;
         std::size_t m_consoleStatusFrameCount;
