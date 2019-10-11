@@ -148,7 +148,7 @@ namespace methhead
         sfx->sound.setBuffer(sfx->buffer);
         sfx->filename = entry.path().filename().string();
 
-        std::cout << "Loaded: " << sfx->toString() << std::endl;
+        std::cout << "Loaded Sound Effect: " << sfx->toString() << std::endl;
         m_soundEffects.push_back(std::move(sfx));
     }
 

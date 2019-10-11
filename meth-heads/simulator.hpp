@@ -1,7 +1,7 @@
 #ifndef METHHEADS_SIMULATOR_HPP_INCLUDED
 #define METHHEADS_SIMULATOR_HPP_INCLUDED
 
-#include "animation.hpp"
+#include "animation-player.hpp"
 #include "cell.hpp"
 #include "display-variables.hpp"
 #include "meth-head.hpp"

@@ -1,7 +1,7 @@
 #ifndef METHHEADS_BASE_HPP_INCLUDED
 #define METHHEADS_BASE_HPP_INCLUDED
 
-#include "animation.hpp"
+#include "animation-player.hpp"
 #include "cell.hpp"
 #include "random.hpp"
 #include "sound-player.hpp"

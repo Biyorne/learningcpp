@@ -2,7 +2,7 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "simulator.hpp"
 
-#include "animation.hpp"
+#include "animation-player.hpp"
 #include "error-handling.hpp"
 #include "sound-player.hpp"
 #include "utils.hpp"
@@ -25,7 +25,7 @@ namespace methhead
         , m_window()
         , m_random()
         , m_soundPlayer()
-        , m_animationPlayer(m_random)
+        , m_animationPlayer()
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_board(m_displayVars.makeBoard())
         , m_actors()
@@ -39,18 +39,12 @@ namespace methhead
         if (Mode::Normal == m_mode)
         {
             m_window.create(m_videoMode, "Meth Heads", sf::Style::Default);
-
             m_window.setFramerateLimit(60);
-
-            m_window.clear();
-            m_window.display();
 
             if (!m_lootTexture.loadFromFile("image/loot.png"))
             {
                 std::cerr << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
             }
-
-            m_animationPlayer.setup();
         }
 
         const std::size_t initialLootCount(5);

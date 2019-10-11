@@ -132,13 +132,7 @@ namespace methhead
 
         Cell & newCell(board[newCellPos]);
 
-        if (Motivation::none != newCell.motivation)
-        {
-            soundPlayer.play(random.from({ "punch", "ouch" }), random);
-
-            animationPlayer.play(
-                "", newCell.rectangle.getPosition(), (newCell.rectangle.getSize() * 4.0f));
-        }
+        const bool didBumpIntoOtherActor { (Motivation::none != newCell.motivation) };
 
         newCell.motivation = getMotivation();
 
@@ -151,6 +145,17 @@ namespace methhead
 
             soundPlayer.play("coin", random);
             spawnLoot(board, random);
+        }
+        else if (didBumpIntoOtherActor)
+        {
+            soundPlayer.play(random.from({ "punch", "ouch" }), random);
+
+            const sf::Vector2f spriteSize { m_sprite.getGlobalBounds().width,
+                                            m_sprite.getGlobalBounds().height };
+
+            const sf::Vector2f animPos { m_sprite.getPosition() + (spriteSize * 0.5f) };
+
+            animationPlayer.play(random, "explode", animPos, (spriteSize * 4.0f));
         }
     }
 

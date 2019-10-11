@@ -1,10 +1,9 @@
 #ifndef METHHEADS_ANIMATION_HPP_INCLUDED
 #define METHHEADS_ANIMATION_HPP_INCLUDED
 //
-// animation.hpp
+// animation-player.hpp
 //
 #include "random.hpp"
-#include "utils.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -37,41 +36,44 @@ namespace methhead
     //
     class AnimationPlayer : public sf::Drawable
     {
-        // a single image with one rect per frame
+        struct ParsedDirectoryName
+        {
+            std::string name;
+            sf::Vector2i frame_size;
+        };
+
         struct Image
         {
+            std::string filename;
             sf::Texture texture;
             std::vector<sf::IntRect> rects;
         };
 
-        // the name and images of an animation
-        struct Cache
+        struct ImageCache
         {
             std::string toString() const;
 
-            std::string name;
+            std::string animation_name;
             sf::Vector2f frame_size;
+            std::size_t frame_count = 0;
             std::vector<Image> images;
         };
 
-        using CacheUPtr_t = std::unique_ptr<Cache>;
-
-        // a visiable animation made unique by its pos, size, and time elapsed
         struct Animation
         {
+            bool is_finished = false;
             sf::Sprite sprite;
             std::size_t cache_index = 0;
+            std::size_t frame_index = 0;
             float sec_elapsed = 0.0f;
             float sec_per_frame = 0.0f;
-            bool is_finished_playing = false;
         };
 
     public:
-        AnimationPlayer(Random & random);
-
-        void setup();
+        AnimationPlayer();
 
         void play(
+            const Random & random,
             const std::string & name,
             const sf::Vector2f & pos,
             const sf::Vector2f & size,
@@ -79,76 +81,60 @@ namespace methhead
             const float secPerFrame = m_defaultSecPerFrame);
 
         void update(const float elapsedTimeSec);
+
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
     private:
-        void loadDirectories();
-        std::tuple<std::string, sf::Vector2i> parseDirectoryName(const std::string & name) const;
+        void loadAnimationDirectories();
 
-        void loadDirectory(
-            const std::filesystem::path & path,
-            const std::string & name,
-            const sf::Vector2i & frameSize);
+        bool willLoadAnimationDirectory(
+            const std::filesystem::directory_entry & dirEntry, ParsedDirectoryName & parse) const;
 
-        std::vector<std::filesystem::path> findImageFiles(const std::filesystem::path & path) const;
+        void loadAnimationDirectory(
+            const std::filesystem::directory_entry & dirEntry, const ParsedDirectoryName & parse);
 
-        bool willLoadImageFile(const std::filesystem::directory_entry & entry) const;
+        //
 
-        Image loadImage(const std::filesystem::path & path, const sf::Vector2i & frameSize) const;
+        bool loadAnimationImages(
+            const std::filesystem::directory_entry & dirEntry,
+            const sf::Vector2i & frameSize,
+            std::vector<Image> & images) const;
 
-        Animation & findOrMakeAvailableAnimation();
+        bool willLoadAnimationImage(const std::filesystem::directory_entry & fileEntry) const;
 
-        void startAnimation(
-            Animation & anim,
+        bool loadAnimationImage(
+            const std::filesystem::directory_entry & fileEntry,
+            const sf::Vector2i & frameSize,
+            std::vector<Image> & images) const;
+
+        //
+
+        void createAndStartPlaying(
             const std::size_t cacheIndex,
             const sf::Vector2f & pos,
             const sf::Vector2f & size,
             const sf::Color & color,
             const float secPerFrame);
 
-        void setFrame(Animation & anim, const float elapsedTimeSec);
+        ParsedDirectoryName parseDirectoryName(const std::string & name) const;
+
+        Animation & getAvailableAnimation();
+
+        void updateAnimation(Animation & anim, const float elapsedTimeSec) const;
+
+        void updateSprite(
+            sf::Sprite & sprite, const ImageCache & imageCache, const std::size_t frameIndex) const;
+
+        std::vector<std::size_t> findNameMatchingIndexes(const std::string & name) const;
 
     private:
-        Random & m_random;
         std::vector<Animation> m_animations;
-        std::vector<CacheUPtr_t> m_imageCaches;
+        std::vector<std::unique_ptr<ImageCache>> m_imageCaches;
         std::string m_fileExtensions;
 
-        static inline float m_defaultSecPerFrame = 0.05f;
+        static inline float m_defaultSecPerFrame = 0.15f;
     };
 
 } // namespace methhead
 
 #endif // METHHEADS_ANIMATION_HPP_INCLUDED
-
-/*
-public:
-Animation(const sf::Vector2f & windowSize)
-{
-    const std::size_t count { 2 };
-    const sf::Vector2f posAdj(windowSize / static_cast<float>(count));
-
-    sf::Vector2f pos(0.0f, 0.0f);
-
-    m_texture1.loadFromFile("image/head-1.png");
-    m_sprite1.setTexture(m_texture1);
-    m_sprite1.setPosition(pos);
-    pos += posAdj;
-
-    m_texture2.loadFromFile("image/head-2.png");
-    m_sprite2.setTexture(m_texture2);
-    m_sprite2.setPosition(pos);
-    pos += posAdj;
-}
-
-void draw(sf::RenderTarget & target, sf::RenderStates) const override
-{
-    target.draw(m_sprite1);
-    target.draw(m_sprite2);
-}
-
-sf::Texture m_texture1;
-sf::Texture m_texture2;
-sf::Sprite m_sprite1;
-sf::Sprite m_sprite2;
-*/
