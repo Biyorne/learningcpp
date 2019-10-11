@@ -7,115 +7,34 @@
 
 #include <algorithm>
 #include <iostream>
-#include <memory>
 #include <sstream>
 
 namespace methhead
 {
 
-    std::string SoundPlayer::Sound::toString() const
-    {
-        std::ostringstream ss;
-
-        ss << std::setw(22) << std::left;
-        ss << name;
-        // ss << std::setw(0) << std::right;
-
-        // duration in seconds
-        const double durationMs(static_cast<double>(buffer.getDuration().asMilliseconds()));
-        const double durationSec(durationMs / 1000.0);
-
-        ss << " " << std::setprecision(2) << std::setfill('0') << std::setw(3) << std::fixed;
-        ss << durationSec;
-        // ss << std::setprecision(0) << std::setfill(' ') << std::setw(0) << std::defaultfloat;
-
-        ss << "s ";
-
-        // channels
-        const auto channelCount(buffer.getChannelCount());
-        if (1 == channelCount)
-        {
-            ss << "mono  ";
-        }
-        else if (2 == channelCount)
-        {
-            ss << "stereo";
-        }
-        else
-        {
-            ss << channelCount << "ch";
-        }
-
-        // sample rate in kHz
-        const double sampleRateHz(static_cast<double>(buffer.getSampleRate()));
-        const double sampleRakeKHz(sampleRateHz / 1000.0);
-
-        ss << " " << sampleRakeKHz << "kHz";
-
-        return ss.str();
-    }
-
-    SoundPlayer::SoundPlayer(Random & random)
+    SoundPlayer::SoundPlayer()
         : m_isMuted(false)
         , m_volume(0.0f)
         , m_volumeMin(0.0f) // this is what sfml uses
         , m_volumeMax(100.0f) // this is what sfml uses
         , m_volumeInc(m_volumeMax / 10.0f) // only ten different vol levels possible
-        , m_random(random)
-        , m_supportedFileExtensions(".ogg/.flac/.wav")
-        , m_sounds()
-    {}
-
-    SoundPlayer::~SoundPlayer()
+        , m_fileExtensions(".ogg.flac.wav") // dots are required here
+        , m_soundEffects()
     {
-        for (auto & sound : m_sounds)
-        {
-            sound->sound.stop();
-        }
+        loadFiles();
+
+        // start all sounds at quarter volume
+        volume(m_volumeMax * 0.25f);
     }
 
-    void SoundPlayer::setup()
+    void SoundPlayer::play(const std::string & name, const Random & random)
     {
-        try
-        {
-            loadFiles();
-        }
-        catch (const std::exception & ex)
-        {
-            std::cerr << "SoundPlayer Error while trying to find and load audio files: \""
-                      << ex.what() << "\"" << std::endl;
-        }
-
-        if (m_sounds.empty())
-        {
-            std::cerr << "SoundPlayer Error:  No sound files were found.  Remember that "
-                         "MP3s are not supported, only: "
-                      << m_supportedFileExtensions << std::endl;
-
-            muteButton();
-            return;
-        }
-
-        volume(m_volumeMax * 0.25f); // start at quarter volume
-    }
-
-    void SoundPlayer::play(const std::string & name)
-    {
-        if (m_isMuted || m_sounds.empty() || (m_volume < 1.0f))
+        if (name.empty() || m_soundEffects.empty() || (m_volume < 1.0f))
         {
             return;
         }
 
-        std::vector<std::size_t> nameMatchingIndexes;
-
-        for (std::size_t i(0); i < m_sounds.size(); ++i)
-        {
-            if (name.empty() || startsWith(m_sounds.at(i)->name, name))
-            {
-                nameMatchingIndexes.push_back(i);
-            }
-        }
-
+        const std::vector<std::size_t> nameMatchingIndexes(findNameMatchingIndexes(name));
         if (nameMatchingIndexes.empty())
         {
             std::cerr << "SoundPlayer Error:  .play(\"" << name
@@ -124,8 +43,30 @@ namespace methhead
             return;
         }
 
-        const std::size_t soundIndex(m_random.from(nameMatchingIndexes));
-        m_sounds.at(soundIndex)->sound.play();
+        const std::size_t index(random.from(nameMatchingIndexes));
+        auto & sfx(m_soundEffects.at(index));
+
+        if (sfx->sound.getStatus() == sf::SoundSource::Playing)
+        {
+            return;
+        }
+
+        sfx->sound.play();
+    }
+
+    std::vector<std::size_t> SoundPlayer::findNameMatchingIndexes(const std::string & name) const
+    {
+        std::vector<std::size_t> indexes;
+
+        for (std::size_t i(0); i < m_soundEffects.size(); ++i)
+        {
+            if (startsWith(m_soundEffects.at(i)->filename, name))
+            {
+                indexes.push_back(i);
+            }
+        }
+
+        return indexes;
     }
 
     void SoundPlayer::volumeUp()
@@ -166,9 +107,9 @@ namespace methhead
     {
         m_volume = std::clamp(newVolume, m_volumeMin, m_volumeMax);
 
-        for (auto & soundUPtr : m_sounds)
+        for (auto & sfx : m_soundEffects)
         {
-            soundUPtr->sound.setVolume(m_volume);
+            sfx->sound.setVolume(m_volume);
         }
     }
 
@@ -180,32 +121,38 @@ namespace methhead
         {
             if (willLoad(entry))
             {
-                loadFile(entry.path());
+                loadFile(entry);
             }
+        }
+
+        if (m_soundEffects.empty())
+        {
+            std::cerr << "SoundPlayer Error:  No sound files were found.  Remember that "
+                         "MP3s are not supported, only: "
+                      << m_fileExtensions << std::endl;
         }
     }
 
-    void SoundPlayer::loadFile(const std::filesystem::path & path)
+    void SoundPlayer::loadFile(const std::filesystem::directory_entry & entry)
     {
-        auto soundUPtr(std::make_unique<Sound>());
+        auto sfx(std::make_unique<SoundEffect>());
 
-        if (!soundUPtr->buffer.loadFromFile(path.string()))
+        if (!sfx->buffer.loadFromFile(entry.path().string()))
         {
-            std::cerr << "SoundPlayer Error:  Found a supported file: \"" << path.string()
+            std::cerr << "SoundPlayer Error:  Found a supported file: \"" << entry.path().string()
                       << "\", but an error occurred while loading it." << std::endl;
 
             return;
         }
 
-        soundUPtr->sound.setBuffer(soundUPtr->buffer);
-        soundUPtr->name = path.filename().string();
+        sfx->sound.setBuffer(sfx->buffer);
+        sfx->filename = entry.path().filename().string();
 
-        std::cout << "Loaded: " << soundUPtr->toString() << std::endl;
-
-        m_sounds.push_back(std::move(soundUPtr));
+        std::cout << "Loaded: " << sfx->toString() << std::endl;
+        m_soundEffects.push_back(std::move(sfx));
     }
 
-    bool SoundPlayer::willLoad(const std::filesystem::directory_entry & entry)
+    bool SoundPlayer::willLoad(const std::filesystem::directory_entry & entry) const
     {
         if (!entry.is_regular_file())
         {
@@ -214,12 +161,53 @@ namespace methhead
 
         const std::string extension(entry.path().filename().extension().string());
 
-        if (extension.empty())
+        if ((extension.size() != 4) && (extension.size() != 5))
         {
             return false;
         }
 
-        return (m_supportedFileExtensions.find(extension) < m_supportedFileExtensions.size());
+        return (m_fileExtensions.find(extension) < m_fileExtensions.size());
+    }
+
+    std::string SoundPlayer::SoundEffect::toString() const
+    {
+        const std::string pad("  ");
+
+        std::ostringstream ss;
+
+        ss << std::setw(20) << std::right;
+        ss << filename << pad;
+
+        // duration in seconds
+        const auto durationMs(buffer.getDuration().asMilliseconds());
+        const double durationSec(static_cast<double>(durationMs) / 1000.0);
+
+        ss << std::setprecision(2) << std::setw(3) << std::setfill('0') << std::fixed;
+        ss << durationSec << "s" << pad;
+
+        // channels
+        const auto channelCount(buffer.getChannelCount());
+        if (1 == channelCount)
+        {
+            ss << "mono  ";
+        }
+        else if (2 == channelCount)
+        {
+            ss << "stereo";
+        }
+        else
+        {
+            ss << channelCount << "ch";
+        }
+        ss << pad;
+
+        // sample rate in kHz
+        const auto sampleRateHz(buffer.getSampleRate());
+        const double sampleRakeKHz(static_cast<double>(sampleRateHz) / 1000.0);
+
+        ss << std::setprecision(1) << std::setw(1) << std::setfill('0') << sampleRakeKHz << "kHz";
+
+        return ss.str();
     }
 
 } // namespace methhead

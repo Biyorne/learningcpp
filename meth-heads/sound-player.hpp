@@ -4,7 +4,6 @@
 // sound-player.hpp
 //
 #include "random.hpp"
-#include "utils.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -19,12 +18,9 @@ namespace methhead
     class SoundPlayer
     {
     public:
-        SoundPlayer(Random & random);
-        ~SoundPlayer();
+        SoundPlayer();
 
-        void setup();
-
-        void play(const std::string & name);
+        void play(const std::string & name, const Random & random);
 
         void volumeUp();
         void volumeDown();
@@ -36,29 +32,31 @@ namespace methhead
     private:
         void volume(const float newVolume);
 
-        void loadFiles();
-        void loadFile(const std::filesystem::path & path);
-        bool willLoad(const std::filesystem::directory_entry & entry);
+        std::vector<std::size_t> findNameMatchingIndexes(const std::string & name) const;
 
-        struct Sound
+        void loadFiles();
+        void loadFile(const std::filesystem::directory_entry & entry);
+        bool willLoad(const std::filesystem::directory_entry & entry) const;
+
+        struct SoundEffect
         {
             std::string toString() const;
 
-            std::string name;
+            std::string filename;
             sf::Sound sound;
             sf::SoundBuffer buffer;
         };
 
     private:
         bool m_isMuted;
+
         float m_volume;
         float m_volumeMin;
         float m_volumeMax;
         float m_volumeInc;
 
-        Random & m_random;
-        std::string m_supportedFileExtensions;
-        std::vector<std::unique_ptr<Sound>> m_sounds;
+        std::string m_fileExtensions;
+        std::vector<std::unique_ptr<SoundEffect>> m_soundEffects;
     };
 
 } // namespace methhead

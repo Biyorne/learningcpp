@@ -61,20 +61,7 @@ namespace methhead
     void MethHeadBase::spawnLoot(BoardMap_t & board, const Random & random)
     {
         std::vector<sf::Vector2i> cellPositions;
-
-        // TODO only added to find a bug REMOVE
-        try
-        {
-            cellPositions = makeUnoccupiedCellPositions(board);
-        }
-        catch (...)
-        {
-            std::cout << "makeUnoccupiedCellPositions() threw the execption, but was called by "
-                         "spawnLoot()"
-                      << std::endl;
-
-            throw;
-        }
+        cellPositions = makeUnoccupiedCellPositions(board);
 
         if (cellPositions.empty())
         {
@@ -147,7 +134,7 @@ namespace methhead
 
         if (Motivation::none != newCell.motivation)
         {
-            soundPlayer.play("");
+            soundPlayer.play(random.from({ "punch", "ouch" }), random);
 
             animationPlayer.play(
                 "", newCell.rectangle.getPosition(), (newCell.rectangle.getSize() * 4.0f));
@@ -159,19 +146,10 @@ namespace methhead
 
         if (newCell.loot > 0)
         {
-            assertOrThrow(
-                (newCell.is_valid),
-                "MethHead::moveToward()'s moved onto loot but that newCellPos is not valid.");
-
-            assertOrThrow(
-                (newCell.motivation != Motivation::none),
-                "MethHead::moveToward()'s moved onto loot but that newCellPos does not have us on "
-                "it?!");
-
             m_score += static_cast<std::size_t>(newCell.loot);
             newCell.loot = 0;
 
-            soundPlayer.play("coin");
+            soundPlayer.play("coin", random);
             spawnLoot(board, random);
         }
     }

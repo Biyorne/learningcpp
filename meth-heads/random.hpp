@@ -3,6 +3,7 @@
 
 #include "utils.hpp"
 
+#include <initializer_list>
 #include <limits>
 #include <random>
 #include <stdexcept>
@@ -90,6 +91,12 @@ namespace methhead
             return from(std::begin(container), std::end(container));
         }
 
+        template <typename T>
+        const T & from(const std::initializer_list<T> & list) const
+        {
+            return from(std::begin(list), std::end(list));
+        }
+
         template <typename Iterator_t>
         void shuffle(const Iterator_t first, const Iterator_t last) const
         {
@@ -101,8 +108,6 @@ namespace methhead
         {
             shuffle(std::begin(container), std::end(container));
         }
-
-        //
 
     private:
         mutable std::mt19937 m_engine;

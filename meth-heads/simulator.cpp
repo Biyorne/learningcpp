@@ -24,7 +24,7 @@ namespace methhead
         , m_videoMode(1280u, 1024u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
         , m_random()
-        , m_soundPlayer(m_random)
+        , m_soundPlayer()
         , m_animationPlayer(m_random)
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_board(m_displayVars.makeBoard())
@@ -38,7 +38,7 @@ namespace methhead
     {
         if (Mode::Normal == m_mode)
         {
-            m_window.create(m_videoMode, "Meth Heads", sf::Style::Fullscreen);
+            m_window.create(m_videoMode, "Meth Heads", sf::Style::Default);
 
             m_window.setFramerateLimit(60);
 
@@ -50,7 +50,6 @@ namespace methhead
                 std::cerr << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
             }
 
-            m_soundPlayer.setup();
             m_animationPlayer.setup();
         }
 

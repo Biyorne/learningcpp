@@ -32,7 +32,7 @@ namespace methhead
         : m_random(random)
         , m_animations()
         , m_imageCaches()
-        , m_supportedFileExtensions(".bmp/.jpg/.jpeg/.png/.tga")
+        , m_fileExtensions(".bmp/.jpg/.jpeg/.png/.tga")
     {}
 
     void AnimationPlayer::setup()
@@ -52,7 +52,7 @@ namespace methhead
             std::cerr
                 << "AnimationPlayer Error:  No valid animation directories were found.  Supported "
                    "image file types: "
-                << m_supportedFileExtensions << m_supportedFileExtensions << std::endl;
+                << m_fileExtensions << m_fileExtensions << std::endl;
         }
     }
 
@@ -308,7 +308,7 @@ namespace methhead
             return false;
         }
 
-        return (m_supportedFileExtensions.find(fileExt) < m_supportedFileExtensions.size());
+        return (m_fileExtensions.find(fileExt) < m_fileExtensions.size());
     }
 
     AnimationPlayer::Image AnimationPlayer::loadImage(

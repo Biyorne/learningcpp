@@ -112,7 +112,7 @@ namespace methhead
         Random & m_random;
         std::vector<Animation> m_animations;
         std::vector<CacheUPtr_t> m_imageCaches;
-        std::string m_supportedFileExtensions;
+        std::string m_fileExtensions;
 
         static inline float m_defaultSecPerFrame = 0.05f;
     };
