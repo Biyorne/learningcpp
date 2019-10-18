@@ -3,29 +3,57 @@
 //
 // main.cpp
 //
+#include <array>
+#include <cmath>
 #include <cstdlib>
+#include <iostream>
+#include <string>
 
 #include <SFML/Graphics.hpp>
+
+//
 
 class ParticleEmitter : public sf::Drawable
 {
 public:
     explicit ParticleEmitter(const sf::Vector2f & position)
-        : m_particles(5000)
-        , m_vertices(sf::Points, m_particles.size())
+        : m_particles()
+        , m_vertArray(sf::Points)
         , m_lifetimeMax(sf::seconds(3.0f))
         , m_position(position)
         , m_willDrift(false)
     {}
 
+    std::size_t count() const { return m_vertArray.getVertexCount(); }
+
     void position(const sf::Vector2f & position) { m_position = position; }
+
+    void add(const std::size_t number = 1000)
+    {
+        if (number <= 0)
+        {
+            return;
+        }
+
+        const std::size_t newSize(count() + number);
+
+        m_particles.resize(newSize);
+        m_vertArray.resize(newSize);
+    }
+
+    void clear()
+    {
+        m_particles.resize(0);
+        m_vertArray.resize(0);
+    }
 
     void update(const sf::Time & elapsed, const sf::Vector2f & driftPos)
     {
-        for (std::size_t i(0); i < m_particles.size(); ++i)
+        const auto particleCount { count() };
+        for (std::size_t i(0); i < particleCount; ++i)
         {
             Particle & particle(m_particles[i]);
-            sf::Vertex & vertex(m_vertices[i]);
+            sf::Vertex & vertex(m_vertArray[i]);
 
             particle.lifetime_remaining -= elapsed;
             if (particle.lifetime_remaining <= sf::Time::Zero)
@@ -53,7 +81,7 @@ private:
     void draw(sf::RenderTarget & target, sf::RenderStates states) const final
     {
         // states.blendMode = sf::BlendAdd;
-        target.draw(m_vertices, states);
+        target.draw(m_vertArray, states);
     }
 
 private:
@@ -73,10 +101,11 @@ private:
         particle.lifetime_remaining = sf::milliseconds((std::rand() % 2000) + 1000);
 
         vertex.position = m_position;
+        vertex.color = sf::Color::White;
 
-        vertex.color.r = randomColorValue();
-        vertex.color.g = randomColorValue();
-        vertex.color.b = randomColorValue();
+        // vertex.color.r = randomColorValue();
+        // vertex.color.g = randomColorValue();
+        // vertex.color.b = randomColorValue();
     }
 
     unsigned char randomColorValue() const
@@ -85,24 +114,32 @@ private:
     }
 
     std::vector<Particle> m_particles;
-    sf::VertexArray m_vertices;
+    sf::VertexArray m_vertArray;
     sf::Time m_lifetimeMax;
     sf::Vector2f m_position;
     bool m_willDrift;
 };
 
+//
+
 int main()
 {
-    bool willDrift(false);
+    std::cout.imbue(std::locale("")); // this is only to put commas in big numbers
 
-    sf::RenderWindow window(
-        sf::VideoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel),
-        "Particles",
-        sf::Style::Fullscreen);
+    bool willDrift(false);
+    bool isFullscreen(false);
+    const std::string appName("Particles");
+    const sf::VideoMode videoMode(1600, 1200, sf::VideoMode::getDesktopMode().bitsPerPixel);
+
+    sf::RenderWindow window(videoMode, appName, sf::Style::Default);
+
+    const sf::Vector2f windowSize(window.getSize());
 
     std::vector<ParticleEmitter> emitters;
 
     sf::Clock clock;
+    sf::Clock statusClock;
+    std::size_t framesPerStatusCounter(0);
 
     while (window.isOpen())
     {
@@ -115,49 +152,121 @@ int main()
             if (sf::Event::Closed == event.type)
             {
                 window.close();
+                break;
             }
-            else if (sf::Event::KeyPressed == event.type)
+
+            if (sf::Event::KeyPressed != event.type)
             {
-                if (sf::Keyboard::Escape == event.key.code)
+                continue;
+            }
+
+            if (sf::Keyboard::Escape == event.key.code)
+            {
+                window.close();
+                break;
+            }
+
+            if (sf::Keyboard::B == event.key.code)
+            {
+                if (!sf::Shader::isAvailable())
                 {
-                    window.close();
+                    std::cout << "'B' Keypress ignored because shaders are NOT supported.  Your "
+                                 "video card sucks."
+                              << std::endl;
+                    continue;
                 }
-                else if (sf::Keyboard::S == event.key.code)
+
+                willBloom = !willBloom;
+            }
+            else if (sf::Keyboard::F == event.key.code)
+            {
+                isFullscreen = !isFullscreen;
+
+                window.close();
+
+                window.create(
+                    videoMode,
+                    appName,
+                    ((isFullscreen) ? sf::Style::Fullscreen : sf::Style::Default));
+            }
+            else if (sf::Keyboard::S == event.key.code)
+            {
+                if (!event.key.shift)
                 {
-                    emitters.push_back(ParticleEmitter(mousePos));
+                    emitters.emplace_back(mousePos).add();
                 }
-                else if (sf::Keyboard::R == event.key.code)
+                else
                 {
-                    emitters.clear();
-                }
-                else if (sf::Keyboard::D == event.key.code)
-                {
-                    willDrift = !willDrift;
+                    if (emitters.empty())
+                    {
+                        emitters.emplace_back(mousePos);
+                    }
 
                     for (auto & emitter : emitters)
                     {
-                        emitter.drift(willDrift);
+                        emitter.add();
                     }
                 }
+            }
+            else if (sf::Keyboard::R == event.key.code)
+            {
+                emitters.clear();
+            }
+            else if (sf::Keyboard::D == event.key.code)
+            {
+                willDrift = !willDrift;
+                for (auto & emitter : emitters)
+                {
+                    emitter.drift(willDrift);
+                }
+            }
+        }
+
+        // status
+        {
+            ++framesPerStatusCounter;
+
+            const float timeBetweenStatusSec { 1.0f };
+            const float timeElapsedSinceLastStatusSec(statusClock.getElapsedTime().asSeconds());
+            if (timeElapsedSinceLastStatusSec > timeBetweenStatusSec)
+            {
+                const int framesPerSecond(static_cast<int>(
+                    static_cast<float>(framesPerStatusCounter) / timeElapsedSinceLastStatusSec));
+
+                std::size_t particleCount(0);
+                for (const auto & emitter : emitters)
+                {
+                    particleCount += emitter.count();
+                }
+
+                std::cout << emitters.size() << " emitters, " << particleCount << " particles, "
+                          << framesPerSecond << "fps" << std::endl;
+
+                statusClock.restart();
+                framesPerStatusCounter = 0;
             }
         }
 
         // update
-        const sf::Time elapsed(clock.restart());
-        for (auto & emitter : emitters)
         {
-            emitter.update(elapsed, mousePos);
+            const sf::Time elapsed(clock.restart());
+            for (auto & emitter : emitters)
+            {
+                emitter.update(elapsed, mousePos);
+            }
         }
 
         // draw
-        window.clear();
-
-        for (const auto & emitter : emitters)
         {
-            window.draw(emitter);
-        }
+            window.clear();
 
-        window.display();
+            for (const auto & emitter : emitters)
+            {
+                window.draw(emitter);
+            }
+
+            window.display();
+        }
     }
 
     return EXIT_SUCCESS;
