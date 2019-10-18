@@ -23,121 +23,129 @@ constexpr std::size_t operator"" _st(unsigned long long number)
 
 //
 
-// size and position
-
-template <typename T>
-void scale(T & thing, const sf::Vector2f & size)
+namespace sfutil
 {
-    // skip if source size is zero (or close) to avoid dividing by zero below
-    const auto localBounds(thing.getLocalBounds());
-    if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
+
+    template <typename T>
+    void resizeWithoutStretch(T & thing, const sf::Vector2f & size)
     {
-        return;
+        // skip if source size is zero (or close) to avoid dividing by zero below
+        const auto localBounds(thing.getLocalBounds());
+        if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
+        {
+            return;
+        }
+
+        float scale(1.0f);
+        if ((size.x - localBounds.width) < (size.y - localBounds.height))
+        {
+            scale = (size.x / localBounds.width);
+        }
+        else
+        {
+            scale = (size.y / localBounds.height);
+        }
+
+        thing.setScale(scale, scale);
+        thing.setOrigin(localBounds.left, localBounds.top);
     }
 
-    float scale(1.0f);
-    if ((size.x - localBounds.width) < (size.y - localBounds.height))
+    template <typename T>
+    void resizeWithoutStretch(T & thing, const sf::FloatRect & rect)
     {
-        scale = (size.x / localBounds.width);
-    }
-    else
-    {
-        scale = (size.y / localBounds.height);
+        resizeWithoutStretch(thing, { rect.width, rect.height });
     }
 
-    thing.setScale(scale, scale);
-    thing.setOrigin(localBounds.left, localBounds.top);
-}
+    template <typename T>
+    void center(T & thing, const sf::FloatRect & rect)
+    {
+        const sf::Vector2f size(thing.getGlobalBounds().width, thing.getGlobalBounds().height);
+        const sf::Vector2f rectPos(rect.left, rect.top);
+        const sf::Vector2f rectSize(rect.width, rect.height);
+        const sf::Vector2f rectPosCenter(rectPos + (rectSize * 0.5f));
+        thing.setPosition(rectPosCenter - (size * 0.5f));
+    }
 
-template <typename T>
-void scale(T & thing, const sf::FloatRect & rect)
-{
-    scale(thing, { rect.width, rect.height });
-}
+    template <typename T>
+    void centerAndResizeWithoutStretch(T & thing, const sf::FloatRect & rect)
+    {
+        resizeWithoutStretch(thing, rect);
+        center(thing, rect);
+    }
 
-template <typename T>
-void center(T & thing, const sf::FloatRect & rect)
-{
-    const sf::Vector2f size(thing.getGlobalBounds().width, thing.getGlobalBounds().height);
-    const sf::Vector2f rectPos(rect.left, rect.top);
-    const sf::Vector2f rectSize(rect.width, rect.height);
-    const sf::Vector2f rectPosCenter(rectPos + (rectSize * 0.5f));
-    thing.setPosition(rectPosCenter - (size * 0.5f));
-}
-
-template <typename T>
-void centerAndScale(T & thing, const sf::FloatRect & rect)
-{
-    scale(thing, rect);
-    center(thing, rect);
-}
+} // namespace sfutil
 
 //
 
-class FullPassFragmentShader
+namespace shader
 {
-protected:
-    FullPassFragmentShader(const std::string & fragmentShader)
-        : m_shader()
-        , m_verts(sf::TrianglesStrip, 4)
-        , m_renderStates()
+
+    class FullPassFragmentShader
     {
-        m_shader.loadFromMemory(m_fullPassVertexShaderCode, fragmentShader);
+    protected:
+        FullPassFragmentShader(const std::string & fragmentShader)
+            : m_shader()
+            , m_verts(sf::TrianglesStrip, 4)
+            , m_renderStates()
+        {
+            m_shader.loadFromMemory(m_fullPassVertexShaderCode, fragmentShader);
 
-        // sf::VertexArray zero initializes everything so only setting the non-zeros here
-        m_verts[0].texCoords.y = 1.0f;
-        m_verts[1].texCoords = { 1.0f, 1.0f };
-        m_verts[3].texCoords.x = 1.0f;
+            // sf::VertexArray zero initializes everything so only setting the non-zeros here
+            m_verts[0].texCoords.y = 1.0f;
+            m_verts[1].texCoords = { 1.0f, 1.0f };
+            m_verts[3].texCoords.x = 1.0f;
 
-        m_renderStates.shader = &m_shader;
-        m_renderStates.blendMode = sf::BlendNone;
-    }
+            m_renderStates.shader = &m_shader;
+            m_renderStates.blendMode = sf::BlendNone;
+        }
 
-    template <typename... Args_t>
-    void setUniform(const std::string & name, const Args_t &... args)
-    {
-        m_shader.setUniform(name, args...);
-    }
+        template <typename... Args_t>
+        void setUniform(const std::string & name, const Args_t &... args)
+        {
+            m_shader.setUniform(name, args...);
+        }
 
-    void draw(sf::RenderTarget & target) const
-    {
-        // only setting what changes here
-        m_verts[3].position = sf::Vector2f(target.getSize());
-        m_verts[1].position.x = m_verts[3].position.x;
-        m_verts[2].position.y = m_verts[3].position.y;
+        void draw(sf::RenderTarget & target) const
+        {
+            // only setting what changes here
+            const sf::Vector2f size(target.getSize());
 
-        target.draw(m_verts, m_renderStates);
-    }
+            m_verts[1].position.x = size.x;
+            m_verts[2].position.y = size.y;
+            m_verts[3].position = size;
 
-private:
-    sf::Shader m_shader;
-    mutable sf::VertexArray m_verts;
-    sf::RenderStates m_renderStates;
+            target.draw(m_verts, m_renderStates);
+        }
 
-    static inline const std::string m_fullPassVertexShaderCode { "\
+    private:
+        sf::Shader m_shader;
+        mutable sf::VertexArray m_verts;
+        sf::RenderStates m_renderStates;
+
+        static inline const std::string m_fullPassVertexShaderCode { "\
 void main()\
 {\
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
     gl_TexCoord[0] = gl_MultiTexCoord0;\
 }" };
-};
+    };
 
-//
+    //
 
-struct BrightFilterShader : public FullPassFragmentShader
-{
-    BrightFilterShader()
-        : FullPassFragmentShader(m_fragmentShaderCode)
-    {}
-
-    void draw(const sf::RenderTexture & input, sf::RenderTexture & output)
+    struct BrightFilterShader : public FullPassFragmentShader
     {
-        setUniform("source", input.getTexture());
-        FullPassFragmentShader::draw(output);
-        output.display();
-    }
+        BrightFilterShader()
+            : FullPassFragmentShader(m_fragmentShaderCode)
+        {}
 
-    static inline const std::string m_fragmentShaderCode { "\
+        void draw(const sf::RenderTexture & input, sf::RenderTexture & output)
+        {
+            setUniform("source", input.getTexture());
+            FullPassFragmentShader::draw(output);
+            output.display();
+        }
+
+        static inline const std::string m_fragmentShaderCode { "\
 uniform sampler2D source;\
 \
 const float Threshold = 0.7;\
@@ -150,27 +158,27 @@ void main()\
     sourceFragment *= clamp(luminance - Threshold, 0.0, 1.0) * Factor;\
     gl_FragColor = sourceFragment;\
 }" };
-};
+    };
 
-//
+    //
 
-struct AddShader : public FullPassFragmentShader
-{
-    AddShader()
-        : FullPassFragmentShader(m_fragmentShaderCode)
-    {}
-
-    void draw(
-        const sf::RenderTexture & source,
-        const sf::RenderTexture & bloom,
-        sf::RenderTarget & output)
+    struct AddShader : public FullPassFragmentShader
     {
-        setUniform("source", source.getTexture());
-        setUniform("bloom", bloom.getTexture());
-        FullPassFragmentShader::draw(output);
-    }
+        AddShader()
+            : FullPassFragmentShader(m_fragmentShaderCode)
+        {}
 
-    static inline const std::string m_fragmentShaderCode { "\
+        void draw(
+            const sf::RenderTexture & source,
+            const sf::RenderTexture & bloom,
+            sf::RenderTarget & output)
+        {
+            setUniform("source", source.getTexture());
+            setUniform("bloom", bloom.getTexture());
+            FullPassFragmentShader::draw(output);
+        }
+
+        static inline const std::string m_fragmentShaderCode { "\
 uniform sampler2D source;\
 uniform sampler2D bloom;\
 \
@@ -180,25 +188,25 @@ void main()\
     vec4 bloomFragment = texture2D(bloom, gl_TexCoord[0].xy);\
     gl_FragColor = sourceFragment + bloomFragment;\
 }" };
-};
+    };
 
-//
+    //
 
-struct DownSampleShader : public FullPassFragmentShader
-{
-    DownSampleShader()
-        : FullPassFragmentShader(m_fragmentShaderCode)
-    {}
-
-    void draw(const sf::RenderTexture & input, sf::RenderTexture & output)
+    struct DownSampleShader : public FullPassFragmentShader
     {
-        setUniform("source", input.getTexture());
-        setUniform("sourceSize", sf::Vector2f(input.getSize()));
-        FullPassFragmentShader::draw(output);
-        output.display();
-    }
+        DownSampleShader()
+            : FullPassFragmentShader(m_fragmentShaderCode)
+        {}
 
-    static inline const std::string m_fragmentShaderCode { "\
+        void draw(const sf::RenderTexture & input, sf::RenderTexture & output)
+        {
+            setUniform("source", input.getTexture());
+            setUniform("sourceSize", sf::Vector2f(input.getSize()));
+            FullPassFragmentShader::draw(output);
+            output.display();
+        }
+
+        static inline const std::string m_fragmentShaderCode { "\
 uniform sampler2D 	source;\
 uniform vec2 		sourceSize;\
 \
@@ -217,54 +225,54 @@ void main()\
     color += texture2D(source, textureCoordinates + vec2(-1.0,  1.0) * pixelSize);\
     gl_FragColor = color / 9.0;\
 }" };
-};
+    };
 
-//
+    //
 
-struct BlurShader : public FullPassFragmentShader
-{
-    explicit BlurShader(const std::size_t multiPassCount = 2)
-        : FullPassFragmentShader(m_fragmentShaderCode)
-        , m_multiPassCount(multiPassCount)
-    {}
-
-    std::size_t multiPassCount() const { return m_multiPassCount; }
-    void multiPassCount(const std::size_t count) { m_multiPassCount = count; }
-
-    void draw(
-        const sf::RenderTexture & input,
-        sf::RenderTexture & output,
-        const sf::Vector2f & offsetFactor)
+    struct BlurShader : public FullPassFragmentShader
     {
-        setUniform("source", input.getTexture());
-        setUniform("offsetFactor", offsetFactor);
-        FullPassFragmentShader::draw(output);
-        output.display();
-    }
+        explicit BlurShader(const std::size_t multiPassCount = 2)
+            : FullPassFragmentShader(m_fragmentShaderCode)
+            , m_multiPassCount(multiPassCount)
+        {}
 
-    void drawMultiPass(sf::RenderTexture & left, sf::RenderTexture & right)
-    {
-        const sf::Vector2f size(left.getSize());
+        std::size_t multiPassCount() const { return m_multiPassCount; }
+        void multiPassCount(const std::size_t count) { m_multiPassCount = count; }
 
-        sf::Vector2f offsetFactorVert(0.0f, (1.0f / size.y));
-        sf::Vector2f offsetFactorHoriz((1.0f / size.x), 0.0f);
-
-        const float blurMultiplier(1.25f);
-        for (std::size_t count(0); count < m_multiPassCount; ++count)
+        void draw(
+            const sf::RenderTexture & input,
+            sf::RenderTexture & output,
+            const sf::Vector2f & offsetFactor)
         {
-            draw(left, right, offsetFactorVert);
-            draw(right, left, offsetFactorHoriz);
-
-            offsetFactorVert *= blurMultiplier;
-            offsetFactorHoriz *= blurMultiplier;
+            setUniform("source", input.getTexture());
+            setUniform("offsetFactor", offsetFactor);
+            FullPassFragmentShader::draw(output);
+            output.display();
         }
-    }
 
-private:
-    std::size_t m_multiPassCount;
+        void drawMultiPass(sf::RenderTexture & left, sf::RenderTexture & right)
+        {
+            const sf::Vector2f size(left.getSize());
 
-    // this is actually a Gaussian Blur
-    static inline const std::string m_fragmentShaderCode { "\
+            sf::Vector2f offsetFactorVert(0.0f, (1.0f / size.y));
+            sf::Vector2f offsetFactorHoriz((1.0f / size.x), 0.0f);
+
+            const float blurMultiplier(1.25f);
+            for (std::size_t count(0); count < m_multiPassCount; ++count)
+            {
+                draw(left, right, offsetFactorVert);
+                draw(right, left, offsetFactorHoriz);
+
+                offsetFactorVert *= blurMultiplier;
+                offsetFactorHoriz *= blurMultiplier;
+            }
+        }
+
+    private:
+        std::size_t m_multiPassCount;
+
+        // this is actually a Gaussian Blur
+        static inline const std::string m_fragmentShaderCode { "\
 uniform sampler2D 	source;\
 uniform vec2 		offsetFactor;\
 \
@@ -283,7 +291,9 @@ void main()\
     color += texture2D(source, textureCoordinates + 4.0 * offsetFactor) * 0.0162162162;\
     gl_FragColor = color;\
 }" };
-};
+    };
+
+} // namespace shader
 
 //
 
@@ -305,7 +315,6 @@ public:
     // don't forget to call output.display() after this function!
     void apply(const sf::RenderTexture & input, sf::RenderTarget & output)
     {
-        // calling this every time could thrash sf::RenderTextures.  You have been warned.
         resizeTextures(input.getSize());
 
         m_brightFilterShader.draw(input, m_brightnessTexture);
@@ -326,6 +335,7 @@ public:
     void blurMultiPassCount(const std::size_t count) { m_blurShader.multiPassCount(count); }
 
 private:
+    // calling this every time could thrash sf::RenderTextures.  You have been warned.
     void resizeTextures(const sf::Vector2u & inputSize)
     {
         if (m_brightnessTexture.getSize() == inputSize)
@@ -350,10 +360,10 @@ private:
     }
 
 private:
-    AddShader m_addShader;
-    BlurShader m_blurShader;
-    DownSampleShader m_downSampleShader;
-    BrightFilterShader m_brightFilterShader;
+    shader::AddShader m_addShader;
+    shader::BlurShader m_blurShader;
+    shader::DownSampleShader m_downSampleShader;
+    shader::BrightFilterShader m_brightFilterShader;
 
     sf::RenderTexture m_brightnessTexture;
     RenderTextureArray m_firstPassTextures;
@@ -364,28 +374,33 @@ private:
 
 int main()
 {
-    std::cout.imbue(std::locale("")); // this is only to put commas in big numbers
-
     if (!sf::Shader::isAvailable())
     {
         std::cout << "Shaders are NOT supported.  Your video card sucks." << std::endl;
         return EXIT_SUCCESS;
     }
 
+    //
     bool willBloom(false);
     bool isFullscreen(false);
     const std::string appName("Shaders");
     const sf::VideoMode videoMode(1280, 1024, sf::VideoMode::getDesktopMode().bitsPerPixel);
 
+    //
     sf::RenderWindow window(videoMode, appName, sf::Style::Default);
 
     const sf::Vector2f windowSize(window.getSize());
     const sf::FloatRect windowRect({}, windowSize);
 
+    //
     sf::RenderTexture sideTexture;
     sideTexture.create(window.getSize().x, window.getSize().y);
+
     const sf::Vector2f sideTextureSize(sideTexture.getSize());
 
+    BloomEffect bloomEffect;
+
+    // load all images
     std::size_t index(0);
     std::vector<std::unique_ptr<sf::Texture>> textures;
     std::vector<sf::Sprite> sprites;
@@ -419,21 +434,21 @@ int main()
                 textures.push_back(std::move(texture));
             }
         }
+
+        if (sprites.empty())
+        {
+            std::cout
+                << "No images found to demonstrate the shader effects.  Put some images next to "
+                   "the executable and try running again."
+                << std::endl;
+
+            return EXIT_SUCCESS;
+        }
     }
 
-    if (sprites.empty())
-    {
-        std::cout << "No images found to demonstrate the shader effects.  Put some images next to "
-                     "the executable and try running again."
-                  << std::endl;
-
-        return EXIT_SUCCESS;
-    }
-
-    BloomEffect bloomEffect;
-
+    //
+    // frame loop
     sf::Clock clock;
-
     while (window.isOpen())
     {
         // handle events
@@ -523,20 +538,20 @@ int main()
             }
         }
 
-        // draw
+        // draw all to sideTexture
         {
-            window.clear();
-
             sideTexture.clear();
 
-            if (index < sprites.size())
-            {
-                auto & sprite = sprites.at(index);
-                centerAndScale(sprite, windowRect);
-                sideTexture.draw(sprite);
-            }
+            auto & sprite = sprites.at(index);
+            sfutil::centerAndResizeWithoutStretch(sprite, windowRect);
+            sideTexture.draw(sprite);
 
             sideTexture.display();
+        }
+
+        // bloom sideTexture if enabled, and draw sideTexture to window
+        {
+            window.clear();
 
             if (willBloom)
             {
@@ -544,24 +559,7 @@ int main()
             }
             else
             {
-                sf::VertexArray verts(sf::Quads, 4);
-
-                verts[0] = sf::Vertex(sf::Vector2f(0, 0), sf::Vector2f(0, 0));
-
-                verts[1]
-                    = sf::Vertex(sf::Vector2f(windowSize.x, 0), sf::Vector2f(sideTextureSize.x, 0));
-
-                verts[2] = sf::Vertex(
-                    sf::Vector2f(windowSize.x, windowSize.y),
-                    sf::Vector2f(sideTextureSize.x, sideTextureSize.y));
-
-                verts[3]
-                    = sf::Vertex(sf::Vector2f(0, windowSize.y), sf::Vector2f(0, sideTextureSize.y));
-
-                sf::RenderStates states;
-                states.texture = &sideTexture.getTexture();
-
-                window.draw(verts, states);
+                window.draw(sf::Sprite(sideTexture.getTexture()));
             }
 
             window.display();
