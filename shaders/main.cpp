@@ -90,7 +90,7 @@ namespace shader
         {
             m_shader.loadFromMemory(m_fullPassVertexShaderCode, fragmentShader);
 
-            // sf::VertexArray zero initializes everything so only setting the non-zeros here
+            // sf::VertexArray and sf::Vertex zero initializes so only need to set non-zeros here
             m_verts[0].texCoords.y = 1.0f;
             m_verts[1].texCoords = { 1.0f, 1.0f };
             m_verts[3].texCoords.x = 1.0f;
@@ -107,13 +107,14 @@ namespace shader
 
         void draw(sf::RenderTarget & target) const
         {
-            // only setting what changes here
             const sf::Vector2f size(target.getSize());
 
+            // these are the only values that can change
             m_verts[1].position.x = size.x;
             m_verts[2].position.y = size.y;
             m_verts[3].position = size;
 
+            // no need to clear before draw because this is "full pass" and sf::BlendNone
             target.draw(m_verts, m_renderStates);
         }
 
@@ -138,10 +139,10 @@ void main()\
             : FullPassFragmentShader(m_fragmentShaderCode)
         {}
 
-        void draw(const sf::RenderTexture & input, sf::RenderTexture & output)
+        void apply(const sf::RenderTexture & input, sf::RenderTexture & output)
         {
             setUniform("source", input.getTexture());
-            FullPassFragmentShader::draw(output);
+            draw(output);
             output.display();
         }
 
@@ -168,14 +169,14 @@ void main()\
             : FullPassFragmentShader(m_fragmentShaderCode)
         {}
 
-        void draw(
+        void apply(
             const sf::RenderTexture & source,
             const sf::RenderTexture & bloom,
             sf::RenderTarget & output)
         {
             setUniform("source", source.getTexture());
             setUniform("bloom", bloom.getTexture());
-            FullPassFragmentShader::draw(output);
+            draw(output);
         }
 
         static inline const std::string m_fragmentShaderCode { "\
@@ -198,11 +199,11 @@ void main()\
             : FullPassFragmentShader(m_fragmentShaderCode)
         {}
 
-        void draw(const sf::RenderTexture & input, sf::RenderTexture & output)
+        void apply(const sf::RenderTexture & input, sf::RenderTexture & output)
         {
             setUniform("source", input.getTexture());
             setUniform("sourceSize", sf::Vector2f(input.getSize()));
-            FullPassFragmentShader::draw(output);
+            draw(output);
             output.display();
         }
 
@@ -239,18 +240,18 @@ void main()\
         std::size_t multiPassCount() const { return m_multiPassCount; }
         void multiPassCount(const std::size_t count) { m_multiPassCount = count; }
 
-        void draw(
+        void apply(
             const sf::RenderTexture & input,
             sf::RenderTexture & output,
             const sf::Vector2f & offsetFactor)
         {
             setUniform("source", input.getTexture());
             setUniform("offsetFactor", offsetFactor);
-            FullPassFragmentShader::draw(output);
+            draw(output);
             output.display();
         }
 
-        void drawMultiPass(sf::RenderTexture & left, sf::RenderTexture & right)
+        void applyMultiPass(sf::RenderTexture & left, sf::RenderTexture & right)
         {
             const sf::Vector2f size(left.getSize());
 
@@ -260,8 +261,8 @@ void main()\
             const float blurMultiplier(1.25f);
             for (std::size_t count(0); count < m_multiPassCount; ++count)
             {
-                draw(left, right, offsetFactorVert);
-                draw(right, left, offsetFactorHoriz);
+                apply(left, right, offsetFactorVert);
+                apply(right, left, offsetFactorHoriz);
 
                 offsetFactorVert *= blurMultiplier;
                 offsetFactorHoriz *= blurMultiplier;
@@ -308,27 +309,27 @@ public:
         , m_downSampleShader()
         , m_brightFilterShader()
         , m_brightnessTexture()
-        , m_firstPassTextures()
-        , m_secondPassTextures()
+        , m_halfSizeTextures()
+        , m_quarterSizeTextures()
     {}
 
     // don't forget to call output.display() after this function!
     void apply(const sf::RenderTexture & input, sf::RenderTarget & output)
     {
-        resizeTextures(input.getSize());
+        setupRenderTextures(input.getSize());
 
-        m_brightFilterShader.draw(input, m_brightnessTexture);
+        m_brightFilterShader.apply(input, m_brightnessTexture);
 
-        m_downSampleShader.draw(m_brightnessTexture, m_firstPassTextures[0]);
-        m_blurShader.drawMultiPass(m_firstPassTextures[0], m_firstPassTextures[1]);
+        m_downSampleShader.apply(m_brightnessTexture, m_halfSizeTextures[0]);
+        m_blurShader.applyMultiPass(m_halfSizeTextures[0], m_halfSizeTextures[1]);
 
-        m_downSampleShader.draw(m_firstPassTextures[0], m_secondPassTextures[0]);
-        m_blurShader.drawMultiPass(m_secondPassTextures[0], m_secondPassTextures[1]);
+        m_downSampleShader.apply(m_halfSizeTextures[0], m_quarterSizeTextures[0]);
+        m_blurShader.applyMultiPass(m_quarterSizeTextures[0], m_quarterSizeTextures[1]);
 
-        m_addShader.draw(m_firstPassTextures[0], m_secondPassTextures[0], m_firstPassTextures[1]);
-        m_firstPassTextures[1].display();
+        m_addShader.apply(m_halfSizeTextures[0], m_quarterSizeTextures[0], m_halfSizeTextures[1]);
+        m_halfSizeTextures[1].display();
 
-        m_addShader.draw(input, m_firstPassTextures[1], output);
+        m_addShader.apply(input, m_halfSizeTextures[1], output);
     }
 
     std::size_t blurMultiPassCount() const { return m_blurShader.multiPassCount(); }
@@ -336,27 +337,28 @@ public:
 
 private:
     // calling this every time could thrash sf::RenderTextures.  You have been warned.
-    void resizeTextures(const sf::Vector2u & inputSize)
+    void setupRenderTextures(const sf::Vector2u & size)
     {
-        if (m_brightnessTexture.getSize() == inputSize)
+        createRenderTexture(m_brightnessTexture, size);
+
+        const sf::Vector2u halfSize((size.x / 2), (size.y / 2));
+        createRenderTexture(m_halfSizeTextures[0], halfSize);
+        createRenderTexture(m_halfSizeTextures[1], halfSize);
+
+        const sf::Vector2u quarterSize((size.x / 4), (size.y / 4));
+        createRenderTexture(m_quarterSizeTextures[0], quarterSize);
+        createRenderTexture(m_quarterSizeTextures[1], quarterSize);
+    }
+
+    void createRenderTexture(sf::RenderTexture & renderTexture, const sf::Vector2u & size)
+    {
+        if (renderTexture.getSize() == size)
         {
             return;
         }
 
-        m_brightnessTexture.create(inputSize.x, inputSize.y);
-        m_brightnessTexture.setSmooth(true);
-
-        m_firstPassTextures[0].create(inputSize.x / 2, inputSize.y / 2);
-        m_firstPassTextures[0].setSmooth(true);
-
-        m_firstPassTextures[1].create(inputSize.x / 2, inputSize.y / 2);
-        m_firstPassTextures[1].setSmooth(true);
-
-        m_secondPassTextures[0].create(inputSize.x / 4, inputSize.y / 4);
-        m_secondPassTextures[0].setSmooth(true);
-
-        m_secondPassTextures[1].create(inputSize.x / 4, inputSize.y / 4);
-        m_secondPassTextures[1].setSmooth(true);
+        renderTexture.create(size.x, size.y);
+        renderTexture.setSmooth(true);
     }
 
 private:
@@ -366,8 +368,8 @@ private:
     shader::BrightFilterShader m_brightFilterShader;
 
     sf::RenderTexture m_brightnessTexture;
-    RenderTextureArray m_firstPassTextures;
-    RenderTextureArray m_secondPassTextures;
+    RenderTextureArray m_halfSizeTextures;
+    RenderTextureArray m_quarterSizeTextures;
 };
 
 //
