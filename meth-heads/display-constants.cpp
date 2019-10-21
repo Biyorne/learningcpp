@@ -18,6 +18,9 @@ namespace methhead
         , vert_cell_count(0)
         , font()
         , default_text()
+        , loot_texture()
+        , lazy_color()
+        , greedy_color()
     {
         // shrink the drawable window bounds a bit to create nice looking border
         const float windowBorderRatio(0.975f);
@@ -31,7 +34,7 @@ namespace methhead
         board_window_bounds = window_bounds;
 
         board_window_bounds.left
-            = (score_window_bounds.left + score_window_bounds.left + score_window_bounds.width);
+            = (score_window_bounds.left + score_window_bounds.width + score_window_bounds.left);
 
         board_window_bounds.width -= (score_window_bounds.width + score_window_bounds.left);
 
@@ -62,6 +65,11 @@ namespace methhead
 
         // this is a handy trick to calc the right font size when working with sfml
         default_text.setCharacterSize(static_cast<unsigned int>(std::sqrt(window_size.x)));
+
+        if (!loot_texture.loadFromFile("image/loot.png"))
+        {
+            std::cerr << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
+        }
 
         // these colors should move after cleanup
         lazy_color = sf::Color(80, 80, 255);

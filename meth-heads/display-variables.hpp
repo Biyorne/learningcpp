@@ -8,27 +8,36 @@
 
 namespace methhead
 {
-
     class DisplayVariables
     {
     public:
         explicit DisplayVariables(const sf::Vector2u & windowSize);
+        virtual ~DisplayVariables() = default;
 
-        const DisplayConstants & constants() const { return m_constants; }
+        void update(
+            const float elapsedMs,
+            const std::size_t lazyScore,
+            const std::size_t greedyScore,
+            const BoardMap_t & board);
+
+        void draw(
+            sf::RenderTarget & target, sf::RenderStates states, const BoardMap_t & board) const;
+
+        const DisplayConstants constants() const { return m_constants; }
 
         BoardMap_t makeBoard() const;
 
-        void scoreBarSetup(
-            std::size_t lazyScore,
-            std::size_t greedyScore,
-            sf::RectangleShape & lazyScoreRectangle,
-            sf::RectangleShape & greedyScoreRectangle);
-
     private:
-        sf::Vector2f cellPosToWindowPos(const sf::Vector2i & cellPos) const;
+        void setScoreBarsHeight(const std::size_t lazyScore, const std::size_t greedyScore);
+
+        sf::Vector2f boardToWindowPos(const sf::Vector2i & cellPos) const;
 
     private:
         DisplayConstants m_constants;
+        sf::RectangleShape m_lazyScoreRectangle;
+        sf::RectangleShape m_greedyScoreRectangle;
+        sf::Sprite m_lootSprite;
+        sf::Text m_lootText;
     };
 
 } // namespace methhead

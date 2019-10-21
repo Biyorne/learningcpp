@@ -64,8 +64,6 @@ namespace methhead
         sf::Clock m_consoleStatusClock;
         std::size_t m_consoleStatusFrameCount;
         std::size_t m_consoleStatusFrameCountMax;
-
-        sf::Texture m_lootTexture;
     };
 
 } // namespace methhead

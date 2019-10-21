@@ -21,6 +21,8 @@ namespace methhead
         sf::Font font;
         sf::Text default_text;
 
+        sf::Texture loot_texture;
+
         // TODO these two probably don't belong here
         sf::Color lazy_color;
         sf::Color greedy_color;
