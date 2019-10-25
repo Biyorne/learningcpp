@@ -4,6 +4,8 @@
 
 #include <cstddef>
 
+inline std::string makeImageFilename(const std::size_t) { return ""; }
+
 int main()
 {
     using namespace methhead;

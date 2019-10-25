@@ -42,7 +42,7 @@ namespace methhead
         target.draw(m_sprite, states);
     }
 
-    void MethHeadBase::act(
+    void MethHeadBase::update(
         const float elapsedSec,
         BoardMap_t & board,
         SoundPlayer & soundPlayer,

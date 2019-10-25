@@ -34,17 +34,11 @@ namespace methhead
         , m_consoleStatusClock()
         , m_consoleStatusFrameCount(0)
         , m_consoleStatusFrameCountMax(0)
-        , m_lootTexture()
     {
         if (Mode::Normal == m_mode)
         {
             m_window.create(m_videoMode, "Meth Heads", sf::Style::Default);
             m_window.setFramerateLimit(60);
-
-            if (!m_lootTexture.loadFromFile("image/loot.png"))
-            {
-                std::cerr << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
-            }
         }
 
         const std::size_t initialLootCount(5);
@@ -59,17 +53,6 @@ namespace methhead
 
     void Simulator::run()
     {
-        // TODO remove after lesson
-        // handleEvents();
-        //
-        // Animation anim(m_displayVars.constants().window_size);
-        //
-        // m_window.clear();
-        // m_window.draw(anim);
-        // m_window.display();
-        //
-        // sf::sleep(sf::seconds(3.0f));
-
         while (willKeepRunning())
         {
             if (Mode::Normal == m_mode)
@@ -80,11 +63,7 @@ namespace methhead
                 m_frameClock.restart();
                 const float gameElapsedSec(actualElapsedSec * m_timeMultiplier);
 
-                if (gameElapsedSec > 0.0f)
-                {
-                    update(gameElapsedSec);
-                }
-
+                update(gameElapsedSec);
                 draw();
             }
             else
@@ -215,12 +194,15 @@ namespace methhead
 
     void Simulator::update(const float elapsedSec)
     {
+        m_animationPlayer.update(elapsedSec);
+
+        const Scores scores(calcScores());
+        m_displayVars.update(elapsedSec, scores.lazy, scores.greedy, m_board);
+
         for (auto & actor : m_actors)
         {
-            actor->act(elapsedSec, m_board, m_soundPlayer, m_random, m_animationPlayer);
+            actor->update(elapsedSec, m_board, m_soundPlayer, m_random, m_animationPlayer);
         }
-
-        m_animationPlayer.update(elapsedSec);
     }
 
     void Simulator::printConsoleStatus()
@@ -264,52 +246,18 @@ namespace methhead
 
     void Simulator::draw()
     {
-        const Scores scores(calcScores());
-
-        // TODO score stuff is display stuff that is NOT constant
-        // this score stuff should not be created/destroyed on the stack every frame
-        // if only we had a DisplayNonConstants class or DisplayVars or DisplayState
-        //..this all would go in there...TODO
-        sf::RectangleShape lazyScoreRectangle;
-        sf::RectangleShape greedyScoreRectangle;
-        lazyScoreRectangle.setFillColor(m_displayVars.constants().lazy_color);
-        greedyScoreRectangle.setFillColor(m_displayVars.constants().greedy_color);
-
-        m_displayVars.scoreBarSetup(
-            scores.lazy, scores.greedy, lazyScoreRectangle, greedyScoreRectangle);
-
-        // TODO put somewhere else, look at the TODO above for where
-        sf::Sprite lootSprite(m_lootTexture);
-        lootSprite.setColor(sf::Color(255, 255, 255, 127));
-        sf::Text lootText(m_displayVars.constants().default_text);
-        lootText.setFillColor(sf::Color::Yellow);
-
         m_window.clear(sf::Color(64, 64, 64));
 
-        m_window.draw(lazyScoreRectangle);
-        m_window.draw(greedyScoreRectangle);
+        const sf::RenderStates renderState;
 
-        for (const auto & cellPair : m_board)
-        {
-            m_window.draw(cellPair.second.rectangle);
-
-            if (cellPair.second.loot > 0)
-            {
-                placeInBounds(lootSprite, cellPair.second.bounds());
-                m_window.draw(lootSprite);
-
-                lootText.setString(std::to_string(cellPair.second.loot));
-                placeInBounds(lootText, cellPair.second.bounds());
-                m_window.draw(lootText);
-            }
-        }
+        m_displayVars.draw(m_window, renderState, m_board);
 
         for (IActorUPtr_t & uptr : m_actors)
         {
-            uptr->draw(m_window, sf::RenderStates());
+            uptr->draw(m_window, renderState);
         }
 
-        m_animationPlayer.draw(m_window, sf::RenderStates());
+        m_animationPlayer.draw(m_window, renderState);
 
         m_window.display();
     }

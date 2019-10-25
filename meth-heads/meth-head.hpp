@@ -26,12 +26,12 @@ namespace methhead
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
 
-        virtual void
-            act(const float elapsedMs,
-                BoardMap_t & board,
-                SoundPlayer & soundPlayer,
-                const Random & random,
-                AnimationPlayer & animationPlayer)
+        virtual void update(
+            const float elapsedMs,
+            BoardMap_t & board,
+            SoundPlayer & soundPlayer,
+            const Random & random,
+            AnimationPlayer & animationPlayer)
             = 0;
     };
 
@@ -54,12 +54,12 @@ namespace methhead
     public:
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
-        void
-            act(const float elapsedSec,
-                BoardMap_t & board,
-                SoundPlayer & soundPlayer,
-                const Random & random,
-                AnimationPlayer & animationPlayer) override;
+        void update(
+            const float elapsedSec,
+            BoardMap_t & board,
+            SoundPlayer & soundPlayer,
+            const Random & random,
+            AnimationPlayer & animationPlayer) override;
 
         std::size_t getScore() const final { return m_score; }
 
