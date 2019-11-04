@@ -36,8 +36,6 @@ namespace methhead
         DisplayConstants m_constants;
         sf::RectangleShape m_lazyScoreRectangle;
         sf::RectangleShape m_greedyScoreRectangle;
-        sf::Sprite m_lootSprite;
-        sf::Text m_lootText;
     };
 
 } // namespace methhead

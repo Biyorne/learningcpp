@@ -10,11 +10,7 @@ namespace methhead
         : m_constants(windowSize)
         , m_lazyScoreRectangle()
         , m_greedyScoreRectangle()
-        , m_lootSprite(m_constants.loot_texture)
-        , m_lootText(m_constants.default_text)
     {
-        m_lootSprite.setColor(sf::Color(255, 255, 255, 127));
-        m_lootText.setFillColor(sf::Color::Yellow);
         m_lazyScoreRectangle.setFillColor(m_constants.lazy_color);
         m_greedyScoreRectangle.setFillColor(m_constants.greedy_color);
     }
@@ -26,19 +22,6 @@ namespace methhead
         const BoardMap_t & board)
     {
         setScoreBarsHeight(lazyScore, greedyScore);
-
-        for (const auto & [boardPos, cell] : board)
-        {
-            if (cell.loot <= 0)
-            {
-                continue;
-            }
-
-            placeInBounds(m_lootSprite, cell.bounds());
-
-            m_lootText.setString(std::to_string(cell.loot));
-            placeInBounds(m_lootText, cell.bounds());
-        }
     }
 
     void DisplayVariables::draw(
@@ -46,6 +29,12 @@ namespace methhead
     {
         target.draw(m_lazyScoreRectangle, states);
         target.draw(m_greedyScoreRectangle, states);
+
+        sf::Sprite lootSprite(m_constants.loot_texture);
+        lootSprite.setColor(sf::Color(255, 255, 255, 127));
+
+        sf::Text lootText(m_constants.default_text);
+        lootText.setFillColor(sf::Color::Yellow);
 
         for (const auto & [boardPos, cell] : board)
         {
@@ -56,8 +45,12 @@ namespace methhead
                 continue;
             }
 
-            target.draw(m_lootSprite);
-            target.draw(m_lootText);
+            placeInBounds(lootSprite, cell.bounds());
+            target.draw(lootSprite);
+
+            lootText.setString(std::to_string(cell.loot));
+            placeInBounds(lootText, cell.bounds());
+            target.draw(lootText);
         }
     }
 

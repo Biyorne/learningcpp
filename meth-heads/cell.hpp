@@ -21,40 +21,19 @@ namespace methhead
         greedy
     };
 
-    //
-
-    // TODO this should be a class.
-    struct Cell
+    class Cell
     {
-        // TODO Get rid of this.
-        Cell()
-            : board_pos(-1, -1)
-            , rectangle()
-            , motivation(methhead::Motivation::none)
-            , loot(0)
-            , is_valid(false)
-        {}
+    public:
+        Cell();
 
         Cell(
             const sf::Vector2i & boardPos,
             const sf::Vector2f & windowPos,
-            const sf::Vector2f & size)
-            : board_pos(boardPos)
-            , rectangle()
-            , motivation(methhead::Motivation::none)
-            , loot(0)
-            , is_valid(true)
-        {
-            rectangle.setPosition(windowPos);
-            rectangle.setSize(size);
-            rectangle.setOutlineThickness(size.x * 0.025f);
-            rectangle.setFillColor(background_color);
-            rectangle.setOutlineColor(line_color);
-        }
+            const sf::Vector2f & size);
 
-        sf::FloatRect bounds() const { return rectangle.getGlobalBounds(); }
+        inline sf::FloatRect bounds() const { return rectangle.getGlobalBounds(); }
 
-        bool isOccupied() const { return (Motivation::none != motivation) || (loot > 0); }
+        inline bool isOccupied() const { return (Motivation::none != motivation) || (loot > 0); }
 
         sf::Vector2i board_pos;
         sf::RectangleShape rectangle;
