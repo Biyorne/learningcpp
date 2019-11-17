@@ -27,7 +27,6 @@ namespace methhead
         , m_soundPlayer()
         , m_animationPlayer()
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
-        , m_board(m_displayVars.makeBoard())
         , m_actors()
         , m_frameClock()
         , m_timeMultiplier(1.0f)
@@ -44,7 +43,7 @@ namespace methhead
         const std::size_t initialLootCount(5);
         for (std::size_t i(0); i < initialLootCount; ++i)
         {
-            MethHeadBase::spawnLoot(m_board, m_random);
+            spawnLoot();
         }
 
         spawnMethHead(Motivation::lazy);
@@ -104,33 +103,56 @@ namespace methhead
         }
     }
 
-    void Simulator::spawnMethHead(const Motivation motive)
+    std::pair<BoardPos_t, sf::FloatRect> Simulator::randomSpawnPos() const
     {
-        // TODO when cleanup is finished, we shouldn't have a none motive.
-        assertOrThrow((motive != Motivation::none), "Tried to spawn a None meth head.");
+        BoardMap_t onScreenMap(m_displayVars.constants().board_map);
 
-        std::vector<sf::Vector2i> cellPositions(MethHeadBase::makeUnoccupiedCellPositions(m_board));
-
-        if (cellPositions.empty())
+        for (const IActorUPtr_t & actor : m_actors)
         {
-            std::cout << "spawnMethHead() failed to find any unoccupied cells." << std::endl;
-            return;
+            onScreenMap.erase(actor->boardPos());
         }
 
-        const sf::Vector2i boardPos(m_random.from(cellPositions));
+        for (const IPickupUPtr_t & pickup : m_pickups)
+        {
+            onScreenMap.erase(pickup->boardPos());
+        }
 
-        Cell & cell(m_board[boardPos]);
-        cell.motivation = motive;
+        if (onScreenMap.empty())
+        {
+            return m_displayVars.constants().off_screen_pair;
+        }
+
+        const auto & [boardPos, rectangleShape] = m_random.from(onScreenMap);
+
+        return { boardPos, rectangleShape.getGlobalBounds() };
+    }
+
+    void Simulator::spawnMethHead(const Motivation motive)
+    {
+        assertOrThrow((motive != Motivation::none), "Tried to spawn a None meth head.");
+
+        const auto & [boardPos, floatRect] = randomSpawnPos();
 
         if (motive == Motivation::lazy)
         {
-            m_actors.push_back(std::make_unique<Lazy>("image/head-1.png", boardPos, cell.bounds()));
+            m_actors.push_back(std::make_unique<Lazy>("image/head-1.png", boardPos, floatRect));
         }
         else
         {
-            m_actors.push_back(
-                std::make_unique<Greedy>("image/head-2.png", boardPos, cell.bounds()));
+            m_actors.push_back(std::make_unique<Greedy>("image/head-2.png", boardPos, floatRect));
         }
+    }
+
+    void Simulator::spawnLoot()
+    {
+        const auto & [boardPos, floatRect] = randomSpawnPos();
+
+        m_pickups.push_back(std::move(std::make_unique<Loot>(
+            "image/loot.png",
+            boardPos,
+            floatRect,
+            m_random.fromTo(1, 100),
+            m_displayVars.constants())));
     }
 
     void Simulator::handleEvents()
@@ -196,19 +218,19 @@ namespace methhead
     {
         m_animationPlayer.update(elapsedSec);
 
-        const Scores scores(calcScores());
-        m_displayVars.update(elapsedSec, scores.lazy, scores.greedy, m_board);
-
         for (auto & actor : m_actors)
         {
-            actor->update(elapsedSec, m_board, m_soundPlayer, m_random, m_animationPlayer);
+            actor->update(elapsedSec, m_soundPlayer, m_random, m_animationPlayer);
         }
+
+        const Scores scores(calcScores());
+        m_displayVars.update(elapsedSec, scores.lazy, scores.greedy);
     }
 
     void Simulator::printConsoleStatus()
     {
         auto printWinnerPercentString = [&](const Scores & scores) {
-            const std::size_t lowScore(std::min(scores.lazy, scores.greedy));
+            const int lowScore(std::min(scores.lazy, scores.greedy));
             if (0 == lowScore)
             {
                 return;
@@ -250,9 +272,14 @@ namespace methhead
 
         const sf::RenderStates renderState;
 
-        m_displayVars.draw(m_window, renderState, m_board);
+        m_displayVars.draw(m_window, renderState);
 
         for (IActorUPtr_t & uptr : m_actors)
+        {
+            uptr->draw(m_window, renderState);
+        }
+
+        for (IPickupUPtr_t & uptr : m_pickups)
         {
             uptr->draw(m_window, renderState);
         }
@@ -268,13 +295,13 @@ namespace methhead
 
         for (const IActorUPtr_t & actorUPtr : m_actors)
         {
-            if (actorUPtr->getMotivation() == Motivation::lazy)
+            if (actorUPtr->motivation() == Motivation::lazy)
             {
-                scores.lazy = actorUPtr->getScore();
+                scores.lazy = actorUPtr->score();
             }
             else
             {
-                scores.greedy = actorUPtr->getScore();
+                scores.greedy = actorUPtr->score();
             }
         }
 

@@ -1,7 +1,6 @@
 #ifndef METHHEADS_DISPLAY_VARIABLES_HPP_INCLUDED
 #define METHHEADS_DISPLAY_VARIABLES_HPP_INCLUDED
 
-#include "cell.hpp"
 #include "display-constants.hpp"
 
 #include <SFML/Graphics.hpp>
@@ -14,23 +13,14 @@ namespace methhead
         explicit DisplayVariables(const sf::Vector2u & windowSize);
         virtual ~DisplayVariables() = default;
 
-        void update(
-            const float elapsedMs,
-            const std::size_t lazyScore,
-            const std::size_t greedyScore,
-            const BoardMap_t & board);
+        void update(const float elapsedMs, const int lazyScore, const int greedyScore);
 
-        void draw(
-            sf::RenderTarget & target, sf::RenderStates states, const BoardMap_t & board) const;
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const;
 
-        const DisplayConstants constants() const { return m_constants; }
-
-        BoardMap_t makeBoard() const;
+        const DisplayConstants & constants() const { return m_constants; }
 
     private:
-        void setScoreBarsHeight(const std::size_t lazyScore, const std::size_t greedyScore);
-
-        sf::Vector2f boardToWindowPos(const sf::Vector2i & cellPos) const;
+        void setScoreBarsHeight(const int lazyScore, const int greedyScore);
 
     private:
         DisplayConstants m_constants;

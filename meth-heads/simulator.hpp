@@ -2,7 +2,6 @@
 #define METHHEADS_SIMULATOR_HPP_INCLUDED
 
 #include "animation-player.hpp"
-#include "cell.hpp"
 #include "display-variables.hpp"
 #include "meth-head.hpp"
 #include "random.hpp"
@@ -20,8 +19,8 @@ namespace methhead
     {
         struct Scores
         {
-            std::size_t lazy = 0;
-            std::size_t greedy = 0;
+            int lazy = 0;
+            int greedy = 0;
         };
 
     public:
@@ -35,7 +34,10 @@ namespace methhead
         void consoleStatus();
         void printConsoleStatus();
 
+        std::pair<BoardPos_t, sf::FloatRect> randomSpawnPos() const;
+
         void spawnMethHead(const Motivation motive);
+        void spawnLoot();
 
         void handleEvents();
         void handleEvent(const sf::Event & event);
@@ -54,9 +56,9 @@ namespace methhead
         SoundPlayer m_soundPlayer;
         AnimationPlayer m_animationPlayer;
         DisplayVariables m_displayVars;
-        BoardMap_t m_board;
 
         std::vector<IActorUPtr_t> m_actors;
+        std::vector<IPickupUPtr_t> m_pickups;
 
         sf::Clock m_frameClock;
         float m_timeMultiplier;
