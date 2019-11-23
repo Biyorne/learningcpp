@@ -9,16 +9,28 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <ostream>
 #include <random>
+#include <set>
 #include <sstream>
 #include <string>
 #include <tuple>
 
 #include <SFML/Graphics.hpp>
+
+//
+
+#ifdef WIN32
+using StdManip_t = std::streamsize;
+#else
+using StdManip_t = int;
+#endif
 
 //
 
@@ -34,14 +46,17 @@ namespace sf
 
     inline bool operator<(const Color & left, const Color & right)
     {
-        return (left.toInteger() < right.toInteger());
+        return (
+            std::tie(left.r, left.g, left.b, left.a)
+            < std::tie(right.r, right.g, right.b, right.a));
     }
 
     inline std::ostream & operator<<(std::ostream & os, const sf::Color & color)
     {
         std::ostringstream ss;
 
-        ss << '(' << int(color.r) << ',' << int(color.g) << ',' << int(color.b);
+        ss << '(' << std::setw(3) << std::right << int(color.r) << ',' << std::setw(3) << std::right
+           << int(color.g) << ',' << std::setw(3) << std::right << int(color.b);
 
         if (color.a < 255)
         {
@@ -77,9 +92,62 @@ namespace sf
 
 } // namespace sf
 
-//
+// sf utils
 
-inline void scaleInPlace(sf::FloatRect & rect, const sf::Vector2f & scale) noexcept
+// sf::Text needs this local offset correction after changing the: string, scale, or characterSize
+template <typename T>
+void localOffsetCorrection(T & text)
+{
+    if constexpr (std::is_same_v<std::remove_cv_t<T>, sf::Text>)
+    {
+        const auto localBounds { text.getLocalBounds() };
+        text.setOrigin(localBounds.left, localBounds.top);
+    }
+}
+
+// sfml used to have a sf::Window::capture() function for this, but for some reason he deprecated it
+// and now we have to write it ourselves...
+inline sf::Image windowToImage(const sf::Window & window)
+{
+    sf::Image image;
+
+    const sf::Vector2u windowSize { window.getSize() };
+
+    sf::Texture texture;
+    if (texture.create(windowSize.x, windowSize.y))
+    {
+        texture.update(window);
+        image = texture.copyToImage();
+    }
+
+    return image;
+}
+
+inline void appendQuad(
+    std::vector<sf::Vertex> & verts,
+    const sf::Vector2f & pos,
+    const sf::Vector2f & size,
+    const sf::Color & clr = sf::Color::Transparent)
+{
+    verts.push_back({ pos, clr });
+    verts.push_back({ { (pos.x + size.x), pos.y }, clr });
+    verts.push_back({ (pos + size), clr });
+    verts.push_back({ { pos.x, (pos.y + size.y) }, clr });
+}
+
+inline void appendQuadRect(
+    std::vector<sf::Vertex> & verts,
+    const sf::FloatRect & rect,
+    const sf::Color & clr = sf::Color::Transparent)
+{
+    appendQuad(
+        verts,
+        (sf::Vector2f(rect.left, rect.top) - sf::Vector2f(1.0f, 1.0f)),
+        (sf::Vector2f(rect.width, rect.height) + sf::Vector2f(2.0f, 2.0f)),
+        clr);
+}
+
+inline void scaleRectInPlace(sf::FloatRect & rect, const sf::Vector2f & scale) noexcept
 {
     const auto widthChange((rect.width * scale.x) - rect.width);
     rect.width += widthChange;
@@ -91,23 +159,306 @@ inline void scaleInPlace(sf::FloatRect & rect, const sf::Vector2f & scale) noexc
 }
 
 inline sf::FloatRect
-    scaleInPlaceCopy(const sf::FloatRect & before, const sf::Vector2f & scale) noexcept
+    scaleRectInPlaceCopy(const sf::FloatRect & before, const sf::Vector2f & scale) noexcept
 {
     sf::FloatRect after(before);
-    scaleInPlace(after, scale);
+    scaleRectInPlace(after, scale);
     return after;
 }
 
-inline void scaleInPlace(sf::FloatRect & rect, const float scale) noexcept
+inline void scaleRectInPlace(sf::FloatRect & rect, const float scale) noexcept
 {
-    scaleInPlace(rect, { scale, scale });
+    scaleRectInPlace(rect, { scale, scale });
 }
 
-inline sf::FloatRect scaleInPlaceCopy(const sf::FloatRect & before, const float scale) noexcept
+inline sf::FloatRect scaleRectInPlaceCopy(const sf::FloatRect & before, const float scale) noexcept
 {
     sf::FloatRect after(before);
-    scaleInPlace(after, scale);
+    scaleRectInPlace(after, scale);
     return after;
+}
+
+template <typename T>
+void scale(T & thing, const sf::Vector2f & size)
+{
+    // skip if source size is zero (or close) to avoid dividing by zero below
+    const sf::FloatRect localBounds { thing.getLocalBounds() };
+    if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
+    {
+        return;
+    }
+
+    {
+        const float scaleHoriz { size.x / localBounds.width };
+        thing.setScale(scaleHoriz, scaleHoriz);
+    }
+
+    if (thing.getGlobalBounds().height > size.y)
+    {
+        const float scaleVert { size.y / localBounds.height };
+        thing.setScale(scaleVert, scaleVert);
+    }
+
+    localOffsetCorrection(thing);
+}
+
+template <typename T>
+void scale(T & thing, const sf::FloatRect & rect)
+{
+    scale(thing, { rect.width, rect.height });
+}
+
+template <typename T>
+void center(T & thing, const sf::FloatRect & rect)
+{
+    const sf::Vector2f thingSize(thing.getGlobalBounds().width, thing.getGlobalBounds().height);
+    const sf::Vector2f rectPos(rect.left, rect.top);
+    const sf::Vector2f rectSize(rect.width, rect.height);
+    const sf::Vector2f rectPosCenter(rectPos + (rectSize * 0.5f));
+    thing.setPosition(rectPosCenter - (thingSize * 0.5f));
+}
+
+template <typename T>
+sf::Vector2<T> center(const sf::Rect<T> & rect)
+{
+    return { (rect.left + (rect.width / T(2))), (rect.top + (rect.height / T(2))) };
+}
+
+template <typename T>
+void fit(T & thing, const sf::FloatRect & rect)
+{
+    scale(thing, rect);
+    center(thing, rect);
+}
+
+inline void fitTitle(
+    sf::Text & text,
+    const sf::FloatRect & rect,
+    const bool isAbove,
+    const float heightRatio = 0.05f)
+{
+    // if no text then only set position and bail
+    const std::string str { text.getString() };
+    if (str.empty())
+    {
+        text.setPosition(rect.left, rect.top);
+        text.move(sf::Vector2f(rect.width, rect.height) * 0.5f);
+        return;
+    }
+
+    // count the number of lines so the height can grow accordingly
+    std::size_t extraLineCount { 0 };
+    for (const char ch : str)
+    {
+        if ('\n' == ch)
+        {
+            ++extraLineCount;
+        }
+    }
+
+    // establish initial position and size
+    sf::FloatRect titleRect(rect);
+    titleRect.height *= heightRatio;
+
+    if (extraLineCount > 0)
+    {
+        titleRect.height *= (static_cast<float>(extraLineCount) * 2.0f);
+    }
+
+    // position above or just inside the given rect
+    if (isAbove)
+    {
+        titleRect.top -= titleRect.height;
+        titleRect.top -= (rect.height * 0.005f);
+    }
+    else
+    {
+        titleRect.top += (rect.height * 0.005f);
+    }
+
+    fit(text, titleRect);
+}
+
+inline void fillWithQuads(
+    std::vector<sf::Vertex> & verts, const sf::FloatRect & boundsF, const float sizeRatio)
+{
+    const sf::IntRect boundsI { boundsF };
+
+    const sf::Vector2f tileSizeF { (boundsF.width * sizeRatio), (boundsF.height * sizeRatio) };
+    const sf::Vector2i tileSizeI { tileSizeF };
+
+    const int horizCount { boundsI.width / tileSizeI.x };
+    const int vertCount { boundsI.height / tileSizeI.y };
+
+    for (int vert(0); vert < vertCount; ++vert)
+    {
+        for (int horiz(0); horiz < horizCount; ++horiz)
+        {
+            const sf::Vector2i posIndexes(horiz, vert);
+
+            const sf::Vector2i posI(
+                sf::Vector2i(boundsI.left, boundsI.top) + (posIndexes * tileSizeI));
+
+            appendQuad(verts, sf::Vector2f(posI), sf::Vector2f(tileSizeI));
+        }
+    }
+}
+
+// if borderSize <0 then it's a scale of the default thin.  (i.e. -10 is ten times the default thin)
+inline std::vector<sf::FloatRect> subdivide(
+    const std::vector<std::size_t> & colCountForEachRow,
+    const sf::FloatRect & bounds,
+    const float borderSizeOrig = 0.0f,
+    const bool willForceSquare = false)
+{
+    if (colCountForEachRow.empty() || (bounds.width < 1.0f) || (bounds.height < 1.0f))
+    {
+        return {};
+    }
+
+    const float borderSize = [&]() {
+        if (borderSizeOrig < 0.0f)
+        {
+            const float defaultBorder { std::pow((bounds.width + bounds.height), 0.25f) };
+            return (defaultBorder * -borderSizeOrig);
+        }
+        else
+        {
+            return borderSizeOrig;
+        }
+    }();
+
+    const std::size_t rowCount { colCountForEachRow.size() };
+    const float borderHeightSum(static_cast<float>(rowCount + 1) * borderSize);
+    const float rowHeight { (bounds.height - borderHeightSum) / static_cast<float>(rowCount) };
+    if (rowHeight < 1.0f)
+    {
+        return {};
+    }
+
+    std::vector<sf::FloatRect> rects;
+    for (std::size_t rowIndex(0); rowIndex < rowCount; ++rowIndex)
+    {
+        const std::size_t colCount { colCountForEachRow.at(rowIndex) };
+        if (0 == colCount)
+        {
+            continue;
+        }
+
+        const float borderWidthSum(static_cast<float>(colCount + 1) * borderSize);
+        const float colWidth { (bounds.width - borderWidthSum) / static_cast<float>(colCount) };
+
+        const float top { bounds.top + (static_cast<float>(rowIndex + 1) * borderSize)
+                          + (static_cast<float>(rowIndex) * rowHeight) };
+
+        for (std::size_t colIndex(0); colIndex < colCount; ++colIndex)
+        {
+            const float left { bounds.left + (static_cast<float>(colIndex + 1) * borderSize)
+                               + (static_cast<float>(colIndex) * colWidth) };
+
+            const sf::FloatRect rect({ left, top }, { colWidth, rowHeight });
+
+            if (willForceSquare)
+            {
+                const sf::Vector2f rectCenter { center(rect) };
+
+                const float squareSideLength { math::min(colWidth, rowHeight) };
+                const sf::Vector2f squareSize(squareSideLength, squareSideLength);
+
+                const sf::FloatRect squareRect { (rectCenter - (squareSize * 0.5f)), squareSize };
+                rects.push_back(squareRect);
+            }
+            else
+            {
+                rects.push_back(rect);
+            }
+        }
+    }
+
+    return rects;
+}
+
+//
+// if borderSize <0 then it's a scale of the default thin.  (i.e. -10 is ten times the default thin)
+inline std::vector<sf::FloatRect> subdivide_v1(
+    const std::size_t count,
+    const sf::FloatRect & bounds,
+    const float borderSizeOrig = 0.0f,
+    const bool willForceSquare = false)
+{
+    if (count <= 2)
+    {
+        if (bounds.width > bounds.height)
+        {
+            const std::vector<std::size_t> colCountForEachRow(1, count);
+            return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
+        }
+        else
+        {
+            const std::vector<std::size_t> colCountForEachRow(count, 1);
+            return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
+        }
+    }
+
+    if ((bounds.height / bounds.width) < (1.0f / static_cast<float>(count - 1)))
+    {
+        const std::vector<std::size_t> colCountForEachRow(1, count);
+        return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
+    }
+    else if ((bounds.width / bounds.height) < (1.0f / static_cast<float>(count - 1)))
+    {
+        const std::vector<std::size_t> colCountForEachRow(count, 1);
+        return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
+    }
+    else if (3 == count)
+    {
+        std::vector<std::size_t> colCountForEachRow;
+        colCountForEachRow.push_back(1);
+        colCountForEachRow.push_back(2);
+        return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
+    }
+
+    const float countsSquareF { std::sqrt(static_cast<float>(count)) };
+    const std::size_t countsSquareU { static_cast<std::size_t>(countsSquareF) };
+
+    std::vector<std::size_t> colCountForEachRow(countsSquareU, countsSquareU);
+
+    const std::size_t remainder { count - (countsSquareU * countsSquareU) };
+    if (remainder > 0)
+    {
+        colCountForEachRow.insert(std::begin(colCountForEachRow), remainder);
+    }
+
+    return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
+}
+
+inline std::vector<sf::FloatRect> subdivide_v2(
+    const std::size_t count,
+    const sf::FloatRect & bounds,
+    const float borderSize = 0.0f,
+    const bool willForceSquare = false)
+{
+    if (0 == count)
+    {
+        return {};
+    }
+
+    const std::size_t colCount { static_cast<std::size_t>(std::ceil(std::sqrt(count))) };
+
+    const std::size_t rowCount { static_cast<std::size_t>(
+        std::ceil(count / static_cast<float>(colCount))) };
+
+    std::cout << rowCount << "x" << colCount << std::endl;
+    const std::vector<std::size_t> colCountForEachRow(rowCount, colCount);
+
+    return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+
+    /*
+    ceil(sqrt(n)) to compute the number of columns (since this is, as you apparently have guessed,
+    the smallest amount of columns you need in order to not have more rows than columns). Then, the
+    number of rows you need in order to accommodate n elements distributed across numColumns columns
+    will be given by ceil(n / (double)numColumns).
+    */
 }
 
 //
@@ -271,38 +622,132 @@ namespace color
         return blend(colorRatio, *(srcBegin + fromIndex), *(srcBegin + fromIndex + 1_st));
     }
 
-    // HSL (Hue Saturation Brightness)
-
-    namespace hsl
+    //
+    // HSL
+    //  HSL and HSV are alternative representations of the RGB color model designed in the
+    //  1970s. They are better than RGB, but still make a trade-off of perceptual relevance
+    //  for computation speed.  They work well enough when humans need to pick a single
+    //  distinct color in isolation, but they are a poor choice when humans need to measure
+    //  of how similar/different multiple colors appear to be.
+    //
+    //  From 1970-2000 there were few displays that could accurately display colors.  So
+    //  humans were forced to use HSL/HSV numbers for colors.  They were better than RGB,
+    //  but still fell far short of how humans see color.  Now that displays capable of
+    //  showing accurate colors, humans can finally use their eyes to pick
+    //  related/similar/distinct colors on screen.  So now the limitations of HSL and HSV
+    //  are obvious, and significant enough to require better, more perceptual models.
+    //  Luckily, computers are also now fast enough use such models that are far more
+    //  computationally expensive, such as CIE-Lab/Luv.
+    //
+    struct Hsla
     {
+        Hsla() = default;
 
-        struct Hsla
+        Hsla(
+            const float hue,
+            const float saturation,
+            const float lightness,
+            const sf::Uint8 alpha = 255)
+            : h(hue)
+            , s(saturation)
+            , l(lightness)
+            , a(alpha)
+        {}
+
+        explicit Hsla(const sf::Color & color)
         {
-            float hue { 0.0f }; // ratio of degrees [0,360]
-            float sat { 0.0f };
-            float lgt { 0.0f };
-            sf::Uint8 alp { 255 }; // same as sf::Color.a (transparent=0, opaque=255)
-        };
+            a = color.a;
 
-        inline std::ostream & operator<<(std::ostream & os, const Hsla & hsl)
+            const float redRatio { static_cast<float>(color.r) / 255.0f };
+            const float grnRatio { static_cast<float>(color.g) / 255.0f };
+            const float bluRatio { static_cast<float>(color.b) / 255.0f };
+
+            const float min { math::min(redRatio, grnRatio, bluRatio) };
+            const float max { math::max(redRatio, grnRatio, bluRatio) };
+            const float diff { max - min };
+
+            l = ((max + min) * 0.5f);
+
+            if (math::isRealZeroOrLess(diff))
+            {
+                return;
+            }
+
+            if (l < 0.5f)
+            {
+                s = (diff / (max + min));
+            }
+            else
+            {
+                s = (diff / (2.0f - max - min));
+            }
+
+            const float redDiff { (((max - redRatio) / 6.0f) + (diff / 2.0f)) / diff };
+            const float grnDiff { (((max - grnRatio) / 6.0f) + (diff / 2.0f)) / diff };
+            const float bluDiff { (((max - bluRatio) / 6.0f) + (diff / 2.0f)) / diff };
+
+            if (math::isRealClose(redRatio, max))
+            {
+                h = (bluDiff - grnDiff);
+            }
+            else if (math::isRealClose(grnRatio, max))
+            {
+                h = (((1.0f / 3.0f) + redDiff) - bluDiff);
+            }
+            else if (math::isRealClose(bluRatio, max))
+            {
+                h = (((2.0f / 3.0f) + grnDiff) - redDiff);
+            }
+
+            h = hueRatioCorrect(h);
+        }
+
+        sf::Color sfColor() const
+        {
+            sf::Color color;
+
+            if (math::isRealZero(s))
+            {
+                color.r = static_cast<sf::Uint8>(l * 255.0f);
+                color.g = static_cast<sf::Uint8>(l * 255.0f);
+                color.b = static_cast<sf::Uint8>(l * 255.0f);
+            }
+            else
+            {
+                const float var2 { (l < 0.5f) ? (l * (1 + s)) : ((l + s) - (s * l)) };
+                const float var1 { (2 * l) - var2 };
+
+                color.r = hueRatioToRgb(var1, var2, (h + (1.0f / 3.0f)));
+                color.g = hueRatioToRgb(var1, var2, h);
+                color.b = hueRatioToRgb(var1, var2, (h - (1.0f / 3.0f)));
+            }
+
+            color.a = a;
+            return color;
+        }
+
+        std::string toString() const
         {
             std::ostringstream ss;
 
-            ss << '[' << hsl.hue << ',' << hsl.sat << ',' << hsl.lgt;
+            ss << '[' << h << ',' << s << ',' << l;
 
-            if (hsl.alp < 255)
+            if (a < 255)
             {
-                ss << ',' << int(hsl.alp);
+                ss << ',' << int(a);
             }
 
             ss << ']';
-
-            os << ss.str();
-
-            return os;
+            return ss.str();
         }
 
-        inline constexpr float hueRatioCorrect(const float hueRatio) noexcept
+        float h { 0.0f }; // ratio of degrees [0,360]
+        float s { 0.0f };
+        float l { 0.0f };
+        sf::Uint8 a { 255 }; // same as sf::Color.a (transparent=0, opaque=255)
+
+    private:
+        static constexpr float hueRatioCorrect(const float hueRatio) noexcept
         {
             float result { hueRatio };
 
@@ -319,7 +764,7 @@ namespace color
             return result;
         }
 
-        inline constexpr sf::Uint8
+        static constexpr sf::Uint8
             hueRatioToRgb(const float var1, const float var2, const float hueParam) noexcept
         {
             const float hue { hueRatioCorrect(hueParam) };
@@ -353,86 +798,141 @@ namespace color
 
             return static_cast<sf::Uint8>(result);
         }
+    };
 
-        inline Hsla colorToHsla(const sf::Color & color)
+    inline std::ostream & operator<<(std::ostream & os, const Hsla & hsl)
+    {
+        os << hsl.toString();
+        return os;
+    }
+
+    namespace xyz
+    {
+        struct ReferenceValues
         {
-            Hsla hsl;
-            hsl.alp = color.a;
+            std::string_view observer;
+            std::string_view description;
 
-            const float redRatio { static_cast<float>(color.r) / 255.0f };
-            const float grnRatio { static_cast<float>(color.g) / 255.0f };
-            const float bluRatio { static_cast<float>(color.b) / 255.0f };
+            // CIE 1931 2degrees
+            float x2;
+            float y2;
+            float z2;
 
-            const float min { math::min(redRatio, grnRatio, bluRatio) };
-            const float max { math::max(redRatio, grnRatio, bluRatio) };
-            const float diff { max - min };
+            // CIE 1964 10degrees
+            float x10;
+            float y10;
+            float z10;
+        };
 
-            hsl.lgt = ((max + min) * 0.5f);
+        //
+        // XYZ (Tristimulus) Reference values of a perfect reflecting diffuser
+        //
+        // clang-format off
+        //constexpr ReferenceValues A{    "A",   "Incandescent/Tungsten",               109.850f,  100.000f,  35.585f,    111.144f, 100.000f,  35.200f };
+        //constexpr ReferenceValues B{    "B",   "Old Direct Sunlight At Noon",          99.0927f, 100.000f,  85.313f,     99.178f, 100.000f,  84.3493f};
+        //constexpr ReferenceValues C{    "C",   "Old Daylight",                         98.074f,  100.000f, 118.232f,     97.285f, 100.000f, 116.145f };
+        //constexpr ReferenceValues D50{  "D50", "ICC Profile PCS",                      96.422f,  100.000f,  82.521f,     96.720f, 100.000f,  81.427f };
+        //constexpr ReferenceValues D55{  "D55", "Midmorning Daylight",                  95.682f,  100.000f,  92.149f,     95.799f, 100.000f,  90.926f };
+        //constexpr ReferenceValues D65{  "D65", "Daylight/sRGB/AdobeRGB",               95.047f,  100.000f, 108.883f,     94.811f, 100.000f, 107.304f };
+        //constexpr ReferenceValues D75{  "D75", "North Sky Daylight",                   94.972f,  100.000f, 122.638f,     94.416f, 100.000f, 120.641f };
+        //constexpr ReferenceValues E{    "E",   "Equal Energy",                        100.000f,  100.000f, 100.000f,    100.000f, 100.000f, 100.000f };
+        //constexpr ReferenceValues F1{   "F1",  "Daylight Fluorescent",                 92.834f,  100.000f, 103.665f,     94.791f, 100.000f, 103.191f };
+        //constexpr ReferenceValues F2{   "F2",  "Cool Fluorescent",                     99.187f,  100.000f,  67.395f,    103.280f, 100.000f,  69.026f };
+        //constexpr ReferenceValues F3{   "F3",  "White Fluorescent",                   103.754f,  100.000f,  49.861f,    108.968f, 100.000f,  51.965f };
+        //constexpr ReferenceValues F4{   "F4",  "Warm White Fluorescent",              109.147f,  100.000f,  38.813f,    114.961f, 100.000f,  40.963f };
+        //constexpr ReferenceValues F5{   "F5",  "Daylight Fluorescent",                 90.872f,  100.000f,  98.723f,     93.369f, 100.000f,  98.636f };
+        //constexpr ReferenceValues F6{   "F6",  "Lite White Fluorescent",               97.309f,  100.000f,  60.191f,    102.148f, 100.000f,  62.074f };
+        //constexpr ReferenceValues F7{   "F7",  "Daylight Fluorescent/D65 Simulator",   95.044f,  100.000f, 108.755f,     95.792f, 100.000f, 107.687f };
+        //constexpr ReferenceValues F8{   "F8",  "Sylvania F40/D50 Simulator",           96.413f,  100.000f,  82.333f,     97.115f, 100.000f,  81.135f };
+        //constexpr ReferenceValues F9{   "F9",  "Cool White Fluorescent",              100.365f,  100.000f,  67.868f,    102.116f, 100.000f,  67.826f };
+        //constexpr ReferenceValues F10{  "F10", "Ultralume 50/Philips TL85",            96.174f,  100.000f,  81.712f,     99.001f, 100.000f,  83.134f };
+        //constexpr ReferenceValues F11{  "F11", "Ultralume 40/Philips TL84",           100.966f,  100.000f,  64.370f,    103.866f, 100.000f,  65.627f };
+        //constexpr ReferenceValues F12{  "F12", "Ultralume 30/Philips TL83",           108.046f,  100.000f,  39.228f,    111.428f, 100.000f,  40.353f };
+        // clang-format on
 
-            if (math::isRealZeroOrLess(diff))
-            {
-                return hsl;
-            }
+        // RGB -> CIE.XYZ.Rec.709 with D65 white point:
+        // 0.412453 & 0.357580 & 0.180423
+        // 0.212671 & 0.715160 & 0.072169
+        // 0.019334 & 0.119193 & 0.950227
+        //...and back again
+        // 3.240479 & -1.53715 & -0.498535
+        // -0.969256 & 1.875991 & 0.041556
+        // 0.055648 & -0.204043 & 1.057311
 
-            if (hsl.lgt < 0.5f)
-            {
-                hsl.sat = (diff / (max + min));
-            }
-            else
-            {
-                hsl.sat = (diff / (2.0f - max - min));
-            }
-
-            const float redDiff { (((max - redRatio) / 6.0f) + (diff / 2.0f)) / diff };
-            const float grnDiff { (((max - grnRatio) / 6.0f) + (diff / 2.0f)) / diff };
-            const float bluDiff { (((max - bluRatio) / 6.0f) + (diff / 2.0f)) / diff };
-
-            if (math::isRealClose(redRatio, max))
-            {
-                hsl.hue = (bluDiff - grnDiff);
-            }
-            else if (math::isRealClose(grnRatio, max))
-            {
-                hsl.hue = (((1.0f / 3.0f) + redDiff) - bluDiff);
-            }
-            else if (math::isRealClose(bluRatio, max))
-            {
-                hsl.hue = (((2.0f / 3.0f) + grnDiff) - redDiff);
-            }
-
-            hsl.hue = hueRatioCorrect(hsl.hue);
-
-            return hsl;
-        }
-
-        inline sf::Color hslToColor(const Hsla & hsl)
+        struct Xyza
         {
-            sf::Color color;
+            Xyza() = default;
 
-            if (math::isRealZero(hsl.sat))
+            explicit Xyza(const sf::Color & color)
+                : x((0.412453f * color.r) + (0.35758f * color.g) + (0.180423f * color.b))
+                , y((0.212671f * color.r) + (0.71516f * color.g) + (0.072169f * color.b))
+                , z((0.019334f * color.r) + (0.119193f * color.g) + (0.950227f * color.b))
+                , a(color.a)
+            {}
+
+            // sf::Color sfColor() const {}
+
+            std::string toString() const
             {
-                color.r = static_cast<sf::Uint8>(hsl.lgt * 255.0f);
-                color.g = static_cast<sf::Uint8>(hsl.lgt * 255.0f);
-                color.b = static_cast<sf::Uint8>(hsl.lgt * 255.0f);
+                std::ostringstream ss;
+
+                ss << '[' << x << ',' << y << ',' << z;
+
+                if (a < 255)
+                {
+                    ss << ',' << int(a);
+                }
+
+                ss << ']';
+                return ss.str();
             }
-            else
+
+            float x { 0.0f };
+            float y { 0.0f };
+            float z { 0.0f };
+            sf::Uint8 a { 255 }; // same as sf::Color.a (transparent=0, opaque=255)
+        };
+
+    } // namespace xyz
+
+    namespace cie
+    {
+        struct Laba
+        {
+            explicit Laba(const sf::Color & color)
+                : l()
+                , a()
+                , b()
+                , alpha(color.a)
             {
-                const float var2 { (hsl.lgt < 0.5f) ? (hsl.lgt * (1 + hsl.sat))
-                                                    : ((hsl.lgt + hsl.sat) - (hsl.sat * hsl.lgt)) };
-
-                const float var1 { (2 * hsl.lgt) - var2 };
-
-                color.r = hueRatioToRgb(var1, var2, (hsl.hue + (1.0f / 3.0f)));
-                color.g = hueRatioToRgb(var1, var2, hsl.hue);
-                color.b = hueRatioToRgb(var1, var2, (hsl.hue - (1.0f / 3.0f)));
+                // Reference-X, Y and Z refer to specific illuminants and observers.
+                // Common reference values are available below in this same page.
+                //
+                // var_X = X / Reference - X
+                // var_Y = Y / Reference - Y
+                // var_Z = Z / Reference - Z
+                //
+                // if (var_X > 0.008856) var_X = var_X ^ (1 / 3)
+                // else                    var_X = (7.787 * var_X) + (16 / 116)
+                //
+                // if (var_Y > 0.008856) var_Y = var_Y ^ (1 / 3)
+                // else                    var_Y = (7.787 * var_Y) + (16 / 116)
+                //
+                // if (var_Z > 0.008856) var_Z = var_Z ^ (1 / 3)
+                // else                    var_Z = (7.787 * var_Z) + (16 / 116)
+                //
+                // CIE - L * = (116 * var_Y) - 16
+                // CIE - a * = 500 * (var_X - var_Y)
+                // CIE - b * = 200 * (var_Y - var_Z)
             }
 
-            color.a = hsl.alp;
+            float l { 0.0f };
+            float a { 0.0f };
+            float b { 0.0f };
+            sf::Uint8 alpha { 255 }; // same as sf::Color.a (transparent=0, opaque=255)
+        };
 
-            return color;
-        }
-
-    } // namespace hsl
+    } // namespace cie
 
     // helper utils
 
@@ -537,7 +1037,29 @@ namespace color
         return ratioFromClamped((ratio - std::floor(ratio)), container);
     }
 
-    inline float brightnessRatio(const sf::Color & color)
+    // ITU-R=International Telecommunication Union RadioCommunication Sector
+
+    // ITU-R.601  (also CCIR.601 / Rec.601 / BT.601)  (year 1982)
+    //  The good old standard for encoding interlaced analog video signals as digital video.
+    //  Includes 525-line encoding at 60 Hz, and 625-line encoding at 50 Hz signals.
+    //      RGB Luma coefficients (Y’): R=0.299R, G=0.5870G, B=0.1140B
+
+    // ITU-R.709  (also Rec.709 / BT.709)  (year 1990)
+    //  Created for widescreen (16:9) high-definition television.
+    //  NOTE:  Rec.709 and sRGB share the same primary chromaticities and white-point
+    //  chromaticity, but sRGB is explicitly for display's with gamma 2.2.
+    //      RGB Luma coefficients (Y’):  R=0.2126, G=0.7152, B=0.0722
+
+    // ITU-R.2020 (also Rec.2020 / BT.2020)  (year 2012)
+    //  Created for UHDTV with standard dynamic range (SDR) and wide color gamut (WCG).
+    //      RGB Luma coefficients (Y’): R=0.2627, G=0.678, B=0.0593
+
+    // ITU-R.2100 (also Rec.2100 / BT.2100)  (year 2016)
+    //  Created for high dynamic range (HDR) formats for both HDTV 1080p and 4K/8K UHDTV
+    //  resolutions that uses different transfer functions for HDR, but...
+    //      RGB Luma coefficients (Y’):  USES SAME COLOR PRIMARIES AS REC.2020.
+
+    inline float brightnessAverage(const sf::Color & color)
     {
         const float red { static_cast<float>(color.r) };
         const float green { static_cast<float>(color.g) };
@@ -563,7 +1085,7 @@ namespace color
         return (redFactor + greenFactor + blueFactor);
     }
 
-    inline float brightnessHslRatio(const sf::Color & color) { return hsl::colorToHsla(color).lgt; }
+    inline float brightnessHslRatio(const sf::Color & color) { return Hsla(color).l; }
 
     inline sf::Color random(const Random & random, const bool willRandomizeAlpha = false)
     {
@@ -896,8 +1418,13 @@ namespace stats
     template <typename T>
     struct Stats
     {
-        std::string toString(const std::streamsize numberWidth = 5) const
+        std::string toString(const StdManip_t numberWidth = 5) const
         {
+            if (0 == count)
+            {
+                return "";
+            }
+
             std::ostringstream ss;
             ss.imbue(std::locale("")); // this is only to put commas in the big numbers
 
@@ -926,6 +1453,11 @@ namespace stats
         Stats<T> stats;
 
         stats.count = container.size();
+
+        if (0 == stats.count)
+        {
+            return stats;
+        }
 
         stats.min = std::numeric_limits<T>::max();
 
@@ -1021,8 +1553,8 @@ namespace stats
 
                 sdv_diff_sums.push_back(sdv_diff_sum);
 
-                // std::cout << title << ": brightness=" << (100.0 * (makeStats(bright_full).avg /
-                // 255.0))
+                // std::cout << title << ": brightness=" << (100.0 *
+                // (makeStats(bright_full).avg / 255.0))
                 //          << "%" << std::endl;
             }
 
@@ -1058,31 +1590,47 @@ using namespace stats;
 namespace ColorTest
 {
 
-    enum Enum : unsigned
+    enum Enum
     {
         Blend = 0,
         Brightness,
         Diff,
-        Hsl
+        Hsl,
+        Greyscale
     };
 
 }
 
-template <typename Container_t>
-std::size_t containerIndexWrap(const std::size_t index, const Container_t & container)
+inline void indexWrap(std::size_t & index, const std::size_t maxValid)
 {
-    if (index > container.size())
+    if (index > (maxValid + 1))
     {
-        return (container.size() - 1);
+        index = maxValid;
     }
-    else if (index == container.size())
+    else if ((index == (maxValid + 1)) || (0 == maxValid))
     {
-        return 0;
+        index = 0;
     }
-    else
-    {
-        return index;
-    }
+}
+
+template <typename Container_t>
+inline void indexWrap(std::size_t & index, const Container_t & container)
+{
+    indexWrap(index, (container.size() - 1));
+}
+
+template <typename T = std::chrono::microseconds>
+long long getDuration(const std::chrono::high_resolution_clock::time_point & startTime)
+{
+    const auto stopTime { std::chrono::high_resolution_clock::now() };
+    const auto duration { std::chrono::duration_cast<T>(stopTime - startTime) };
+    return duration.count();
+}
+
+inline void printDuration(
+    const std::string & name, const std::chrono::high_resolution_clock::time_point & startTime)
+{
+    std::cout << name << " took " << getDuration(startTime) / 1000 << "ms" << std::endl;
 }
 
 //
@@ -1093,45 +1641,97 @@ struct Resources
 
     bool isWindowOpen() const { return window.isOpen(); }
     unsigned windowWidth() const { return window.getSize().x; }
+    unsigned windowHeight() const { return window.getSize().y; }
     sf::Vector2f windowSize() const { return sf::Vector2f { window.getSize() }; }
-    const std::vector<sf::Color> & gradient() const { return gradients.at(horiz_index); }
+    sf::FloatRect windowRect() const { return { { 0.0f, 0.0f }, windowSize() }; }
+
+    const std::vector<sf::Color> & gradient() const
+    {
+        return gradients.at(std::clamp(horiz_index, 0_st, (color_rows.size() - 1)));
+    }
+
     const ColorRow & colorRow(const Row::Enum row) const { return color_rows.at(row); }
 
     void setupWindow();
     void redraw();
+
+    void reset();
+
     void handleEvents();
     void handleEvent(const sf::Event & event);
+
     void draw();
+
     void setupColorTest_Blend();
     void setupColorTest_Brightness();
     void setupColorTest_Diff();
     void setupColorTest_HSL();
-    void reset();
+    void setupColorTest_Greyscale();
+    void test_subdivide_colsVec();
+    void test_subdivide_count();
 
     Random random;
 
     float rotation { 0.0f };
     float rotation_speed { 0.0f };
     const float rotation_inc { 1.0f / 1000.0f };
-    ColorTest::Enum which_test { ColorTest::Blend };
+    ColorTest::Enum which_test { ColorTest::Greyscale };
 
 private:
     void printColorRowDifferences();
-    std::size_t horizIndexWrap(const std::size_t index) const;
-    std::size_t vertIndexWrap(const std::size_t index) const;
+
+    std::vector<sf::Color> makeRandomColors(
+        const std::size_t count, const sf::Color & colorToAvoid = sf::Color::Transparent);
+
+    inline void appendQuad(
+        const sf::Vector2f & pos,
+        const sf::Vector2f & size,
+        const sf::Color & clr = sf::Color::Transparent)
+    {
+        ::appendQuad(quad_verts, pos, size, clr);
+    }
+
+    inline void
+        appendQuadRect(const sf::FloatRect & rect, const sf::Color & clr = sf::Color::Transparent)
+    {
+        ::appendQuadRect(quad_verts, rect, clr);
+    }
+
+    void setupText(
+        sf::Text & text,
+        const sf::FloatRect & rect,
+        const std::string & str = "",
+        const sf::Color & clr = sf::Color::Transparent,
+        const bool isAbove = false);
+
+    inline void addTitle(
+        const sf::FloatRect & rect,
+        const std::string & str,
+        const sf::Color & clr,
+        const bool isAbove = false)
+    {
+        sf::Text & text { texts.emplace_back(titleText) };
+        setupText(text, rect, str, clr, isAbove);
+    }
+
+    inline void appendWindowTitleText(const std::string & str)
+    {
+        setupText(titleText, windowRect(), (titleText.getString() + str));
+    }
 
     bool is_fullscreen { false };
 
     std::size_t blend_color_count { 0 };
 
     sf::RenderWindow window;
-    sf::RenderTexture side_texture;
 
     std::vector<sf::Vertex> quad_verts;
-    std::vector<sf::Vertex> line_verts;
 
     std::size_t horiz_index { 0 };
     std::size_t vert_index { 0 };
+
+    std::size_t horiz_index_max { 0 };
+    std::size_t vert_index_max { 0 };
 
     std::vector<std::vector<sf::Color>> gradients;
 
@@ -1144,28 +1744,42 @@ private:
     ColorMakerStats color_stats_normal;
     ColorMakerStats color_stats_vibrant;
     ColorMakerStats color_stats_alt;
+
+    std::vector<std::unique_ptr<sf::Texture>> images;
+
+    sf::Font font;
+    sf::Text titleText;
+
+    bool boolean { false };
+
+    std::vector<sf::Text> texts;
+
+    std::size_t count { 0 };
 };
 
 //
 
 void testHsl();
 void testColorDiff();
+void makePalleteCode(const std::string & headerFilePath);
 
 //
 
 int main()
 {
+    // makePalleteCode("Z:\\src\\learningcpp\\color-range\\color-names.hpp");
+
     Resources res;
 
     while (res.isWindowOpen())
     {
         res.handleEvents();
 
-        // if (ColorTest::Blend == res.which_test)
-        //{
-        //    res.rotation += res.rotation_speed;
-        //    res.setupColorTest_Blend();
-        //}
+        if (ColorTest::Blend == res.which_test)
+        {
+            res.rotation += res.rotation_speed;
+            res.setupColorTest_Blend();
+        }
 
         res.draw();
     }
@@ -1176,6 +1790,8 @@ int main()
 // Resources functions
 
 using namespace color;
+
+//
 
 Resources::Resources()
     : color_stats_normal("Normal")
@@ -1204,69 +1820,161 @@ Resources::Resources()
         color_rows.push_back(ColorRow(static_cast<Row::Enum>(i)));
     }
 
+    {
+        std::filesystem::recursive_directory_iterator dirIter(std::filesystem::current_path());
+
+        for (const std::filesystem::directory_entry & entry : dirIter)
+        {
+            if (!entry.is_regular_file())
+            {
+                continue;
+            }
+
+            const std::string extension { entry.path().extension().string() };
+
+            if ((extension != ".jpg") && (extension != ".png"))
+            {
+                continue;
+            }
+
+            auto texture(std::make_unique<sf::Texture>());
+
+            if (!texture->loadFromFile(entry.path().string()))
+            {
+                continue;
+            }
+
+            texture->setSmooth(true);
+
+            std::cout << "Loaded Image: " << entry.path().string() << std::endl;
+            images.push_back(std::move(texture));
+        }
+    }
+
+    if (!font.loadFromFile("transpass-light.ttf"))
+    {
+        std::cerr << "FAILED TO LOAD FONT: transpass-light.ttf" << std::endl;
+    }
+
+    titleText.setFont(font);
+    titleText.setCharacterSize(100);
+    titleText.setFillColor(sf::Color::Green);
+    titleText.setLineSpacing(2.0f / 3.0f);
+
     setupWindow();
     reset();
     redraw();
 }
 
+void Resources::setupText(
+    sf::Text & text,
+    const sf::FloatRect & rect,
+    const std::string & str,
+    const sf::Color & clr,
+    const bool isAbove)
+{
+    if (!str.empty())
+    {
+        text.setString(str);
+    }
+
+    if (clr != sf::Color::Transparent)
+    {
+        text.setFillColor(clr);
+    }
+
+    fitTitle(text, rect, isAbove);
+
+    appendQuadRect(text.getGlobalBounds(), sf::Color(0, 0, 0, 127));
+}
+
+std::vector<sf::Color>
+    Resources::makeRandomColors(const std::size_t theCount, const sf::Color & colorToAvoid)
+{
+    std::vector<sf::Color> colors;
+
+    while (colors.size() < theCount)
+    {
+        for (std::size_t i(0); i < 1000; ++i)
+        {
+            colors.push_back(color::random(random));
+        }
+
+        colors.erase(
+            std::remove(std::begin(colors), std::end(colors), colorToAvoid), std::end(colors));
+
+        std::sort(std::begin(colors), std::end(colors));
+        colors.erase(std::unique(std::begin(colors), std::end(colors)), std::end(colors));
+    }
+
+    std::shuffle(std::begin(colors), std::end(colors), std::mt19937(std::random_device {}()));
+
+    return colors;
+}
+
 void Resources::reset()
 {
     blend_color_count = window.getSize().x;
-    horiz_index = 0;
-    vert_index = 0;
     rotation = 0.0f;
     rotation_speed = 0.0f;
     quad_verts.clear();
-    line_verts.clear();
-}
+    texts.clear();
 
-std::size_t Resources::horizIndexWrap(const std::size_t index) const
-{
-    // clang-format off
     switch (which_test)
     {
-        case ColorTest::Blend:
+        case ColorTest::Brightness: // 1
         {
-            return containerIndexWrap(index, gradients);
+            // horiz is not used in this case
+            horiz_index = 0;
+            horiz_index_max = 0;
+
+            vert_index = 50;
+            vert_index_max = 100;
+            break;
         }
 
-        case ColorTest::Diff:
-        case ColorTest::Hsl:
+        case ColorTest::Diff: // 2
         {
-            return containerIndexWrap(index, color::pallete::websafe::Array);
+            horiz_index = 0;
+            horiz_index_max = 140;
+
+            vert_index = 100;
+            vert_index_max = 1000;
+            break;
         }
 
-        case ColorTest::Brightness:
-        default:
+        case ColorTest::Hsl: // 3
         {
-            return index;
+            horiz_index = 0;
+            horiz_index_max = 5;
+
+            vert_index = 0;
+            vert_index_max = 1;
+            break;
+        }
+
+        case ColorTest::Greyscale: // 4
+        {
+            horiz_index = 0;
+            horiz_index_max = 100;
+
+            vert_index = 0;
+            vert_index_max = 100;
+            break;
+        }
+
+        case ColorTest::Blend: // 0
+        default
+            : //
+        {
+            horiz_index = 0;
+            horiz_index_max = (gradients.size() - 1);
+
+            vert_index = 0;
+            vert_index_max = (windowWidth() * 2);
+            break;
         }
     }
-    // clang-format on
-}
-
-std::size_t Resources::vertIndexWrap(const std::size_t index) const
-{
-    // clang-format off
-    switch (which_test)
-    {
-        case ColorTest::Blend:
-        case ColorTest::Diff:
-        case ColorTest::Hsl:
-        case ColorTest::Brightness:
-        default:
-        {
-            if (index == std::numeric_limits<std::size_t>::max())
-            {
-                return 0;
-            }
-            else
-            {
-                return index;
-            }
-        }
-    }
-    // clang-format on
 }
 
 void Resources::setupWindow()
@@ -1278,7 +1986,7 @@ void Resources::setupWindow()
 
     const sf::VideoMode videoMode {
         (is_fullscreen) ? sf::VideoMode::getDesktopMode()
-                        : sf::VideoMode(2560, 2000, sf::VideoMode::getDesktopMode().bitsPerPixel)
+                        : sf::VideoMode(1600, 1200, sf::VideoMode::getDesktopMode().bitsPerPixel)
     };
 
     window.create(
@@ -1286,37 +1994,49 @@ void Resources::setupWindow()
 
     window.setFramerateLimit(30);
 
-    side_texture.create(window.getSize().x, window.getSize().y);
-
     std::cout << "Window setup as " << windowSize().x << "x" << windowSize().y << " "
               << ((is_fullscreen) ? "Fullscreen" : "Floating") << std::endl;
 }
 
 void Resources::redraw()
 {
+    indexWrap(horiz_index, horiz_index_max);
+    indexWrap(vert_index, vert_index_max);
+
+    setupText(titleText, windowRect(), (std::string(nameof::nameof_enum(which_test)) + " Test"));
+
     quad_verts.clear();
-    line_verts.clear();
+    texts.clear();
 
     switch (which_test)
     {
-        case ColorTest::Blend: {
-            setupColorTest_Blend();
-            // printColorRowDifferences();
-            break;
-        }
-        case ColorTest::Brightness: {
+        case ColorTest::Brightness: //
+        {
             setupColorTest_Brightness();
             break;
         }
-        case ColorTest::Diff: {
+
+        case ColorTest::Diff: //
+        {
             setupColorTest_Diff();
             break;
         }
-        case ColorTest::Hsl: {
+
+        case ColorTest::Hsl: //
+        {
             setupColorTest_HSL();
             break;
         }
+
+        case ColorTest::Greyscale: //
+        {
+            setupColorTest_Greyscale();
+            break;
+        }
+
+        case ColorTest::Blend:
         default: {
+            setupColorTest_Blend();
             break;
         }
     }
@@ -1343,12 +2063,9 @@ void Resources::handleEvent(const sf::Event & event)
 
     if (sf::Event::MouseButtonReleased == event.type)
     {
-        sf::Image image(side_texture.getTexture().copyToImage());
         const sf::Vector2u mousePos { sf::Mouse::getPosition(window) };
-
-        std::cout << "mouse at " << mousePos << "=" << image.getPixel(mousePos.x, mousePos.y)
-                  << std::endl;
-
+        const sf::Color color { windowToImage(window).getPixel(mousePos.x, mousePos.y) };
+        std::cout << "Pixel at mouse position=" << mousePos << " has color=" << color << std::endl;
         return;
     }
 
@@ -1360,6 +2077,11 @@ void Resources::handleEvent(const sf::Event & event)
     if (sf::Keyboard::Escape == event.key.code)
     {
         window.close();
+        return;
+    }
+
+    if (sf::Keyboard::C == event.key.code)
+    {
         return;
     }
 
@@ -1380,7 +2102,7 @@ void Resources::handleEvent(const sf::Event & event)
         }
         else
         {
-            horiz_index = horizIndexWrap(horiz_index + 1);
+            ++horiz_index;
         }
     }
     else if (sf::Keyboard::Left == event.key.code)
@@ -1391,7 +2113,7 @@ void Resources::handleEvent(const sf::Event & event)
         }
         else
         {
-            horiz_index = horizIndexWrap(horiz_index - 1);
+            --horiz_index;
         }
     }
     else if (sf::Keyboard::Up == event.key.code)
@@ -1410,9 +2132,13 @@ void Resources::handleEvent(const sf::Event & event)
                 blend_color_count += inc;
             }
         }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
+        {
+            ++count;
+        }
         else
         {
-            vert_index = vertIndexWrap(vert_index + 1);
+            ++vert_index;
         }
     }
     else if (sf::Keyboard::Down == event.key.code)
@@ -1431,34 +2157,52 @@ void Resources::handleEvent(const sf::Event & event)
                 blend_color_count -= inc;
             }
         }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
+        {
+            if (count > 0)
+            {
+                --count;
+            }
+        }
         else
         {
-            vert_index = vertIndexWrap(vert_index - 1);
+            --vert_index;
         }
     }
     else if (sf::Keyboard::Num1 == event.key.code)
     {
-        reset();
         which_test = ColorTest::Blend;
+        reset();
         std::cout << "Switching to color test " << nameof::nameof_enum(which_test) << std::endl;
     }
     else if (sf::Keyboard::Num2 == event.key.code)
     {
-        reset();
         which_test = ColorTest::Brightness;
+        reset();
         std::cout << "Switching to color test " << nameof::nameof_enum(which_test) << std::endl;
     }
     else if (sf::Keyboard::Num3 == event.key.code)
     {
-        reset();
         which_test = ColorTest::Diff;
+        reset();
         std::cout << "Switching to color test " << nameof::nameof_enum(which_test) << std::endl;
     }
     else if (sf::Keyboard::Num4 == event.key.code)
     {
-        reset();
         which_test = ColorTest::Hsl;
+        reset();
         std::cout << "Switching to color test " << nameof::nameof_enum(which_test) << std::endl;
+    }
+    else if (sf::Keyboard::Num5 == event.key.code)
+    {
+        which_test = ColorTest::Greyscale;
+        reset();
+        std::cout << "Switching to color test " << nameof::nameof_enum(which_test) << std::endl;
+    }
+    else if (sf::Keyboard::B == event.key.code)
+    {
+        boolean = !boolean;
+        std::cout << "Switching to boolean = " << std::boolalpha << boolean << std::endl;
     }
 
     redraw();
@@ -1466,27 +2210,38 @@ void Resources::handleEvent(const sf::Event & event)
 
 void Resources::draw()
 {
-    side_texture.clear();
-
-    if (!line_verts.empty())
-    {
-        side_texture.draw(&line_verts[0], line_verts.size(), sf::PrimitiveType::Lines);
-    }
+    window.clear();
 
     if (!quad_verts.empty())
     {
-        side_texture.draw(&quad_verts[0], quad_verts.size(), sf::PrimitiveType::Quads);
+        window.draw(&quad_verts[0], quad_verts.size(), sf::PrimitiveType::Quads);
     }
 
-    side_texture.display();
+    for (const sf::Text & text : texts)
+    {
+        window.draw(text);
+    }
 
-    window.clear();
-    window.draw(sf::Sprite(side_texture.getTexture()));
+    window.draw(titleText);
     window.display();
 }
 
+// #0
 void Resources::setupColorTest_Blend()
 {
+    std::ostringstream ss;
+
+    ss << "\n"
+       << std::to_string(gradient().size()) << " colors in gradient\n"
+       << vert_index << " colors displayed";
+
+    for (const sf::Color & color : gradient())
+    {
+        ss << "\n" << color;
+    }
+
+    appendWindowTitleText(ss.str());
+
     const float lineHeight { (windowSize().y / static_cast<float>(color_rows.size())) };
 
     for (std::size_t i(0); i < color_rows.size(); ++i)
@@ -1581,147 +2336,19 @@ void Resources::setupColorTest_Blend()
     }
 }
 
-void Resources::printColorRowDifferences()
-{
-    // auto colDiffStr = [&](const sf::Image & image,
-    //                      const Row::Enum testRowEnum,
-    //                      const unsigned horiz) {
-    //    const ColorRow & testRow { colorRow(testRowEnum) };
-    //    const ColorRow & videoCardRow { colorRow(Row::VideoCard) };
-    //
-    //    const float diffRatio { diffRatioOpaque(
-    //        image.getPixel(horiz, testRow.middle), image.getPixel(horiz, videoCardRow.middle))
-    //        };
-    //
-    //    std::ostringstream ss;
-    //
-    //    if (math::isRealZero(diffRatio))
-    //    {
-    //        return std::string();
-    //    }
-    //
-    //    ss << std::setprecision(2) << std::setw(3) << std::right << (100.0f * diffRatio) <<
-    //    '%'; return ss.str();
-    //};
-
-    auto rowDiffStr = [&](const sf::Image & image, const Row::Enum testRowEnum) -> std::string {
-        const ColorRow & testRow { colorRow(testRowEnum) };
-        const ColorRow & videoCardRow { colorRow(Row::VideoCard) };
-
-        float sum { 0.0f };
-
-        for (unsigned horiz(0); horiz < image.getSize().x; ++horiz)
-        {
-            const auto testColor { image.getPixel(horiz, testRow.middle) };
-            const auto videoCardColor { image.getPixel(horiz, videoCardRow.middle) };
-
-            sum += diffWeightedEuclidOpaque(testColor, videoCardColor);
-        }
-
-        std::ostringstream ss;
-
-        ss << "  " << std::setw(17) << std::left << testRow.name << std::setprecision(2)
-           << std::setw(4) << std::right << ((sum * 100.0f) / static_cast<float>(image.getSize().x))
-           << '%';
-
-        // auto printColDiff = [&](const unsigned horiz) {
-        //    const auto str { colDiffStr(image, testRowEnum, horiz) };
-        //
-        //    if (str.empty())
-        //    {
-        //        return;
-        //    }
-        //
-        //    ss << "\t\tdiff at " << std::setw(4) << std::left << horiz << "=" << str <<
-        //    std::endl;
-        //};
-        //
-        // printColDiff(0);
-        // printColDiff(1);
-        // printColDiff((image.getSize().x / 2) - 1);
-        // printColDiff(image.getSize().x / 2);
-        // printColDiff((image.getSize().x / 2) + 1);
-        // printColDiff(image.getSize().x - 2);
-        // printColDiff(image.getSize().x - 1);
-        // printColDiff(image.getSize().x);
-
-        return ss.str();
-    };
-
-    static sf::Image image;
-    image = side_texture.getTexture().copyToImage();
-
-    std::cout << "Gradient #" << horiz_index << std::endl;
-    for (std::size_t i(0); i < color_rows.size(); ++i)
-    {
-        std::cout << rowDiffStr(image, static_cast<Row::Enum>(i)) << std::endl;
-    }
-
-    std::cout << std::endl;
-}
-
+// #1
 void Resources::setupColorTest_Brightness()
 {
-    if (vert_index < 2)
-    {
-        vert_index = 2;
-    }
-
     const float tileSizeRatio { 1.0f / static_cast<float>(vert_index) };
 
     std::vector<sf::Color> randomColors;
 
     auto randomColorAt = [&](const std::size_t index) { return randomColors.at(index); };
 
-    auto appendQuad = [&](const sf::Vector2f & pos,
-                          const sf::Vector2f & size,
-                          std::vector<sf::Vertex> & verts,
-                          const sf::Color & color = sf::Color::Transparent) {
-        verts.push_back({ pos, color });
-        verts.push_back({ { (pos.x + size.x), pos.y }, color });
-        verts.push_back({ (pos + size), color });
-        verts.push_back({ { pos.x, (pos.y + size.y) }, color });
-    };
-
-    auto appendQuadRect = [&](const sf::FloatRect & rect,
-                              std::vector<sf::Vertex> & verts,
-                              const sf::Color & color = sf::Color::Transparent) {
-        appendQuad(
-            (sf::Vector2f(rect.left, rect.top) - sf::Vector2f(1.0f, 1.0f)),
-            (sf::Vector2f(rect.width, rect.height) + sf::Vector2f(2.0f, 2.0f)),
-            verts,
-            color);
-    };
-
-    auto fillWithTiles = [&](const float sizeRatio,
-                             const sf::FloatRect & boundsF,
-                             std::vector<sf::Vertex> & verts) {
-        const sf::IntRect boundsI { boundsF };
-
-        const sf::Vector2f tileSizeF { (boundsF.width * sizeRatio), (boundsF.height * sizeRatio) };
-        const sf::Vector2i tileSizeI { tileSizeF };
-
-        const int horizCount { boundsI.width / tileSizeI.x };
-        const int vertCount { boundsI.height / tileSizeI.y };
-
-        for (int vert(0); vert < vertCount; ++vert)
-        {
-            for (int horiz(0); horiz < horizCount; ++horiz)
-            {
-                const sf::Vector2i posIndexes(horiz, vert);
-
-                const sf::Vector2i posI(
-                    sf::Vector2i(boundsI.left, boundsI.top) + (posIndexes * tileSizeI));
-
-                appendQuad(sf::Vector2f { posI }, sf::Vector2f { tileSizeI }, verts);
-            }
-        }
-    };
-
     auto setQuadColors
         = [&](const sf::FloatRect & bounds, auto sortFunction, auto colorFetchFunction) {
               std::vector<sf::Vertex> verts;
-              fillWithTiles(tileSizeRatio, bounds, verts);
+              fillWithQuads(verts, bounds, tileSizeRatio);
 
               const std::size_t vertCount { verts.size() / 4 };
               while (randomColors.size() < vertCount)
@@ -1761,7 +2388,7 @@ void Resources::setupColorTest_Brightness()
         const sf::FloatRect colorBounds(
             bounds.left, bounds.top, bounds.width, (bounds.height * 0.5f));
 
-        appendQuadRect(colorBounds, quad_verts, sf::Color::White);
+        appendQuadRect(colorBounds, sf::Color::White);
 
         setQuadColors(colorBounds, brightRatioFunction, randomColorAt);
 
@@ -1778,7 +2405,7 @@ void Resources::setupColorTest_Brightness()
             bounds.width,
             (bounds.height * 0.5f));
 
-        appendQuadRect(greyBounds, quad_verts, sf::Color::White);
+        appendQuadRect(greyBounds, sf::Color::White);
 
         setQuadColors(greyBounds, brightRatioFunction, colorToGrey);
     };
@@ -1786,163 +2413,24 @@ void Resources::setupColorTest_Brightness()
     const float borderRatio { 0.95f };
     const sf::Vector2f boundsSize { windowSize() * sf::Vector2f((1.0f / 3.0f), 1.0f) };
 
-    const sf::FloatRect brightnessBounds { scaleInPlaceCopy(
+    const sf::FloatRect brightnessBounds { scaleRectInPlaceCopy(
         sf::FloatRect({ 0.0f, 0.0f }, boundsSize), borderRatio) };
 
-    const sf::FloatRect luminosityBounds { scaleInPlaceCopy(
+    const sf::FloatRect luminosityBounds { scaleRectInPlaceCopy(
         sf::FloatRect({ boundsSize.x, 0.0f }, boundsSize), borderRatio) };
 
-    const sf::FloatRect hslBounds { scaleInPlaceCopy(
+    const sf::FloatRect hslBounds { scaleRectInPlaceCopy(
         sf::FloatRect({ (boundsSize.x * 2.0f), 0.0f }, boundsSize), borderRatio) };
 
-    setupBrightnessTest(brightnessBounds, color::brightnessRatio);
+    setupBrightnessTest(brightnessBounds, color::brightnessAverage);
     setupBrightnessTest(luminosityBounds, color::luminosityRatio);
     setupBrightnessTest(hslBounds, color::brightnessHslRatio);
 }
 
-void Resources::setupColorTest_HSL()
-{
-    using namespace color::hsl;
-
-    const sf::Color color { color::pallete::websafe::Array[horiz_index] };
-
-    Hsla hsl { colorToHsla(color) };
-    const sf::Color backgroundColorDark { sf::Color(36, 36, 36) };
-    const sf::Color backgroundColorLight { backgroundColorDark + backgroundColorDark };
-
-    //
-    const sf::Vector2f windowCenter(windowSize() * 0.5f);
-
-    const float cellBorderRatio { 0.01f };
-
-    const std::size_t cellVertCount { std::clamp(vert_index, 4_st, 40_st) };
-    const float cellVertCountF { static_cast<float>(cellVertCount) };
-
-    const std::size_t cellHorizCountPerTest { std::clamp(((cellVertCount * 3) / 2), 4_st, 60_st) };
-    const float cellHorizCountPerTestF { static_cast<float>(cellHorizCountPerTest) };
-
-    const std::size_t cellHorizCount { (cellHorizCountPerTest * 2) - 1 };
-    const float cellHorizCountF { static_cast<float>(cellHorizCount) };
-
-    const sf::Vector2f origBoundsSize(
-        (windowSize().x * (1.0f / cellHorizCountF)), (windowSize().y * 0.8f));
-
-    const sf::Vector2f cellSize(origBoundsSize.x, (origBoundsSize.y / cellVertCountF));
-
-    const sf::FloatRect origBounds((windowCenter - (origBoundsSize * 0.5f)), origBoundsSize);
-
-    float posLeft { (windowSize().x - (cellHorizCountF * cellSize.x)) * 0.5f };
-
-    //
-    auto appendQuad = [&](const sf::Vector2f & pos,
-                          const sf::Vector2f & size,
-                          std::vector<sf::Vertex> & verts,
-                          const sf::Color & clr = sf::Color::Transparent) {
-        verts.push_back({ pos, clr });
-        verts.push_back({ { (pos.x + size.x), pos.y }, clr });
-        verts.push_back({ (pos + size), clr });
-        verts.push_back({ { pos.x, (pos.y + size.y) }, clr });
-    };
-
-    auto appendQuadRect = [&](const sf::FloatRect & rect,
-                              std::vector<sf::Vertex> & verts,
-                              const sf::Color & clr = sf::Color::Transparent) {
-        appendQuad(
-            (sf::Vector2f(rect.left, rect.top) - sf::Vector2f(1.0f, 1.0f)),
-            (sf::Vector2f(rect.width, rect.height) + sf::Vector2f(2.0f, 2.0f)),
-            verts,
-            clr);
-    };
-
-    auto appendLightnessColumn = [&](const sf::FloatRect & colBounds,
-                                     Hsla hslColor,
-                                     const sf::Color & backgroundColor) {
-        appendQuadRect(
-            scaleInPlaceCopy(
-                colBounds,
-                { (1.0f + cellBorderRatio),
-                  (1.0f + ((cellBorderRatio * 2.0f * colBounds.width) / colBounds.height)) }),
-            quad_verts,
-            backgroundColor);
-
-        //
-        for (std::size_t light(0); light < cellVertCount; ++light)
-        {
-            const float lightRatio { static_cast<float>(light) / (cellVertCountF - 1.0f) };
-
-            hslColor.lgt = lightRatio;
-
-            const sf::FloatRect cellBounds(
-                { colBounds.left, (colBounds.top + (static_cast<float>(light) * cellSize.y)) },
-                cellSize);
-
-            appendQuadRect(scaleInPlaceCopy(cellBounds, 0.925f), quad_verts, hslToColor(hslColor));
-
-            // std::cout << light << "\t" << ratio << "\t" << cellBounds << "\t" << hslColor << "\t"
-            //          << hslToColor(hslColor) << std::endl;
-        }
-    };
-
-    //
-    for (std::size_t sat(0); sat < (cellHorizCountPerTest - 1); ++sat)
-    {
-        const float satRatio { static_cast<float>(sat)
-                               / static_cast<float>(cellHorizCountPerTest - 1) };
-
-        const sf::FloatRect colBounds({ posLeft, origBounds.top }, origBoundsSize);
-
-        hsl.sat = satRatio;
-
-        appendLightnessColumn(colBounds, hsl, backgroundColorDark);
-
-        posLeft += cellSize.x;
-    }
-
-    //
-    const sf::FloatRect centerColBounds({ posLeft, origBounds.top }, origBoundsSize);
-    hsl.sat = 1.0f;
-    appendLightnessColumn(centerColBounds, hsl, backgroundColorLight);
-    posLeft += cellSize.x;
-
-    //
-    for (std::size_t hue(1); hue < cellHorizCountPerTest; ++hue)
-    {
-        const sf::FloatRect colBounds({ posLeft, origBounds.top }, origBoundsSize);
-
-        const sf::Color backgroundColor(36, 36, 36);
-
-        hsl.hue += (1.0f / static_cast<float>(cellHorizCountPerTest - 1));
-
-        appendLightnessColumn(colBounds, hsl, backgroundColorDark);
-
-        posLeft += cellSize.x;
-    }
-}
-
+// #2
 void Resources::setupColorTest_Diff()
 {
-    auto appendQuad = [&](const sf::Vector2f & pos,
-                          const sf::Vector2f & size,
-                          std::vector<sf::Vertex> & verts,
-                          const sf::Color & clr = sf::Color::Transparent) {
-        verts.push_back({ pos, clr });
-        verts.push_back({ { (pos.x + size.x), pos.y }, clr });
-        verts.push_back({ (pos + size), clr });
-        verts.push_back({ { pos.x, (pos.y + size.y) }, clr });
-    };
-
-    auto appendQuadRect = [&](const sf::FloatRect & rect,
-                              std::vector<sf::Vertex> & verts,
-                              const sf::Color & clr = sf::Color::Transparent) {
-        appendQuad(
-            (sf::Vector2f(rect.left, rect.top) - sf::Vector2f(1.0f, 1.0f)),
-            (sf::Vector2f(rect.width, rect.height) + sf::Vector2f(2.0f, 2.0f)),
-            verts,
-            clr);
-    };
-
-    //
-    const sf::FloatRect bounds({ 0.0f, 0.0f }, windowSize());
+    const sf::FloatRect bounds({ 0.0f, 0.0f }, windowSize() * 0.5f);
 
     const sf::Vector2f boundsCenter(
         (bounds.left + (bounds.width * 0.5f)), (bounds.top + (bounds.height * 0.5f)));
@@ -1965,70 +2453,46 @@ void Resources::setupColorTest_Diff()
 
     // this is just to avoid black
     const sf::Color centerColor = [&]() {
-        auto clr { color::pallete::websafe::Array[horiz_index] };
+        auto clr { color::pallete::websafe_139::Colors[std::clamp(
+            horiz_index, 0_st, (pallete::websafe_139::Colors.size() - 1))] };
 
-        if ((clr.r < 32) && (clr.g < 32) && (clr.b < 32))
+        if (sf::Color::Black == clr)
         {
-            clr.r += 200;
-            clr.g += 200;
-            clr.b += 200;
+            clr = sf::Color::Red;
         }
 
         return clr;
     }();
 
     //
-    std::vector<sf::Color> euclidColors;
-    std::vector<sf::Color> weightedEuclidColors;
-    {
-        std::vector<sf::Color> origColors;
+    const std::size_t colorCount { vert_index_max };
+    std::vector<sf::Color> origColors { makeRandomColors(colorCount, centerColor) };
+    origColors.resize(std::clamp(vert_index, cellVertCount, colorCount));
 
-        while (origColors.size() < cellVertCount)
-        {
-            for (std::size_t i(0); i < 1000; ++i)
-            {
-                origColors.push_back(color::random(random));
-            }
+    std::vector<sf::Color> euclidColors(origColors);
 
-            origColors.erase(
-                std::remove(std::begin(origColors), std::end(origColors), centerColor),
-                std::end(origColors));
+    std::sort(
+        std::begin(euclidColors),
+        std::end(euclidColors),
+        [&](const sf::Color & left, const sf::Color & right) {
+            return (
+                color::diffEuclidOpaque(centerColor, left)
+                < color::diffEuclidOpaque(centerColor, right));
+        });
 
-            std::sort(std::begin(origColors), std::end(origColors));
+    std::vector<sf::Color> weightedEuclidColors(origColors);
 
-            origColors.erase(
-                std::unique(std::begin(origColors), std::end(origColors)), std::end(origColors));
-        }
-
-        std::shuffle(
-            std::begin(origColors), std::end(origColors), std::mt19937(std::random_device {}()));
-
-        origColors.resize(std::clamp(vert_index, cellVertCount, 999_st));
-
-        euclidColors = origColors;
-        weightedEuclidColors = origColors;
-
-        std::sort(
-            std::begin(euclidColors),
-            std::end(euclidColors),
-            [&](const sf::Color & left, const sf::Color & right) {
-                return (
-                    color::diffEuclidOpaque(centerColor, left)
-                    < color::diffEuclidOpaque(centerColor, right));
-            });
-
-        std::sort(
-            std::begin(weightedEuclidColors),
-            std::end(weightedEuclidColors),
-            [&](const sf::Color & left, const sf::Color & right) {
-                return (
-                    color::diffWeightedEuclidOpaque(centerColor, left)
-                    < color::diffWeightedEuclidOpaque(centerColor, right));
-            });
-    }
+    std::sort(
+        std::begin(weightedEuclidColors),
+        std::end(weightedEuclidColors),
+        [&](const sf::Color & left, const sf::Color & right) {
+            return (
+                color::diffWeightedEuclidOpaque(centerColor, left)
+                < color::diffWeightedEuclidOpaque(centerColor, right));
+        });
 
     //
-    appendQuadRect(centerBounds, quad_verts, centerColor);
+    appendQuadRect(centerBounds, centerColor);
 
     for (std::size_t i(0); i < cellVertCount; ++i)
     {
@@ -2043,20 +2507,272 @@ void Resources::setupColorTest_Diff()
         const sf::FloatRect weightedEuclidianRect(
             { (centerBounds.left + centerBounds.width), top }, compCellSize);
 
-        appendQuadRect(scaleInPlaceCopy(euclidianRect, { 1.0f, 0.95f }), quad_verts, euclidColor);
+        appendQuadRect(scaleRectInPlaceCopy(euclidianRect, { 1.0f, 0.95f }), euclidColor);
 
-        appendQuadRect(
-            scaleInPlaceCopy(weightedEuclidianRect, { 1.0f, 0.95f }), quad_verts, wEuclidColor);
+        appendQuadRect(scaleRectInPlaceCopy(weightedEuclidianRect, { 1.0f, 0.95f }), wEuclidColor);
+
+        // if ((euclidColor != wEuclidColor) && (i < cellVertCount))
+        //{
+        //    //auto percentStr = [](const float ratio) {
+        //    //    std::ostringstream ss;
+        //    //    ss << (static_cast<float>(int(ratio * 100.0f * 10.0f)) / 10.0f) << '%';
+        //    //    return ss.str();
+        //    //};
+        //
+        //    // std::cout << "#" << std::setw(4) << i + 1 << " ";
+        //    // std::cout << std::setw(15) << centerColor << ":  ";
+        //    //
+        //    // std::cout << std::setw(14) << euclidColor << " / ";
+        //    //
+        //    // std::cout << std::setw(3) << color::diffMagnitudeCountOpaque(euclidColor,
+        //    // centerColor)
+        //    //          << " / ";
+        //    //
+        //    // std::cout << std::setw(6)
+        //    //          << percentStr(color::diffEuclidOpaque(centerColor, euclidColor));
+        //    //
+        //    // std::cout << " vs ";
+        //    //
+        //    // std::cout << std::setw(14) << wEuclidColor << " / ";
+        //    //
+        //    // std::cout << std::setw(3) << color::diffMagnitudeCountOpaque(wEuclidColor,
+        //    // centerColor)
+        //    //          << " / ";
+        //    //
+        //    // std::cout << std::setw(6)
+        //    //          << percentStr(color::diffWeightedEuclidOpaque(centerColor,
+        //    wEuclidColor));
+        //    //
+        //    // std::cout << std::endl;
+        //}
     }
 }
 
+// #3
+void Resources::setupColorTest_HSL()
+{
+    std::string title { ": " };
+
+    const std::vector<sf::Color> sfColors = [&]() {
+        const std::size_t palleteIndex { std::clamp(horiz_index, 0_st, 5_st) };
+
+        switch (palleteIndex)
+        {
+            case 0: {
+                title += "rgb_8";
+                return color::pallete::rgb_8::Colors;
+            }
+
+            case 1: {
+                title += "cga_16";
+                return color::pallete::cga_16::Colors;
+            }
+
+            case 2: {
+                title += "commodore_16";
+                return color::pallete::commodore_16::Colors;
+            }
+
+            case 3: {
+                title += "windows_16";
+                return color::pallete::windows_16::Colors;
+            }
+
+            case 4: {
+                title += "websafe_139";
+                return color::pallete::websafe_139::Colors;
+            }
+
+            case 5:
+            default: {
+                title += "xkcd_949";
+                return color::pallete::xkcd_949::Colors;
+            }
+        }
+    }();
+
+    const bool willUseHslDiff { (vert_index % 2) != 0 };
+
+    if (willUseHslDiff)
+    {
+        title += " / diff_Hsl";
+    }
+    else
+    {
+        title += " / diff_sfColor";
+    }
+
+    const std::size_t cellSizeDivisor { 30 };
+    const std::size_t horizCount { windowWidth() / cellSizeDivisor };
+    const float horizCountF { static_cast<float>(horizCount) };
+
+    const std::size_t vertCount { windowHeight() / cellSizeDivisor };
+    const float vertCountF { static_cast<float>(vertCount) };
+
+    const sf::Vector2f cellSize((windowSize().x / horizCountF), (windowSize().y / vertCountF));
+
+    sf::FloatRect bounds({ 0.0f, 0.0f }, cellSize);
+
+    std::vector<long long> findClosestTimes;
+    findClosestTimes.reserve(horizCount * vertCount * 2);
+
+    std::vector<float> diffs;
+    diffs.reserve(horizCount * vertCount * 2);
+
+    auto findClosestColor = [&](const sf::Color & targetColor) {
+        const auto startTime { std::chrono::high_resolution_clock::now() };
+
+        float nearestDiff { 99999999.0f };
+        sf::Color nearestColor;
+
+        for (const sf::Color & c : sfColors)
+        {
+            // const float currentDiff { (willUseHslDiff) ? diffHslEuclid(targetColor, c)
+            //                                           : diffEuclidOpaque(targetColor, c) };
+
+            const float currentDiff { diffEuclidOpaque(targetColor, c) };
+
+            diffs.push_back(currentDiff);
+
+            if (currentDiff < nearestDiff)
+            {
+                nearestDiff = currentDiff;
+                nearestColor = c;
+            }
+        }
+
+        findClosestTimes.push_back(getDuration(startTime));
+        return nearestColor;
+    };
+
+    const auto loopStart { std::chrono::high_resolution_clock::now() };
+
+    for (std::size_t horiz(0); horiz < horizCount; ++horiz)
+    {
+        // const float posLeft { static_cast<float>(horiz) * cellSize.x };
+        bounds.left = (static_cast<float>(horiz) * cellSize.x);
+        const float horizRatio { static_cast<float>(horiz) / (horizCountF - 1.0f) };
+
+        for (std::size_t vert(0); vert < vertCount; ++vert)
+        {
+            // const float posTop { static_cast<float>(vert) * cellSize.y };
+            bounds.top = (static_cast<float>(vert) * cellSize.y);
+            const float vertRatio { static_cast<float>(vert) / (vertCountF - 1.0f) };
+
+            const Hsla hslColor(horizRatio, 1.0, vertRatio);
+            const sf::Color sfColor { hslColor.sfColor() };
+
+            if (boolean)
+            {
+                appendQuadRect(bounds, sfColor);
+            }
+            else
+            {
+                appendQuadRect(bounds, findClosestColor(sfColor));
+            }
+        }
+    }
+
+    printDuration("loop", loopStart);
+
+    appendWindowTitleText(title);
+
+    std::cout << "find_closest_color=  " << stats::makeStats(findClosestTimes).toString()
+              << std::endl;
+
+    std::cout << "color_diffs=          " << stats::makeStats(diffs).toString() << std::endl;
+}
+
+// #4
+void Resources::setupColorTest_Greyscale() { test_subdivide_count(); }
+
 // tests
+
+void Resources::printColorRowDifferences()
+{
+    // auto colDiffStr = [&](const sf::Image & image,
+    //                      const Row::Enum testRowEnum,
+    //                      const unsigned horiz) {
+    //    const ColorRow & testRow { colorRow(testRowEnum) };
+    //    const ColorRow & videoCardRow { colorRow(Row::VideoCard) };
+    //
+    //    const float diffRatio { diffRatioOpaque(
+    //        image.getPixel(horiz, testRow.middle), image.getPixel(horiz,
+    //        videoCardRow.middle))
+    //        };
+    //
+    //    std::ostringstream ss;
+    //
+    //    if (math::isRealZero(diffRatio))
+    //    {
+    //        return std::string();
+    //    }
+    //
+    //    ss << std::setprecision(2) << std::setw(3) << std::right << (100.0f * diffRatio)
+    //    <<
+    //    '%'; return ss.str();
+    //};
+
+    // auto rowDiffStr = [&](const sf::Image & image, const Row::Enum testRowEnum) ->
+    // std::string {
+    //    const ColorRow & testRow { colorRow(testRowEnum) };
+    //    const ColorRow & videoCardRow { colorRow(Row::VideoCard) };
+    //
+    //    float sum { 0.0f };
+    //
+    //    for (unsigned horiz(0); horiz < image.getSize().x; ++horiz)
+    //    {
+    //        const auto testColor { image.getPixel(horiz, testRow.middle) };
+    //        const auto videoCardColor { image.getPixel(horiz, videoCardRow.middle) };
+    //
+    //        sum += diffWeightedEuclidOpaque(testColor, videoCardColor);
+    //    }
+    //
+    //    std::ostringstream ss;
+    //
+    //    ss << "  " << std::setw(17) << std::left << testRow.name << std::setprecision(2)
+    //       << std::setw(4) << std::right << ((sum * 100.0f) /
+    //       static_cast<float>(image.getSize().x))
+    //       << '%';
+    //
+    //    // auto printColDiff = [&](const unsigned horiz) {
+    //    const auto str { colDiffStr(image, testRowEnum, horiz) };
+    //
+    //    if (str.empty())
+    //    {
+    //        return;
+    //    }
+    //
+    //    ss << "\t\tdiff at " << std::setw(4) << std::left << horiz << "=" << str <<
+    //    std::endl;
+    //};
+    //
+    // printColDiff(0);
+    // printColDiff(1);
+    // printColDiff((image.getSize().x / 2) - 1);
+    // printColDiff(image.getSize().x / 2);
+    // printColDiff((image.getSize().x / 2) + 1);
+    // printColDiff(image.getSize().x - 2);
+    // printColDiff(image.getSize().x - 1);
+    // printColDiff(image.getSize().x);
+    //
+    //    return ss.str();
+    //};
+
+    // std::cout << "Gradient #" << horiz_index << std::endl;
+    // for (std::size_t i(0); i < color_rows.size(); ++i)
+    //{
+    //    std::cout << rowDiffStr(image, static_cast<Row::Enum>(i)) << std::endl;
+    //}
+    //
+    // std::cout << std::endl;
+}
 
 void testHsl()
 {
     auto testHsla = [&](const sf::Color & color) {
-        const hsl::Hsla hsl { hsl::colorToHsla(color) };
-        const sf::Color colorNew { hsl::hslToColor(hsl) };
+        const Hsla hsl(color);
+        const sf::Color colorNew { hsl.sfColor() };
 
         if (color == colorNew)
         {
@@ -2067,17 +2783,17 @@ void testHsl()
                   << colorNew << std::endl;
     };
 
-    for (const sf::Color & color : color::pallete::rgbfull::Array)
+    for (const sf::Color & color : color::pallete::rgb_8::Colors)
     {
         testHsla(color);
     }
 
-    for (const sf::Color & color : color::pallete::websafe::Array)
+    for (const sf::Color & color : color::pallete::websafe_139::Colors)
     {
         testHsla(color);
     }
 
-    for (const sf::Color & color : color::pallete::xkcd::Array)
+    for (const sf::Color & color : color::pallete::xkcd_949::Colors)
     {
         testHsla(color);
     }
@@ -2113,9 +2829,9 @@ void testColorDiff()
 
         std::cout << left << " vs " << right << ":";
 
-        ss << "\n\torig=" << diffOrigLR << ((diffOrigLR == diffOrigRL) ? "  (sym)" : " (ASYM)");
-        ss << "\n\tnew =" << diffNewLR << ((diffNewLR == diffNewRL) ? "  (sym)" : "  (ASYM)");
-        ss << "\n\tdiff=" << (diffOrigLR - diffNewLR);
+        ss << "\n\torig=" << diffOrigLR << ((diffOrigLR == diffOrigRL) ? "  (sym)" : "
+    (ASYM)"); ss << "\n\tnew =" << diffNewLR << ((diffNewLR == diffNewRL) ? "  (sym)" : "
+    (ASYM)"); ss << "\n\tdiff=" << (diffOrigLR - diffNewLR);
 
         // if ((diffOrigLR != diffNewLR) || (diffOrigLR != diffOrigRL) || (diffNewLR !=
     diffNewRL))
@@ -2146,4 +2862,385 @@ void testColorDiff()
     std::cout << "orig: " << makeStats(origs).toString() << std::endl;
     std::cout << "new : " << makeStats(news).toString() << std::endl << std::endl;
     */
+}
+
+void Resources::test_subdivide_colsVec()
+{
+    sf::FloatRect bounds { windowRect() };
+
+    const float cellBorderSize { -1.0f };
+
+    const std::vector<std::size_t> cellCountForRows(vert_index, horiz_index);
+
+    const std::vector<sf::FloatRect> rects { subdivide(
+        cellCountForRows, bounds, cellBorderSize, boolean) };
+
+    appendQuadRect(bounds, sf::Color(36, 35, 36));
+
+    for (const sf::FloatRect & rect : rects)
+    {
+        appendQuadRect(rect, color::random(random));
+    }
+
+    std::ostringstream ss;
+
+    ss << "\n" << bounds << " divided into " << horiz_index << "x" << vert_index;
+
+    const std::size_t actualRectCount { rects.size() };
+    const std::size_t expectedRectCount { (horiz_index * vert_index) };
+    if (actualRectCount != expectedRectCount)
+    {
+        ss << "\nERROR:  expected " << expectedRectCount << " cells but actually got "
+           << actualRectCount << "!";
+    }
+
+    std::cout << ss.str() << std::endl;
+
+    appendWindowTitleText(ss.str());
+}
+
+void Resources::test_subdivide_count()
+{
+    const float cellBorderSize { -1.0f };
+
+    const sf::Vector2f boundsSize {
+        (static_cast<float>(horiz_index) * (windowSize().x / static_cast<float>(horiz_index_max))),
+        (static_cast<float>(vert_index) * (windowSize().y / static_cast<float>(vert_index_max)))
+    };
+
+    const sf::FloatRect bounds { center(windowRect()) - (boundsSize * 0.5f), boundsSize };
+
+    const std::vector<sf::FloatRect> rects { subdivide_v1(count, bounds, cellBorderSize, boolean) };
+
+    appendQuadRect(bounds, sf::Color(36, 35, 36));
+
+    for (const sf::FloatRect & rect : rects)
+    {
+        appendQuadRect(rect, color::random(random));
+    }
+
+    std::ostringstream ss;
+
+    ss << bounds << " subdivided bounds of size=" << boundsSize << " into x" << count;
+
+    const std::size_t actualRectCount { rects.size() };
+    const std::size_t expectedRectCount { count };
+    if (actualRectCount != expectedRectCount)
+    {
+        ss << "\nERROR:  expected " << expectedRectCount << " cells but actually got "
+           << actualRectCount << "!";
+    }
+
+    appendWindowTitleText("\n" + ss.str());
+}
+
+/*
+
+
+
+
+
+Observer    2° (CIE 1931)   10° (CIE 1964)   Note
+
+Illuminant  X2  Y2   Z2  X10  Y10   Z10
+
+
+*/
+
+//
+
+template <typename T>
+void testPallete(const std::size_t expectedCount, const bool isLastWhite)
+{
+    std::cout << "Testing Palette \"" << T::palleteName << "\":" << std::endl;
+
+    if (NAMEOF_TYPE(T) != T::palleteName)
+    {
+        std::cout << "Error: Names do not match palleteName=\"" << T::palleteName << "\", nameof=\""
+                  << nameof::nameof_type<T>() << "\"" << std::endl;
+    }
+
+    if (static_cast<std::size_t>(T::Count) != T::Colors.size())
+    {
+        std::cout << "Error: Color counts do not match.  Enum::Count=\"" << T::Count
+                  << " but Colors.size()=" << T::Colors.size() << std::endl;
+    }
+
+    if (T::Colors.size() != expectedCount)
+    {
+        std::cout << "Error: Color count=" << T::Colors.size() << " != expected=" << expectedCount
+                  << std::endl;
+    }
+
+    if (T::black != sf::Color::Black.toInteger())
+    {
+        std::cout << "Error: ::black" << T::black << " != sf::Color::Black" << sf::Color::Black
+                  << std::endl;
+    }
+
+    if (T::white != sf::Color::White.toInteger())
+    {
+        std::cout << "Error: ::white" << T::white << " != sf::Color::White" << sf::Color::White
+                  << std::endl;
+    }
+
+    if (T::Colors.front() != sf::Color::Black)
+    {
+        std::cout << "Error: Colors.front()" << T::Colors.front() << " != sf::Color::Black"
+                  << sf::Color::Black << std::endl;
+    }
+
+    if (isLastWhite && (T::Colors.back() != sf::Color::White))
+    {
+        std::cout << "Error: Colors.back()" << T::Colors.back() << " != sf::Color::White"
+                  << sf::Color::White << std::endl;
+    }
+
+    // std::size_t longestName { 26 };
+    // for (const sf::Color & color : T::Colors)
+    //{
+    //    const T::Enum enumeration { static_cast<T::Enum>(color.toInteger()) };
+    //    const std::string nameFromNameof { nameof::nameof_enum(enumeration) };
+    //    const std::string nameFromFunction { nameFromNameof }; //
+    //    T::name::color(enumeration)
+    //
+    //    if (nameFromFunction != nameFromNameof)
+    //    {
+    //        std::cout << "Error: Names do not match nameFromFunction=\"" <<
+    //        nameFromFunction
+    //                  << "\", nameFromNameof=\"" << nameFromNameof << "\"" << std::endl;
+    //    }
+    //
+    //    if (longestName < nameFromFunction.length())
+    //    {
+    //        longestName = nameFromFunction.length();
+    //    }
+    //}
+    // std::cout << std::endl;
+
+    auto colors = T::Colors;
+
+    std::sort(std::begin(colors), std::end(colors), [](const auto & left, const auto & right) {
+        return (left.toInteger() < right.toInteger());
+    });
+
+    // for (const auto & color : colors)
+    //{
+    //    std::cout << std::setfill(' ') << std::setw(longestName + 1) << std::left
+    //              << "<insert name here>"
+    //              << " = 0x" << std::hex << std::setfill('0') << std::right <<
+    //              std::setw(8)
+    //              << color.toInteger() << ", // " << std::dec << color << std::endl;
+    //}
+
+    std::cout << std::endl;
+    std::cout << std::endl;
+}
+
+struct ColorName
+{
+    sf::Color color = sf::Color::Transparent;
+    std::string name;
+};
+
+void makePalleteCode(const std::string & headerFilePath)
+{
+    std::ifstream stream(headerFilePath);
+
+    if (!stream.is_open())
+    {
+        std::cerr << "unable to open file: " << headerFilePath << std::endl;
+        return;
+    }
+
+    auto isCharAny = [](const char) { return true; };
+
+    auto isCharLowerAlpha = [](const char ch) { return ((ch >= 'a') && (ch <= 'z')); };
+
+    auto isCharValidName = [](const char ch) {
+        const bool isLowerAlpha { (ch >= 'a') && (ch <= 'z') };
+        const bool isDigit { (ch >= '0') && (ch <= '9') };
+        const bool isSupportedSpecial { ch == '_' };
+        return (isLowerAlpha || isDigit || isSupportedSpecial);
+    };
+
+    auto readValidName = [](auto isCharValid, const std::string & input, std::size_t & offset) {
+        std::string name;
+
+        for (; offset < input.length(); ++offset)
+        {
+            const char ch { input.at(offset) };
+
+            if ((ch < ' ') || (ch > 'z'))
+            {
+                break;
+            }
+
+            if (ch == ' ')
+            {
+                if (name.empty())
+                {
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (isCharValid(ch))
+            {
+                name += ch;
+            }
+        }
+
+        return name;
+    };
+
+    auto getStructDeclaration = [&](const std::string & line) -> std::string {
+        std::size_t offset { 0 };
+        const std::string str(readValidName(isCharLowerAlpha, line, offset));
+
+        if (str != "struct")
+        {
+            return "";
+        }
+
+        return readValidName(isCharValidName, line, offset);
+    };
+
+    auto getColorName = [&](const std::string & line) -> ColorName {
+        std::size_t offset { 0 };
+        const std::string name { readValidName(isCharValidName, line, offset) };
+        if (name.empty())
+        {
+            return {};
+        }
+
+        const std::string equals { readValidName(isCharAny, line, offset) };
+        if (equals != "=")
+        {
+            return {};
+        }
+
+        const std::string hexStr { readValidName(isCharValidName, line, offset) };
+
+        const bool isNumberHex { (hexStr.length() == 10) && (hexStr[0] == '0') && (hexStr[1] == 'x')
+                                 && (hexStr[8] == 'f') && (hexStr[9] == 'f') };
+
+        if (!isNumberHex)
+        {
+            if (name == "white")
+            {
+                return { sf::Color::White, name };
+            }
+
+            if (hexStr == "black")
+            {
+                return { sf::Color::Black, name };
+            }
+
+            return {};
+        }
+
+        sf::Uint32 number { 0 };
+        std::stringstream ss;
+        ss << hexStr;
+        ss >> std::hex >> number;
+
+        return { sf::Color(number), name };
+    };
+
+    std::map<std::string, std::vector<ColorName>> palletesToColorNames;
+    std::string currentPalleteName;
+    std::string line;
+    while (std::getline(stream, line))
+    {
+        const std::string structName { getStructDeclaration(line) };
+        if (structName.empty())
+        {
+            if (line.find(" struct ") < line.size())
+            {
+                std::cout << " *** Probably missed a struct! on line: " << line << std::endl;
+            }
+        }
+        else
+        {
+            currentPalleteName = structName;
+            continue;
+        }
+
+        if (currentPalleteName.empty())
+        {
+            continue;
+        }
+
+        const ColorName colorName { getColorName(line) };
+        if (colorName.name.empty() || (colorName.color == sf::Color::Transparent))
+        {
+            if (line.find("0x") < line.size())
+            {
+                std::cout << currentPalleteName << " " << colorName.color << " " << colorName.name
+                          << " *** Probably missed a color! on line: " << line << std::endl;
+            }
+
+            continue;
+        }
+
+        if (colorName.color.a != 255)
+        {
+            std::cerr << " *** ERROR invalid alpha value: " << colorName.color << std::endl;
+            continue;
+        }
+
+        palletesToColorNames[currentPalleteName].push_back(colorName);
+    }
+
+    std::cout << palletesToColorNames.size() << " palettes" << std::endl << std::endl;
+
+    for (auto & [palleteName, colorNames] : palletesToColorNames)
+    {
+        const bool willSort { (palleteName == "rgb_8") || (palleteName == "websafe_16")
+                              || (palleteName == "websafe_216") || (palleteName == "websafe_139")
+                              || (palleteName == "x11_543") || (palleteName == "xkcd_949") };
+
+        if (willSort)
+        {
+            std::sort(
+                std::begin(colorNames),
+                std::end(colorNames),
+                [](const ColorName & left, const ColorName & right) {
+                    return (left.color < right.color);
+                });
+        }
+
+        std::size_t longestName { 0 };
+        std::set<std::string> names;
+
+        for (const ColorName & colorName : colorNames)
+        {
+            names.insert(colorName.name);
+
+            if (longestName < colorName.name.length())
+            {
+                longestName = colorName.name.length();
+            }
+        }
+
+        if (names.size() != colorNames.size())
+        {
+            std::cerr << " *** ERROR duplicate names in palette " << palleteName << std::endl;
+        }
+
+        std::cout << "   " << palleteName << " with " << colorNames.size()
+                  << " colors and longest name=" << longestName << std::endl;
+
+        // auto printColorAsHex = []() {};
+        // auto printColorAsRGB = []() {};
+    }
+
+    // std::cout << "\n  0x" << std::hex << std::setfill('0') << std::right << std::setw(8)
+    //          << color.toInteger() << std::dec << "  " << color << "  ";
+
+    std::cout << std::endl << std::endl;
 }
