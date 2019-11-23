@@ -15,68 +15,24 @@ namespace methhead
         m_greedyScoreRectangle.setFillColor(m_constants.greedy_color);
     }
 
-    void DisplayVariables::update(
-        const float,
-        const std::size_t lazyScore,
-        const std::size_t greedyScore,
-        const BoardMap_t & board)
+    void DisplayVariables::update(const float, const int lazyScore, const int greedyScore)
     {
         setScoreBarsHeight(lazyScore, greedyScore);
     }
 
-    void DisplayVariables::draw(
-        sf::RenderTarget & target, sf::RenderStates states, const BoardMap_t & board) const
+    void DisplayVariables::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {
         target.draw(m_lazyScoreRectangle, states);
         target.draw(m_greedyScoreRectangle, states);
 
-        sf::Sprite lootSprite(m_constants.loot_texture);
-        lootSprite.setColor(sf::Color(255, 255, 255, 127));
-
-        sf::Text lootText(m_constants.default_text);
-        lootText.setFillColor(sf::Color::Yellow);
-
-        for (const auto & [boardPos, cell] : board)
+        for (const auto & [boardPos, rectangle] : m_constants.board_map)
         {
-            target.draw(cell.rectangle);
-
-            if (cell.loot <= 0)
-            {
-                continue;
-            }
-
-            placeInBounds(lootSprite, cell.bounds());
-            target.draw(lootSprite);
-
-            lootText.setString(std::to_string(cell.loot));
-            placeInBounds(lootText, cell.bounds());
-            target.draw(lootText);
+            target.draw(rectangle);
         }
-    }
-
-    BoardMap_t DisplayVariables::makeBoard() const
-    {
-        BoardMap_t board;
-
-        for (std::size_t horiz(0); horiz < m_constants.horiz_cell_count; ++horiz)
-        {
-            for (std::size_t vert(0); vert < m_constants.vert_cell_count; ++vert)
-            {
-                const sf::Vector2i boardPos(static_cast<int>(horiz), static_cast<int>(vert));
-                const sf::Vector2f windowPos(boardToWindowPos(boardPos));
-
-                const Cell cell(boardPos, windowPos, m_constants.cell_size);
-
-                board.insert(std::make_pair(cell.board_pos, cell));
-            }
-        }
-
-        return board;
     }
 
     // TODO Minor optimization: Move some bounds settings to the constructor
-    void DisplayVariables::setScoreBarsHeight(
-        const std::size_t lazyScore, const std::size_t greedyScore)
+    void DisplayVariables::setScoreBarsHeight(const int lazyScore, const int greedyScore)
     {
         // split the bounds into two halves for lazy vs greedy
         sf::FloatRect bounds(m_constants.score_window_bounds);
@@ -116,28 +72,6 @@ namespace methhead
             greedyBounds.left, ((bounds.top + bounds.height) - greedyBounds.height));
 
         m_greedyScoreRectangle.setSize({ greedyBounds.width, greedyBounds.height });
-    }
-
-    sf::Vector2f DisplayVariables::boardToWindowPos(const sf::Vector2i & cellPos) const
-    {
-        const auto bounds(m_constants.board_window_bounds);
-
-        const sf::Vector2f boardPos(bounds.left, bounds.top);
-
-        const sf::Vector2f gridTotalSize(
-            (m_constants.cell_size.x * static_cast<float>(m_constants.horiz_cell_count)),
-            (m_constants.cell_size.y * static_cast<float>(m_constants.vert_cell_count)));
-
-        const float centerOffsetHoriz((bounds.width - gridTotalSize.x) * 0.5f);
-        const float centerOffsetVert((bounds.height - gridTotalSize.y) * 0.5f);
-        const sf::Vector2f centerOffset(centerOffsetHoriz, centerOffsetVert);
-
-        sf::Vector2f pos(
-            (static_cast<float>(cellPos.x) * m_constants.cell_size.x),
-            (static_cast<float>(cellPos.y) * m_constants.cell_size.y));
-
-        pos += (boardPos + centerOffset);
-        return pos;
     }
 
 } // namespace methhead
