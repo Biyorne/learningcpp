@@ -65,12 +65,14 @@ namespace methhead
             sf::Sprite sprite;
             std::size_t cache_index = 0;
             std::size_t frame_index = 0;
-            float sec_elapsed       = 0.0f;
-            float sec_per_frame     = 0.0f;
+            float sec_elapsed = 0.0f;
+            float sec_per_frame = 0.0f;
         };
 
       public:
-        AnimationPlayer();
+        explicit AnimationPlayer(const bool willLoad = true);
+
+        void reload();
 
         void play(
             const Random & random,
@@ -96,7 +98,7 @@ namespace methhead
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
-        void reset();
+        void stopAll();
 
       private:
         void loadAnimationDirectories();

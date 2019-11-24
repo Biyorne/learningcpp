@@ -110,8 +110,11 @@ namespace methhead
 
                 const sf::Vector2f windowPos(m_constants.boardPosToWindowPos(boardPos));
 
-                assert(!(windowPos.x < 0.0f) && (windowPos.x < m_constants.window_size.x));
-                assert(!(windowPos.y < 0.0f) && (windowPos.y < m_constants.window_size.y));
+                assert(
+                    !(windowPos.x < 0.0f) && (windowPos.x < m_constants.inner_window_rect.width));
+
+                assert(
+                    !(windowPos.y < 0.0f) && (windowPos.y < m_constants.inner_window_rect.height));
 
                 rectangle.setPosition(windowPos);
                 m_boardRectangles.push_back(rectangle);

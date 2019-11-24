@@ -11,7 +11,7 @@
 
 namespace methhead
 {
-    SoundPlayer::SoundPlayer()
+    SoundPlayer::SoundPlayer(const bool willLoad)
         : m_isMuted(false)
         , m_volume(0.0f)
         , m_volumeMin(0.0f)                 // this is what sfml uses
@@ -20,10 +20,10 @@ namespace methhead
         , m_fileExtensions(".ogg.flac.wav") // dots are required here
         , m_soundEffects()
     {
-        loadFiles();
-
-        // start all sounds at quarter volume
-        volume(m_volumeMax * 0.25f);
+        if (willLoad)
+        {
+            loadFiles();
+        }
     }
 
     void SoundPlayer::play(const std::string & name, const Random & random)
@@ -53,7 +53,7 @@ namespace methhead
         sfx->sound.play();
     }
 
-    void SoundPlayer::reset()
+    void SoundPlayer::stopAll()
     {
         if (!isMuted())
         {
@@ -67,6 +67,13 @@ namespace methhead
 
         muteButton();
         volume(m_volumeMax * 0.25f);
+    }
+
+    void SoundPlayer::reload()
+    {
+        stopAll();
+        m_soundEffects.clear();
+        loadFiles();
     }
 
     std::vector<std::size_t> SoundPlayer::findNameMatchingIndexes(const std::string & name) const
@@ -146,6 +153,9 @@ namespace methhead
                          "MP3s are not supported, only: "
                       << m_fileExtensions << std::endl;
         }
+
+        // start all sounds at quarter volume
+        volume(m_volumeMax * 0.25f);
     }
 
     void SoundPlayer::loadFile(const std::filesystem::directory_entry & entry)

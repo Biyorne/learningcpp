@@ -17,10 +17,11 @@ namespace methhead
     class SoundPlayer
     {
       public:
-        SoundPlayer();
+        SoundPlayer(const bool willLoad = true);
 
         void play(const std::string & name, const Random & random);
-        void reset();
+        void stopAll();
+        void reload();
 
         void volumeUp();
         void volumeDown();

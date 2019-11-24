@@ -10,12 +10,31 @@
 
 namespace methhead
 {
-    AnimationPlayer::AnimationPlayer()
+    AnimationPlayer::AnimationPlayer(const bool willLoad)
         : m_animations()
         , m_imageCaches()
         , m_fileExtensions(".bmp/.jpg/.jpeg/.png/.tga")
     {
+        if (willLoad)
+        {
+            loadAnimationDirectories();
+        }
+    }
+
+    void AnimationPlayer::reload()
+    {
+        stopAll();
+        m_animations.clear();
+        m_imageCaches.clear();
         loadAnimationDirectories();
+    }
+
+    void AnimationPlayer::stopAll()
+    {
+        for (Animation & anim : m_animations)
+        {
+            anim.is_finished = true;
+        }
     }
 
     void AnimationPlayer::play(
@@ -48,14 +67,6 @@ namespace methhead
         for (Animation & anim : m_animations)
         {
             updateAnimation(anim, elapsedTimeSec);
-        }
-    }
-
-    void AnimationPlayer::reset()
-    {
-        for (Animation & anim : m_animations)
-        {
-            anim.is_finished = true;
         }
     }
 
@@ -107,7 +118,7 @@ namespace methhead
     {
         auto imageCache{ std::make_unique<ImageCache>() };
         imageCache->animation_name = parse.name;
-        imageCache->frame_size     = sf::Vector2f(parse.frame_size);
+        imageCache->frame_size = sf::Vector2f(parse.frame_size);
 
         if (!loadAnimationImages(dirEntry, parse.frame_size, imageCache->images))
         {
@@ -234,10 +245,10 @@ namespace methhead
     {
         Animation & anim(getAvailableAnimation());
 
-        anim.is_finished   = false;
-        anim.cache_index   = cacheIndex;
-        anim.frame_index   = 0;
-        anim.sec_elapsed   = 0.0f;
+        anim.is_finished = false;
+        anim.cache_index = cacheIndex;
+        anim.frame_index = 0;
+        anim.sec_elapsed = 0.0f;
         anim.sec_per_frame = secPerFrame;
 
         anim.sprite.setPosition(pos);

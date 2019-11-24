@@ -24,8 +24,8 @@ namespace methhead
         , m_videoMode(1600u, 1200u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
         , m_random()
-        , m_soundPlayer()
-        , m_animationPlayer()
+        , m_soundPlayer(Mode::Normal == mode)
+        , m_animationPlayer(Mode::Normal == mode)
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_actors()
         , m_frameClock()
@@ -69,7 +69,7 @@ namespace methhead
             }
             else
             {
-                update(0.0f);
+                update(1.0f);
             }
 
             handleStatus();
@@ -106,32 +106,34 @@ namespace methhead
 
         const float elapsedStatusTimeSec{ m_statusClock.getElapsedTime().asSeconds() };
 
-        if (elapsedStatusTimeSec > m_statusIntervalSec)
+        if (elapsedStatusTimeSec < m_statusIntervalSec)
         {
-            if (m_framesSincePrevStatusCountMax < m_framesSincePrevStatusCount)
-            {
-                m_framesSincePrevStatusCountMax = m_framesSincePrevStatusCount;
-            }
+            return;
+        }
 
-            if (Mode::Normal == m_mode)
-            {
-                const float fps(
-                    static_cast<float>(m_framesSincePrevStatusCount) / elapsedStatusTimeSec);
+        if (m_framesSincePrevStatusCountMax < m_framesSincePrevStatusCount)
+        {
+            m_framesSincePrevStatusCountMax = m_framesSincePrevStatusCount;
+        }
 
-                m_displayVars.setFps(static_cast<std::size_t>(fps));
-            }
-            else
-            {
-                printStatus();
-            }
+        if (Mode::Normal == m_mode)
+        {
+            const float fps(
+                static_cast<float>(m_framesSincePrevStatusCount) / elapsedStatusTimeSec);
 
-            m_framesSincePrevStatusCount = 0;
-            m_statusClock.restart();
+            m_displayVars.setFps(static_cast<std::size_t>(fps));
+        }
+        else
+        {
+            printStatus();
+        }
 
-            if (m_spinCount > 0)
-            {
-                std::cout << "spin_count=" << m_spinCount << std::endl;
-            }
+        m_framesSincePrevStatusCount = 0;
+        m_statusClock.restart();
+
+        if (m_spinCount > 0)
+        {
+            std::cout << "spin_count=" << m_spinCount << std::endl;
         }
     }
 
@@ -390,17 +392,21 @@ namespace methhead
         }
         else if (sf::Keyboard::R == event.key.code)
         {
-            m_soundPlayer.reset();
-            m_animationPlayer.reset();
-            m_displayVars.setFps(0);
+            m_soundPlayer.stopAll();
+            m_animationPlayer.stopAll();
+
             m_actors.clear();
             m_pickups.clear();
+
+            m_displayVars.setFps(0);
             m_frameClock.restart();
             m_statusClock.restart();
-            m_framesSincePrevStatusCount = 0;
-            m_framesSincePrevStatusCountMax = 0;
+
             m_spinCount = 0;
             m_simTimeMultiplier = 1.0f;
+            m_framesSincePrevStatusCount = 0;
+            m_framesSincePrevStatusCountMax = 0;
+
             spawnInitialPieces();
         }
         else if (sf::Keyboard::Escape == event.key.code)
@@ -506,12 +512,12 @@ namespace methhead
 
         if (scores.greedy > scores.lazy)
         {
-            std::cout << "\t\t GREEDY winning by ";
+            std::cout << "\tGREEDY winning by ";
             printWinnerPercentString(scores);
         }
         else if (scores.lazy > scores.greedy)
         {
-            std::cout << "\t\t LAZY winning by ";
+            std::cout << "\tLAZY winning by ";
             printWinnerPercentString(scores);
         }
 
@@ -531,7 +537,7 @@ namespace methhead
             uptr->draw(m_window, renderStates);
         }
 
-        // TODO Nel:  Shoul we partition /sort by image first?
+        // TODO Nel:  Shoul we partition/sort by image first?
         for (IActorUPtr_t & uptr : m_actors)
         {
             uptr->draw(m_window, renderStates);

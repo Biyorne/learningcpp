@@ -36,7 +36,7 @@ namespace methhead
     {
         virtual ~IActor() = default;
 
-        virtual int score() const           = 0;
+        virtual int score() const = 0;
         virtual void score(const int value) = 0;
 
         virtual Motivation motivation() const = 0;
@@ -282,7 +282,7 @@ namespace methhead
                 if (distance < mostDesiredDistance)
                 {
                     mostDesiredDistance = distance;
-                    mostDesiredIndex    = i;
+                    mostDesiredIndex = i;
                 }
             }
 
