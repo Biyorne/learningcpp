@@ -19,22 +19,21 @@ namespace methhead
     {
         struct Scores
         {
-            int lazy = 0;
+            int lazy   = 0;
             int greedy = 0;
         };
 
-    public:
+      public:
         explicit Simulator(const Mode mode);
 
         void run();
 
-    private:
+      private:
         bool willKeepRunning() const;
+        void handleStatus();
+        void printStatus();
 
-        void consoleStatus();
-        void printConsoleStatus();
-
-        std::pair<BoardPos_t, sf::FloatRect> randomSpawnPos() const;
+        BoardPos_t findRandomFreeBoardPos() const;
 
         void spawnMethHead(const Motivation motive);
         void spawnLoot();
@@ -47,7 +46,7 @@ namespace methhead
 
         Scores calcScores() const;
 
-    private:
+      private:
         Mode m_mode;
         sf::VideoMode m_videoMode;
 
@@ -61,13 +60,14 @@ namespace methhead
         std::vector<IPickupUPtr_t> m_pickups;
 
         sf::Clock m_frameClock;
-        float m_timeMultiplier;
+        float m_simTimeMultiplier;
 
-        sf::Clock m_consoleStatusClock;
-        std::size_t m_consoleStatusFrameCount;
-        std::size_t m_consoleStatusFrameCountMax;
+        sf::Clock m_statusClock;
+        std::size_t m_framesSincePrevStatusCount;
+        std::size_t m_framesSincePrevStatusCountMax;
+
+        ActorContext m_actorContext;
     };
-
 } // namespace methhead
 
 #endif // METHHEADS_SIMULATOR_HPP_INCLUDED

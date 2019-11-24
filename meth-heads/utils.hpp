@@ -7,9 +7,9 @@
 
 #include <SFML/Graphics.hpp>
 
+// adding some things into the sf namespace...being naughty here...
 namespace sf
 {
-
     template <typename T>
     inline bool operator<(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
     {
@@ -23,18 +23,40 @@ namespace sf
         }
     }
 
+    template <typename T>
+    sf::Vector2<T> operator*(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
+    {
+        return { (left.x * right.x), (left.y * right.y) };
+    }
+
+    template <typename T>
+    std::ostream & operator<<(std::ostream & os, const sf::Vector2<T> & vec)
+    {
+        os << '(' << vec.x << 'x' << vec.y << ')';
+        return os;
+    }
+
+    template <typename T>
+    std::ostream & operator<<(std::ostream & os, const sf::Rect<T> & rect)
+    {
+        os << '(' << rect.left << ',' << rect.top << '_' << rect.width << 'x' << rect.height << ')';
+        return os;
+    }
 } // namespace sf
 
 //
 
 namespace methhead
 {
+    //
 
     enum class Mode
     {
         Normal,
         SpeedTest
     };
+
+    // string utils
 
     inline bool startsWith(const std::string & searchIn, const std::string & searchFor)
     {
@@ -45,6 +67,8 @@ namespace methhead
 
         return (searchIn.find(searchFor) == 0);
     }
+
+    // math utils
 
     // I actually have to write this because cmath does not use templates...
     template <typename T>
@@ -76,43 +100,23 @@ namespace methhead
         }
     }
 
-    template <typename SfmlThing_t>
-    void placeInBounds(SfmlThing_t & thing, const sf::FloatRect & bounds)
+    // sfml utils
+
+    // sf::Text needs correction after changing the: string, scale, or characterSize
+    template <typename T>
+    void localOffsetCorrection(T & text)
     {
-        const auto localBounds(thing.getLocalBounds());
-
-        if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
+        if constexpr (std::is_same_v<std::remove_cv_t<T>, sf::Text>)
         {
-            return;
+            const auto localBounds{ text.getLocalBounds() };
+            text.setOrigin(localBounds.left, localBounds.top);
         }
-
-        // scale to fit inside bounds
-        float scale(1.0f);
-        if (localBounds.width > localBounds.height)
-        {
-            scale = (bounds.width / localBounds.width);
-        }
-        else
-        {
-            scale = (bounds.height / localBounds.height);
-        }
-
-        thing.setScale(scale, scale);
-        thing.setOrigin(localBounds.left, localBounds.top);
-
-        // position to center of cell (bounds)
-        const sf::Vector2f finalTextSize(
-            thing.getGlobalBounds().width, thing.getGlobalBounds().height);
-
-        const sf::Vector2f boundsPos(bounds.left, bounds.top);
-        const sf::Vector2f boundsSize(bounds.width, bounds.height);
-        const sf::Vector2f boundsPosCenter(boundsPos + (boundsSize * 0.5f));
-        thing.setPosition(boundsPosCenter - (finalTextSize * 0.5f));
     }
 
-    inline void scaleRectInPlace(sf::FloatRect & rect, const sf::Vector2f & scale)
+    // sfml utils to re-size (scale) any sf::FloatRect without moving it
+    inline void scaleRectInPlace(sf::FloatRect & rect, const sf::Vector2f & scale) noexcept
     {
-        const float widthChange((rect.width * scale.x) - rect.width);
+        const auto widthChange((rect.width * scale.x) - rect.width);
         rect.width += widthChange;
         rect.left -= (widthChange * 0.5f);
 
@@ -121,27 +125,83 @@ namespace methhead
         rect.top -= (heightChange * 0.5f);
     }
 
-    inline void scaleRectInPlace(sf::FloatRect & rect, const float scale)
+    inline sf::FloatRect
+        scaleRectInPlaceCopy(const sf::FloatRect & before, const sf::Vector2f & scale) noexcept
+    {
+        sf::FloatRect after(before);
+        scaleRectInPlace(after, scale);
+        return after;
+    }
+
+    inline void scaleRectInPlace(sf::FloatRect & rect, const float scale) noexcept
     {
         scaleRectInPlace(rect, { scale, scale });
     }
 
-    template <typename SfmlThing_t>
-    void scaleInPlace(SfmlThing_t & thing, const sf::Vector2f & scale)
+    inline sf::FloatRect
+        scaleRectInPlaceCopy(const sf::FloatRect & before, const float scale) noexcept
     {
-        const sf::Vector2f sizeOrig(thing.getSize());
-        thing.setScale(scale);
-        const sf::Vector2f sizeChange(thing.getSize() - sizeOrig);
-
-        const sf::Vector2f moveThatReCenters(sizeChange * 0.5f * -1.0f);
-        thing.move(moveThatReCenters);
+        sf::FloatRect after(before);
+        scaleRectInPlace(after, scale);
+        return after;
     }
 
-    template <typename SfmlThing_t>
-    void scaleInPlace(SfmlThing_t & thing, const float scale)
+    // sfml util to re-size (scale) various sfml types
+
+    template <typename T>
+    void scale(T & thing, const sf::Vector2f & size)
     {
-        scaleInPlace(thing, { scale, scale });
+        // skip if source size is zero (or close) to avoid dividing by zero below
+        const sf::FloatRect localBounds{ thing.getLocalBounds() };
+        if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
+        {
+            return;
+        }
+
+        {
+            const float scaleHoriz{ size.x / localBounds.width };
+            thing.setScale(scaleHoriz, scaleHoriz);
+        }
+
+        if (thing.getGlobalBounds().height > size.y)
+        {
+            const float scaleVert{ size.y / localBounds.height };
+            thing.setScale(scaleVert, scaleVert);
+        }
+
+        localOffsetCorrection(thing);
     }
+
+    template <typename T>
+    void scale(T & thing, const sf::FloatRect & rect)
+    {
+        scale(thing, { rect.width, rect.height });
+    }
+
+    template <typename T>
+    void center(T & thing, const sf::FloatRect & rect)
+    {
+        const sf::Vector2f thingSize(thing.getGlobalBounds().width, thing.getGlobalBounds().height);
+        const sf::Vector2f rectPos(rect.left, rect.top);
+        const sf::Vector2f rectSize(rect.width, rect.height);
+        const sf::Vector2f rectPosCenter(rectPos + (rectSize * 0.5f));
+        thing.setPosition(rectPosCenter - (thingSize * 0.5f));
+    }
+
+    template <typename T>
+    sf::Vector2<T> center(const sf::Rect<T> & rect)
+    {
+        return { (rect.left + (rect.width / T(2))), (rect.top + (rect.height / T(2))) };
+    }
+
+    template <typename T>
+    void fit(T & thing, const sf::FloatRect & rect)
+    {
+        scale(thing, rect);
+        center(thing, rect);
+    }
+
+    // std algorithm utils
 
     template <
         typename InputIterator,
@@ -168,7 +228,6 @@ namespace methhead
 
         return destIter;
     }
-
 } // namespace methhead
 
 #endif // METHHEADS_UTILS_HPP_INCLUDED

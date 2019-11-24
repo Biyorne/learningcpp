@@ -8,18 +8,17 @@
 #include "error-handling.hpp"
 #include "utils.hpp"
 
-#include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <stdexcept>
+
+#include <set>
 
 namespace methhead
 {
-
     MethHeadBase::MethHeadBase(
         const std::string & imagePath,
         const BoardPos_t & boardPos,
-        const sf::FloatRect & windowBounds,
+        const sf::FloatRect & windowRect,
         const float waitBetweenActionsSec)
         : m_score(0)
         , m_texture()
@@ -34,115 +33,103 @@ namespace methhead
         }
 
         m_sprite.setTexture(m_texture, true);
-        placeInBounds(m_sprite, windowBounds);
+        fit(m_sprite, windowRect);
     }
 
     void MethHeadBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {
+        // TODO try skipping draw if off-screen
         target.draw(m_sprite, states);
     }
 
-    void MethHeadBase::update(
-        const float elapsedSec,
-        SoundPlayer & soundPlayer,
-        const Random & random,
-        AnimationPlayer & animationPlayer)
+    bool MethHeadBase::update(const float elapsedSec, const ActorContext & context)
+    {
+        assert(context.isPickupAtBoardPos(m_boardPos) == false);
+        assert(context.isActorAtBoardPos(m_boardPos) == true);
+
+        if (isTimeToMove(elapsedSec))
+        {
+            return move(context);
+        }
+
+        return false;
+    }
+
+    bool MethHeadBase::isTimeToMove(const float elapsedSec)
     {
         m_elapsedSinceLastActionSec += elapsedSec;
 
         if (m_elapsedSinceLastActionSec > m_waitBetweenActionsSec)
         {
-            m_elapsedSinceLastActionSec = 0.0f;
-            moveToward(soundPlayer, random, animationPlayer, pickTarget());
+            // TODO Nell -what is this line doing?  Why not reset to zero?
+            m_elapsedSinceLastActionSec = (m_elapsedSinceLastActionSec - m_waitBetweenActionsSec);
+            return true;
         }
+
+        return false;
     }
 
-    void MethHeadBase::moveToward(
-        SoundPlayer & soundPlayer,
-        const Random & random,
-        AnimationPlayer & animationPlayer,
-        const BoardPos_t & targetBoardPos)
+    // TODO Nel:
+    //  Look closely at the if statements below.   Where are errors most likely to be?  Are there
+    //  any?
+    //
+    // Note that each if will be considered every time this function runs.  Is that required, or is
+    // it possible to optimize by skipping some of those ifs some of the time?
+    std::vector<BoardPos_t>
+        MethHeadBase::makeAllBoardPosMovesToward(const BoardPos_t & targetBoardPos) const
     {
-        //   assertOrThrow(
-        //       (targetBoardPos.x >= 0) && (targetBoardPos.y >= 0),
-        //       "Target Cell Position is invalid (x or y was negative).");
-        //
-        //   const BoardPos_t oldCellPos(m_boardPos);
-        //   BoardPos_t newCellPos(m_boardPos);
-        //
-        //   // TODO make move decision random
-        //   if (targetBoardPos.x < oldCellPos.x)
-        //   {
-        //       --newCellPos.x;
-        //   }
-        //   else if (targetBoardPos.x > oldCellPos.x)
-        //   {
-        //       ++newCellPos.x;
-        //   }
-        //   else if (targetBoardPos.y < oldCellPos.y)
-        //   {
-        //       --newCellPos.y;
-        //   }
-        //   else if (targetBoardPos.y > oldCellPos.y)
-        //   {
-        //       ++newCellPos.y;
-        //   }
-        //
-        //   assertOrThrow(
-        //       (newCellPos != oldCellPos),
-        //       "MethHead::moveToward() failed because target_cellPos was the same as "
-        //       "current_cellPos.");
-        //
-        //   m_boardPos = newCellPos;
-        //
-        //   board[oldCellPos].motivation = Motivation::none;
-        //
-        //   Cell & newCell(board[newCellPos]);
-        //
-        //   const bool didBumpIntoOtherActor { (Motivation::none != newCell.motivation) };
-        //
-        //   newCell.motivation = motivation();
-        //
-        //   placeInBounds(m_sprite, board[newCellPos].bounds());
-        //
-        //   if (newCell.loot > 0)
-        //   {
-        //       m_score += static_cast<int>(newCell.loot);
-        //       newCell.loot = 0;
-        //
-        //       soundPlayer.play("coin", random);
-        //       spawnLoot(board, random);
-        //
-        //       return true;
-        //   }
-        //   else if (didBumpIntoOtherActor)
-        //   {
-        //       soundPlayer.play(random.from({ "punch", "ouch" }), random);
-        //
-        //       const sf::Vector2f spriteSize { m_sprite.getGlobalBounds().width,
-        //                                       m_sprite.getGlobalBounds().height };
-        //
-        //       const sf::Vector2f animPos { m_sprite.getPosition() + (spriteSize * 0.5f) };
-        //
-        //       animationPlayer.play(random, "explode", animPos, (spriteSize * 4.0f));
-        //   }
-        //
-        //   return false;
+        std::vector<BoardPos_t> moves;
+
+        if (targetBoardPos.x < m_boardPos.x)
+        {
+            moves.push_back(m_boardPos + sf::Vector2i(-1, 0));
+        }
+
+        if (targetBoardPos.x > m_boardPos.x)
+        {
+            moves.push_back(m_boardPos + sf::Vector2i(1, 0));
+        }
+
+        if (targetBoardPos.y < m_boardPos.y)
+        {
+            moves.push_back(m_boardPos + sf::Vector2i(0, -1));
+        }
+
+        if (targetBoardPos.y > m_boardPos.y)
+        {
+            moves.push_back(m_boardPos + sf::Vector2i(0, 1));
+        }
+
+        return moves;
     }
 
-    BoardPos_t MethHeadBase::pickTarget() const
+    bool MethHeadBase::move(const ActorContext & context)
     {
-        //   auto allLootPos = MethHeadBase::findAllLoot(board);
-        //
-        //   if (allLootPos.empty())
-        //   {
-        //       return { -1, -1 };
-        //   }
-        //
-        //   sortAllLoot(allLootPos);
-        //
-        //   return allLootPos.front().cell_pos;
-        return m_boardPos;
-    }
+        const BoardPos_t targetPickupBoardPos(findMostDesiredPickupBoardPos(context));
 
+        if (targetPickupBoardPos == m_boardPos)
+        {
+            std::cout << "Methhead could not move because there are no pickups." << std::endl;
+            assert(context.pickups.empty());
+            return false;
+        }
+
+        const std::vector<BoardPos_t> possibleMoves(
+            makeAllBoardPosMovesToward(targetPickupBoardPos));
+
+        if (possibleMoves.empty())
+        {
+            std::cout << "Methhead cannot move because other methheads are in the way."
+                      << std::endl;
+
+            return false;
+        }
+
+        m_boardPos = context.random.from(possibleMoves);
+
+        // TODO we don't need to scale each time...only position...
+        fit(m_sprite, context.display.boardPosToWindowRect(m_boardPos));
+
+        return true;
+    }
 } // namespace methhead

@@ -4,15 +4,19 @@
 
 #include "utils.hpp"
 
+#include <cassert>
+
 namespace methhead
 {
     DisplayVariables::DisplayVariables(const sf::Vector2u & windowSize)
         : m_constants(windowSize)
         , m_lazyScoreRectangle()
         , m_greedyScoreRectangle()
+        , m_boardRectangles()
     {
         m_lazyScoreRectangle.setFillColor(m_constants.lazy_color);
         m_greedyScoreRectangle.setFillColor(m_constants.greedy_color);
+        populateBoardCells();
     }
 
     void DisplayVariables::update(const float, const int lazyScore, const int greedyScore)
@@ -25,24 +29,24 @@ namespace methhead
         target.draw(m_lazyScoreRectangle, states);
         target.draw(m_greedyScoreRectangle, states);
 
-        for (const auto & [boardPos, rectangle] : m_constants.board_map)
+        for (const sf::RectangleShape & rectangle : m_boardRectangles)
         {
             target.draw(rectangle);
         }
     }
 
-    // TODO Minor optimization: Move some bounds settings to the constructor
+    // TODO Minor optimization: Move some rect settings to the constructor
     void DisplayVariables::setScoreBarsHeight(const int lazyScore, const int greedyScore)
     {
-        // split the bounds into two halves for lazy vs greedy
-        sf::FloatRect bounds(m_constants.score_window_bounds);
+        // split the rect into two halves for lazy vs greedy
+        sf::FloatRect rect(m_constants.score_window_rect);
 
         // make the width just under half to put a space between that looks nice
-        sf::FloatRect lazyBounds(bounds);
-        lazyBounds.width *= 0.475f;
+        sf::FloatRect lazyRect(rect);
+        lazyRect.width *= 0.475f;
 
-        sf::FloatRect greedyBounds(lazyBounds);
-        greedyBounds.left = ((bounds.left + bounds.width) - greedyBounds.width);
+        sf::FloatRect greedyRect(lazyRect);
+        greedyRect.left = ((rect.left + rect.width) - greedyRect.width);
 
         // shrink the height of the loser
         if (lazyScore != greedyScore)
@@ -54,24 +58,52 @@ namespace methhead
 
             if (lazyScore < greedyScore)
             {
-                lazyBounds.height *= shrinkRatio;
+                lazyRect.height *= shrinkRatio;
             }
             else
             {
-                greedyBounds.height *= shrinkRatio;
+                greedyRect.height *= shrinkRatio;
             }
         }
 
         // position and size both rectangles
         m_lazyScoreRectangle.setPosition(
-            lazyBounds.left, ((bounds.top + bounds.height) - lazyBounds.height));
+            lazyRect.left, ((rect.top + rect.height) - lazyRect.height));
 
-        m_lazyScoreRectangle.setSize({ lazyBounds.width, lazyBounds.height });
+        m_lazyScoreRectangle.setSize({ lazyRect.width, lazyRect.height });
 
         m_greedyScoreRectangle.setPosition(
-            greedyBounds.left, ((bounds.top + bounds.height) - greedyBounds.height));
+            greedyRect.left, ((rect.top + rect.height) - greedyRect.height));
 
-        m_greedyScoreRectangle.setSize({ greedyBounds.width, greedyBounds.height });
+        m_greedyScoreRectangle.setSize({ greedyRect.width, greedyRect.height });
     }
 
+    void DisplayVariables::populateBoardCells()
+    {
+        sf::RectangleShape rectangle;
+
+        rectangle.setSize(m_constants.cell_size);
+        rectangle.setOutlineThickness(2.0f);
+        rectangle.setFillColor(m_constants.cell_background_color);
+        rectangle.setOutlineColor(m_constants.cell_line_color);
+
+        for (std::size_t horiz(0); horiz < m_constants.horiz_cell_count; ++horiz)
+        {
+            for (std::size_t vert(0); vert < m_constants.vert_cell_count; ++vert)
+            {
+                const BoardPos_t boardPos(static_cast<int>(horiz), static_cast<int>(vert));
+
+                assert((boardPos.x >= 0) && (boardPos.x < m_constants.horiz_cell_count));
+                assert((boardPos.y >= 0) && (boardPos.y < m_constants.vert_cell_count));
+
+                const sf::Vector2f windowPos(m_constants.boardPosToWindowPos(boardPos));
+
+                assert(!(windowPos.x < 0.0f) && (windowPos.x < m_constants.window_size.x));
+                assert(!(windowPos.y < 0.0f) && (windowPos.y < m_constants.window_size.y));
+
+                rectangle.setPosition(windowPos);
+                m_boardRectangles.push_back(rectangle);
+            }
+        }
+    }
 } // namespace methhead

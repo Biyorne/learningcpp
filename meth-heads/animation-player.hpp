@@ -65,11 +65,11 @@ namespace methhead
             sf::Sprite sprite;
             std::size_t cache_index = 0;
             std::size_t frame_index = 0;
-            float sec_elapsed = 0.0f;
-            float sec_per_frame = 0.0f;
+            float sec_elapsed       = 0.0f;
+            float sec_per_frame     = 0.0f;
         };
 
-    public:
+      public:
         AnimationPlayer();
 
         void play(
@@ -80,11 +80,23 @@ namespace methhead
             const sf::Color & color = sf::Color::White,
             const float secPerFrame = m_defaultSecPerFrame);
 
+        void play(
+            const Random & random,
+            const std::string & name,
+            const sf::FloatRect & rect,
+            const sf::Color & color = sf::Color::White,
+            const float secPerFrame = m_defaultSecPerFrame)
+        {
+            const sf::Vector2f pos(rect.left, rect.top);
+            const sf::Vector2f size(rect.width, rect.height);
+            play(random, name, pos, size, color, secPerFrame);
+        }
+
         void update(const float elapsedTimeSec);
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
-    private:
+      private:
         void loadAnimationDirectories();
 
         bool willLoadAnimationDirectory(
@@ -127,14 +139,13 @@ namespace methhead
 
         std::vector<std::size_t> findNameMatchingIndexes(const std::string & name) const;
 
-    private:
+      private:
         std::vector<Animation> m_animations;
         std::vector<std::unique_ptr<ImageCache>> m_imageCaches;
         std::string m_fileExtensions;
 
-        static inline float m_defaultSecPerFrame = 0.15f;
+        static inline float m_defaultSecPerFrame = 0.025f;
     };
-
 } // namespace methhead
 
 #endif // METHHEADS_ANIMATION_HPP_INCLUDED

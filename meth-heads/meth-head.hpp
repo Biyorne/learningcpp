@@ -1,27 +1,28 @@
 #ifndef METHHEADS_BASE_HPP_INCLUDED
 #define METHHEADS_BASE_HPP_INCLUDED
 
-#include "animation-player.hpp"
 #include "display-constants.hpp"
 #include "random.hpp"
-#include "sound-player.hpp"
 
 #include <SFML/Graphics.hpp>
 
 #include <algorithm>
+#include <cassert>
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace methhead
 {
+    struct ActorContext;
+
     // TODO in the end of all cleanup this should have a different home...
     //
     // also... TODO In the end, after cleaning up everything, there should be no more need for
-    // "none" none/invalid options in enums is not always code smell, it is not always wrong, but on
-    // the other hand, always adding none/invalid to your enums as a default/habit just in case it
-    // is needed IS ALWAYS A BAD HABIT, becauase any enum that has a none/invalid option that is not
-    // needed is often a huge source of errors and mess.
+    // "none" none/invalid options in enums is not always code smell, it is not always wrong,
+    // but on the other hand, always adding none/invalid to your enums as a default/habit just
+    // in case it is needed IS ALWAYS A BAD HABIT, becauase any enum that has a none/invalid
+    // option that is not needed is often a huge source of errors and mess.
     enum class Motivation
     {
         none,
@@ -35,7 +36,7 @@ namespace methhead
     {
         virtual ~IActor() = default;
 
-        virtual int score() const = 0;
+        virtual int score() const           = 0;
         virtual void score(const int value) = 0;
 
         virtual Motivation motivation() const = 0;
@@ -44,16 +45,11 @@ namespace methhead
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
 
-        virtual void update(
-            const float elapsedMs,
-            SoundPlayer & soundPlayer,
-            const Random & random,
-            AnimationPlayer & animationPlayer)
-            = 0;
+        // returns true if the boardPos changed
+        virtual bool update(const float elapsedMs, const ActorContext & context) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
-    using IActorUVec_t = std::vector<IActorUPtr_t>;
 
     //
 
@@ -65,30 +61,97 @@ namespace methhead
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
 
-        virtual void update(
-            const float elapsedMs,
-            SoundPlayer & soundPlayer,
-            const Random & random,
-            AnimationPlayer & animationPlayer)
-            = 0;
-
         virtual BoardPos_t boardPos() const = 0;
 
         virtual int value() const = 0;
     };
 
     using IPickupUPtr_t = std::unique_ptr<IPickup>;
-    using IPickupUVec_t = std::vector<IPickupUPtr_t>;
+
+    //
+
+    struct ActorContext
+    {
+        ActorContext(
+            const Random & rand,
+            const std::vector<IPickupUPtr_t> & pups,
+            const std::vector<IActorUPtr_t> & acts,
+            const DisplayConstants & disp)
+            : random(rand)
+            , actors(acts)
+            , pickups(pups)
+            , display(disp)
+        {}
+
+        const Random & random;
+        const std::vector<IActorUPtr_t> & actors;
+        const std::vector<IPickupUPtr_t> & pickups;
+        const DisplayConstants & display;
+
+        // TODO Nell:
+        //  What is the same about these two functions?
+        //  What is different?
+        //  What opportunity or other-way-to-write the code does that reveal?
+        //  Would that be simpler/more-complex/faster/slower/better/worse?
+        bool isActorAtBoardPos(const BoardPos_t & posToCheck) const
+        {
+            // clang-format off
+            //const auto foundIter =
+            //    std::find(
+            //                std::begin(actors),
+            //                std::end(actors),
+            //                [&](const IActorUPtr_t & actor)
+            //                {
+            //                    return (actor->boardPos() == posToCheck);
+            //                }
+            //             );
+            // clang-format on
+
+            const auto foundIter =
+                std::find_if(std::begin(actors), std::end(actors), [&](const IActorUPtr_t & actor) {
+                    return (actor->boardPos() == posToCheck);
+                });
+
+            return (foundIter != std::end(actors));
+        }
+        //
+        bool isPickupAtBoardPos(const BoardPos_t & posToCheck) const
+        {
+            // clang-format off
+            //const auto foundIter =
+            //    std::find(
+            //                std::begin(pickups),
+            //                std::end(pickups),
+            //                [&](const IPickupUPtr_t & pickup)
+            //                {
+            //                    return (pickup->boardPos() == posToCheck);
+            //                }
+            //             );
+            // clang-format on
+
+            const auto foundIter = std::find_if(
+                std::begin(pickups), std::end(pickups), [&](const IPickupUPtr_t & pickup) {
+                    return (pickup->boardPos() == posToCheck);
+                });
+
+            return (foundIter != std::end(pickups));
+        }
+
+        bool isEitherAtBoardPos(const BoardPos_t & posToCheck) const
+        {
+            return (isActorAtBoardPos(posToCheck) || (isPickupAtBoardPos(posToCheck)));
+        }
+    };
 
     //
 
     class Loot : public IPickup
     {
-    public:
+      public:
         Loot(
             const std::string & imagePath,
             const BoardPos_t & boardPos,
-            const sf::FloatRect & windowBounds,
+            const sf::FloatRect & windowRect,
             const int value,
             const DisplayConstants & displayConstants)
             : m_texture()
@@ -103,12 +166,12 @@ namespace methhead
             }
 
             m_sprite.setTexture(m_texture, true);
-            placeInBounds(m_sprite, windowBounds);
+            fit(m_sprite, windowRect);
             m_sprite.setColor(sf::Color(255, 255, 255, 127));
 
             m_text.setFillColor(sf::Color::Yellow);
             m_text.setString(std::to_string(m_value));
-            placeInBounds(m_text, windowBounds);
+            fit(m_text, windowRect);
         }
 
         virtual ~Loot() = default;
@@ -121,13 +184,11 @@ namespace methhead
             target.draw(m_text, states);
         }
 
-        void update(const float, SoundPlayer &, const Random &, AnimationPlayer &) override {}
-
         BoardPos_t boardPos() const final { return m_boardPos; }
 
         int value() const final { return m_value; }
 
-    private:
+      private:
         sf::Texture m_texture;
         sf::Sprite m_sprite;
         int m_value;
@@ -139,46 +200,44 @@ namespace methhead
 
     class MethHeadBase : public IActor
     {
-    protected:
+      protected:
         MethHeadBase(
             const std::string & imagePath,
             const BoardPos_t & boardPos,
-            const sf::FloatRect & windowBounds,
+            const sf::FloatRect & windowRect,
             const float waitBetweenActionsSec = 0.333f);
 
         virtual ~MethHeadBase() = default;
 
-    public:
+      public:
         void draw(sf::RenderTarget & target, sf::RenderStates states) const final;
 
-        void update(
-            const float elapsedSec,
-            SoundPlayer & soundPlayer,
-            const Random & random,
-            AnimationPlayer & animationPlayer) override;
+        // returns true if the boardPos changed
+        bool update(const float elapsedSec, const ActorContext & context) override;
 
-        int score() const final { return m_score; }
-        void score(const int value) final { m_score = value; }
+        inline int score() const final { return m_score; }
+        inline void score(const int value) final { m_score = value; }
 
-        BoardPos_t boardPos() const final { return m_boardPos; }
+        inline BoardPos_t boardPos() const final { return m_boardPos; }
 
-    protected:
-        void moveToward(
-            SoundPlayer & soundPlayer,
-            const Random & random,
-            AnimationPlayer & animationPlayer,
-            const BoardPos_t & targetBoardPos);
+      protected:
+        bool isTimeToMove(const float elapsedSec);
 
-        static inline int calcDistance(const BoardPos_t & from, const BoardPos_t & to)
+        // returns true if position changed
+        bool move(const ActorContext & context);
+
+        inline int walkDistanceTo(const BoardPos_t & to) const
         {
-            return (std::abs(to.x - from.x) + std::abs(to.y - from.y));
+            const BoardPos_t posDiff(to - m_boardPos);
+            return (std::abs(posDiff.x) + std::abs(posDiff.y));
         }
 
-        BoardPos_t pickTarget() const;
+        // returns the current position if there are no pickups
+        virtual BoardPos_t findMostDesiredPickupBoardPos(const ActorContext & context) const = 0;
 
-        virtual void sortPickups(IPickupUVec_t & pickups) const = 0;
+        std::vector<BoardPos_t> makeAllBoardPosMovesToward(const BoardPos_t & targetBoardPos) const;
 
-    private:
+      private:
         int m_score;
         sf::Texture m_texture;
         sf::Sprite m_sprite;
@@ -192,30 +251,44 @@ namespace methhead
 
     class Lazy : public MethHeadBase
     {
-    public:
+      public:
         Lazy(
             const std::string & imagePath,
             const BoardPos_t & boardPos,
-            const sf::FloatRect & windowBounds)
-            : MethHeadBase(imagePath, boardPos, windowBounds)
+            const sf::FloatRect & windowRect)
+            : MethHeadBase(imagePath, boardPos, windowRect)
         {}
 
         virtual ~Lazy() = default;
 
-        Motivation motivation() const final { return Motivation::lazy; }
+        inline Motivation motivation() const final { return Motivation::lazy; }
 
-    private:
-        void sortPickups(IPickupUVec_t & pickups) const final
+      private:
+        BoardPos_t findMostDesiredPickupBoardPos(const ActorContext & context) const final
         {
-            std::sort(
-                std::begin(pickups),
-                std::end(pickups),
-                [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-                    const int distLeft(calcDistance(boardPos(), left->boardPos()));
-                    const int distRight(calcDistance(boardPos(), right->boardPos()));
+            if (context.pickups.empty())
+            {
+                return boardPos();
+            }
 
-                    return (distLeft < distRight);
-                });
+            std::size_t mostDesiredIndex(0);
+            int mostDesiredDistance(std::numeric_limits<int>::max());
+
+            for (std::size_t i(0); i < context.pickups.size(); ++i)
+            {
+                const IPickup & pickup(*context.pickups.at(i));
+                const int distance{ walkDistanceTo(pickup.boardPos()) };
+
+                if (distance < mostDesiredDistance)
+                {
+                    mostDesiredDistance = distance;
+                    mostDesiredIndex    = i;
+                }
+            }
+
+            assert(mostDesiredDistance > 0);
+
+            return context.pickups.at(mostDesiredIndex)->boardPos();
         }
     };
 
@@ -223,30 +296,42 @@ namespace methhead
 
     class Greedy : public MethHeadBase
     {
-    public:
+      public:
         Greedy(
             const std::string & imagePath,
             const BoardPos_t & boardPos,
-            const sf::FloatRect & windowBounds)
-            : MethHeadBase(imagePath, boardPos, windowBounds)
+            const sf::FloatRect & windowRect)
+            : MethHeadBase(imagePath, boardPos, windowRect)
         {}
 
         virtual ~Greedy() = default;
 
-        Motivation motivation() const final { return Motivation::greedy; }
+        inline Motivation motivation() const final { return Motivation::greedy; }
 
-    private:
-        void sortPickups(IPickupUVec_t & pickups) const final
+      private:
+        BoardPos_t findMostDesiredPickupBoardPos(const ActorContext & context) const final
         {
-            std::sort(
-                std::begin(pickups),
-                std::end(pickups),
-                [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-                    return (left->value() > right->value());
-                });
+            if (context.pickups.empty())
+            {
+                return boardPos();
+            }
+
+            std::vector<std::pair<int, BoardPos_t>> valuePositions;
+            for (const IPickupUPtr_t & pickup : context.pickups)
+            {
+                valuePositions.push_back({ pickup->value(), pickup->boardPos() });
+            }
+
+            assert(valuePositions.size() == context.pickups.size());
+            assert(!valuePositions.empty());
+
+            std::sort(std::begin(valuePositions), std::end(valuePositions));
+
+            assert(valuePositions.front().first <= valuePositions.back().first);
+
+            return valuePositions.back().second;
         }
     };
-
 } // namespace methhead
 
 #endif // METHHEADS_BASE_HPP_INCLUDED

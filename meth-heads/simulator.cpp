@@ -29,10 +29,11 @@ namespace methhead
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_actors()
         , m_frameClock()
-        , m_timeMultiplier(1.0f)
-        , m_consoleStatusClock()
-        , m_consoleStatusFrameCount(0)
-        , m_consoleStatusFrameCountMax(0)
+        , m_simTimeMultiplier(1.0f)
+        , m_statusClock()
+        , m_framesSincePrevStatusCount(0)
+        , m_framesSincePrevStatusCountMax(0)
+        , m_actorContext(m_random, m_pickups, m_actors, m_displayVars.constants())
     {
         if (Mode::Normal == m_mode)
         {
@@ -60,15 +61,16 @@ namespace methhead
 
                 const float actualElapsedSec(m_frameClock.getElapsedTime().asSeconds());
                 m_frameClock.restart();
-                const float gameElapsedSec(actualElapsedSec * m_timeMultiplier);
+                const float simElapsedSec(actualElapsedSec * m_simTimeMultiplier);
 
-                update(gameElapsedSec);
+                update(simElapsedSec);
+
                 draw();
             }
             else
             {
-                update(1.0f);
-                consoleStatus();
+                update(0.5f);
+                handleStatus();
             }
         }
     }
@@ -85,74 +87,210 @@ namespace methhead
         }
     }
 
-    void Simulator::consoleStatus()
+    void Simulator::handleStatus()
     {
-        ++m_consoleStatusFrameCount;
+        ++m_framesSincePrevStatusCount;
 
-        if (m_consoleStatusClock.getElapsedTime().asSeconds() > 1.0f)
+        if (m_statusClock.getElapsedTime().asSeconds() > 1.0f)
         {
-            if (m_consoleStatusFrameCountMax < m_consoleStatusFrameCount)
-            {
-                m_consoleStatusFrameCountMax = m_consoleStatusFrameCount;
-            }
-
-            printConsoleStatus();
-
-            m_consoleStatusFrameCount = 0;
-            m_consoleStatusClock.restart();
+            printStatus();
+            m_framesSincePrevStatusCount = 0;
+            m_statusClock.restart();
         }
     }
 
-    std::pair<BoardPos_t, sf::FloatRect> Simulator::randomSpawnPos() const
+    BoardPos_t Simulator::findRandomFreeBoardPos() const
     {
-        BoardMap_t onScreenMap(m_displayVars.constants().board_map);
+        // create a vector of all possible board positions that includes the ring of positions
+        // outside where all actors and pickups are, which ensures there is always a valid spawn
+        // position -even if it is off of the map
+
+        // TODO what's wrong with this code?
+
+        int leftMostPos(0);
+        int rightMostPos(static_cast<int>(m_displayVars.constants().horiz_cell_count));
+        int highestPos(0);
+        int lowestPos(static_cast<int>(m_displayVars.constants().vert_cell_count));
 
         for (const IActorUPtr_t & actor : m_actors)
         {
-            onScreenMap.erase(actor->boardPos());
+            const sf::Vector2i boardPos(actor->boardPos());
+
+            if (boardPos.x < leftMostPos)
+            {
+                leftMostPos = boardPos.x;
+            }
+
+            if (boardPos.x > rightMostPos)
+            {
+                rightMostPos = boardPos.x;
+            }
+
+            if (boardPos.y < highestPos)
+            {
+                highestPos = boardPos.y;
+            }
+
+            if (boardPos.y > lowestPos)
+            {
+                lowestPos = boardPos.y;
+            }
         }
 
         for (const IPickupUPtr_t & pickup : m_pickups)
         {
-            onScreenMap.erase(pickup->boardPos());
+            const sf::Vector2i boardPos(pickup->boardPos());
+
+            if (boardPos.x < leftMostPos)
+            {
+                leftMostPos = boardPos.x;
+            }
+
+            if (boardPos.x > rightMostPos)
+            {
+                rightMostPos = boardPos.x;
+            }
+
+            if (boardPos.y < highestPos)
+            {
+                highestPos = boardPos.y;
+            }
+
+            if (boardPos.y > lowestPos)
+            {
+                lowestPos = boardPos.y;
+            }
         }
 
-        if (onScreenMap.empty())
+        assert(leftMostPos <= rightMostPos);
+        assert(highestPos <= lowestPos);
+
+        std::set<BoardPos_t> freeBoardPositions;
+        for (int vert(highestPos); vert < lowestPos; ++vert)
         {
-            return m_displayVars.constants().off_screen_pair;
+            for (int horiz(leftMostPos); horiz < rightMostPos; ++horiz)
+            {
+                freeBoardPositions.insert(sf::Vector2i(horiz, vert));
+            }
         }
 
-        const auto & [boardPos, rectangleShape] = m_random.from(onScreenMap);
+        for (const IActorUPtr_t & actor : m_actors)
+        {
+            freeBoardPositions.erase(actor->boardPos());
+        }
 
-        return { boardPos, rectangleShape.getGlobalBounds() };
+        for (const IPickupUPtr_t & pickup : m_pickups)
+        {
+            freeBoardPositions.erase(pickup->boardPos());
+        }
+
+        // const sf::Vector2i rangePos(leftMostPos, highestPos);
+        // const sf::Vector2i rangeSize((rightMostPos - leftMostPos), (lowestPos - highestPos));
+        // const sf::IntRect rangeRect(rangePos, rangeSize);
+        // const int rangeCellCount(std::abs(rangeSize.x * rangeSize.y));
+        // std::cout << "Looking for free within range=" << rangeRect << ", of size=" << rangeSize
+        //          << ", which has range_cell_count=" << rangeCellCount
+        //          << ", and after removeing pickup_count=" << m_pickups.size()
+        //          << ", and actor_count=" << m_actors.size()
+        //          << ", there were possible_cell_board_pos_count=" << freeBoardPositions.size()
+        //          << std::endl;
+
+        if (freeBoardPositions.empty())
+        {
+            --leftMostPos;
+            rightMostPos += 2;
+            --highestPos;
+            lowestPos += 2;
+
+            assert(leftMostPos < rightMostPos);
+            assert(highestPos < lowestPos);
+
+            for (int vert(highestPos); vert < lowestPos; vert = lowestPos)
+            {
+                for (int horiz(leftMostPos); horiz < rightMostPos; horiz = rightMostPos)
+                {
+                    freeBoardPositions.insert(sf::Vector2i(horiz, vert));
+                }
+            }
+
+            const sf::Vector2i rangePos(leftMostPos, highestPos);
+            const sf::Vector2i rangeSize((rightMostPos - leftMostPos), (lowestPos - highestPos));
+            const sf::IntRect rangeRect(rangePos, rangeSize);
+            const int rangeCellCount(std::abs(rangeSize.x * rangeSize.y));
+            std::cout << " *** REDO *** Looking for free within range=" << rangeRect
+                      << ", of size=" << rangeSize
+                      << ", which has range_cell_count=" << rangeCellCount
+                      << ", and after removeing pickup_count=" << m_pickups.size()
+                      << ", and actor_count=" << m_actors.size()
+                      << ", there were possible_cell_board_pos_count=" << freeBoardPositions.size()
+                      << std::endl;
+        }
+
+        assert(!freeBoardPositions.empty());
+
+        // for (const BoardPos_t & pos : freeBoardPositions)
+        //{
+        //    assert(!m_actorContext.isEitherAtBoardPos(pos));
+        //}
+
+        return m_random.from(freeBoardPositions);
     }
 
     void Simulator::spawnMethHead(const Motivation motive)
     {
-        assertOrThrow((motive != Motivation::none), "Tried to spawn a None meth head.");
+        assert(Motivation::none != motive);
 
-        const auto & [boardPos, floatRect] = randomSpawnPos();
+        const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
+
+        const sf::FloatRect freeWindowRect(
+            m_displayVars.constants().boardPosToWindowRect(freeBoardPos));
+
+        // std::cout << "spawning " << ((Motivation::lazy == motive) ? "Lazy" : "Greedy")
+        //          << " methhead #" << m_pickups.size() << ", at pos=" << freeBoardPos
+        //          << ", inside rect=" << freeWindowRect << std::endl;
+
+        assert(isRealClose(freeWindowRect.width, m_displayVars.constants().cell_size.x, 2.0f));
+        assert(isRealClose(freeWindowRect.height, m_displayVars.constants().cell_size.y, 2.0f));
 
         if (motive == Motivation::lazy)
         {
-            m_actors.push_back(std::make_unique<Lazy>("image/head-1.png", boardPos, floatRect));
+            IActorUPtr_t lazyUPtr(
+                std::make_unique<Lazy>("image/head-1.png", freeBoardPos, freeWindowRect));
+
+            m_actors.push_back(std::move(lazyUPtr));
         }
         else
         {
-            m_actors.push_back(std::make_unique<Greedy>("image/head-2.png", boardPos, floatRect));
+            IActorUPtr_t greedyUPtr(
+                std::make_unique<Greedy>("image/head-2.png", freeBoardPos, freeWindowRect));
+
+            m_actors.push_back(std::move(greedyUPtr));
         }
     }
 
     void Simulator::spawnLoot()
     {
-        const auto & [boardPos, floatRect] = randomSpawnPos();
+        const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
 
-        m_pickups.push_back(std::move(std::make_unique<Loot>(
+        const sf::FloatRect freeWindowRect(
+            m_displayVars.constants().boardPosToWindowRect(freeBoardPos));
+
+        // std::cout << "spawning loot #" << m_pickups.size() << ", at pos=" << freeBoardPos
+        //          << ", inside rect=" << freeWindowRect;
+
+        assert(isRealClose(freeWindowRect.width, m_displayVars.constants().cell_size.x, 2.0f));
+        assert(isRealClose(freeWindowRect.height, m_displayVars.constants().cell_size.y, 2.0f));
+
+        IPickupUPtr_t pickupUPtr(std::make_unique<Loot>(
             "image/loot.png",
-            boardPos,
-            floatRect,
+            freeBoardPos,
+            freeWindowRect,
             m_random.fromTo(1, 100),
-            m_displayVars.constants())));
+            m_displayVars.constants()));
+
+        m_pickups.push_back(std::move(pickupUPtr));
+
+        // std::cout << ", of value=" << m_pickups.back()->value() << std::endl;
     }
 
     void Simulator::handleEvents()
@@ -176,59 +314,119 @@ namespace methhead
             m_window.close();
         }
 
-        if (sf::Event::KeyPressed == event.type)
+        if (sf::Event::KeyPressed != event.type)
         {
-            if (sf::Keyboard::Up == event.key.code)
-            {
-                m_soundPlayer.volumeUp();
-            }
-            else if (sf::Keyboard::Down == event.key.code)
-            {
-                m_soundPlayer.volumeDown();
-            }
-            else if (sf::Keyboard::Left == event.key.code)
-            {
-                m_timeMultiplier = std::clamp((m_timeMultiplier *= 0.5f), 0.1f, 1000.0f);
-            }
-            else if (sf::Keyboard::Right == event.key.code)
-            {
-                m_timeMultiplier = std::clamp((m_timeMultiplier *= 1.5f), 0.1f, 1000.0f);
-            }
-            else if (sf::Keyboard::L == event.key.code)
-            {
-                spawnMethHead(Motivation::lazy);
-            }
-            else if (sf::Keyboard::G == event.key.code)
-            {
-                spawnMethHead(Motivation::greedy);
-            }
-            else if (sf::Keyboard::S == event.key.code)
-            {
-                spawnMethHead(Motivation::lazy);
-                spawnMethHead(Motivation::greedy);
-            }
-            else if (sf::Keyboard::Escape == event.key.code)
-            {
-                m_window.close();
-            }
+            return;
+        }
+
+        if (sf::Keyboard::Up == event.key.code)
+        {
+            m_soundPlayer.volumeUp();
+        }
+        else if (sf::Keyboard::Down == event.key.code)
+        {
+            m_soundPlayer.volumeDown();
+        }
+        else if (sf::Keyboard::Left == event.key.code)
+        {
+            m_simTimeMultiplier *= 0.5f;
+            m_simTimeMultiplier = std::clamp(m_simTimeMultiplier, 0.1f, 100000.0f);
+        }
+        else if (sf::Keyboard::Right == event.key.code)
+        {
+            m_simTimeMultiplier *= 1.5f;
+            m_simTimeMultiplier = std::clamp(m_simTimeMultiplier, 0.1f, 100000.0f);
+        }
+        else if (sf::Keyboard::L == event.key.code)
+        {
+            spawnMethHead(Motivation::lazy);
+        }
+        else if (sf::Keyboard::G == event.key.code)
+        {
+            spawnMethHead(Motivation::greedy);
+        }
+        else if (sf::Keyboard::S == event.key.code)
+        {
+            spawnMethHead(Motivation::lazy);
+            spawnMethHead(Motivation::lazy);
+            spawnMethHead(Motivation::lazy);
+            spawnMethHead(Motivation::lazy);
+
+            spawnMethHead(Motivation::greedy);
+            spawnMethHead(Motivation::greedy);
+            spawnMethHead(Motivation::greedy);
+            spawnMethHead(Motivation::greedy);
+        }
+        else if (sf::Keyboard::Escape == event.key.code)
+        {
+            m_window.close();
         }
     }
 
     void Simulator::update(const float elapsedSec)
     {
-        m_animationPlayer.update(elapsedSec);
-
-        for (auto & actor : m_actors)
+        if (Mode::Normal == m_mode)
         {
-            actor->update(elapsedSec, m_soundPlayer, m_random, m_animationPlayer);
+            m_animationPlayer.update(elapsedSec);
+        }
+
+        for (IActorUPtr_t & actor : m_actors)
+        {
+            if (!actor->update(elapsedSec, m_actorContext))
+            {
+                continue;
+            }
+
+            if (m_pickups.empty())
+            {
+                continue;
+            }
+
+            std::size_t pickupIndex(m_pickups.size() + 1);
+            for (std::size_t i(0); i < m_pickups.size(); ++i)
+            {
+                if (actor->boardPos() == m_pickups.at(i)->boardPos())
+                {
+                    pickupIndex = i;
+                    break;
+                }
+            }
+
+            if (pickupIndex >= m_pickups.size())
+            {
+                continue;
+            }
+
+            if (Mode::Normal == m_mode)
+            {
+                m_soundPlayer.play("coin", m_random);
+
+                const sf::FloatRect actorWindowBoundsOrig(
+                    m_displayVars.constants().boardPosToWindowRect(actor->boardPos()));
+
+                const sf::FloatRect actorWindowBoundsBigger(
+                    scaleRectInPlaceCopy(actorWindowBoundsOrig, 6.0f));
+
+                m_animationPlayer.play(m_random, "spark", actorWindowBoundsBigger);
+            }
+
+            m_pickups.at(pickupIndex)->changeActor(*actor);
+            m_pickups.erase(std::begin(m_pickups) + pickupIndex);
+
+            spawnLoot();
         }
 
         const Scores scores(calcScores());
         m_displayVars.update(elapsedSec, scores.lazy, scores.greedy);
     }
 
-    void Simulator::printConsoleStatus()
+    void Simulator::printStatus()
     {
+        if (m_framesSincePrevStatusCountMax < m_framesSincePrevStatusCount)
+        {
+            m_framesSincePrevStatusCountMax = m_framesSincePrevStatusCount;
+        }
+
         auto printWinnerPercentString = [&](const Scores & scores) {
             const int lowScore(std::min(scores.lazy, scores.greedy));
             if (0 == lowScore)
@@ -247,8 +445,8 @@ namespace methhead
 
         const Scores scores(calcScores());
 
-        std::cout << "fps=" << m_consoleStatusFrameCount;
-        std::cout << " (" << m_consoleStatusFrameCountMax << ")";
+        std::cout << "fps=" << m_framesSincePrevStatusCount;
+        std::cout << " (max=" << m_framesSincePrevStatusCountMax << ")";
         std::cout << ",   lazy=" << scores.lazy;
         std::cout << ",   greedy=" << scores.greedy;
 
@@ -270,21 +468,25 @@ namespace methhead
     {
         m_window.clear(sf::Color(64, 64, 64));
 
-        const sf::RenderStates renderState;
+        const sf::RenderStates renderStates;
 
-        m_displayVars.draw(m_window, renderState);
-
-        for (IActorUPtr_t & uptr : m_actors)
-        {
-            uptr->draw(m_window, renderState);
-        }
+        m_displayVars.draw(m_window, renderStates);
 
         for (IPickupUPtr_t & uptr : m_pickups)
         {
-            uptr->draw(m_window, renderState);
+            uptr->draw(m_window, renderStates);
         }
 
-        m_animationPlayer.draw(m_window, renderState);
+        // TODO Nel:  Shoul we partition /sort by image first?
+        for (IActorUPtr_t & uptr : m_actors)
+        {
+            uptr->draw(m_window, renderStates);
+        }
+
+        if (Mode::Normal == m_mode)
+        {
+            m_animationPlayer.draw(m_window, renderStates);
+        }
 
         m_window.display();
     }
@@ -307,5 +509,4 @@ namespace methhead
 
         return scores;
     }
-
 } // namespace methhead
