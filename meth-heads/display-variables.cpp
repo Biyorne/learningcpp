@@ -5,6 +5,7 @@
 #include "utils.hpp"
 
 #include <cassert>
+#include <iostream>
 
 namespace methhead
 {
@@ -13,15 +14,24 @@ namespace methhead
         , m_lazyScoreRectangle()
         , m_greedyScoreRectangle()
         , m_boardRectangles()
+        , m_fpsText(m_constants.default_text)
     {
         m_lazyScoreRectangle.setFillColor(m_constants.lazy_color);
         m_greedyScoreRectangle.setFillColor(m_constants.greedy_color);
         populateBoardCells();
+
+        m_fpsText.setFillColor(sf::Color::Magenta);
     }
 
     void DisplayVariables::update(const float, const int lazyScore, const int greedyScore)
     {
         setScoreBarsHeight(lazyScore, greedyScore);
+    }
+
+    void DisplayVariables::setFps(const std::size_t framesPerSecond)
+    {
+        m_fpsText.setString(std::to_string(framesPerSecond));
+        fit(m_fpsText, m_constants.fps_rect);
     }
 
     void DisplayVariables::draw(sf::RenderTarget & target, sf::RenderStates states) const
@@ -33,13 +43,15 @@ namespace methhead
         {
             target.draw(rectangle);
         }
+
+        target.draw(m_fpsText, states);
     }
 
     // TODO Minor optimization: Move some rect settings to the constructor
     void DisplayVariables::setScoreBarsHeight(const int lazyScore, const int greedyScore)
     {
         // split the rect into two halves for lazy vs greedy
-        sf::FloatRect rect(m_constants.score_window_rect);
+        sf::FloatRect rect(m_constants.score_rect);
 
         // make the width just under half to put a space between that looks nice
         sf::FloatRect lazyRect(rect);

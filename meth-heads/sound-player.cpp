@@ -11,13 +11,12 @@
 
 namespace methhead
 {
-
     SoundPlayer::SoundPlayer()
         : m_isMuted(false)
         , m_volume(0.0f)
-        , m_volumeMin(0.0f) // this is what sfml uses
-        , m_volumeMax(100.0f) // this is what sfml uses
-        , m_volumeInc(m_volumeMax / 10.0f) // only ten different vol levels possible
+        , m_volumeMin(0.0f)                 // this is what sfml uses
+        , m_volumeMax(100.0f)               // this is what sfml uses
+        , m_volumeInc(m_volumeMax / 10.0f)  // only ten different vol levels possible
         , m_fileExtensions(".ogg.flac.wav") // dots are required here
         , m_soundEffects()
     {
@@ -52,6 +51,22 @@ namespace methhead
         }
 
         sfx->sound.play();
+    }
+
+    void SoundPlayer::reset()
+    {
+        if (!isMuted())
+        {
+            muteButton();
+        }
+
+        for (auto & sfx : m_soundEffects)
+        {
+            sfx->sound.stop();
+        }
+
+        muteButton();
+        volume(m_volumeMax * 0.25f);
     }
 
     std::vector<std::size_t> SoundPlayer::findNameMatchingIndexes(const std::string & name) const
@@ -209,5 +224,4 @@ namespace methhead
 
         return ss.str();
     }
-
 } // namespace methhead

@@ -29,6 +29,7 @@ namespace methhead
         void run();
 
       private:
+        void spawnInitialPieces();
         bool willKeepRunning() const;
         void handleStatus();
         void printStatus();
@@ -40,6 +41,7 @@ namespace methhead
 
         void handleEvents();
         void handleEvent(const sf::Event & event);
+        void scaleTimeMultiplier(const float multiplyBy);
 
         void update(const float elapsedSec);
         void draw();
@@ -65,8 +67,11 @@ namespace methhead
         sf::Clock m_statusClock;
         std::size_t m_framesSincePrevStatusCount;
         std::size_t m_framesSincePrevStatusCountMax;
+        float m_statusIntervalSec;
 
         ActorContext m_actorContext;
+
+        std::size_t m_spinCount;
     };
 } // namespace methhead
 

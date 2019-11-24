@@ -4,7 +4,6 @@ UseTab: Never
 IndentWidth: 4
 
 AlignAfterOpenBracket: AlwaysBreak
-AlignConsecutiveAssignments: true
 AlignEscapedNewlines: Left
 AlignTrailingComments: true
 AllowAllParametersOfDeclarationOnNextLine: true

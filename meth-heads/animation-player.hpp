@@ -96,6 +96,8 @@ namespace methhead
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
+        void reset();
+
       private:
         void loadAnimationDirectories();
 

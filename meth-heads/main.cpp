@@ -4,8 +4,7 @@
 
 #include <cstddef>
 
-inline std::string makeImageFilename(const std::size_t) { return ""; }
-
+// TODO Nel:  Allow command line parameters to set the mode
 int main()
 {
     using namespace methhead;

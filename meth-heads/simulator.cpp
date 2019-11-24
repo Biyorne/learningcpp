@@ -21,7 +21,7 @@ namespace methhead
 {
     Simulator::Simulator(const Mode mode)
         : m_mode(mode)
-        , m_videoMode(1280u, 1024u, sf::VideoMode::getDesktopMode().bitsPerPixel)
+        , m_videoMode(1600u, 1200u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
         , m_random()
         , m_soundPlayer()
@@ -33,22 +33,16 @@ namespace methhead
         , m_statusClock()
         , m_framesSincePrevStatusCount(0)
         , m_framesSincePrevStatusCountMax(0)
+        , m_statusIntervalSec(1.0f)
         , m_actorContext(m_random, m_pickups, m_actors, m_displayVars.constants())
+        , m_spinCount(0)
     {
         if (Mode::Normal == m_mode)
         {
             m_window.create(m_videoMode, "Meth Heads", sf::Style::Default);
-            m_window.setFramerateLimit(60);
         }
 
-        const std::size_t initialLootCount(5);
-        for (std::size_t i(0); i < initialLootCount; ++i)
-        {
-            spawnLoot();
-        }
-
-        spawnMethHead(Motivation::lazy);
-        spawnMethHead(Motivation::greedy);
+        spawnInitialPieces();
     }
 
     void Simulator::run()
@@ -59,7 +53,13 @@ namespace methhead
             {
                 handleEvents();
 
-                const float actualElapsedSec(m_frameClock.getElapsedTime().asSeconds());
+                float actualElapsedSec(m_frameClock.getElapsedTime().asSeconds());
+                while (actualElapsedSec < std::numeric_limits<float>::epsilon())
+                {
+                    actualElapsedSec = m_frameClock.getElapsedTime().asSeconds();
+                    ++m_spinCount;
+                }
+
                 m_frameClock.restart();
                 const float simElapsedSec(actualElapsedSec * m_simTimeMultiplier);
 
@@ -69,10 +69,23 @@ namespace methhead
             }
             else
             {
-                update(0.5f);
-                handleStatus();
+                update(0.0f);
             }
+
+            handleStatus();
         }
+    }
+
+    void Simulator::spawnInitialPieces()
+    {
+        const std::size_t initialLootCount(5);
+        for (std::size_t i(0); i < initialLootCount; ++i)
+        {
+            spawnLoot();
+        }
+
+        spawnMethHead(Motivation::lazy);
+        spawnMethHead(Motivation::greedy);
     }
 
     bool Simulator::willKeepRunning() const
@@ -91,11 +104,34 @@ namespace methhead
     {
         ++m_framesSincePrevStatusCount;
 
-        if (m_statusClock.getElapsedTime().asSeconds() > 1.0f)
+        const float elapsedStatusTimeSec{ m_statusClock.getElapsedTime().asSeconds() };
+
+        if (elapsedStatusTimeSec > m_statusIntervalSec)
         {
-            printStatus();
+            if (m_framesSincePrevStatusCountMax < m_framesSincePrevStatusCount)
+            {
+                m_framesSincePrevStatusCountMax = m_framesSincePrevStatusCount;
+            }
+
+            if (Mode::Normal == m_mode)
+            {
+                const float fps(
+                    static_cast<float>(m_framesSincePrevStatusCount) / elapsedStatusTimeSec);
+
+                m_displayVars.setFps(static_cast<std::size_t>(fps));
+            }
+            else
+            {
+                printStatus();
+            }
+
             m_framesSincePrevStatusCount = 0;
             m_statusClock.restart();
+
+            if (m_spinCount > 0)
+            {
+                std::cout << "spin_count=" << m_spinCount << std::endl;
+            }
         }
     }
 
@@ -329,38 +365,54 @@ namespace methhead
         }
         else if (sf::Keyboard::Left == event.key.code)
         {
-            m_simTimeMultiplier *= 0.5f;
-            m_simTimeMultiplier = std::clamp(m_simTimeMultiplier, 0.1f, 100000.0f);
+            scaleTimeMultiplier(0.5f);
         }
         else if (sf::Keyboard::Right == event.key.code)
         {
-            m_simTimeMultiplier *= 1.5f;
-            m_simTimeMultiplier = std::clamp(m_simTimeMultiplier, 0.1f, 100000.0f);
-        }
-        else if (sf::Keyboard::L == event.key.code)
-        {
-            spawnMethHead(Motivation::lazy);
-        }
-        else if (sf::Keyboard::G == event.key.code)
-        {
-            spawnMethHead(Motivation::greedy);
+            scaleTimeMultiplier(1.5f);
         }
         else if (sf::Keyboard::S == event.key.code)
         {
             spawnMethHead(Motivation::lazy);
-            spawnMethHead(Motivation::lazy);
-            spawnMethHead(Motivation::lazy);
-            spawnMethHead(Motivation::lazy);
+            spawnMethHead(Motivation::greedy);
+        }
+        else if (sf::Keyboard::K == event.key.code)
+        {
+            if (!m_actors.empty())
+            {
+                m_actors.pop_back();
+            }
 
-            spawnMethHead(Motivation::greedy);
-            spawnMethHead(Motivation::greedy);
-            spawnMethHead(Motivation::greedy);
-            spawnMethHead(Motivation::greedy);
+            if (!m_pickups.empty())
+            {
+                m_pickups.pop_back();
+            }
+        }
+        else if (sf::Keyboard::R == event.key.code)
+        {
+            m_soundPlayer.reset();
+            m_animationPlayer.reset();
+            m_displayVars.setFps(0);
+            m_actors.clear();
+            m_pickups.clear();
+            m_frameClock.restart();
+            m_statusClock.restart();
+            m_framesSincePrevStatusCount = 0;
+            m_framesSincePrevStatusCountMax = 0;
+            m_spinCount = 0;
+            m_simTimeMultiplier = 1.0f;
+            spawnInitialPieces();
         }
         else if (sf::Keyboard::Escape == event.key.code)
         {
             m_window.close();
         }
+    }
+
+    void Simulator::scaleTimeMultiplier(const float multiplyBy)
+    {
+        m_simTimeMultiplier *= multiplyBy;
+        m_simTimeMultiplier = std::clamp(m_simTimeMultiplier, 0.1f, 100000.0f);
     }
 
     void Simulator::update(const float elapsedSec)
@@ -399,19 +451,26 @@ namespace methhead
 
             if (Mode::Normal == m_mode)
             {
-                m_soundPlayer.play("coin", m_random);
-
                 const sf::FloatRect actorWindowBoundsOrig(
                     m_displayVars.constants().boardPosToWindowRect(actor->boardPos()));
 
                 const sf::FloatRect actorWindowBoundsBigger(
                     scaleRectInPlaceCopy(actorWindowBoundsOrig, 6.0f));
 
-                m_animationPlayer.play(m_random, "spark", actorWindowBoundsBigger);
+                if (actor->motivation() == Motivation::lazy)
+                {
+                    m_soundPlayer.play("coins-1", m_random);
+                    m_animationPlayer.play(m_random, "spark-ball", actorWindowBoundsBigger);
+                }
+                else
+                {
+                    m_soundPlayer.play("coins-2", m_random);
+                    m_animationPlayer.play(m_random, "sparkle-burst", actorWindowBoundsBigger);
+                }
             }
 
             m_pickups.at(pickupIndex)->changeActor(*actor);
-            m_pickups.erase(std::begin(m_pickups) + pickupIndex);
+            m_pickups.erase(std::begin(m_pickups) + static_cast<std::ptrdiff_t>(pickupIndex));
 
             spawnLoot();
         }
@@ -422,11 +481,6 @@ namespace methhead
 
     void Simulator::printStatus()
     {
-        if (m_framesSincePrevStatusCountMax < m_framesSincePrevStatusCount)
-        {
-            m_framesSincePrevStatusCountMax = m_framesSincePrevStatusCount;
-        }
-
         auto printWinnerPercentString = [&](const Scores & scores) {
             const int lowScore(std::min(scores.lazy, scores.greedy));
             if (0 == lowScore)

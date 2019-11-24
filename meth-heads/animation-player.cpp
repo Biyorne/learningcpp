@@ -51,6 +51,14 @@ namespace methhead
         }
     }
 
+    void AnimationPlayer::reset()
+    {
+        for (Animation & anim : m_animations)
+        {
+            anim.is_finished = true;
+        }
+    }
+
     void AnimationPlayer::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {
         for (const Animation & anim : m_animations)
@@ -97,9 +105,9 @@ namespace methhead
     void AnimationPlayer::loadAnimationDirectory(
         const std::filesystem::directory_entry & dirEntry, const ParsedDirectoryName & parse)
     {
-        auto imageCache { std::make_unique<ImageCache>() };
+        auto imageCache{ std::make_unique<ImageCache>() };
         imageCache->animation_name = parse.name;
-        imageCache->frame_size = sf::Vector2f(parse.frame_size);
+        imageCache->frame_size     = sf::Vector2f(parse.frame_size);
 
         if (!loadAnimationImages(dirEntry, parse.frame_size, imageCache->images))
         {
@@ -226,10 +234,10 @@ namespace methhead
     {
         Animation & anim(getAvailableAnimation());
 
-        anim.is_finished = false;
-        anim.cache_index = cacheIndex;
-        anim.frame_index = 0;
-        anim.sec_elapsed = 0.0f;
+        anim.is_finished   = false;
+        anim.cache_index   = cacheIndex;
+        anim.frame_index   = 0;
+        anim.sec_elapsed   = 0.0f;
         anim.sec_per_frame = secPerFrame;
 
         anim.sprite.setPosition(pos);
@@ -238,11 +246,11 @@ namespace methhead
         const Image & firstImage(m_imageCaches.at(cacheIndex)->images.at(0));
         anim.sprite.setTexture(firstImage.texture);
 
-        const sf::IntRect rect { firstImage.rects.at(0) };
+        const sf::IntRect rect{ firstImage.rects.at(0) };
         anim.sprite.setTextureRect(rect);
 
-        const float horizScale { size.x / static_cast<float>(rect.width) };
-        const float vertScale { size.y / static_cast<float>(rect.height) };
+        const float horizScale{ size.x / static_cast<float>(rect.width) };
+        const float vertScale{ size.y / static_cast<float>(rect.height) };
         anim.sprite.setScale(horizScale, vertScale);
     }
 
@@ -270,7 +278,8 @@ namespace methhead
             return { animName, sf::Vector2i(width, height) };
         }
         catch (...)
-        {}
+        {
+        }
 
         return {};
     }
@@ -321,7 +330,7 @@ namespace methhead
             return;
         }
 
-        const auto & imageCache { m_imageCaches.at(anim.cache_index) };
+        const auto & imageCache{ m_imageCaches.at(anim.cache_index) };
 
         if (newFrameIndex > imageCache->frame_count)
         {
@@ -337,7 +346,7 @@ namespace methhead
     void AnimationPlayer::updateSprite(
         sf::Sprite & sprite, const ImageCache & imageCache, const std::size_t frameIndex) const
     {
-        std::size_t frameCounter { 0 };
+        std::size_t frameCounter{ 0 };
 
         for (const Image & image : imageCache.images)
         {
@@ -372,5 +381,4 @@ namespace methhead
         ss << "x" << frame_count;
         return ss.str();
     }
-
 } // namespace methhead
