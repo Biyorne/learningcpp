@@ -2,6 +2,7 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "display-variables.hpp"
 
+#include "meth-head.hpp"
 #include "utils.hpp"
 
 #include <cassert>
@@ -15,12 +16,22 @@ namespace methhead
         , m_greedyScoreRectangle()
         , m_boardRectangles()
         , m_fpsText(m_constants.default_text)
+        , m_pickupText(m_constants.default_text)
+        , m_pickupSprite(m_constants.loot_texture)
+        , m_actorSprite(m_constants.lazy_texture) // since both same, either works here
     {
-        m_lazyScoreRectangle.setFillColor(m_constants.lazy_color);
-        m_greedyScoreRectangle.setFillColor(m_constants.greedy_color);
         populateBoardCells();
 
         m_fpsText.setFillColor(sf::Color::Magenta);
+        m_pickupText.setFillColor(sf::Color::White);
+        m_lazyScoreRectangle.setFillColor(m_constants.lazy_color);
+        m_greedyScoreRectangle.setFillColor(m_constants.greedy_color);
+
+        m_pickupText.setStyle(sf::Text::Bold);
+
+        scale(m_pickupText, m_constants.cell_size);
+        scale(m_pickupSprite, m_constants.cell_size);
+        scale(m_actorSprite, m_constants.cell_size);
     }
 
     void DisplayVariables::update(const float, const int lazyScore, const int greedyScore)
@@ -34,17 +45,50 @@ namespace methhead
         fit(m_fpsText, m_constants.fps_rect);
     }
 
-    void DisplayVariables::draw(sf::RenderTarget & target, sf::RenderStates states) const
+    void DisplayVariables::draw(
+        const std::vector<IActorUPtr_t> & actors,
+        const std::vector<IPickupUPtr_t> & pickups,
+        sf::RenderTarget & target,
+        sf::RenderStates states) const
     {
-        target.draw(m_lazyScoreRectangle, states);
-        target.draw(m_greedyScoreRectangle, states);
-
         for (const sf::RectangleShape & rectangle : m_boardRectangles)
         {
             target.draw(rectangle);
         }
 
+        target.draw(m_lazyScoreRectangle, states);
+        target.draw(m_greedyScoreRectangle, states);
+
         target.draw(m_fpsText, states);
+
+        for (const IPickupUPtr_t & pickup : pickups)
+        {
+            const sf::FloatRect windowRect(m_constants.boardPosToWindowRect(pickup->boardPos()));
+
+            center(m_pickupSprite, windowRect);
+            target.draw(m_pickupSprite, states);
+
+            m_pickupText.setString(std::to_string(pickup->value()));
+            center(m_pickupText, windowRect);
+            target.draw(m_pickupText, states);
+        }
+
+        for (const IActorUPtr_t & actor : actors)
+        {
+            const sf::FloatRect windowRect(m_constants.boardPosToWindowRect(actor->boardPos()));
+
+            if (actor->motivation() == Motivation::lazy)
+            {
+                m_actorSprite.setTexture(m_constants.lazy_texture, true);
+            }
+            else
+            {
+                m_actorSprite.setTexture(m_constants.greedy_texture, true);
+            }
+
+            center(m_actorSprite, windowRect);
+            target.draw(m_actorSprite, states);
+        }
     }
 
     // TODO Minor optimization: Move some rect settings to the constructor

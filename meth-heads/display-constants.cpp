@@ -25,26 +25,6 @@ namespace methhead
         , lazy_color()
         , greedy_color()
     {
-        // load the font and setup the default text options
-        const std::string fontFilePath("font/gentium-plus.ttf");
-
-        if (font.loadFromFile(fontFilePath))
-        {
-            default_text.setFont(font);
-        }
-        else
-        {
-            std::cout << "Failed to load font: \"" << fontFilePath << "\"" << std::endl;
-        }
-
-        // this is a handy trick to calc the right font size when working with sfml
-        default_text.setCharacterSize(static_cast<unsigned int>(std::sqrt(windowSize.x)));
-
-        if (!loot_texture.loadFromFile("image/loot.png"))
-        {
-            std::cerr << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
-        }
-
         // shrink the drawable window rect a bit to create nice looking border
         const float windowBorderRatio(0.975f);
         scaleRectInPlace(inner_window_rect, windowBorderRatio);
@@ -92,8 +72,40 @@ namespace methhead
 
         score_rect = sf::FloatRect(scorePos, scoreSize);
 
+        // load the font and setup the default text options
+
+        const std::string fontFilePath("font/gentium-plus.ttf");
+
+        if (font.loadFromFile(fontFilePath))
+        {
+            default_text.setFont(font);
+        }
+        else
+        {
+            std::cout << "Failed to load font: \"" << fontFilePath << "\"" << std::endl;
+        }
+
+        // this is a handy trick to calc the right font size when working with sfml
+        default_text.setCharacterSize(static_cast<unsigned int>(std::sqrt(windowSize.x)));
+
+        //
+        if (!loot_texture.loadFromFile("image/loot.png"))
+        {
+            std::cerr << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
+        }
+
+        if (!lazy_texture.loadFromFile("image/head-1.png"))
+        {
+            std::cerr << "Unable to load lazy image: image/head-1.png" << std::endl;
+        }
+
+        if (!greedy_texture.loadFromFile("image/head-2.png"))
+        {
+            std::cerr << "Unable to load greedy image: image/head-2.png" << std::endl;
+        }
+
         // these colors should move after cleanup
-        lazy_color   = sf::Color(80, 80, 255);
+        lazy_color = sf::Color(80, 80, 255);
         greedy_color = sf::Color(100, 255, 100);
     }
 

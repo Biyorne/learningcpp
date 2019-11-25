@@ -32,7 +32,7 @@ namespace methhead
 
     //
 
-    struct IActor : public sf::Drawable
+    struct IActor
     {
         virtual ~IActor() = default;
 
@@ -40,29 +40,24 @@ namespace methhead
         virtual void score(const int value) = 0;
 
         virtual Motivation motivation() const = 0;
-
         virtual BoardPos_t boardPos() const = 0;
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
+        virtual float timeBetweenMovesSec() const = 0;
+        virtual void timeBetweenMovesSec(const float sec) = 0;
 
-        // returns true if the boardPos changed
-        virtual bool update(const float elapsedMs, const ActorContext & context) = 0;
+        virtual void update(const float elapsedMs, const ActorContext & context) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
 
     //
 
-    struct IPickup : public sf::Drawable
+    struct IPickup
     {
         virtual ~IPickup() = default;
 
         virtual void changeActor(IActor & actor) = 0;
-
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
-
         virtual BoardPos_t boardPos() const = 0;
-
         virtual int value() const = 0;
     };
 
@@ -148,52 +143,20 @@ namespace methhead
     class Loot : public IPickup
     {
       public:
-        Loot(
-            const std::string & imagePath,
-            const BoardPos_t & boardPos,
-            const sf::FloatRect & windowRect,
-            const int value,
-            const DisplayConstants & displayConstants)
-            : m_texture()
-            , m_sprite()
-            , m_value(value)
+        Loot(const BoardPos_t & boardPos, const int value)
+            : m_value(value)
             , m_boardPos(boardPos)
-            , m_text(displayConstants.default_text)
-        {
-            if (!m_texture.loadFromFile(imagePath))
-            {
-                throw std::runtime_error("Unable to load image: " + imagePath);
-            }
-
-            m_sprite.setTexture(m_texture, true);
-            fit(m_sprite, windowRect);
-            m_sprite.setColor(sf::Color(255, 255, 255, 127));
-
-            m_text.setFillColor(sf::Color::Yellow);
-            m_text.setString(std::to_string(m_value));
-            fit(m_text, windowRect);
-        }
+        {}
 
         virtual ~Loot() = default;
 
-        void changeActor(IActor & actor) override { actor.score(actor.score() + m_value); }
-
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
-        {
-            target.draw(m_sprite, states);
-            target.draw(m_text, states);
-        }
-
-        BoardPos_t boardPos() const final { return m_boardPos; }
-
-        int value() const final { return m_value; }
+        inline int value() const final { return m_value; }
+        inline BoardPos_t boardPos() const final { return m_boardPos; }
+        inline void changeActor(IActor & actor) override { actor.score(actor.score() + m_value); }
 
       private:
-        sf::Texture m_texture;
-        sf::Sprite m_sprite;
         int m_value;
         BoardPos_t m_boardPos;
-        sf::Text m_text;
     };
 
     //
@@ -201,30 +164,27 @@ namespace methhead
     class MethHeadBase : public IActor
     {
       protected:
-        MethHeadBase(
-            const std::string & imagePath,
+        explicit MethHeadBase(
             const BoardPos_t & boardPos,
-            const sf::FloatRect & windowRect,
-            const float waitBetweenActionsSec = 0.333f);
+            const float waitBetweenActionsSec = m_waitBetweenActionsSecDefault);
 
         virtual ~MethHeadBase() = default;
 
       public:
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const final;
-
-        // returns true if the boardPos changed
-        bool update(const float elapsedSec, const ActorContext & context) override;
+        void update(const float elapsedSec, const ActorContext & context) override;
 
         inline int score() const final { return m_score; }
         inline void score(const int value) final { m_score = value; }
+
+        inline float timeBetweenMovesSec() const final { return m_waitBetweenActionsSec; }
+        inline void timeBetweenMovesSec(const float sec) final { m_waitBetweenActionsSec = sec; }
 
         inline BoardPos_t boardPos() const final { return m_boardPos; }
 
       protected:
         bool isTimeToMove(const float elapsedSec);
 
-        // returns true if position changed
-        bool move(const ActorContext & context);
+        void move(const ActorContext & context);
 
         inline int walkDistanceTo(const BoardPos_t & to) const
         {
@@ -239,12 +199,10 @@ namespace methhead
 
       private:
         int m_score;
-        sf::Texture m_texture;
-        sf::Sprite m_sprite;
         BoardPos_t m_boardPos;
-
         float m_waitBetweenActionsSec;
         float m_elapsedSinceLastActionSec;
+        static inline const float m_waitBetweenActionsSecDefault{ 0.333f };
     };
 
     //
@@ -252,11 +210,8 @@ namespace methhead
     class Lazy : public MethHeadBase
     {
       public:
-        Lazy(
-            const std::string & imagePath,
-            const BoardPos_t & boardPos,
-            const sf::FloatRect & windowRect)
-            : MethHeadBase(imagePath, boardPos, windowRect)
+        explicit Lazy(const BoardPos_t & boardPos)
+            : MethHeadBase(boardPos)
         {}
 
         virtual ~Lazy() = default;
@@ -297,11 +252,8 @@ namespace methhead
     class Greedy : public MethHeadBase
     {
       public:
-        Greedy(
-            const std::string & imagePath,
-            const BoardPos_t & boardPos,
-            const sf::FloatRect & windowRect)
-            : MethHeadBase(imagePath, boardPos, windowRect)
+        explicit Greedy(const BoardPos_t & boardPos)
+            : MethHeadBase(boardPos)
         {}
 
         virtual ~Greedy() = default;

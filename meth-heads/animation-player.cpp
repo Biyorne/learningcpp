@@ -72,6 +72,8 @@ namespace methhead
 
     void AnimationPlayer::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {
+        states.blendMode = sf::BlendAdd;
+
         for (const Animation & anim : m_animations)
         {
             if (!anim.is_finished)

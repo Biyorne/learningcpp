@@ -181,6 +181,7 @@ namespace methhead
     template <typename T>
     void center(T & thing, const sf::FloatRect & rect)
     {
+        localOffsetCorrection(thing);
         const sf::Vector2f thingSize(thing.getGlobalBounds().width, thing.getGlobalBounds().height);
         const sf::Vector2f rectPos(rect.left, rect.top);
         const sf::Vector2f rectSize(rect.width, rect.height);

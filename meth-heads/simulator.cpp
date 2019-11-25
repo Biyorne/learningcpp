@@ -280,28 +280,14 @@ namespace methhead
 
         const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
 
-        const sf::FloatRect freeWindowRect(
-            m_displayVars.constants().boardPosToWindowRect(freeBoardPos));
-
-        // std::cout << "spawning " << ((Motivation::lazy == motive) ? "Lazy" : "Greedy")
-        //          << " methhead #" << m_pickups.size() << ", at pos=" << freeBoardPos
-        //          << ", inside rect=" << freeWindowRect << std::endl;
-
-        assert(isRealClose(freeWindowRect.width, m_displayVars.constants().cell_size.x, 2.0f));
-        assert(isRealClose(freeWindowRect.height, m_displayVars.constants().cell_size.y, 2.0f));
-
         if (motive == Motivation::lazy)
         {
-            IActorUPtr_t lazyUPtr(
-                std::make_unique<Lazy>("image/head-1.png", freeBoardPos, freeWindowRect));
-
+            IActorUPtr_t lazyUPtr(std::make_unique<Lazy>(freeBoardPos));
             m_actors.push_back(std::move(lazyUPtr));
         }
         else
         {
-            IActorUPtr_t greedyUPtr(
-                std::make_unique<Greedy>("image/head-2.png", freeBoardPos, freeWindowRect));
-
+            IActorUPtr_t greedyUPtr(std::make_unique<Greedy>(freeBoardPos));
             m_actors.push_back(std::move(greedyUPtr));
         }
     }
@@ -309,26 +295,10 @@ namespace methhead
     void Simulator::spawnLoot()
     {
         const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
+        const int lootAmount(m_random.fromTo(1, 100));
 
-        const sf::FloatRect freeWindowRect(
-            m_displayVars.constants().boardPosToWindowRect(freeBoardPos));
-
-        // std::cout << "spawning loot #" << m_pickups.size() << ", at pos=" << freeBoardPos
-        //          << ", inside rect=" << freeWindowRect;
-
-        assert(isRealClose(freeWindowRect.width, m_displayVars.constants().cell_size.x, 2.0f));
-        assert(isRealClose(freeWindowRect.height, m_displayVars.constants().cell_size.y, 2.0f));
-
-        IPickupUPtr_t pickupUPtr(std::make_unique<Loot>(
-            "image/loot.png",
-            freeBoardPos,
-            freeWindowRect,
-            m_random.fromTo(1, 100),
-            m_displayVars.constants()));
-
+        IPickupUPtr_t pickupUPtr(std::make_unique<Loot>(freeBoardPos, lootAmount));
         m_pickups.push_back(std::move(pickupUPtr));
-
-        // std::cout << ", of value=" << m_pickups.back()->value() << std::endl;
     }
 
     void Simulator::handleEvents()
@@ -367,27 +337,97 @@ namespace methhead
         }
         else if (sf::Keyboard::Left == event.key.code)
         {
-            scaleTimeMultiplier(0.5f);
+            if (event.key.shift)
+            {
+                scaleTimeMultiplier(0.5f);
+            }
+            else
+            {
+                for (const IActorUPtr_t & actor : m_actors)
+                {
+                    const float newWaitTimeSec(actor->timeBetweenMovesSec() * 1.1f);
+                    actor->timeBetweenMovesSec(newWaitTimeSec);
+                }
+            }
         }
         else if (sf::Keyboard::Right == event.key.code)
         {
-            scaleTimeMultiplier(1.5f);
+            if (event.key.shift)
+            {
+                scaleTimeMultiplier(1.25f);
+            }
+            else
+            {
+                for (const IActorUPtr_t & actor : m_actors)
+                {
+                    const float newWaitTimeSec(actor->timeBetweenMovesSec() * 0.9f);
+                    actor->timeBetweenMovesSec(newWaitTimeSec);
+                }
+            }
+        }
+        else if (sf::Keyboard::M == event.key.code)
+        {
+            if (event.key.shift)
+            {
+                if (!m_actors.empty())
+                {
+                    m_actors.pop_back();
+                }
+
+                if (!m_actors.empty())
+                {
+                    m_actors.pop_back();
+                }
+            }
+            else
+            {
+                spawnMethHead(Motivation::lazy);
+                spawnMethHead(Motivation::greedy);
+            }
+        }
+        else if (sf::Keyboard::L == event.key.code)
+        {
+            if (event.key.shift)
+            {
+                if (!m_pickups.empty())
+                {
+                    m_pickups.pop_back();
+                }
+            }
+            else
+            {
+                spawnLoot();
+            }
         }
         else if (sf::Keyboard::S == event.key.code)
         {
-            spawnMethHead(Motivation::lazy);
-            spawnMethHead(Motivation::greedy);
-        }
-        else if (sf::Keyboard::K == event.key.code)
-        {
-            if (!m_actors.empty())
+            if (event.key.shift)
             {
-                m_actors.pop_back();
-            }
+                if (!m_actors.empty())
+                {
+                    m_actors.pop_back();
+                }
 
-            if (!m_pickups.empty())
+                if (!m_actors.empty())
+                {
+                    m_actors.pop_back();
+                }
+
+                if (!m_pickups.empty())
+                {
+                    m_pickups.pop_back();
+                }
+
+                if (!m_pickups.empty())
+                {
+                    m_pickups.pop_back();
+                }
+            }
+            else
             {
-                m_pickups.pop_back();
+                spawnMethHead(Motivation::lazy);
+                spawnMethHead(Motivation::greedy);
+                spawnLoot();
             }
         }
         else if (sf::Keyboard::R == event.key.code)
@@ -430,53 +470,48 @@ namespace methhead
 
         for (IActorUPtr_t & actor : m_actors)
         {
-            if (!actor->update(elapsedSec, m_actorContext))
+            const BoardPos_t posBefore(actor->boardPos());
+            actor->update(elapsedSec, m_actorContext);
+            const BoardPos_t posAfter(actor->boardPos());
+
+            if (posBefore == posAfter)
             {
                 continue;
             }
 
-            if (m_pickups.empty())
-            {
-                continue;
-            }
+            const auto foundIter = std::find_if(
+                std::begin(m_pickups),
+                std::end(m_pickups),
+                [&posAfter](const IPickupUPtr_t & pickup) {
+                    return (pickup->boardPos() == posAfter);
+                });
 
-            std::size_t pickupIndex(m_pickups.size() + 1);
-            for (std::size_t i(0); i < m_pickups.size(); ++i)
-            {
-                if (actor->boardPos() == m_pickups.at(i)->boardPos())
-                {
-                    pickupIndex = i;
-                    break;
-                }
-            }
-
-            if (pickupIndex >= m_pickups.size())
+            if (foundIter == std::end(m_pickups))
             {
                 continue;
             }
 
             if (Mode::Normal == m_mode)
             {
-                const sf::FloatRect actorWindowBoundsOrig(
+                const sf::FloatRect actorWindowBounds(
                     m_displayVars.constants().boardPosToWindowRect(actor->boardPos()));
 
-                const sf::FloatRect actorWindowBoundsBigger(
-                    scaleRectInPlaceCopy(actorWindowBoundsOrig, 6.0f));
+                const sf::FloatRect animWindowBounds(scaleRectInPlaceCopy(actorWindowBounds, 4.0f));
 
                 if (actor->motivation() == Motivation::lazy)
                 {
                     m_soundPlayer.play("coins-1", m_random);
-                    m_animationPlayer.play(m_random, "spark-ball", actorWindowBoundsBigger);
+                    m_animationPlayer.play(m_random, "spark-ball", animWindowBounds);
                 }
                 else
                 {
                     m_soundPlayer.play("coins-2", m_random);
-                    m_animationPlayer.play(m_random, "sparkle-burst", actorWindowBoundsBigger);
+                    m_animationPlayer.play(m_random, "sparkle-burst", animWindowBounds);
                 }
             }
 
-            m_pickups.at(pickupIndex)->changeActor(*actor);
-            m_pickups.erase(std::begin(m_pickups) + static_cast<std::ptrdiff_t>(pickupIndex));
+            (*foundIter)->changeActor(*actor);
+            m_pickups.erase(foundIter);
 
             spawnLoot();
         }
@@ -530,18 +565,7 @@ namespace methhead
 
         const sf::RenderStates renderStates;
 
-        m_displayVars.draw(m_window, renderStates);
-
-        for (IPickupUPtr_t & uptr : m_pickups)
-        {
-            uptr->draw(m_window, renderStates);
-        }
-
-        // TODO Nel:  Shoul we partition/sort by image first?
-        for (IActorUPtr_t & uptr : m_actors)
-        {
-            uptr->draw(m_window, renderStates);
-        }
+        m_displayVars.draw(m_actors, m_pickups, m_window, renderStates);
 
         if (Mode::Normal == m_mode)
         {
