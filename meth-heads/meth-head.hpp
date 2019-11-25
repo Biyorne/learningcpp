@@ -71,17 +71,20 @@ namespace methhead
             const Random & rand,
             const std::vector<IPickupUPtr_t> & pups,
             const std::vector<IActorUPtr_t> & acts,
-            const DisplayConstants & disp)
+            const DisplayConstants & disp,
+            const Settings & sets)
             : random(rand)
             , actors(acts)
             , pickups(pups)
             , display(disp)
+            , settings(sets)
         {}
 
         const Random & random;
         const std::vector<IActorUPtr_t> & actors;
         const std::vector<IPickupUPtr_t> & pickups;
         const DisplayConstants & display;
+        const Settings & settings;
 
         // TODO Nell:
         //  What is the same about these two functions?

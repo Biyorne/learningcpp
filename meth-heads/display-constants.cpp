@@ -113,7 +113,6 @@ namespace methhead
     {
         const sf::Vector2f topLeftBoardWindowPos(board_rect.left, board_rect.top);
         const sf::Vector2f boardPosF(boardPos);
-
         return (topLeftBoardWindowPos + (boardPosF * cell_size));
     };
 

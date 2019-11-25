@@ -19,7 +19,7 @@ namespace methhead
     {
         struct Scores
         {
-            int lazy   = 0;
+            int lazy = 0;
             int greedy = 0;
         };
 
@@ -32,7 +32,7 @@ namespace methhead
         void spawnInitialPieces();
         bool willKeepRunning() const;
         void handleStatus();
-        void printStatus();
+        void printStatus(const std::size_t fps, const Scores & scores);
 
         BoardPos_t findRandomFreeBoardPos() const;
 
@@ -51,9 +51,10 @@ namespace methhead
       private:
         Mode m_mode;
         sf::VideoMode m_videoMode;
-
         sf::RenderWindow m_window;
+
         Random m_random;
+        Settings m_settings;
         SoundPlayer m_soundPlayer;
         AnimationPlayer m_animationPlayer;
         DisplayVariables m_displayVars;
@@ -63,15 +64,14 @@ namespace methhead
 
         sf::Clock m_frameClock;
         float m_simTimeMultiplier;
+        std::size_t m_spinCount;
+        std::size_t m_framesPerSecondMax;
 
         sf::Clock m_statusClock;
-        std::size_t m_framesSincePrevStatusCount;
-        std::size_t m_framesSincePrevStatusCountMax;
+        std::size_t m_framesSinceStatusCount;
         float m_statusIntervalSec;
 
         ActorContext m_actorContext;
-
-        std::size_t m_spinCount;
     };
 } // namespace methhead
 

@@ -50,6 +50,11 @@ namespace methhead
 {
     //
 
+    struct Settings
+    {
+        bool will_draw_board_with_verts = false; // Num1
+    };
+
     enum class Mode
     {
         Normal,

@@ -20,7 +20,7 @@ namespace methhead
         , m_pickupSprite(m_constants.loot_texture)
         , m_actorSprite(m_constants.lazy_texture) // since both same, either works here
     {
-        populateBoardCells();
+        populateBoardDrawables();
 
         m_fpsText.setFillColor(sf::Color::Magenta);
         m_pickupText.setFillColor(sf::Color::White);
@@ -34,26 +34,40 @@ namespace methhead
         scale(m_actorSprite, m_constants.cell_size);
     }
 
-    void DisplayVariables::update(const float, const int lazyScore, const int greedyScore)
-    {
-        setScoreBarsHeight(lazyScore, greedyScore);
-    }
-
     void DisplayVariables::setFps(const std::size_t framesPerSecond)
     {
         m_fpsText.setString(std::to_string(framesPerSecond));
         fit(m_fpsText, m_constants.fps_rect);
     }
 
+    void DisplayVariables::drawBoardUsingRectangleShapes(sf::RenderTarget & target) const
+    {
+        for (const sf::RectangleShape & rectangle : m_boardRectangles)
+        {
+            target.draw(rectangle);
+        }
+    }
+
+    void DisplayVariables::drawBorderUsingVerts(sf::RenderTarget & target) const
+    {
+        target.draw(&m_quadVerts[0], m_quadVerts.size(), sf::Quads);
+        target.draw(&m_lineVerts[0], m_lineVerts.size(), sf::Lines);
+    }
+
     void DisplayVariables::draw(
+        const bool willDrawDoardWithVerts,
         const std::vector<IActorUPtr_t> & actors,
         const std::vector<IPickupUPtr_t> & pickups,
         sf::RenderTarget & target,
         sf::RenderStates states) const
     {
-        for (const sf::RectangleShape & rectangle : m_boardRectangles)
+        if (willDrawDoardWithVerts)
         {
-            target.draw(rectangle);
+            drawBorderUsingVerts(target);
+        }
+        else
+        {
+            drawBoardUsingRectangleShapes(target);
         }
 
         target.draw(m_lazyScoreRectangle, states);
@@ -92,7 +106,7 @@ namespace methhead
     }
 
     // TODO Minor optimization: Move some rect settings to the constructor
-    void DisplayVariables::setScoreBarsHeight(const int lazyScore, const int greedyScore)
+    void DisplayVariables::updateScoreBars(const int lazyScore, const int greedyScore)
     {
         // split the rect into two halves for lazy vs greedy
         sf::FloatRect rect(m_constants.score_rect);
@@ -134,7 +148,7 @@ namespace methhead
         m_greedyScoreRectangle.setSize({ greedyRect.width, greedyRect.height });
     }
 
-    void DisplayVariables::populateBoardCells()
+    void DisplayVariables::populateBoardDrawables()
     {
         sf::RectangleShape rectangle;
 
@@ -162,6 +176,56 @@ namespace methhead
 
                 rectangle.setPosition(windowPos);
                 m_boardRectangles.push_back(rectangle);
+            }
+        }
+
+        // create verts for a single rectangle of the whole board background
+        // this quad has no lines to it, only a color filled into the center
+        {
+            const sf::FloatRect rect(m_constants.board_rect);
+
+            const sf::Vector2f topLeftPos(rect.left, rect.top);
+            const sf::Vector2f topRightPos((rect.left + rect.width), rect.top);
+            const sf::Vector2f botRightPos((rect.left + rect.width), (rect.top + rect.height));
+            const sf::Vector2f botLeftPos(rect.left, (rect.top + rect.height));
+
+            m_quadVerts.push_back(sf::Vertex(topLeftPos));
+            m_quadVerts.push_back(sf::Vertex(topRightPos));
+            m_quadVerts.push_back(sf::Vertex(botRightPos));
+            m_quadVerts.push_back(sf::Vertex(botLeftPos));
+
+            // set all quad verts created above to the same board background color
+            for (sf::Vertex & vert : m_quadVerts)
+            {
+                vert.color = m_constants.cell_background_color;
+            }
+        }
+
+        // create verts that separate the individual cells, and also draw the border around the
+        // rectangle/board/quad above
+        {
+            const sf::FloatRect rect(m_constants.board_rect);
+
+            for (std::size_t horiz(0); horiz <= m_constants.horiz_cell_count; ++horiz)
+            {
+                const float left(rect.left + (static_cast<float>(horiz) * m_constants.cell_size.x));
+
+                m_lineVerts.push_back({ { left, rect.top } });
+                m_lineVerts.push_back({ { left, (rect.top + rect.height) } });
+            }
+
+            for (std::size_t vert(0); vert <= m_constants.vert_cell_count; ++vert)
+            {
+                const float top(rect.top + (static_cast<float>(vert) * m_constants.cell_size.y));
+
+                m_lineVerts.push_back({ { rect.left, top } });
+                m_lineVerts.push_back({ { (rect.left + rect.width), top } });
+            }
+
+            // set all line verts created above to the same cell border/line color
+            for (sf::Vertex & vert : m_lineVerts)
+            {
+                vert.color = m_constants.cell_line_color;
             }
         }
     }

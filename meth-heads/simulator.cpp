@@ -24,18 +24,19 @@ namespace methhead
         , m_videoMode(1600u, 1200u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
         , m_random()
+        , m_settings()
         , m_soundPlayer(Mode::Normal == mode)
         , m_animationPlayer(Mode::Normal == mode)
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_actors()
         , m_frameClock()
         , m_simTimeMultiplier(1.0f)
-        , m_statusClock()
-        , m_framesSincePrevStatusCount(0)
-        , m_framesSincePrevStatusCountMax(0)
-        , m_statusIntervalSec(1.0f)
-        , m_actorContext(m_random, m_pickups, m_actors, m_displayVars.constants())
         , m_spinCount(0)
+        , m_framesPerSecondMax(0)
+        , m_statusClock()
+        , m_framesSinceStatusCount(0)
+        , m_statusIntervalSec(1.0f)
+        , m_actorContext(m_random, m_pickups, m_actors, m_displayVars.constants(), m_settings)
     {
         if (Mode::Normal == m_mode)
         {
@@ -102,7 +103,7 @@ namespace methhead
 
     void Simulator::handleStatus()
     {
-        ++m_framesSincePrevStatusCount;
+        ++m_framesSinceStatusCount;
 
         const float elapsedStatusTimeSec{ m_statusClock.getElapsedTime().asSeconds() };
 
@@ -111,30 +112,26 @@ namespace methhead
             return;
         }
 
-        if (m_framesSincePrevStatusCountMax < m_framesSincePrevStatusCount)
+        const Scores scores(calcScores());
+
+        const float fpsReal(static_cast<float>(m_framesSinceStatusCount) / elapsedStatusTimeSec);
+        const std::size_t fps(static_cast<std::size_t>(fpsReal));
+
+        if (m_framesPerSecondMax < fps)
         {
-            m_framesSincePrevStatusCountMax = m_framesSincePrevStatusCount;
+            m_framesPerSecondMax = fps;
         }
 
         if (Mode::Normal == m_mode)
         {
-            const float fps(
-                static_cast<float>(m_framesSincePrevStatusCount) / elapsedStatusTimeSec);
-
-            m_displayVars.setFps(static_cast<std::size_t>(fps));
-        }
-        else
-        {
-            printStatus();
+            m_displayVars.setFps(fps);
+            m_displayVars.updateScoreBars(scores.lazy, scores.greedy);
         }
 
-        m_framesSincePrevStatusCount = 0;
+        printStatus(fps, scores);
+
+        m_framesSinceStatusCount = 0;
         m_statusClock.restart();
-
-        if (m_spinCount > 0)
-        {
-            std::cout << "spin_count=" << m_spinCount << std::endl;
-        }
     }
 
     BoardPos_t Simulator::findRandomFreeBoardPos() const
@@ -335,6 +332,13 @@ namespace methhead
         {
             m_soundPlayer.volumeDown();
         }
+        else if (sf::Keyboard::Num1 == event.key.code)
+        {
+            m_settings.will_draw_board_with_verts = !m_settings.will_draw_board_with_verts;
+
+            std::cout << "Settings change:\t will_draw_board_with_verts=" << std::boolalpha
+                      << m_settings.will_draw_board_with_verts << std::endl;
+        }
         else if (sf::Keyboard::Left == event.key.code)
         {
             if (event.key.shift)
@@ -432,6 +436,10 @@ namespace methhead
         }
         else if (sf::Keyboard::R == event.key.code)
         {
+            std::cout << "Resetting everything..." << std::endl;
+
+            m_settings = Settings();
+
             m_soundPlayer.stopAll();
             m_animationPlayer.stopAll();
 
@@ -444,8 +452,7 @@ namespace methhead
 
             m_spinCount = 0;
             m_simTimeMultiplier = 1.0f;
-            m_framesSincePrevStatusCount = 0;
-            m_framesSincePrevStatusCountMax = 0;
+            m_framesSinceStatusCount = 0;
 
             spawnInitialPieces();
         }
@@ -515,48 +522,45 @@ namespace methhead
 
             spawnLoot();
         }
-
-        const Scores scores(calcScores());
-        m_displayVars.update(elapsedSec, scores.lazy, scores.greedy);
     }
 
-    void Simulator::printStatus()
+    void Simulator::printStatus(const std::size_t fps, const Scores & scores)
     {
-        auto printWinnerPercentString = [&](const Scores & scores) {
-            const int lowScore(std::min(scores.lazy, scores.greedy));
-            if (0 == lowScore)
-            {
-                return;
-            }
-
-            const float highScoreF(static_cast<float>(std::max(scores.lazy, scores.greedy)));
-            const float lowScoreF(static_cast<float>(lowScore));
-
-            const float winRatio(1.0f - (lowScoreF / highScoreF));
-            const std::size_t winPercent(static_cast<std::size_t>(winRatio * 100.0f));
-
-            std::cout << winPercent << "%";
-        };
-
-        const Scores scores(calcScores());
-
-        std::cout << "fps=" << m_framesSincePrevStatusCount;
-        std::cout << " (max=" << m_framesSincePrevStatusCountMax << ")";
+        std::cout << "fps=" << fps;
+        std::cout << " (max=" << m_framesPerSecondMax << ")";
         std::cout << ",   lazy=" << scores.lazy;
         std::cout << ",   greedy=" << scores.greedy;
 
-        if (scores.greedy > scores.lazy)
+        if ((0 == scores.greedy) || (0 == scores.lazy))
         {
-            std::cout << "\tGREEDY winning by ";
-            printWinnerPercentString(scores);
-        }
-        else if (scores.lazy > scores.greedy)
-        {
-            std::cout << "\tLAZY winning by ";
-            printWinnerPercentString(scores);
+            std::cout << std::endl;
+            return;
         }
 
-        std::cout << std::endl;
+        std::cout << "...";
+
+        if (scores.greedy == scores.lazy)
+        {
+            std::cout << "TIED" << std::endl;
+            return;
+        }
+
+        if (scores.greedy > scores.lazy)
+        {
+            std::cout << "GREEDY winning by ";
+        }
+        else
+        {
+            std::cout << "LAZY winning by ";
+        }
+
+        const int lowScore(std::min(scores.lazy, scores.greedy));
+        const float highScoreF(static_cast<float>(std::max(scores.lazy, scores.greedy)));
+        const float lowScoreF(static_cast<float>(lowScore));
+        const float winRatio(1.0f - (lowScoreF / highScoreF));
+        const std::size_t winPercent(static_cast<std::size_t>(winRatio * 100.0f));
+
+        std::cout << winPercent << "%" << std::endl;
     }
 
     void Simulator::draw()
@@ -565,7 +569,8 @@ namespace methhead
 
         const sf::RenderStates renderStates;
 
-        m_displayVars.draw(m_actors, m_pickups, m_window, renderStates);
+        m_displayVars.draw(
+            m_settings.will_draw_board_with_verts, m_actors, m_pickups, m_window, renderStates);
 
         if (Mode::Normal == m_mode)
         {

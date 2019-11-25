@@ -24,9 +24,10 @@ namespace methhead
         explicit DisplayVariables(const sf::Vector2u & windowSize);
         virtual ~DisplayVariables() = default;
 
-        void update(const float elapsedMs, const int lazyScore, const int greedyScore);
+        void updateScoreBars(const int lazyScore, const int greedyScore);
 
         void draw(
+            const bool willDrawDoardWithVerts,
             const std::vector<IActorUPtr_t> & actors,
             const std::vector<IPickupUPtr_t> & pickups,
             sf::RenderTarget & target,
@@ -37,14 +38,18 @@ namespace methhead
         void setFps(const std::size_t framesPerSecond);
 
       private:
-        void setScoreBarsHeight(const int lazyScore, const int greedyScore);
-        void populateBoardCells();
+        void populateBoardDrawables();
+        void drawBoardUsingRectangleShapes(sf::RenderTarget & target) const;
+        void drawBorderUsingVerts(sf::RenderTarget & target) const;
 
       private:
         DisplayConstants m_constants;
         sf::RectangleShape m_lazyScoreRectangle;
         sf::RectangleShape m_greedyScoreRectangle;
+
         std::vector<sf::RectangleShape> m_boardRectangles;
+        std::vector<sf::Vertex> m_quadVerts;
+        std::vector<sf::Vertex> m_lineVerts;
 
         sf::Text m_fpsText;
         mutable sf::Text m_pickupText;

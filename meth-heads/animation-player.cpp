@@ -247,6 +247,11 @@ namespace methhead
     {
         Animation & anim(getAvailableAnimation());
 
+        if (!anim.is_finished)
+        {
+            return;
+        }
+
         anim.is_finished = false;
         anim.cache_index = cacheIndex;
         anim.frame_index = 0;
@@ -307,7 +312,14 @@ namespace methhead
             }
         }
 
-        return m_animations.emplace_back();
+        if (m_animations.size() > 100)
+        {
+            return m_animations[0];
+        }
+        else
+        {
+            return m_animations.emplace_back();
+        }
     }
 
     std::vector<std::size_t>
