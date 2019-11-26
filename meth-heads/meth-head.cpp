@@ -83,26 +83,53 @@ namespace methhead
 
     void MethHeadBase::move(const SimContext & context)
     {
+        if (context.pickups.empty())
+        {
+            std::cout << "Methhead could not move because there are no pickups." << std::endl;
+            return;
+        }
+
         const BoardPos_t targetPickupBoardPos(findMostDesiredPickupBoardPos(context));
 
         if (targetPickupBoardPos == m_boardPos)
         {
-            std::cout << "Methhead could not move because there are no pickups." << std::endl;
-            assert(context.pickups.empty());
-            return;
-        }
-
-        const std::vector<BoardPos_t> possibleMoves(
-            makeAllBoardPosMovesToward(targetPickupBoardPos));
-
-        if (possibleMoves.empty())
-        {
-            std::cout << "Methhead cannot move because other methheads are in the way."
+            std::cout << "Methhead could not move because findMostDesiredPickupBoardPos() returned "
+                         "an error."
                       << std::endl;
 
             return;
         }
 
+        std::vector<BoardPos_t> possibleMoves(makeAllBoardPosMovesToward(targetPickupBoardPos));
+
+        possibleMoves.erase(
+            std::remove_if(
+                std::begin(possibleMoves),
+                std::end(possibleMoves),
+                [&context](const BoardPos_t & possiblePos) {
+                    return !context.display.isPosOnBoard(possiblePos);
+                }),
+            std::end(possibleMoves));
+
+        possibleMoves.erase(
+            std::remove_if(
+                std::begin(possibleMoves),
+                std::end(possibleMoves),
+                [&context](const BoardPos_t & possiblePos) {
+                    return context.isActorAt(possiblePos);
+                }),
+            std::end(possibleMoves));
+
+        if (possibleMoves.empty())
+        {
+            // std::cout << "Methhead cannot move because other methheads are in the way."
+            //          << std::endl;
+
+            return;
+        }
+
         m_boardPos = context.random.from(possibleMoves);
+
+        assert(context.display.isPosOnBoard(m_boardPos));
     }
 } // namespace methhead

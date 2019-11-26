@@ -43,6 +43,7 @@
 #include <type_traits>
 #include <utility>
 
+
 // Checks nameof_type compiler compatibility.
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
 #  undef NAMEOF_TYPE_SUPPORTED
@@ -69,7 +70,12 @@
 
 namespace nameof {
 
-// Enum value must be in range [NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]. By default NAMEOF_ENUM_RANGE_MIN = -128, NAMEOF_ENUM_RANGE_MAX = 128.
+    
+#ifndef WIN32
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#endif
+
+    // Enum value must be in range [NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]. By default NAMEOF_ENUM_RANGE_MIN = -128, NAMEOF_ENUM_RANGE_MAX = 128.
 // If need another range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MIN and NAMEOF_ENUM_RANGE_MAX.
 // If need another range for specific enum type, add specialization enum_range for necessary enum type.
 template <typename E>
@@ -405,15 +411,7 @@ constexpr int reflected_min() noexcept {
   static_assert(lhs > (std::numeric_limits<std::int16_t>::min)(), "nameof::enum_range requires min must be greater than INT16_MIN.");
   constexpr auto rhs = (std::numeric_limits<std::underlying_type_t<E>>::min)();
 
-#ifndef WIN32
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#endif
-
   return mixed_sign_less(lhs, rhs) ? rhs : lhs;
-
-#ifndef WIN32
-#pragma GCC diagnostic warning "-Wsign-conversion"
-#endif
 }
 
 template <typename E>
@@ -619,6 +617,12 @@ template <typename T>
 
   return name;
 }
+
+
+#ifndef WIN32
+#pragma GCC diagnostic warning "-Wsign-conversion"
+#endif
+
 
 } // namespace nameof
 

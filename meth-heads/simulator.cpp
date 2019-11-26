@@ -18,7 +18,7 @@ namespace methhead
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_actors()
         , m_frameClock()
-        , m_simTimeMultiplier(1.0f)
+        , m_simTimeMultiplier(0.3f)
         , m_spinCount(0)
         , m_framesPerSecondMax(0)
         , m_statusClock()
@@ -82,34 +82,21 @@ namespace methhead
 
     BoardPos_t Simulator::findRandomFreeBoardPos() const
     {
-        std::vector<sf::Vector2i> positions;
+        assert(isBoardFull() == false);
 
-        for (std::size_t vert(0); vert < m_displayVars.constants().vert_cell_count; ++vert)
+        std::vector<BoardPos_t> positions;
+
+        for (int vert(0); vert < m_displayVars.constants().cell_countsI.y; ++vert)
         {
-            for (std::size_t horiz(0); horiz < m_displayVars.constants().horiz_cell_count; ++horiz)
+            for (int horiz(0); horiz < m_displayVars.constants().cell_countsI.x; ++horiz)
             {
-                const sf::Vector2i pos(static_cast<int>(horiz), static_cast<int>(vert));
-                positions.push_back(pos);
+                const BoardPos_t pos(horiz, vert);
+
+                if (!m_context.isAnythingAt(pos))
+                {
+                    positions.push_back(pos);
+                }
             }
-        }
-
-        for (const IActorUPtr_t & actor : m_actors)
-        {
-            positions.erase(
-                std::remove(std::begin(positions), std::end(positions), actor->boardPos()),
-                std::end(positions));
-        }
-
-        for (const IPickupUPtr_t & pickup : m_pickups)
-        {
-            positions.erase(
-                std::remove(std::begin(positions), std::end(positions), pickup->boardPos()),
-                std::end(positions));
-        }
-
-        if (positions.empty())
-        {
-            return sf::Vector2i(-1, -1);
         }
 
         return m_random.from(positions);
@@ -119,36 +106,35 @@ namespace methhead
     {
         assert(Motivation::none != motive);
 
-        const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
-        if ((freeBoardPos.x < 0) || (freeBoardPos.y < 0))
+        if (isBoardFull())
         {
             return;
         }
 
+        const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
+
         if (motive == Motivation::lazy)
         {
-            IActorUPtr_t lazyUPtr(std::make_unique<Lazy>(freeBoardPos));
-            m_actors.push_back(std::move(lazyUPtr));
+            m_actors.push_back(std::make_unique<Lazy>(freeBoardPos));
         }
         else
         {
-            IActorUPtr_t greedyUPtr(std::make_unique<Greedy>(freeBoardPos));
-            m_actors.push_back(std::move(greedyUPtr));
+            m_actors.push_back(std::make_unique<Greedy>(freeBoardPos));
         }
     }
 
     void Simulator::spawnLoot()
     {
-        const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
-        if ((freeBoardPos.x < 0) || (freeBoardPos.y < 0))
+        if (isBoardFull())
         {
             return;
         }
 
+        const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
+
         const int lootAmount(m_random.fromTo(1, 100));
 
-        IPickupUPtr_t pickupUPtr(std::make_unique<Loot>(freeBoardPos, lootAmount));
-        m_pickups.push_back(std::move(pickupUPtr));
+        m_pickups.push_back(std::make_unique<Loot>(freeBoardPos, lootAmount));
     }
 
     void Simulator::handleEvents()
@@ -310,7 +296,7 @@ namespace methhead
     void Simulator::scaleTimeMultiplier(const float multiplyBy)
     {
         m_simTimeMultiplier *= multiplyBy;
-        m_simTimeMultiplier = std::clamp(m_simTimeMultiplier, 0.1f, 100000.0f);
+        m_simTimeMultiplier = std::clamp(m_simTimeMultiplier, 0.01f, 100000.0f);
     }
 
     void Simulator::update(const float elapsedSec)
@@ -399,10 +385,26 @@ namespace methhead
             m_displayVars.updateScoreBars(scores.lazy, scores.greedy);
         }
 
-        std::cout << "fps=" << fps;
-        std::cout << " (max=" << m_framesPerSecondMax << ")";
-        std::cout << ", lazy=" << scores.lazy;
-        std::cout << ", greedy=" << scores.greedy;
+        auto countOffBoard = [this](const auto & container) {
+            return std::count_if(
+                std::begin(container), std::end(container), [&](const auto & uptr) {
+                    const BoardPos_t boardPos{ uptr->boardPos() };
+                    return (
+                        (boardPos.x < 0) ||
+                        (boardPos.x >= m_displayVars.constants().cell_countsI.x) ||
+                        (boardPos.y < 0) ||
+                        (boardPos.y >= m_displayVars.constants().cell_countsI.y));
+                });
+        };
+
+        std::cout << "fps=" << fps << "/" << m_framesPerSecondMax;
+        std::cout << ", actors=" << m_actors.size() << "/" << countOffBoard(m_actors);
+        std::cout << ", pickups=" << m_pickups.size() << "/" << countOffBoard(m_pickups);
+
+        std::cout << ", free="
+                  << ((m_displayVars.constants().cell_counts.x *
+                       m_displayVars.constants().cell_counts.y) -
+                      (m_actors.size() + m_pickups.size()));
 
         if ((0 == scores.greedy) || (0 == scores.lazy))
         {
@@ -410,21 +412,19 @@ namespace methhead
             return;
         }
 
-        std::cout << "...";
-
         if (scores.greedy == scores.lazy)
         {
-            std::cout << "TIED" << std::endl;
+            std::cout << ", TIED" << std::endl;
             return;
         }
 
         if (scores.greedy > scores.lazy)
         {
-            std::cout << "GREEDY winning by ";
+            std::cout << ", GREEDY winning by ";
         }
         else
         {
-            std::cout << "LAZY winning by ";
+            std::cout << ", LAZY winning by ";
         }
 
         const int lowScore(std::min(scores.lazy, scores.greedy));

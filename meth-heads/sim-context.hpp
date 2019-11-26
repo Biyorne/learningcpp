@@ -34,6 +34,11 @@ namespace methhead
         bool isActorAt(const BoardPos_t & posToCheck) const;
         bool isPickupAt(const BoardPos_t & posToCheck) const;
 
+        inline bool isAnythingAt(const BoardPos_t & posToCheck) const
+        {
+            return (isActorAt(posToCheck) || isPickupAt(posToCheck));
+        }
+
         const Random & random;
         const std::vector<IActorUPtr_t> & actors;
         const std::vector<IPickupUPtr_t> & pickups;

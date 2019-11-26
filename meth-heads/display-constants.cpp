@@ -4,6 +4,7 @@
 
 #include "utils.hpp"
 
+#include <cassert>
 #include <cmath>
 #include <iostream>
 
@@ -14,8 +15,9 @@ namespace methhead
         , score_rect(0.0f, 0.0f, 0.0f, 0.0f)
         , board_rect(0.0f, 0.0f, 0.0f, 0.0f)
         , cell_size(0.0f, 0.0f)
-        , horiz_cell_count(20)
-        , vert_cell_count(20)
+        , cell_counts(20, 20)
+        , cell_countsI(cell_counts)
+        , cell_count(cell_counts.x * cell_counts.y)
         , cell_line_thickness(2.0f)
         , cell_line_color(220, 220, 220)
         , cell_background_color(32, 32, 32)
@@ -25,13 +27,16 @@ namespace methhead
         , lazy_color()
         , greedy_color()
     {
+        assert((cell_counts.x > 0) && (cell_counts.x < windowSize.x));
+        assert((cell_counts.y > 0) && (cell_counts.y < windowSize.y));
+
         // shrink the drawable window rect a bit to create nice looking border
         const float windowBorderRatio(0.975f);
         scaleRectInPlace(inner_window_rect, windowBorderRatio);
         const sf::Vector2f inner_window_pos(inner_window_rect.left, inner_window_rect.top);
 
         // figure out the cell size (must be square)
-        const std::size_t maxCellsPerSideCount(std::max(horiz_cell_count, vert_cell_count));
+        const std::size_t maxCellsPerSideCount(std::max(cell_counts.x, cell_counts.y));
 
         const float minBoardRectSideLength(
             std::min(inner_window_rect.width, inner_window_rect.height));
@@ -44,8 +49,7 @@ namespace methhead
 
         // once we know how many cells there are and what size they are, we can split the screen
         // into the score and board rects
-        const sf::Vector2f boardSize(
-            (horiz_cell_count * cell_size.x), (vert_cell_count * cell_size.y));
+        const sf::Vector2f boardSize((cell_counts.x * cell_size.x), (cell_counts.y * cell_size.y));
 
         const sf::Vector2f boardPos(
             ((inner_window_rect.left + inner_window_rect.width) - boardSize.x),
@@ -109,15 +113,21 @@ namespace methhead
         greedy_color = sf::Color(100, 255, 100);
     }
 
-    sf::Vector2f DisplayConstants::boardPosToWindowPos(const BoardPos_t & boardPos) const
+    sf::Vector2f DisplayConstants::boardPosToWindowPos(const BoardPos_t & boardPos) const noexcept
     {
         const sf::Vector2f topLeftBoardWindowPos(board_rect.left, board_rect.top);
         const sf::Vector2f boardPosF(boardPos);
         return (topLeftBoardWindowPos + (boardPosF * cell_size));
     };
 
-    sf::FloatRect DisplayConstants::boardPosToWindowRect(const BoardPos_t & boardPos) const
+    sf::FloatRect DisplayConstants::boardPosToWindowRect(const BoardPos_t & boardPos) const noexcept
     {
         return sf::FloatRect(boardPosToWindowPos(boardPos), cell_size);
+    }
+
+    bool DisplayConstants::isPosOnBoard(const BoardPos_t & pos) const noexcept
+    {
+        return (
+            (pos.x >= 0) && (pos.x < cell_countsI.x) && (pos.y >= 0) && (pos.y < cell_countsI.y));
     }
 } // namespace methhead

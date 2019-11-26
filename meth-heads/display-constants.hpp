@@ -13,8 +13,10 @@ namespace methhead
     {
         explicit DisplayConstants(const sf::Vector2u & windowSize);
 
-        sf::Vector2f boardPosToWindowPos(const BoardPos_t & boardPos) const;
-        sf::FloatRect boardPosToWindowRect(const BoardPos_t & boardPos) const;
+        sf::Vector2f boardPosToWindowPos(const BoardPos_t & boardPos) const noexcept;
+        sf::FloatRect boardPosToWindowRect(const BoardPos_t & boardPos) const noexcept;
+
+        bool isPosOnBoard(const BoardPos_t & pos) const noexcept;
 
         // just smaller than the actual window size to create a border
         sf::FloatRect inner_window_rect;
@@ -24,8 +26,9 @@ namespace methhead
         sf::FloatRect fps_rect;
 
         sf::Vector2f cell_size;
-        std::size_t horiz_cell_count;
-        std::size_t vert_cell_count;
+        sf::Vector2s cell_counts;
+        sf::Vector2i cell_countsI;
+        std::size_t cell_count;
 
         float cell_line_thickness;
         sf::Color cell_line_color;

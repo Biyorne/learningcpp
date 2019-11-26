@@ -155,14 +155,14 @@ namespace methhead
         rectangle.setFillColor(m_constants.cell_background_color);
         rectangle.setOutlineColor(m_constants.cell_line_color);
 
-        for (std::size_t horiz(0); horiz < m_constants.horiz_cell_count; ++horiz)
+        for (int horiz(0); horiz < m_constants.cell_countsI.x; ++horiz)
         {
-            for (std::size_t vert(0); vert < m_constants.vert_cell_count; ++vert)
+            for (int vert(0); vert < m_constants.cell_countsI.y; ++vert)
             {
                 const BoardPos_t boardPos(static_cast<int>(horiz), static_cast<int>(vert));
 
-                assert((boardPos.x >= 0) && (boardPos.x < m_constants.horiz_cell_count));
-                assert((boardPos.y >= 0) && (boardPos.y < m_constants.vert_cell_count));
+                assert((boardPos.x >= 0) && (boardPos.x < m_constants.cell_countsI.x));
+                assert((boardPos.y >= 0) && (boardPos.y < m_constants.cell_countsI.y));
 
                 const sf::Vector2f windowPos(m_constants.boardPosToWindowPos(boardPos));
 
@@ -204,7 +204,7 @@ namespace methhead
         {
             const sf::FloatRect rect(m_constants.board_rect);
 
-            for (std::size_t horiz(0); horiz <= m_constants.horiz_cell_count; ++horiz)
+            for (std::size_t horiz(0); horiz <= m_constants.cell_counts.x; ++horiz)
             {
                 const float left(rect.left + (static_cast<float>(horiz) * m_constants.cell_size.x));
 
@@ -212,7 +212,7 @@ namespace methhead
                 m_lineVerts.push_back({ { left, (rect.top + rect.height) } });
             }
 
-            for (std::size_t vert(0); vert <= m_constants.vert_cell_count; ++vert)
+            for (std::size_t vert(0); vert <= m_constants.cell_counts.y; ++vert)
             {
                 const float top(rect.top + (static_cast<float>(vert) * m_constants.cell_size.y));
 

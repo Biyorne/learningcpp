@@ -11,6 +11,8 @@
 // adding some things into the sf namespace...being naughty here...
 namespace sf
 {
+    using Vector2s = sf::Vector2<std::size_t>;
+
     template <typename T>
     inline bool operator<(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
     {

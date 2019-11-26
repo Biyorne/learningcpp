@@ -33,8 +33,8 @@ namespace methhead
 
         Settings()
         {
-            setupEntry(Enum::SpecialEffects, true);
-            setupEntry(Enum::DrawBoardWithVerts, false);
+            setupEntry(Enum::SpecialEffects, false);
+            setupEntry(Enum::DrawBoardWithVerts, true);
         }
 
         template <typename T>

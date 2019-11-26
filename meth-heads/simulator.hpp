@@ -50,6 +50,11 @@ namespace methhead
 
         Scores calcScores() const;
 
+        inline bool isBoardFull() const noexcept
+        {
+            return ((m_actors.size() + m_pickups.size()) >= m_displayVars.constants().cell_count);
+        }
+
       private:
         bool m_isModeNormal;
         bool m_willStop;
