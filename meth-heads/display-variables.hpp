@@ -16,6 +16,9 @@ namespace methhead
     using IActorUPtr_t = std::unique_ptr<IActor>;
     using IPickupUPtr_t = std::unique_ptr<IPickup>;
 
+    class Settings;
+    struct SimContext;
+
     //
 
     class DisplayVariables
@@ -24,18 +27,14 @@ namespace methhead
         explicit DisplayVariables(const sf::Vector2u & windowSize);
         virtual ~DisplayVariables() = default;
 
-        void updateScoreBars(const int lazyScore, const int greedyScore);
-
-        void draw(
-            const bool willDrawDoardWithVerts,
-            const std::vector<IActorUPtr_t> & actors,
-            const std::vector<IPickupUPtr_t> & pickups,
-            sf::RenderTarget & target,
-            sf::RenderStates states) const;
-
         const DisplayConstants & constants() const { return m_constants; }
 
         void setFps(const std::size_t framesPerSecond);
+
+        void updateScoreBars(const int lazyScore, const int greedyScore);
+
+        void draw(
+            const SimContext & context, sf::RenderTarget & target, sf::RenderStates states) const;
 
       private:
         void populateBoardDrawables();

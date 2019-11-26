@@ -24,6 +24,8 @@ namespace methhead
         {
             loadFiles();
         }
+
+        volume(m_volumeMax * 0.25f);
     }
 
     void SoundPlayer::play(const std::string & name, const Random & random)
@@ -55,18 +57,10 @@ namespace methhead
 
     void SoundPlayer::stopAll()
     {
-        if (!isMuted())
-        {
-            muteButton();
-        }
-
         for (auto & sfx : m_soundEffects)
         {
             sfx->sound.stop();
         }
-
-        muteButton();
-        volume(m_volumeMax * 0.25f);
     }
 
     void SoundPlayer::reload()
@@ -153,9 +147,6 @@ namespace methhead
                          "MP3s are not supported, only: "
                       << m_fileExtensions << std::endl;
         }
-
-        // start all sounds at quarter volume
-        volume(m_volumeMax * 0.25f);
     }
 
     void SoundPlayer::loadFile(const std::filesystem::directory_entry & entry)

@@ -1,12 +1,14 @@
 #ifndef METHHEADS_DISPLAY_CONSTANTS_HPP_INCLUDED
 #define METHHEADS_DISPLAY_CONSTANTS_HPP_INCLUDED
+//
+// display-constants.hpp
+//
+#include "utils.hpp"
 
 #include <SFML/Graphics.hpp>
 
 namespace methhead
 {
-    using BoardPos_t = sf::Vector2i;
-
     struct DisplayConstants
     {
         explicit DisplayConstants(const sf::Vector2u & windowSize);

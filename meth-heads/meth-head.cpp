@@ -22,10 +22,10 @@ namespace methhead
         , m_elapsedSinceLastActionSec(0.0f)
     {}
 
-    void MethHeadBase::update(const float elapsedSec, const ActorContext & context)
+    void MethHeadBase::update(const float elapsedSec, const SimContext & context)
     {
-        assert(context.isPickupAtBoardPos(m_boardPos) == false);
-        assert(context.isActorAtBoardPos(m_boardPos) == true);
+        assert(context.isPickupAt(m_boardPos) == false);
+        assert(context.isActorAt(m_boardPos) == true);
 
         if (isTimeToMove(elapsedSec))
         {
@@ -81,7 +81,7 @@ namespace methhead
         return moves;
     }
 
-    void MethHeadBase::move(const ActorContext & context)
+    void MethHeadBase::move(const SimContext & context)
     {
         const BoardPos_t targetPickupBoardPos(findMostDesiredPickupBoardPos(context));
 

@@ -58,7 +58,8 @@ namespace methhead
         const sf::Vector2f fpsSize(
             ((inner_window_rect.width - boardSize.x) - inner_window_pos.x), (boardSize.y * 0.1f));
 
-        const sf::Vector2f fpsPos(inner_window_pos);
+        const sf::Vector2f fpsPos(
+            inner_window_pos.x, (inner_window_rect.top + inner_window_rect.height - fpsSize.y));
 
         fps_rect = sf::FloatRect(fpsPos, fpsSize);
 
@@ -67,8 +68,7 @@ namespace methhead
         const sf::Vector2f scoreSize(
             fpsSize.x, ((boardSize.y - fpsSize.y) - inner_window_rect.top));
 
-        const sf::Vector2f scorePos(
-            fpsPos.x, ((inner_window_rect.top + inner_window_rect.height) - scoreSize.y));
+        const sf::Vector2f scorePos(inner_window_pos);
 
         score_rect = sf::FloatRect(scorePos, scoreSize);
 

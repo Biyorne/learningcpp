@@ -3,6 +3,7 @@
 
 #include "display-constants.hpp"
 #include "random.hpp"
+#include "sim-context.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -14,8 +15,6 @@
 
 namespace methhead
 {
-    struct ActorContext;
-
     // TODO in the end of all cleanup this should have a different home...
     //
     // also... TODO In the end, after cleaning up everything, there should be no more need for
@@ -45,7 +44,7 @@ namespace methhead
         virtual float timeBetweenMovesSec() const = 0;
         virtual void timeBetweenMovesSec(const float sec) = 0;
 
-        virtual void update(const float elapsedMs, const ActorContext & context) = 0;
+        virtual void update(const float elapsedMs, const SimContext & context) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
@@ -62,84 +61,6 @@ namespace methhead
     };
 
     using IPickupUPtr_t = std::unique_ptr<IPickup>;
-
-    //
-
-    struct ActorContext
-    {
-        ActorContext(
-            const Random & rand,
-            const std::vector<IPickupUPtr_t> & pups,
-            const std::vector<IActorUPtr_t> & acts,
-            const DisplayConstants & disp,
-            const Settings & sets)
-            : random(rand)
-            , actors(acts)
-            , pickups(pups)
-            , display(disp)
-            , settings(sets)
-        {}
-
-        const Random & random;
-        const std::vector<IActorUPtr_t> & actors;
-        const std::vector<IPickupUPtr_t> & pickups;
-        const DisplayConstants & display;
-        const Settings & settings;
-
-        // TODO Nell:
-        //  What is the same about these two functions?
-        //  What is different?
-        //  What opportunity or other-way-to-write the code does that reveal?
-        //  Would that be simpler/more-complex/faster/slower/better/worse?
-        bool isActorAtBoardPos(const BoardPos_t & posToCheck) const
-        {
-            // clang-format off
-            //const auto foundIter =
-            //    std::find(
-            //                std::begin(actors),
-            //                std::end(actors),
-            //                [&](const IActorUPtr_t & actor)
-            //                {
-            //                    return (actor->boardPos() == posToCheck);
-            //                }
-            //             );
-            // clang-format on
-
-            const auto foundIter =
-                std::find_if(std::begin(actors), std::end(actors), [&](const IActorUPtr_t & actor) {
-                    return (actor->boardPos() == posToCheck);
-                });
-
-            return (foundIter != std::end(actors));
-        }
-        //
-        bool isPickupAtBoardPos(const BoardPos_t & posToCheck) const
-        {
-            // clang-format off
-            //const auto foundIter =
-            //    std::find(
-            //                std::begin(pickups),
-            //                std::end(pickups),
-            //                [&](const IPickupUPtr_t & pickup)
-            //                {
-            //                    return (pickup->boardPos() == posToCheck);
-            //                }
-            //             );
-            // clang-format on
-
-            const auto foundIter = std::find_if(
-                std::begin(pickups), std::end(pickups), [&](const IPickupUPtr_t & pickup) {
-                    return (pickup->boardPos() == posToCheck);
-                });
-
-            return (foundIter != std::end(pickups));
-        }
-
-        bool isEitherAtBoardPos(const BoardPos_t & posToCheck) const
-        {
-            return (isActorAtBoardPos(posToCheck) || (isPickupAtBoardPos(posToCheck)));
-        }
-    };
 
     //
 
@@ -174,7 +95,7 @@ namespace methhead
         virtual ~MethHeadBase() = default;
 
       public:
-        void update(const float elapsedSec, const ActorContext & context) override;
+        void update(const float elapsedSec, const SimContext & context) override;
 
         inline int score() const final { return m_score; }
         inline void score(const int value) final { m_score = value; }
@@ -187,7 +108,7 @@ namespace methhead
       protected:
         bool isTimeToMove(const float elapsedSec);
 
-        void move(const ActorContext & context);
+        void move(const SimContext & context);
 
         inline int walkDistanceTo(const BoardPos_t & to) const
         {
@@ -196,7 +117,7 @@ namespace methhead
         }
 
         // returns the current position if there are no pickups
-        virtual BoardPos_t findMostDesiredPickupBoardPos(const ActorContext & context) const = 0;
+        virtual BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const = 0;
 
         std::vector<BoardPos_t> makeAllBoardPosMovesToward(const BoardPos_t & targetBoardPos) const;
 
@@ -222,7 +143,7 @@ namespace methhead
         inline Motivation motivation() const final { return Motivation::lazy; }
 
       private:
-        BoardPos_t findMostDesiredPickupBoardPos(const ActorContext & context) const final
+        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
         {
             if (context.pickups.empty())
             {
@@ -264,7 +185,7 @@ namespace methhead
         inline Motivation motivation() const final { return Motivation::greedy; }
 
       private:
-        BoardPos_t findMostDesiredPickupBoardPos(const ActorContext & context) const final
+        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
         {
             if (context.pickups.empty())
             {

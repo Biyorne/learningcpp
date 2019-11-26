@@ -61,7 +61,7 @@ namespace methhead
 
         struct Animation
         {
-            bool is_finished = false;
+            bool is_finished = true;
             sf::Sprite sprite;
             std::size_t cache_index = 0;
             std::size_t frame_index = 0;

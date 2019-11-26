@@ -5,6 +5,7 @@
 #include "display-variables.hpp"
 #include "meth-head.hpp"
 #include "random.hpp"
+#include "settings.hpp"
 #include "sound-player.hpp"
 #include "utils.hpp"
 
@@ -30,26 +31,29 @@ namespace methhead
 
       private:
         void spawnInitialPieces();
-        bool willKeepRunning() const;
-        void handleStatus();
-        void printStatus(const std::size_t fps, const Scores & scores);
+        float getSimFrameTimeElapsed();
+        void printStatus();
 
         BoardPos_t findRandomFreeBoardPos() const;
+        void scaleTimeMultiplier(const float multiplyBy);
 
         void spawnMethHead(const Motivation motive);
         void spawnLoot();
 
         void handleEvents();
         void handleEvent(const sf::Event & event);
-        void scaleTimeMultiplier(const float multiplyBy);
 
         void update(const float elapsedSec);
         void draw();
 
+        void handleActorPickup(IActor & actor);
+
         Scores calcScores() const;
 
       private:
-        Mode m_mode;
+        bool m_isModeNormal;
+        bool m_willStop;
+
         sf::VideoMode m_videoMode;
         sf::RenderWindow m_window;
 
@@ -71,7 +75,7 @@ namespace methhead
         std::size_t m_framesSinceStatusCount;
         float m_statusIntervalSec;
 
-        ActorContext m_actorContext;
+        SimContext m_context;
     };
 } // namespace methhead
 

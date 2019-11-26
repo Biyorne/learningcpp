@@ -3,6 +3,8 @@
 #include "display-variables.hpp"
 
 #include "meth-head.hpp"
+#include "settings.hpp"
+#include "sim-context.hpp"
 #include "utils.hpp"
 
 #include <cassert>
@@ -36,7 +38,7 @@ namespace methhead
 
     void DisplayVariables::setFps(const std::size_t framesPerSecond)
     {
-        m_fpsText.setString(std::to_string(framesPerSecond));
+        m_fpsText.setString("fps=" + std::to_string(framesPerSecond));
         fit(m_fpsText, m_constants.fps_rect);
     }
 
@@ -55,13 +57,9 @@ namespace methhead
     }
 
     void DisplayVariables::draw(
-        const bool willDrawDoardWithVerts,
-        const std::vector<IActorUPtr_t> & actors,
-        const std::vector<IPickupUPtr_t> & pickups,
-        sf::RenderTarget & target,
-        sf::RenderStates states) const
+        const SimContext & context, sf::RenderTarget & target, sf::RenderStates states) const
     {
-        if (willDrawDoardWithVerts)
+        if (context.settings.query(Settings::DrawBoardWithVerts))
         {
             drawBorderUsingVerts(target);
         }
@@ -75,7 +73,7 @@ namespace methhead
 
         target.draw(m_fpsText, states);
 
-        for (const IPickupUPtr_t & pickup : pickups)
+        for (const IPickupUPtr_t & pickup : context.pickups)
         {
             const sf::FloatRect windowRect(m_constants.boardPosToWindowRect(pickup->boardPos()));
 
@@ -87,7 +85,7 @@ namespace methhead
             target.draw(m_pickupText, states);
         }
 
-        for (const IActorUPtr_t & actor : actors)
+        for (const IActorUPtr_t & actor : context.actors)
         {
             const sf::FloatRect windowRect(m_constants.boardPosToWindowRect(actor->boardPos()));
 

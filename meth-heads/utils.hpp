@@ -2,6 +2,7 @@
 #define METHHEADS_UTILS_HPP_INCLUDED
 
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <string>
 
@@ -48,18 +49,15 @@ namespace sf
 
 namespace methhead
 {
-    //
-
-    struct Settings
-    {
-        bool will_draw_board_with_verts = false; // Num1
-    };
+    using BoardPos_t = sf::Vector2i;
 
     enum class Mode
     {
         Normal,
         SpeedTest
     };
+
+    //
 
     // string utils
 

@@ -4,12 +4,11 @@
 
 #include <cstddef>
 
-// TODO Nel:  Allow command line parameters to set the mode
 int main()
 {
     using namespace methhead;
 
-    Simulator simulator(Mode::Normal);
+    methhead::Simulator simulator(Mode::Normal);
     simulator.run();
 
     return EXIT_SUCCESS;
