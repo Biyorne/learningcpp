@@ -182,21 +182,12 @@ namespace methhead
         {
             const sf::FloatRect rect(m_constants.board_rect);
 
-            const sf::Vector2f topLeftPos(rect.left, rect.top);
-            const sf::Vector2f topRightPos((rect.left + rect.width), rect.top);
-            const sf::Vector2f botRightPos((rect.left + rect.width), (rect.top + rect.height));
-            const sf::Vector2f botLeftPos(rect.left, (rect.top + rect.height));
-
-            m_quadVerts.push_back(sf::Vertex(topLeftPos));
-            m_quadVerts.push_back(sf::Vertex(topRightPos));
-            m_quadVerts.push_back(sf::Vertex(botRightPos));
-            m_quadVerts.push_back(sf::Vertex(botLeftPos));
-
-            // set all quad verts created above to the same board background color
-            for (sf::Vertex & vert : m_quadVerts)
-            {
-                vert.color = m_constants.cell_background_color;
-            }
+            // clang-format off
+            m_quadVerts.push_back(sf::Vertex( { rect.left,                rect.top               }, m_constants.cell_background_color));
+            m_quadVerts.push_back(sf::Vertex( {(rect.left + rect.width),  rect.top               }, m_constants.cell_background_color));
+            m_quadVerts.push_back(sf::Vertex( {(rect.left + rect.width), (rect.top + rect.height)}, m_constants.cell_background_color));
+            m_quadVerts.push_back(sf::Vertex( { rect.left,               (rect.top + rect.height)}, m_constants.cell_background_color));
+            // clang-format on
         }
 
         // create verts that separate the individual cells, and also draw the border around the
@@ -204,27 +195,23 @@ namespace methhead
         {
             const sf::FloatRect rect(m_constants.board_rect);
 
+            // clang-format off
             for (std::size_t horiz(0); horiz <= m_constants.cell_counts.x; ++horiz)
             {
                 const float left(rect.left + (static_cast<float>(horiz) * m_constants.cell_size.x));
 
-                m_lineVerts.push_back({ { left, rect.top } });
-                m_lineVerts.push_back({ { left, (rect.top + rect.height) } });
+                m_lineVerts.push_back(sf::Vertex( { left, rect.top },                 m_constants.cell_line_color ));
+                m_lineVerts.push_back(sf::Vertex( { left, (rect.top + rect.height) }, m_constants.cell_line_color ));
             }
 
             for (std::size_t vert(0); vert <= m_constants.cell_counts.y; ++vert)
             {
                 const float top(rect.top + (static_cast<float>(vert) * m_constants.cell_size.y));
 
-                m_lineVerts.push_back({ { rect.left, top } });
-                m_lineVerts.push_back({ { (rect.left + rect.width), top } });
+                m_lineVerts.push_back(sf::Vertex( { rect.left,               top }, m_constants.cell_line_color ));
+                m_lineVerts.push_back(sf::Vertex( {(rect.left + rect.width), top }, m_constants.cell_line_color ));
             }
-
-            // set all line verts created above to the same cell border/line color
-            for (sf::Vertex & vert : m_lineVerts)
-            {
-                vert.color = m_constants.cell_line_color;
-            }
+            // clang-format on
         }
     }
 } // namespace methhead

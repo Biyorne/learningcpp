@@ -2,7 +2,10 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "simulator.hpp"
 
+#include <chrono>
+#include <ctime>
 #include <iostream>
+#include <sstream>
 
 namespace methhead
 {
@@ -23,20 +26,29 @@ namespace methhead
         , m_framesPerSecondMax(0)
         , m_statusClock()
         , m_framesSinceStatusCount(0)
-        , m_statusIntervalSec(2.0f)
+        , m_statusIntervalSec(1.0f)
         , m_context(m_random, m_actors, m_pickups, m_displayVars.constants(), m_settings)
+        , m_statsFile("timing.csv", std::fstream::trunc)
     {
         m_settings.printAll();
 
         if (m_isModeNormal)
         {
             m_window.create(m_videoMode, "Meth Heads", sf::Style::Default);
+
+            m_animationPlayer.load({ "orb", "puff" });
+            m_soundPlayer.load({ "coins-1", "coins-2" });
         }
 
         spawnInitialPieces();
 
-        m_animationPlayer.load({ "orb", "puff" });
-        m_soundPlayer.load({ "coins-1", "coins-2" });
+        const std::string statsHeader{
+            "year,month,day,hour,minute,sec,version,os,build,mode,draw_type,fps,"
+            "fps_max,actor_count,pickup_count,lazy_score,greedy_score"
+        };
+
+        std::cout << statsHeader << std::endl;
+        m_statsFile << statsHeader << std::endl;
     }
 
     void Simulator::run()
@@ -392,55 +404,51 @@ namespace methhead
             m_displayVars.updateScoreBars(scores.lazy, scores.greedy);
         }
 
-        auto countOffBoard = [this](const auto & container) {
-            return std::count_if(
-                std::begin(container), std::end(container), [&](const auto & uptr) {
-                    const BoardPos_t boardPos{ uptr->boardPos() };
-                    return (
-                        (boardPos.x < 0) ||
-                        (boardPos.x >= m_displayVars.constants().cell_countsI.x) ||
-                        (boardPos.y < 0) ||
-                        (boardPos.y >= m_displayVars.constants().cell_countsI.y));
-                });
-        };
+        std::ostringstream ss;
 
-        std::cout << "fps=" << fps << "/" << m_framesPerSecondMax;
-        std::cout << ", actors=" << m_actors.size() << "/" << countOffBoard(m_actors);
-        std::cout << ", pickups=" << m_pickups.size() << "/" << countOffBoard(m_pickups);
+        using namespace std::chrono;
+        const time_t nowCTime{ system_clock::to_time_t(system_clock::now()) };
 
-        std::cout << ", free="
-                  << ((m_displayVars.constants().cell_counts.x *
-                       m_displayVars.constants().cell_counts.y) -
-                      (m_actors.size() + m_pickups.size()));
+        ss << std::put_time(localtime(&nowCTime), "%Y,%m,%d,%H,%M,%S,");
 
-        if ((0 == scores.greedy) || (0 == scores.lazy))
+        ss << "v1,";
+
+#ifdef WIN32
+        ss << "Win,";
+#else
+        ss << "Mac,";
+#endif
+
+#ifdef NDEBUG
+        ss << "Release,";
+#else
+        ss << "Debug,";
+#endif
+
+        if (m_isModeNormal)
         {
-            std::cout << std::endl;
-            return;
-        }
-
-        if (scores.greedy == scores.lazy)
-        {
-            std::cout << ", TIED" << std::endl;
-            return;
-        }
-
-        if (scores.greedy > scores.lazy)
-        {
-            std::cout << ", GREEDY winning by ";
+            ss << "Normal,";
         }
         else
         {
-            std::cout << ", LAZY winning by ";
+            ss << "SpeedTest,";
         }
 
-        const int lowScore(std::min(scores.lazy, scores.greedy));
-        const float highScoreF(static_cast<float>(std::max(scores.lazy, scores.greedy)));
-        const float lowScoreF(static_cast<float>(lowScore));
-        const float winRatio(1.0f - (lowScoreF / highScoreF));
-        const std::size_t winPercent(static_cast<std::size_t>(winRatio * 100.0f));
+        if (m_settings.query(Settings::DrawBoardWithVerts))
+        {
+            ss << "DrawVerts,";
+        }
+        else
+        {
+            ss << "DrawRectangles,";
+        }
 
-        std::cout << winPercent << "%" << std::endl;
+        ss << fps << ',' << m_framesPerSecondMax << ',';
+        ss << m_actors.size() << ',' << m_pickups.size() << ',';
+        ss << scores.lazy << ',' << scores.greedy;
+
+        m_statsFile << ss.str() << std::endl;
+        std::cout << ss.str() << std::endl;
     }
 
     void Simulator::draw()

@@ -9,6 +9,7 @@
 #include "sound-player.hpp"
 #include "utils.hpp"
 
+#include <fstream>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
@@ -81,6 +82,8 @@ namespace methhead
         float m_statusIntervalSec;
 
         SimContext m_context;
+
+        std::ofstream m_statsFile;
     };
 } // namespace methhead
 
