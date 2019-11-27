@@ -73,9 +73,7 @@ namespace methhead
         explicit AnimationPlayer();
 
         void loadAll();
-
         bool load(const std::initializer_list<std::string> names);
-
         bool load(const std::string & name);
 
         void play(

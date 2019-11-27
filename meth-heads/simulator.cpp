@@ -36,6 +36,7 @@ namespace methhead
         spawnInitialPieces();
 
         m_animationPlayer.load({ "orb", "puff" });
+        m_soundPlayer.load({ "coins-1", "coins-2" });
     }
 
     void Simulator::run()
@@ -343,12 +344,14 @@ namespace methhead
             if (actor.motivation() == Motivation::lazy)
             {
                 m_soundPlayer.play("coins-1", m_random);
+
                 m_animationPlayer.play(
                     m_random, "puff", animWindowBounds, (actor.timeBetweenMovesSec() * 2.5f));
             }
             else
             {
                 m_soundPlayer.play("coins-2", m_random);
+
                 m_animationPlayer.play(
                     m_random, "orb", animWindowBounds, (actor.timeBetweenMovesSec() * 2.5f));
             }

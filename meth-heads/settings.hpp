@@ -34,7 +34,7 @@ namespace methhead
         Settings()
         {
             setupEntry(Enum::SpecialEffects, true);
-            setupEntry(Enum::DrawBoardWithVerts, true);
+            setupEntry(Enum::DrawBoardWithVerts, false);
         }
 
         template <typename T>

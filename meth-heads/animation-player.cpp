@@ -41,6 +41,11 @@ namespace methhead
 
     bool AnimationPlayer::load(const std::string & name)
     {
+        if (name.empty())
+        {
+            return false;
+        }
+
         if (!findNameMatchingIndexes(name).empty())
         {
             return true;

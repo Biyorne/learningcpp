@@ -17,11 +17,15 @@ namespace methhead
     class SoundPlayer
     {
       public:
-        SoundPlayer(const bool willLoad = true);
+        SoundPlayer();
 
         void play(const std::string & name, const Random & random);
+
         void stopAll();
-        void reload();
+        void loadAll();
+
+        bool load(const std::initializer_list<std::string> names);
+        bool load(const std::string & name);
 
         void volumeUp();
         void volumeDown();
@@ -35,8 +39,11 @@ namespace methhead
 
         std::vector<std::size_t> findNameMatchingIndexes(const std::string & name) const;
 
-        void loadFiles();
-        void loadFile(const std::filesystem::directory_entry & entry);
+        bool loadFiles(const std::string & nameMustMatch = "");
+
+        bool loadFile(
+            const std::filesystem::directory_entry & entry, const std::string & nameMustMatch = "");
+
         bool willLoad(const std::filesystem::directory_entry & entry) const;
 
         struct SoundEffect
