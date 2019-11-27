@@ -10,23 +10,45 @@
 
 namespace methhead
 {
-    AnimationPlayer::AnimationPlayer(const bool willLoad)
+    AnimationPlayer::AnimationPlayer()
         : m_animations()
         , m_imageCaches()
         , m_fileExtensions(".bmp/.jpg/.jpeg/.png/.tga")
-    {
-        if (willLoad)
-        {
-            loadAnimationDirectories();
-        }
-    }
+    {}
 
-    void AnimationPlayer::reload()
+    void AnimationPlayer::loadAll()
     {
         stopAll();
         m_animations.clear();
         m_imageCaches.clear();
         loadAnimationDirectories();
+    }
+
+    bool AnimationPlayer::load(const std::initializer_list<std::string> names)
+    {
+        bool success{ true };
+
+        for (const std::string & name : names)
+        {
+            if (!load(name))
+            {
+                success = false;
+            }
+        }
+
+        return success;
+    }
+
+    bool AnimationPlayer::load(const std::string & name)
+    {
+        if (!findNameMatchingIndexes(name).empty())
+        {
+            return true;
+        }
+
+        loadAnimationDirectories(name);
+
+        return !findNameMatchingIndexes(name).empty();
     }
 
     void AnimationPlayer::stopAll()
@@ -42,21 +64,40 @@ namespace methhead
         const std::string & name,
         const sf::Vector2f & pos,
         const sf::Vector2f & size,
-        const sf::Color & color,
-        const float secPerFrame)
+        const float secPerFrame,
+        const sf::Color & color)
     {
-        if (m_imageCaches.empty() || name.empty())
+        if (name.empty())
         {
+            std::cerr << "AnimationPlayer::play() called with an empty name." << std::endl;
             return;
         }
 
-        const std::vector<std::size_t> nameMatchingIndexes(findNameMatchingIndexes(name));
+        std::vector<std::size_t> nameMatchingIndexes(findNameMatchingIndexes(name));
         if (nameMatchingIndexes.empty())
         {
-            std::cerr << "AnimationPlayer Error:  .play(\"" << name
-                      << "\") called, but none had that name." << std::endl;
+            std::cout << "AnimationPlayer::play(\"" << name
+                      << "\") called, but none had that name...";
 
-            return;
+            if (!load(name))
+            {
+                std::cout << "AND none were found to load either.  So nothing will happen."
+                          << std::endl;
+
+                return;
+            }
+
+            nameMatchingIndexes = findNameMatchingIndexes(name);
+            if (nameMatchingIndexes.empty())
+            {
+                std::cout << "AND even though some anims with that name were loaded, something "
+                             "else went wrong away.  Go figure.  So nothing will happen."
+                          << std::endl;
+
+                return;
+            }
+
+            std::cout << "BUT was able to find and load it.  So it's gonna play now." << std::endl;
         }
 
         createAndStartPlaying(random.from(nameMatchingIndexes), pos, size, color, secPerFrame);
@@ -83,7 +124,7 @@ namespace methhead
         }
     }
 
-    void AnimationPlayer::loadAnimationDirectories()
+    void AnimationPlayer::loadAnimationDirectories(const std::string & nameToLoad)
     {
         std::filesystem::recursive_directory_iterator dirIter(
             std::filesystem::current_path(),
@@ -93,7 +134,7 @@ namespace methhead
         {
             ParsedDirectoryName parse;
 
-            if (willLoadAnimationDirectory(entry, parse))
+            if (willLoadAnimationDirectory(entry, parse, nameToLoad))
             {
                 loadAnimationDirectory(entry, parse);
             }
@@ -109,10 +150,31 @@ namespace methhead
     }
 
     bool AnimationPlayer::willLoadAnimationDirectory(
-        const std::filesystem::directory_entry & dirEntry, ParsedDirectoryName & parse) const
+        const std::filesystem::directory_entry & dirEntry,
+        ParsedDirectoryName & parse,
+        const std::string & nameToLoad) const
     {
         parse = parseDirectoryName(dirEntry.path().filename().string());
-        return (!parse.name.empty() && (parse.frame_size.x > 0) && (parse.frame_size.y > 0));
+
+        const bool isDirNameValid{ !parse.name.empty() && (parse.frame_size.x > 0) &&
+                                   (parse.frame_size.y > 0) };
+
+        if (!isDirNameValid)
+        {
+            return false;
+        }
+
+        if (!nameToLoad.empty())
+        {
+            if (startsWith(parse.name, nameToLoad))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     void AnimationPlayer::loadAnimationDirectory(
@@ -245,8 +307,13 @@ namespace methhead
         const sf::Color & color,
         const float secPerFrame)
     {
-        Animation & anim(getAvailableAnimation());
+        const ImageCache & cache{ *m_imageCaches.at(cacheIndex) };
+        if (cache.frame_count == 0)
+        {
+            return;
+        }
 
+        Animation & anim(getAvailableAnimation());
         if (!anim.is_finished)
         {
             return;
@@ -256,12 +323,12 @@ namespace methhead
         anim.cache_index = cacheIndex;
         anim.frame_index = 0;
         anim.sec_elapsed = 0.0f;
-        anim.sec_per_frame = secPerFrame;
+        anim.sec_per_frame = (secPerFrame / cache.frame_count);
 
         anim.sprite.setPosition(pos);
         anim.sprite.setColor(color);
 
-        const Image & firstImage(m_imageCaches.at(cacheIndex)->images.at(0));
+        const Image & firstImage(cache.images.at(0));
         anim.sprite.setTexture(firstImage.texture);
 
         const sf::IntRect rect{ firstImage.rects.at(0) };

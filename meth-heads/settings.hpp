@@ -33,7 +33,7 @@ namespace methhead
 
         Settings()
         {
-            setupEntry(Enum::SpecialEffects, false);
+            setupEntry(Enum::SpecialEffects, true);
             setupEntry(Enum::DrawBoardWithVerts, true);
         }
 

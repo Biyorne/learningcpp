@@ -13,8 +13,8 @@ namespace methhead
         , m_window()
         , m_random()
         , m_settings()
-        , m_soundPlayer(m_isModeNormal)
-        , m_animationPlayer(m_isModeNormal)
+        , m_soundPlayer()
+        , m_animationPlayer()
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_actors()
         , m_frameClock()
@@ -34,6 +34,8 @@ namespace methhead
         }
 
         spawnInitialPieces();
+
+        m_animationPlayer.load({ "orb", "puff" });
     }
 
     void Simulator::run()
@@ -341,12 +343,14 @@ namespace methhead
             if (actor.motivation() == Motivation::lazy)
             {
                 m_soundPlayer.play("coins-1", m_random);
-                m_animationPlayer.play(m_random, "puff", animWindowBounds);
+                m_animationPlayer.play(
+                    m_random, "puff", animWindowBounds, (actor.timeBetweenMovesSec() * 2.5f));
             }
             else
             {
                 m_soundPlayer.play("coins-2", m_random);
-                m_animationPlayer.play(m_random, "orb", animWindowBounds);
+                m_animationPlayer.play(
+                    m_random, "orb", animWindowBounds, (actor.timeBetweenMovesSec() * 2.5f));
             }
         }
 
