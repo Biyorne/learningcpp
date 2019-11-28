@@ -2,8 +2,6 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "simulator.hpp"
 
-#include <chrono>
-#include <ctime>
 #include <iostream>
 #include <sstream>
 
@@ -21,12 +19,11 @@ namespace methhead
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_actors()
         , m_frameClock()
-        , m_simTimeMultiplier(0.3f)
-        , m_spinCount(0)
         , m_framesPerSecondMax(0)
         , m_statusClock()
         , m_framesSinceStatusCount(0)
         , m_statusIntervalSec(1.0f)
+        , m_statusCount(0)
         , m_context(m_random, m_actors, m_pickups, m_displayVars.constants(), m_settings)
         , m_statsFile("timing.csv", std::fstream::trunc)
     {
@@ -42,10 +39,8 @@ namespace methhead
 
         spawnInitialPieces();
 
-        const std::string statsHeader{
-            "year,month,day,hour,minute,sec,version,os,build,mode,draw_type,fps,"
-            "fps_max,actor_count,pickup_count,lazy_score,greedy_score"
-        };
+        const std::string statsHeader{ "time,version,os,build,mode,draw_type,fps,"
+                                       "fps_max,actor_count,pickup_count,lazy_score,greedy_score" };
 
         std::cout << statsHeader << std::endl;
         m_statsFile << statsHeader << std::endl;
@@ -63,7 +58,7 @@ namespace methhead
             }
             else
             {
-                update(1.0f);
+                update(0.1f);
             }
 
             printStatus();
@@ -72,15 +67,15 @@ namespace methhead
 
     float Simulator::getSimFrameTimeElapsed()
     {
-        float actualElapsedSec(m_frameClock.getElapsedTime().asSeconds());
+        float actualElapsedSec{ 0.0f };
         while (actualElapsedSec < std::numeric_limits<float>::epsilon())
         {
             actualElapsedSec = m_frameClock.getElapsedTime().asSeconds();
-            ++m_spinCount;
         }
 
         m_frameClock.restart();
-        return (actualElapsedSec * m_simTimeMultiplier);
+
+        return actualElapsedSec;
     }
 
     void Simulator::spawnInitialPieces()
@@ -95,10 +90,8 @@ namespace methhead
         spawnMethHead(Motivation::greedy);
     }
 
-    BoardPos_t Simulator::findRandomFreeBoardPos() const
+    std::optional<BoardPos_t> Simulator::findRandomFreeBoardPos() const
     {
-        assert(isBoardFull() == false);
-
         std::vector<BoardPos_t> positions;
 
         for (int vert(0); vert < m_displayVars.constants().cell_countsI.y; ++vert)
@@ -114,42 +107,50 @@ namespace methhead
             }
         }
 
-        return m_random.from(positions);
+        if (positions.empty())
+        {
+            return std::nullopt;
+        }
+
+        const BoardPos_t randomFreeBoardPos{ m_random.from(positions) };
+
+        assert(m_context.isActorAt(randomFreeBoardPos) == false);
+        assert(m_context.isPickupAt(randomFreeBoardPos) == false);
+        assert(m_context.isAnythingAt(randomFreeBoardPos) == false);
+
+        return randomFreeBoardPos;
     }
 
     void Simulator::spawnMethHead(const Motivation motive)
     {
         assert(Motivation::none != motive);
 
-        if (isBoardFull())
+        const auto freeBoardPosOpt(findRandomFreeBoardPos());
+        if (!freeBoardPosOpt)
         {
             return;
         }
 
-        const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
-
         if (motive == Motivation::lazy)
         {
-            m_actors.push_back(std::make_unique<Lazy>(freeBoardPos));
+            m_actors.push_back(std::make_unique<Lazy>(freeBoardPosOpt.value()));
         }
         else
         {
-            m_actors.push_back(std::make_unique<Greedy>(freeBoardPos));
+            m_actors.push_back(std::make_unique<Greedy>(freeBoardPosOpt.value()));
         }
     }
 
     void Simulator::spawnLoot()
     {
-        if (isBoardFull())
+        const auto freeBoardPosOpt(findRandomFreeBoardPos());
+        if (!freeBoardPosOpt)
         {
             return;
         }
 
-        const BoardPos_t freeBoardPos(findRandomFreeBoardPos());
-
-        const int lootAmount(m_random.fromTo(1, 100));
-
-        m_pickups.push_back(std::make_unique<Loot>(freeBoardPos, lootAmount));
+        const int lootAmount{ m_random.fromTo(1, 100) };
+        m_pickups.push_back(std::make_unique<Loot>(freeBoardPosOpt.value(), lootAmount));
     }
 
     void Simulator::handleEvents()
@@ -189,32 +190,18 @@ namespace methhead
         }
         else if (sf::Keyboard::Left == event.key.code)
         {
-            if (event.key.shift)
+            for (const IActorUPtr_t & actor : m_actors)
             {
-                scaleTimeMultiplier(0.5f);
-            }
-            else
-            {
-                for (const IActorUPtr_t & actor : m_actors)
-                {
-                    const float newWaitTimeSec(actor->timeBetweenMovesSec() * 1.1f);
-                    actor->timeBetweenMovesSec(newWaitTimeSec);
-                }
+                const float newWaitTimeSec(actor->timeBetweenMovesSec() * 1.1f);
+                actor->timeBetweenMovesSec(newWaitTimeSec);
             }
         }
         else if (sf::Keyboard::Right == event.key.code)
         {
-            if (event.key.shift)
+            for (const IActorUPtr_t & actor : m_actors)
             {
-                scaleTimeMultiplier(1.25f);
-            }
-            else
-            {
-                for (const IActorUPtr_t & actor : m_actors)
-                {
-                    const float newWaitTimeSec(actor->timeBetweenMovesSec() * 0.9f);
-                    actor->timeBetweenMovesSec(newWaitTimeSec);
-                }
+                const float newWaitTimeSec(actor->timeBetweenMovesSec() * 0.9f);
+                actor->timeBetweenMovesSec(newWaitTimeSec);
             }
         }
         else if (sf::Keyboard::M == event.key.code)
@@ -284,23 +271,24 @@ namespace methhead
         }
         else if (sf::Keyboard::R == event.key.code)
         {
-            std::cout << "Resetting everything..." << std::endl;
+            std::cout << "Reset to initial state." << std::endl;
+
+            m_settings = Settings();
 
             m_soundPlayer.stopAll();
             m_animationPlayer.stopAll();
 
+            m_displayVars.setFps(0);
+            m_displayVars.updateScoreBars(0, 0);
+
             m_actors.clear();
             m_pickups.clear();
+            spawnInitialPieces();
 
-            m_displayVars.setFps(0);
-            m_frameClock.restart();
-            m_statusClock.restart();
-
-            m_spinCount = 0;
-            m_simTimeMultiplier = 1.0f;
             m_framesSinceStatusCount = 0;
 
-            spawnInitialPieces();
+            m_frameClock.restart();
+            m_statusClock.restart();
         }
         else
         {
@@ -308,19 +296,8 @@ namespace methhead
         }
     }
 
-    void Simulator::scaleTimeMultiplier(const float multiplyBy)
-    {
-        m_simTimeMultiplier *= multiplyBy;
-        m_simTimeMultiplier = std::clamp(m_simTimeMultiplier, 0.01f, 100000.0f);
-    }
-
     void Simulator::update(const float elapsedSec)
     {
-        if (m_isModeNormal && m_settings.query(Settings::SpecialEffects))
-        {
-            m_animationPlayer.update(elapsedSec);
-        }
-
         for (IActorUPtr_t & actor : m_actors)
         {
             const BoardPos_t posBefore(actor->boardPos());
@@ -329,12 +306,17 @@ namespace methhead
 
             if (posBefore != posAfter)
             {
-                handleActorPickup(*actor);
+                handleActorPickingUpSometing(*actor);
             }
+        }
+
+        if (m_isModeNormal && m_settings.query(Settings::SpecialEffects))
+        {
+            m_animationPlayer.update(elapsedSec);
         }
     }
 
-    void Simulator::handleActorPickup(IActor & actor)
+    void Simulator::handleActorPickingUpSometing(IActor & actor)
     {
         const auto foundIter = std::find_if(
             std::begin(m_pickups), std::end(m_pickups), [&](const IPickupUPtr_t & pickup) {
@@ -385,6 +367,21 @@ namespace methhead
             return;
         }
 
+        // for (const auto & actor : m_actors)
+        //{
+        //    std::cout << "\n\t actor="
+        //              << ((actor->motivation() == Motivation::lazy) ? "lazy" : "greedy") << "="
+        //              << actor->boardPos() << "$" << actor->score();
+        //}
+        //
+        // for (const auto & pickup : m_pickups)
+        //{
+        //    std::cout << "\n\t pickup= "
+        //              << "$" << pickup->value();
+        //}
+        //
+        // std::cout << std::endl;
+
         const Scores scores(calcScores());
 
         const float fpsReal(static_cast<float>(m_framesSinceStatusCount) / elapsedStatusTimeSec);
@@ -406,10 +403,7 @@ namespace methhead
 
         std::ostringstream ss;
 
-        using namespace std::chrono;
-        const time_t nowCTime{ system_clock::to_time_t(system_clock::now()) };
-
-        ss << std::put_time(localtime(&nowCTime), "%Y,%m,%d,%H,%M,%S,");
+        ss << m_statusCount++ << ',';
 
         ss << "v1,";
 

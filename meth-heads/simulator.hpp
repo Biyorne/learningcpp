@@ -10,6 +10,7 @@
 #include "utils.hpp"
 
 #include <fstream>
+#include <optional>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
@@ -35,8 +36,7 @@ namespace methhead
         float getSimFrameTimeElapsed();
         void printStatus();
 
-        BoardPos_t findRandomFreeBoardPos() const;
-        void scaleTimeMultiplier(const float multiplyBy);
+        std::optional<BoardPos_t> findRandomFreeBoardPos() const;
 
         void spawnMethHead(const Motivation motive);
         void spawnLoot();
@@ -47,14 +47,9 @@ namespace methhead
         void update(const float elapsedSec);
         void draw();
 
-        void handleActorPickup(IActor & actor);
+        void handleActorPickingUpSometing(IActor & actor);
 
         Scores calcScores() const;
-
-        inline bool isBoardFull() const noexcept
-        {
-            return ((m_actors.size() + m_pickups.size()) >= m_displayVars.constants().cell_count);
-        }
 
       private:
         bool m_isModeNormal;
@@ -73,13 +68,12 @@ namespace methhead
         std::vector<IPickupUPtr_t> m_pickups;
 
         sf::Clock m_frameClock;
-        float m_simTimeMultiplier;
-        std::size_t m_spinCount;
         std::size_t m_framesPerSecondMax;
 
         sf::Clock m_statusClock;
         std::size_t m_framesSinceStatusCount;
         float m_statusIntervalSec;
+        std::size_t m_statusCount;
 
         SimContext m_context;
 

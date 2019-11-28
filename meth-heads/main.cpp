@@ -8,7 +8,7 @@ int main()
 {
     using namespace methhead;
 
-    methhead::Simulator simulator(Mode::Normal);
+    methhead::Simulator simulator(Mode::SpeedTest);
     simulator.run();
 
     return EXIT_SUCCESS;

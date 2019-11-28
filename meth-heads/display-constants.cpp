@@ -24,6 +24,8 @@ namespace methhead
         , font()
         , default_text()
         , loot_texture()
+        , lazy_texture()
+        , greedy_texture()
         , lazy_color()
         , greedy_color()
     {

@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -110,16 +111,21 @@ namespace methhead
 
         void move(const SimContext & context);
 
-        inline int walkDistanceTo(const BoardPos_t & to) const
+        inline int walkDistanceBetween(const BoardPos_t & from, const BoardPos_t & to) const
         {
-            const BoardPos_t posDiff(to - m_boardPos);
+            const BoardPos_t posDiff(to - from);
             return (std::abs(posDiff.x) + std::abs(posDiff.y));
         }
 
-        // returns the current position if there are no pickups
-        virtual BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const = 0;
+        inline int walkDistanceTo(const BoardPos_t & to) const
+        {
+            return walkDistanceBetween(m_boardPos, to);
+        }
 
-        std::vector<BoardPos_t> makeAllBoardPosMovesToward(const BoardPos_t & targetBoardPos) const;
+        std::vector<BoardPos_t> makeAllPossibleBoardMoves(const SimContext & context) const;
+
+        virtual std::optional<BoardPos_t>
+            findMostDesiredPickupBoardPos(const SimContext & context) const = 0;
 
       private:
         int m_score;
@@ -143,31 +149,30 @@ namespace methhead
         inline Motivation motivation() const final { return Motivation::lazy; }
 
       private:
-        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
+        std::optional<BoardPos_t>
+            findMostDesiredPickupBoardPos(const SimContext & context) const final
         {
-            if (context.pickups.empty())
-            {
-                return boardPos();
-            }
-
-            std::size_t mostDesiredIndex(0);
-            int mostDesiredDistance(std::numeric_limits<int>::max());
+            std::size_t bestIndex(std::numeric_limits<int>::max());
+            int bestDistance(std::numeric_limits<int>::max());
 
             for (std::size_t i(0); i < context.pickups.size(); ++i)
             {
-                const IPickup & pickup(*context.pickups.at(i));
-                const int distance{ walkDistanceTo(pickup.boardPos()) };
+                const int distance{ walkDistanceTo(context.pickups.at(i)->boardPos()) };
 
-                if (distance < mostDesiredDistance)
+                if (distance < bestDistance)
                 {
-                    mostDesiredDistance = distance;
-                    mostDesiredIndex = i;
+                    bestIndex = i;
+                    bestDistance = distance;
                 }
             }
 
-            assert(mostDesiredDistance > 0);
+            if ((bestIndex >= context.pickups.size()) ||
+                (bestDistance == std::numeric_limits<int>::max()))
+            {
+                return std::nullopt;
+            }
 
-            return context.pickups.at(mostDesiredIndex)->boardPos();
+            return context.pickups.at(bestIndex)->boardPos();
         }
     };
 
@@ -185,27 +190,29 @@ namespace methhead
         inline Motivation motivation() const final { return Motivation::greedy; }
 
       private:
-        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
+        std::optional<BoardPos_t>
+            findMostDesiredPickupBoardPos(const SimContext & context) const final
         {
-            if (context.pickups.empty())
+            std::size_t bestIndex(std::numeric_limits<int>::max());
+            int bestValue(-1);
+
+            for (std::size_t i(0); i < context.pickups.size(); ++i)
             {
-                return boardPos();
+                const int value{ context.pickups.at(i)->value() };
+
+                if (value > bestValue)
+                {
+                    bestIndex = i;
+                    bestValue = value;
+                }
             }
 
-            std::vector<std::pair<int, BoardPos_t>> valuePositions;
-            for (const IPickupUPtr_t & pickup : context.pickups)
+            if ((bestIndex >= context.pickups.size()) || (bestValue < 0))
             {
-                valuePositions.push_back({ pickup->value(), pickup->boardPos() });
+                return std::nullopt;
             }
 
-            assert(valuePositions.size() == context.pickups.size());
-            assert(!valuePositions.empty());
-
-            std::sort(std::begin(valuePositions), std::end(valuePositions));
-
-            assert(valuePositions.front().first <= valuePositions.back().first);
-
-            return valuePositions.back().second;
+            return context.pickups.at(bestIndex)->boardPos();
         }
     };
 } // namespace methhead
