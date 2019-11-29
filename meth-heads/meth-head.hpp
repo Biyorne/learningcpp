@@ -132,6 +132,7 @@ namespace methhead
         BoardPos_t m_boardPos;
         float m_waitBetweenActionsSec;
         float m_elapsedSinceLastActionSec;
+
         static inline const float m_waitBetweenActionsSecDefault{ 0.333f };
     };
 

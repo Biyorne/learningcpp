@@ -92,43 +92,19 @@ namespace methhead
 
     std::optional<BoardPos_t> Simulator::findRandomFreeBoardPos() const
     {
-        std::vector<BoardPos_t> positions(m_displayVars.constants().cell_count);
+        std::vector<BoardPos_t> positions;
 
-        std::size_t index(0);
         for (int vert(0); vert < m_displayVars.constants().cell_countsI.y; ++vert)
         {
-            positions[index].y = vert;
             for (int horiz(0); horiz < m_displayVars.constants().cell_countsI.x; ++horiz)
             {
-                BoardPos_t & pos{ positions[index] };
-                pos.x = horiz;
-                pos.y = vert;
-                ++index;
+                const BoardPos_t pos(horiz, vert);
+
+                if (!m_context.isAnythingAt(pos))
+                {
+                    positions.push_back(pos);
+                }
             }
-        }
-
-        for (const auto & actor : m_actors)
-        {
-            const BoardPos_t & actorPos{ actor->boardPos() };
-
-            positions.erase(
-                std::remove_if(
-                    std::begin(positions),
-                    std::end(positions),
-                    [&](const BoardPos_t & posToCheck) { return (posToCheck == actorPos); }),
-                std::end(positions));
-        }
-
-        for (const auto & pickup : m_pickups)
-        {
-            const BoardPos_t & pickupPos{ pickup->boardPos() };
-
-            positions.erase(
-                std::remove_if(
-                    std::begin(positions),
-                    std::end(positions),
-                    [&](const BoardPos_t & posToCheck) { return (posToCheck == pickupPos); }),
-                std::end(positions));
         }
 
         if (positions.empty())

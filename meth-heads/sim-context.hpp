@@ -36,7 +36,7 @@ namespace methhead
 
         inline bool isAnythingAt(const BoardPos_t & posToCheck) const
         {
-            return (isActorAt(posToCheck) || isPickupAt(posToCheck));
+            return (isPickupAt(posToCheck) || isActorAt(posToCheck));
         }
 
         const Random & random;
