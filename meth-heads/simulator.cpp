@@ -17,6 +17,7 @@ namespace methhead
         , m_soundPlayer()
         , m_animationPlayer()
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
+        , m_positions(m_displayVars.constants(), m_random)
         , m_actors()
         , m_frameClock()
         , m_framesPerSecondMax(0)
@@ -25,7 +26,6 @@ namespace methhead
         , m_statusIntervalSec(1.0f)
         , m_statusCount(0)
         , m_context(m_random, m_actors, m_pickups, m_displayVars.constants(), m_settings)
-        , m_statsFile("timing.csv", std::fstream::trunc)
     {
         m_settings.printAll();
 
@@ -38,12 +38,13 @@ namespace methhead
         }
 
         spawnInitialPieces();
+    }
 
-        const std::string statsHeader{ "time,version,os,build,mode,draw_type,fps,"
-                                       "fps_max,actor_count,pickup_count,lazy_score,greedy_score" };
-
-        std::cout << statsHeader << std::endl;
-        m_statsFile << statsHeader << std::endl;
+    void Simulator::spawnInitialPieces()
+    {
+        spawnLoot(5);
+        spawnMethHead(Motivation::lazy, 1);
+        spawnMethHead(Motivation::greedy, 1);
     }
 
     void Simulator::run()
@@ -63,6 +64,8 @@ namespace methhead
 
             printStatus();
         }
+
+        m_window.close();
     }
 
     float Simulator::getSimFrameTimeElapsed()
@@ -78,79 +81,85 @@ namespace methhead
         return actualElapsedSec;
     }
 
-    void Simulator::spawnInitialPieces()
-    {
-        const std::size_t initialLootCount(5);
-        for (std::size_t i(0); i < initialLootCount; ++i)
-        {
-            spawnLoot();
-        }
-
-        spawnMethHead(Motivation::lazy);
-        spawnMethHead(Motivation::greedy);
-    }
-
-    std::optional<BoardPos_t> Simulator::findRandomFreeBoardPos() const
-    {
-        std::vector<BoardPos_t> positions;
-
-        for (int vert(0); vert < m_displayVars.constants().cell_countsI.y; ++vert)
-        {
-            for (int horiz(0); horiz < m_displayVars.constants().cell_countsI.x; ++horiz)
-            {
-                const BoardPos_t pos(horiz, vert);
-
-                if (!m_context.isAnythingAt(pos))
-                {
-                    positions.push_back(pos);
-                }
-            }
-        }
-
-        if (positions.empty())
-        {
-            return std::nullopt;
-        }
-
-        const BoardPos_t randomFreeBoardPos{ m_random.from(positions) };
-
-        assert(m_context.isActorAt(randomFreeBoardPos) == false);
-        assert(m_context.isPickupAt(randomFreeBoardPos) == false);
-        assert(m_context.isAnythingAt(randomFreeBoardPos) == false);
-
-        return randomFreeBoardPos;
-    }
-
-    void Simulator::spawnMethHead(const Motivation motive)
+    void Simulator::spawnMethHead(const Motivation motive, const std::size_t count)
     {
         assert(Motivation::none != motive);
 
-        const auto freeBoardPosOpt(findRandomFreeBoardPos());
-        if (!freeBoardPosOpt)
+        for (std::size_t i(0); i < count; ++i)
         {
-            return;
-        }
+            const auto freeBoardPosOpt(m_positions.findRandomFreeAndOccupy());
+            if (!freeBoardPosOpt)
+            {
+                break;
+            }
 
-        if (motive == Motivation::lazy)
-        {
-            m_actors.push_back(std::make_unique<Lazy>(freeBoardPosOpt.value()));
-        }
-        else
-        {
-            m_actors.push_back(std::make_unique<Greedy>(freeBoardPosOpt.value()));
+            assert(m_context.isAnythingAt(freeBoardPosOpt.value()) == false);
+            assert(m_positions.isFree(freeBoardPosOpt.value()) == false);
+
+            if (motive == Motivation::lazy)
+            {
+                m_actors.push_back(std::make_unique<Lazy>(freeBoardPosOpt.value()));
+            }
+            else
+            {
+                m_actors.push_back(std::make_unique<Greedy>(freeBoardPosOpt.value()));
+            }
+
+            assert(m_context.isActorAt(freeBoardPosOpt.value()) == true);
+            assert(m_context.isPickupAt(freeBoardPosOpt.value()) == false);
+            assert(m_positions.isFree(freeBoardPosOpt.value()) == false);
         }
     }
 
-    void Simulator::spawnLoot()
+    void Simulator::spawnLoot(const std::size_t count)
     {
-        const auto freeBoardPosOpt(findRandomFreeBoardPos());
-        if (!freeBoardPosOpt)
+        for (std::size_t i(0); i < count; ++i)
         {
-            return;
-        }
+            const auto freeBoardPosOpt(m_positions.findRandomFreeAndOccupy());
+            if (!freeBoardPosOpt)
+            {
+                break;
+            }
 
-        const int lootAmount{ m_random.fromTo(1, 100) };
-        m_pickups.push_back(std::make_unique<Loot>(freeBoardPosOpt.value(), lootAmount));
+            assert(m_context.isAnythingAt(freeBoardPosOpt.value()) == false);
+            assert(m_positions.isFree(freeBoardPosOpt.value()) == false);
+
+            const int lootAmount{ m_random.fromTo(1, 100) };
+
+            m_pickups.push_back(std::make_unique<Loot>(freeBoardPosOpt.value(), lootAmount));
+
+            assert(m_context.isActorAt(freeBoardPosOpt.value()) == false);
+            assert(m_context.isPickupAt(freeBoardPosOpt.value()) == true);
+            assert(m_positions.isFree(freeBoardPosOpt.value()) == false);
+        }
+    }
+
+    void Simulator::killMethHead(const std::size_t count)
+    {
+        for (std::size_t i(0); i < count; ++i)
+        {
+            if (m_actors.empty())
+            {
+                break;
+            }
+
+            m_positions.free(m_actors.back()->boardPos());
+            m_actors.pop_back();
+        }
+    }
+
+    void Simulator::killLoot(const std::size_t count)
+    {
+        for (std::size_t i(0); i < count; ++i)
+        {
+            if (m_pickups.empty())
+            {
+                break;
+            }
+
+            m_positions.free(m_pickups.back()->boardPos());
+            m_pickups.pop_back();
+        }
     }
 
     void Simulator::handleEvents()
@@ -208,15 +217,7 @@ namespace methhead
         {
             if (event.key.shift)
             {
-                if (!m_actors.empty())
-                {
-                    m_actors.pop_back();
-                }
-
-                if (!m_actors.empty())
-                {
-                    m_actors.pop_back();
-                }
+                killMethHead(2);
             }
             else
             {
@@ -228,45 +229,25 @@ namespace methhead
         {
             if (event.key.shift)
             {
-                if (!m_pickups.empty())
-                {
-                    m_pickups.pop_back();
-                }
+                killLoot(10);
             }
             else
             {
-                spawnLoot();
+                spawnLoot(10);
             }
         }
         else if (sf::Keyboard::S == event.key.code)
         {
             if (event.key.shift)
             {
-                if (!m_actors.empty())
-                {
-                    m_actors.pop_back();
-                }
-
-                if (!m_actors.empty())
-                {
-                    m_actors.pop_back();
-                }
-
-                if (!m_pickups.empty())
-                {
-                    m_pickups.pop_back();
-                }
-
-                if (!m_pickups.empty())
-                {
-                    m_pickups.pop_back();
-                }
+                killMethHead(2);
+                killLoot(2);
             }
             else
             {
                 spawnMethHead(Motivation::lazy);
                 spawnMethHead(Motivation::greedy);
-                spawnLoot();
+                spawnLoot(2);
             }
         }
         else if (sf::Keyboard::R == event.key.code)
@@ -274,6 +255,8 @@ namespace methhead
             std::cout << "Reset to initial state." << std::endl;
 
             m_settings = Settings();
+
+            m_positions.reset();
 
             m_soundPlayer.stopAll();
             m_animationPlayer.stopAll();
@@ -306,7 +289,33 @@ namespace methhead
 
             if (posBefore != posAfter)
             {
+                assert(m_context.isActorAt(posBefore) == false);
+                assert(m_context.isPickupAt(posBefore) == false);
+                assert(m_positions.isFree(posBefore) == false);
+                //
+                assert(m_context.isActorAt(posAfter) == true);
+
+                if (m_context.isPickupAt(posAfter))
+                {
+                    assert(m_positions.isFree(posAfter) == false);
+                }
+                else
+                {
+                    assert(m_positions.isFree(posAfter) == true);
+                }
+
+                m_positions.move(posBefore, posAfter);
+
+                assert(m_context.isActorAt(posBefore) == false);
+                assert(m_context.isPickupAt(posBefore) == false);
+                assert(m_positions.isFree(posBefore) == true);
+                //
+                assert(m_context.isActorAt(posAfter) == true);
+                assert(m_positions.isFree(posAfter) == false);
+
                 handleActorPickingUpSometing(*actor);
+
+                assert(m_context.isActorAt(posBefore) == false);
             }
         }
 
@@ -318,6 +327,9 @@ namespace methhead
 
     void Simulator::handleActorPickingUpSometing(IActor & actor)
     {
+        assert(m_context.isActorAt(actor.boardPos()) == true);
+        assert(m_positions.isFree(actor.boardPos()) == false);
+
         const auto foundIter = std::find_if(
             std::begin(m_pickups), std::end(m_pickups), [&](const IPickupUPtr_t & pickup) {
                 return (pickup->boardPos() == actor.boardPos());
@@ -327,6 +339,8 @@ namespace methhead
         {
             return;
         }
+
+        assert(m_context.isPickupAt(actor.boardPos()) == true);
 
         if (m_isModeNormal && m_settings.query(Settings::SpecialEffects))
         {
@@ -352,7 +366,18 @@ namespace methhead
         }
 
         (*foundIter)->changeActor(actor);
+
+        // no need to m_positions.free(pickup) because the methhead that picked it up is there
+
+        assert(m_context.isActorAt(actor.boardPos()) == true);
+        assert(m_context.isPickupAt(actor.boardPos()) == true);
+        assert(m_positions.isFree(actor.boardPos()) == false);
+
         m_pickups.erase(foundIter);
+
+        assert(m_context.isActorAt(actor.boardPos()) == true);
+        assert(m_context.isPickupAt(actor.boardPos()) == false);
+        assert(m_positions.isFree(actor.boardPos()) == false);
 
         spawnLoot();
     }
@@ -366,21 +391,6 @@ namespace methhead
         {
             return;
         }
-
-        // for (const auto & actor : m_actors)
-        //{
-        //    std::cout << "\n\t actor="
-        //              << ((actor->motivation() == Motivation::lazy) ? "lazy" : "greedy") << "="
-        //              << actor->boardPos() << "$" << actor->score();
-        //}
-        //
-        // for (const auto & pickup : m_pickups)
-        //{
-        //    std::cout << "\n\t pickup= "
-        //              << "$" << pickup->value();
-        //}
-        //
-        // std::cout << std::endl;
 
         const Scores scores(calcScores());
 
@@ -401,48 +411,43 @@ namespace methhead
             m_displayVars.updateScoreBars(scores.lazy, scores.greedy);
         }
 
-        std::ostringstream ss;
+        assert(fps != m_framesPerSecondMax);
 
-        ss << m_statusCount++ << ',';
-
-        ss << "v1,";
+        std::cout << m_statusCount++ << ',';
 
 #ifdef WIN32
-        ss << "Win,";
+        std::cout << "Win,";
 #else
-        ss << "Mac,";
+        std::cout << "Mac,";
 #endif
 
 #ifdef NDEBUG
-        ss << "Release,";
+        std::cout << "Release,";
 #else
-        ss << "Debug,";
+        std::cout << "Debug,";
 #endif
 
         if (m_isModeNormal)
         {
-            ss << "Normal,";
+            std::cout << "Normal,";
         }
         else
         {
-            ss << "SpeedTest,";
+            std::cout << "SpeedTest,";
         }
 
         if (m_settings.query(Settings::DrawBoardWithVerts))
         {
-            ss << "DrawVerts,";
+            std::cout << "DrawVerts,";
         }
         else
         {
-            ss << "DrawRectangles,";
+            std::cout << "DrawRectangles,";
         }
 
-        ss << fps << ',' << m_framesPerSecondMax << ',';
-        ss << m_actors.size() << ',' << m_pickups.size() << ',';
-        ss << scores.lazy << ',' << scores.greedy;
-
-        m_statsFile << ss.str() << std::endl;
-        std::cout << ss.str() << std::endl;
+        std::cout << fps << ',' << m_framesPerSecondMax << ',';
+        std::cout << m_actors.size() << ',' << m_pickups.size() << ',';
+        std::cout << scores.lazy << ',' << scores.greedy << std::endl;
     }
 
     void Simulator::draw()

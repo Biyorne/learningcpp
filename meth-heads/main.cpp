@@ -4,12 +4,19 @@
 
 #include <cstddef>
 
+using namespace methhead;
+
 int main()
 {
-    using namespace methhead;
+    {
+        methhead::Simulator simulator(Mode::Normal);
+        simulator.run();
+    }
 
-    methhead::Simulator simulator(Mode::SpeedTest);
-    simulator.run();
+    {
+        methhead::Simulator simulator(Mode::SpeedTest);
+        simulator.run();
+    }
 
     return EXIT_SUCCESS;
 }

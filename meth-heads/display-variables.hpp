@@ -37,18 +37,18 @@ namespace methhead
             const SimContext & context, sf::RenderTarget & target, sf::RenderStates states) const;
 
       private:
-        void populateBoardDrawables();
-        void drawBoardUsingRectangleShapes(sf::RenderTarget & target) const;
-        void drawBorderUsingVerts(sf::RenderTarget & target) const;
+        void setupColorsAndStyles();
+        void setupScales();
+        void setupBoardDrawingVerts();
 
       private:
         DisplayConstants m_constants;
+
         sf::RectangleShape m_lazyScoreRectangle;
         sf::RectangleShape m_greedyScoreRectangle;
 
-        std::vector<sf::RectangleShape> m_boardRectangles;
-        std::vector<sf::Vertex> m_quadVerts;
-        std::vector<sf::Vertex> m_lineVerts;
+        sf::VertexArray m_quadVerts;
+        sf::VertexArray m_lineVerts;
 
         sf::Text m_fpsText;
         mutable sf::Text m_pickupText;

@@ -127,9 +127,24 @@ namespace methhead
         return sf::FloatRect(boardPosToWindowPos(boardPos), cell_size);
     }
 
-    bool DisplayConstants::isPosOnBoard(const BoardPos_t & pos) const noexcept
+    BoardPos_t DisplayConstants::indexToBoardPos(const std::size_t index) const noexcept
     {
-        return (
-            (pos.x >= 0) && (pos.x < cell_countsI.x) && (pos.y >= 0) && (pos.y < cell_countsI.y));
+        BoardPos_t pos(0, 0);
+
+        if (index < cell_count)
+        {
+            pos.x = static_cast<int>(index % cell_counts.x);
+            pos.y = static_cast<int>(index / cell_counts.x);
+        }
+
+        return pos;
+    }
+
+    std::size_t DisplayConstants::boardPosToIndex(const BoardPos_t & pos) const noexcept
+    {
+        std::size_t index{ static_cast<std::size_t>(pos.x) };
+        index += (static_cast<std::size_t>(pos.y) * cell_counts.x);
+        index = std::clamp(index, 0_st, (cell_count - 1));
+        return index;
     }
 } // namespace methhead

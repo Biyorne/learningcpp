@@ -16,7 +16,8 @@ namespace methhead
         sf::Vector2f boardPosToWindowPos(const BoardPos_t & boardPos) const noexcept;
         sf::FloatRect boardPosToWindowRect(const BoardPos_t & boardPos) const noexcept;
 
-        bool isPosOnBoard(const BoardPos_t & pos) const noexcept;
+        BoardPos_t indexToBoardPos(const std::size_t index) const noexcept;
+        std::size_t boardPosToIndex(const BoardPos_t & pos) const noexcept;
 
         // just smaller than the actual window size to create a border
         sf::FloatRect inner_window_rect;

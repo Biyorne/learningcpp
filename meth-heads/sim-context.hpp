@@ -31,6 +31,7 @@ namespace methhead
             const DisplayConstants & disp,
             const Settings & sets);
 
+        // TODO move these to a better place...probaby PositionCache
         bool isActorAt(const BoardPos_t & posToCheck) const;
         bool isPickupAt(const BoardPos_t & posToCheck) const;
 

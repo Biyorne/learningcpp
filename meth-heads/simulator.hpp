@@ -4,6 +4,7 @@
 #include "animation-player.hpp"
 #include "display-variables.hpp"
 #include "meth-head.hpp"
+#include "position-cache.hpp"
 #include "random.hpp"
 #include "settings.hpp"
 #include "sound-player.hpp"
@@ -36,10 +37,11 @@ namespace methhead
         float getSimFrameTimeElapsed();
         void printStatus();
 
-        std::optional<BoardPos_t> findRandomFreeBoardPos() const;
+        void spawnMethHead(const Motivation motive, const std::size_t count = 1);
+        void spawnLoot(const std::size_t count = 1);
 
-        void spawnMethHead(const Motivation motive);
-        void spawnLoot();
+        void killMethHead(const std::size_t count = 1);
+        void killLoot(const std::size_t count = 1);
 
         void handleEvents();
         void handleEvent(const sf::Event & event);
@@ -63,6 +65,7 @@ namespace methhead
         SoundPlayer m_soundPlayer;
         AnimationPlayer m_animationPlayer;
         DisplayVariables m_displayVars;
+        PositionCache m_positions;
 
         std::vector<IActorUPtr_t> m_actors;
         std::vector<IPickupUPtr_t> m_pickups;
@@ -76,8 +79,6 @@ namespace methhead
         std::size_t m_statusCount;
 
         SimContext m_context;
-
-        std::ofstream m_statsFile;
     };
 } // namespace methhead
 

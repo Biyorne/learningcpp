@@ -11,8 +11,6 @@
 #include <cassert>
 #include <iostream>
 
-#include <set>
-
 namespace methhead
 {
     MethHeadBase::MethHeadBase(const BoardPos_t & boardPos, const float waitBetweenActionsSec)

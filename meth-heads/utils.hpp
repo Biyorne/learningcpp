@@ -2,12 +2,21 @@
 #define METHHEADS_UTILS_HPP_INCLUDED
 
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <limits>
 #include <string>
 
 #include <SFML/Graphics.hpp>
 
+//
+
+constexpr std::size_t operator"" _st(unsigned long long number)
+{
+    return static_cast<std::size_t>(number);
+}
+
+//
 // adding some things into the sf namespace...being naughty here...
 namespace sf
 {
@@ -79,14 +88,15 @@ namespace methhead
     template <typename T>
     [[nodiscard]] T constexpr simpleAbs(const T number) noexcept
     {
-        if (number < T(0))
+        if constexpr (std::is_signed_v<T>)
         {
-            return -number;
+            if (number < T(0))
+            {
+                return -number;
+            }
         }
-        else
-        {
-            return number;
-        }
+
+        return number;
     }
 
     template <typename T>
