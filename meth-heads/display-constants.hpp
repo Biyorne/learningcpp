@@ -13,11 +13,28 @@ namespace methhead
     {
         explicit DisplayConstants(const sf::Vector2u & windowSize);
 
-        sf::Vector2f boardPosToWindowPos(const BoardPos_t & boardPos) const noexcept;
-        sf::FloatRect boardPosToWindowRect(const BoardPos_t & boardPos) const noexcept;
+        inline sf::Vector2f boardPosToWindowPos(const BoardPos_t & boardPos) const noexcept
+        {
+            return (
+                sf::Vector2f(board_rect.left, board_rect.top) +
+                (sf::Vector2f(boardPos) * cell_size));
+        }
 
-        BoardPos_t indexToBoardPos(const std::size_t index) const noexcept;
-        std::size_t boardPosToIndex(const BoardPos_t & pos) const noexcept;
+        inline sf::FloatRect boardPosToWindowRect(const BoardPos_t & boardPos) const noexcept
+        {
+            return sf::FloatRect(boardPosToWindowPos(boardPos), cell_size);
+        }
+
+        inline BoardPos_t indexToBoardPos(const std::size_t index) const noexcept
+        {
+            return { static_cast<int>(index % cell_counts.x),
+                     static_cast<int>(index / cell_counts.x) };
+        }
+
+        inline std::size_t boardPosToIndex(const BoardPos_t & pos) const noexcept
+        {
+            return static_cast<std::size_t>((pos.y * cell_countsI.x) + pos.x);
+        }
 
         // just smaller than the actual window size to create a border
         sf::FloatRect inner_window_rect;

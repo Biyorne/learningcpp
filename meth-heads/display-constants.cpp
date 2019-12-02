@@ -114,37 +114,4 @@ namespace methhead
         lazy_color = sf::Color(80, 80, 255);
         greedy_color = sf::Color(100, 255, 100);
     }
-
-    sf::Vector2f DisplayConstants::boardPosToWindowPos(const BoardPos_t & boardPos) const noexcept
-    {
-        const sf::Vector2f topLeftBoardWindowPos(board_rect.left, board_rect.top);
-        const sf::Vector2f boardPosF(boardPos);
-        return (topLeftBoardWindowPos + (boardPosF * cell_size));
-    };
-
-    sf::FloatRect DisplayConstants::boardPosToWindowRect(const BoardPos_t & boardPos) const noexcept
-    {
-        return sf::FloatRect(boardPosToWindowPos(boardPos), cell_size);
-    }
-
-    BoardPos_t DisplayConstants::indexToBoardPos(const std::size_t index) const noexcept
-    {
-        BoardPos_t pos(0, 0);
-
-        if (index < cell_count)
-        {
-            pos.x = static_cast<int>(index % cell_counts.x);
-            pos.y = static_cast<int>(index / cell_counts.x);
-        }
-
-        return pos;
-    }
-
-    std::size_t DisplayConstants::boardPosToIndex(const BoardPos_t & pos) const noexcept
-    {
-        std::size_t index{ static_cast<std::size_t>(pos.x) };
-        index += (static_cast<std::size_t>(pos.y) * cell_counts.x);
-        index = std::clamp(index, 0_st, (cell_count - 1));
-        return index;
-    }
 } // namespace methhead

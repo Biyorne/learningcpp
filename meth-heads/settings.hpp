@@ -18,6 +18,7 @@ namespace methhead
       public:
         enum Enum
         {
+            None = sf::Keyboard::KeyCount,
             SpecialEffects = sf::Keyboard::Num0,
             DrawBoardWithVerts = sf::Keyboard::Num1
         };

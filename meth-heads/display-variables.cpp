@@ -104,7 +104,7 @@ namespace methhead
             target.draw(m_pickupSprite, states);
 
             m_pickupText.setString(std::to_string(pickup->value()));
-            center(m_pickupText, windowRect);
+            fit(m_pickupText, windowRect);
             target.draw(m_pickupText, states);
         }
 

@@ -68,7 +68,25 @@ namespace methhead
         SpeedTest
     };
 
-    //
+    // bit utils
+
+    // Counting High Bits
+    //  Peter Wegner's Method, which was also discovered independently by Derrick Lehmer in 1964.
+    //  This method goes through as many iterations as there are set bits.
+    template <typename T>
+    std::size_t countHighBits(T number)
+    {
+        static_assert(std::is_unsigned_v<T>);
+        static_assert(!std::is_same_v<std::remove_cv<T>, bool>);
+
+        std::size_t count{ 0 };
+        for (; number; count++)
+        {
+            number &= (number - 1);
+        }
+
+        return count;
+    }
 
     // string utils
 

@@ -13,17 +13,17 @@
 
 namespace methhead
 {
-    MethHeadBase::MethHeadBase(const BoardPos_t & boardPos, const float waitBetweenActionsSec)
-        : m_score(0)
-        , m_boardPos(boardPos)
-        , m_waitBetweenActionsSec(waitBetweenActionsSec)
-        , m_elapsedSinceLastActionSec(0.0f)
+    MethHeadBase::MethHeadBase(const SimContext & context)
+        : ScopedBoardPosition(context)
+        , m_score(0)
+        , m_turnDelaySec(s_turnDelayDefaultSec)
+        , m_turnDelaySoFarSec(0.0f)
     {}
 
-    void MethHeadBase::update(const float elapsedSec, const SimContext & context)
+    void MethHeadBase::update(const SimContext & context, const float elapsedSec)
     {
-        assert(context.isPickupAt(m_boardPos) == false);
-        assert(context.isActorAt(m_boardPos) == true);
+        assert(context.isPickupAt(boardPos()) == false);
+        assert(context.isActorAt(boardPos()) == true);
 
         if (isTimeToMove(elapsedSec))
         {
@@ -31,14 +31,13 @@ namespace methhead
         }
     }
 
-    bool MethHeadBase::isTimeToMove(const float elapsedSec)
+    bool MethHeadBase::isTimeToMove(const float elapsedSec) noexcept
     {
-        m_elapsedSinceLastActionSec += elapsedSec;
+        m_turnDelaySoFarSec += elapsedSec;
 
-        if (m_elapsedSinceLastActionSec > m_waitBetweenActionsSec)
+        if (m_turnDelaySoFarSec > m_turnDelaySec)
         {
-            // TODO Nell -what is this line doing?  Why not reset to zero?
-            m_elapsedSinceLastActionSec = (m_elapsedSinceLastActionSec - m_waitBetweenActionsSec);
+            m_turnDelaySoFarSec = (m_turnDelaySoFarSec - m_turnDelaySec);
             return true;
         }
 
@@ -54,26 +53,28 @@ namespace methhead
     std::vector<BoardPos_t>
         MethHeadBase::makeAllPossibleBoardMoves(const SimContext & context) const
     {
+        const BoardPos_t currentPos{ boardPos() };
+
         std::vector<BoardPos_t> moves;
 
-        if (m_boardPos.x > 0)
+        if (currentPos.x > 0)
         {
-            moves.push_back(m_boardPos + sf::Vector2i(-1, 0));
+            moves.push_back(currentPos + sf::Vector2i(-1, 0));
         }
 
-        if (m_boardPos.x < (context.display.cell_countsI.x - 1))
+        if (currentPos.x < (context.display.cell_countsI.x - 1))
         {
-            moves.push_back(m_boardPos + sf::Vector2i(1, 0));
+            moves.push_back(currentPos + sf::Vector2i(1, 0));
         }
 
-        if (m_boardPos.y > 0)
+        if (currentPos.y > 0)
         {
-            moves.push_back(m_boardPos + sf::Vector2i(0, -1));
+            moves.push_back(currentPos + sf::Vector2i(0, -1));
         }
 
-        if (m_boardPos.y < (context.display.cell_countsI.y - 1))
+        if (currentPos.y < (context.display.cell_countsI.y - 1))
         {
-            moves.push_back(m_boardPos + sf::Vector2i(0, 1));
+            moves.push_back(currentPos + sf::Vector2i(0, 1));
         }
 
         moves.erase(
@@ -88,21 +89,21 @@ namespace methhead
         return moves;
     }
 
-    void MethHeadBase::move(const SimContext & context)
+    bool MethHeadBase::move(const SimContext & context)
     {
-        const auto targetBoardPosOpt(findMostDesiredPickupBoardPos(context));
-        if (!targetBoardPosOpt)
+        if (context.pickups.empty())
         {
-            // std::cout << "Methhead could not move: Failed to find pickup." << std::endl;
-            return;
+            return false;
         }
+
+        const auto targetBoardPos(findMostDesiredPickupBoardPos(context));
 
         std::vector<BoardPos_t> possibleMoves(makeAllPossibleBoardMoves(context));
         if (possibleMoves.empty())
         {
             // std::cout << "Methhead cannot move because other methheads are in the way."
             //          << std::endl;
-            return;
+            return false;
         }
 
         std::sort(
@@ -110,21 +111,19 @@ namespace methhead
             std::end(possibleMoves),
             [&](const BoardPos_t & left, const BoardPos_t & right) {
                 return (
-                    walkDistanceBetween(targetBoardPosOpt.value(), left) <
-                    walkDistanceBetween(targetBoardPosOpt.value(), right));
+                    walkDistanceBetween(targetBoardPos, left) <
+                    walkDistanceBetween(targetBoardPos, right));
             });
 
         const int closestToTargetDistance{ walkDistanceBetween(
-            targetBoardPosOpt.value(), possibleMoves.front()) };
+            targetBoardPos, possibleMoves.front()) };
 
         possibleMoves.erase(
             std::remove_if(
                 std::begin(possibleMoves),
                 std::end(possibleMoves),
                 [&](const BoardPos_t & pos) {
-                    return (
-                        walkDistanceBetween(targetBoardPosOpt.value(), pos) >
-                        closestToTargetDistance);
+                    return (walkDistanceBetween(targetBoardPos, pos) > closestToTargetDistance);
                 }),
             std::end(possibleMoves));
 
@@ -133,9 +132,10 @@ namespace methhead
         if (possibleMoves.empty())
         {
             std::cout << "Methhead cannot move because of unknown error." << std::endl;
-            return;
+            return false;
         }
 
-        m_boardPos = context.random.from(possibleMoves);
+        ScopedBoardPosition::set(context, context.random.from(possibleMoves));
+        return true;
     }
 } // namespace methhead

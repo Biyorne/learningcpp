@@ -2,6 +2,7 @@
 #define METHHEADS_BASE_HPP_INCLUDED
 
 #include "display-constants.hpp"
+#include "pos-ref-counter.hpp"
 #include "random.hpp"
 #include "sim-context.hpp"
 
@@ -10,7 +11,6 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -36,16 +36,16 @@ namespace methhead
     {
         virtual ~IActor() = default;
 
-        virtual int score() const = 0;
-        virtual void score(const int value) = 0;
+        virtual int score() const noexcept = 0;
+        virtual void score(const int value) noexcept = 0;
 
-        virtual Motivation motivation() const = 0;
-        virtual BoardPos_t boardPos() const = 0;
+        virtual Motivation motivation() const noexcept = 0;
+        virtual BoardPos_t boardPos() const noexcept = 0;
 
-        virtual float timeBetweenMovesSec() const = 0;
-        virtual void timeBetweenMovesSec(const float sec) = 0;
+        virtual float turnDelaySec() const noexcept = 0;
+        virtual void turnDelaySec(const float sec) noexcept = 0;
 
-        virtual void update(const float elapsedMs, const SimContext & context) = 0;
+        virtual void update(const SimContext & context, const float elapsedMs) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
@@ -65,75 +65,75 @@ namespace methhead
 
     //
 
-    class Loot : public IPickup
+    class Loot
+        : public IPickup
+        , public ScopedBoardPosition
     {
       public:
-        Loot(const BoardPos_t & boardPos, const int value)
-            : m_value(value)
-            , m_boardPos(boardPos)
+        explicit Loot(const SimContext & context)
+            : ScopedBoardPosition(context)
+            , m_value(context.random.fromTo(1, 99))
         {}
 
         virtual ~Loot() = default;
 
-        inline int value() const final { return m_value; }
-        inline BoardPos_t boardPos() const final { return m_boardPos; }
+        inline int value() const noexcept final { return m_value; }
+        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosition::get(); }
         inline void changeActor(IActor & actor) override { actor.score(actor.score() + m_value); }
 
       private:
         int m_value;
-        BoardPos_t m_boardPos;
     };
 
     //
 
-    class MethHeadBase : public IActor
+    class MethHeadBase
+        : public IActor
+        , public ScopedBoardPosition
     {
       protected:
-        explicit MethHeadBase(
-            const BoardPos_t & boardPos,
-            const float waitBetweenActionsSec = m_waitBetweenActionsSecDefault);
-
+        explicit MethHeadBase(const SimContext & context);
         virtual ~MethHeadBase() = default;
 
       public:
-        void update(const float elapsedSec, const SimContext & context) override;
+        void update(const SimContext & context, const float elapsedSec) override;
 
-        inline int score() const final { return m_score; }
-        inline void score(const int value) final { m_score = value; }
+        inline int score() const noexcept final { return m_score; }
+        inline void score(const int value) noexcept final { m_score = value; }
 
-        inline float timeBetweenMovesSec() const final { return m_waitBetweenActionsSec; }
-        inline void timeBetweenMovesSec(const float sec) final { m_waitBetweenActionsSec = sec; }
+        inline float turnDelaySec() const noexcept final { return m_turnDelaySec; }
+        inline void turnDelaySec(const float sec) noexcept final { m_turnDelaySec = sec; }
 
-        inline BoardPos_t boardPos() const final { return m_boardPos; }
+        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosition::get(); }
 
       protected:
-        bool isTimeToMove(const float elapsedSec);
+        bool isTimeToMove(const float elapsedSec) noexcept;
 
-        void move(const SimContext & context);
+        bool move(const SimContext & context);
 
         inline int walkDistanceBetween(const BoardPos_t & from, const BoardPos_t & to) const
+            noexcept
         {
             const BoardPos_t posDiff(to - from);
             return (std::abs(posDiff.x) + std::abs(posDiff.y));
         }
 
-        inline int walkDistanceTo(const BoardPos_t & to) const
+        inline int walkDistanceTo(const BoardPos_t & to) const noexcept
         {
-            return walkDistanceBetween(m_boardPos, to);
+            return walkDistanceBetween(boardPos(), to);
         }
 
         std::vector<BoardPos_t> makeAllPossibleBoardMoves(const SimContext & context) const;
 
-        virtual std::optional<BoardPos_t>
-            findMostDesiredPickupBoardPos(const SimContext & context) const = 0;
+        // assumes there are pickups on the board
+        virtual BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const = 0;
 
       private:
         int m_score;
-        BoardPos_t m_boardPos;
-        float m_waitBetweenActionsSec;
-        float m_elapsedSinceLastActionSec;
+        float m_turnDelaySec;
+        float m_turnDelaySoFarSec;
 
-        static inline const float m_waitBetweenActionsSecDefault{ 0.333f };
+        static inline const float s_turnDelayDefaultSec{ 0.333f };
     };
 
     //
@@ -141,24 +141,24 @@ namespace methhead
     class Lazy : public MethHeadBase
     {
       public:
-        explicit Lazy(const BoardPos_t & boardPos)
-            : MethHeadBase(boardPos)
+        explicit Lazy(const SimContext & context)
+            : MethHeadBase(context)
         {}
 
         virtual ~Lazy() = default;
 
-        inline Motivation motivation() const final { return Motivation::lazy; }
+        inline Motivation motivation() const noexcept final { return Motivation::lazy; }
 
       private:
-        std::optional<BoardPos_t>
-            findMostDesiredPickupBoardPos(const SimContext & context) const final
+        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
         {
-            std::size_t bestIndex(std::numeric_limits<int>::max());
-            int bestDistance(std::numeric_limits<int>::max());
+            std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
+            std::size_t bestDistance(std::numeric_limits<std::size_t>::max());
 
             for (std::size_t i(0); i < context.pickups.size(); ++i)
             {
-                const int distance{ walkDistanceTo(context.pickups.at(i)->boardPos()) };
+                const std::size_t distance{ static_cast<std::size_t>(
+                    walkDistanceTo(context.pickups.at(i)->boardPos())) };
 
                 if (distance < bestDistance)
                 {
@@ -167,11 +167,8 @@ namespace methhead
                 }
             }
 
-            if ((bestIndex >= context.pickups.size()) ||
-                (bestDistance == std::numeric_limits<int>::max()))
-            {
-                return std::nullopt;
-            }
+            assert(bestIndex < context.pickups.size());
+            assert(bestDistance <= context.display.cell_count);
 
             return context.pickups.at(bestIndex)->boardPos();
         }
@@ -182,24 +179,23 @@ namespace methhead
     class Greedy : public MethHeadBase
     {
       public:
-        explicit Greedy(const BoardPos_t & boardPos)
-            : MethHeadBase(boardPos)
+        explicit Greedy(const SimContext & context)
+            : MethHeadBase(context)
         {}
 
         virtual ~Greedy() = default;
 
-        inline Motivation motivation() const final { return Motivation::greedy; }
+        inline Motivation motivation() const noexcept final { return Motivation::greedy; }
 
       private:
-        std::optional<BoardPos_t>
-            findMostDesiredPickupBoardPos(const SimContext & context) const final
+        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
         {
-            std::size_t bestIndex(std::numeric_limits<int>::max());
-            int bestValue(-1);
+            std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
+            std::size_t bestValue(0);
 
             for (std::size_t i(0); i < context.pickups.size(); ++i)
             {
-                const int value{ context.pickups.at(i)->value() };
+                const std::size_t value{ static_cast<std::size_t>(context.pickups.at(i)->value()) };
 
                 if (value > bestValue)
                 {
@@ -208,10 +204,8 @@ namespace methhead
                 }
             }
 
-            if ((bestIndex >= context.pickups.size()) || (bestValue < 0))
-            {
-                return std::nullopt;
-            }
+            assert(bestIndex < context.pickups.size());
+            assert(bestValue > 0);
 
             return context.pickups.at(bestIndex)->boardPos();
         }

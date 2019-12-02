@@ -3,15 +3,14 @@
 
 #include "animation-player.hpp"
 #include "display-variables.hpp"
+#include "enums.hpp"
 #include "meth-head.hpp"
-#include "position-cache.hpp"
 #include "random.hpp"
 #include "settings.hpp"
 #include "sound-player.hpp"
 #include "utils.hpp"
 
 #include <fstream>
-#include <optional>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
@@ -33,6 +32,8 @@ namespace methhead
         void run();
 
       private:
+        void reset();
+
         void spawnInitialPieces();
         float getSimFrameTimeElapsed();
         void printStatus();
@@ -49,7 +50,12 @@ namespace methhead
         void update(const float elapsedSec);
         void draw();
 
-        void handleActorPickingUpSometing(IActor & actor);
+        void handleActorPickingUp(IActor & actor);
+
+        inline bool isFreeBoardPos() const noexcept
+        {
+            return ((m_actors.size() + m_pickups.size()) < m_displayVars.constants().cell_count);
+        }
 
         Scores calcScores() const;
 
@@ -65,7 +71,6 @@ namespace methhead
         SoundPlayer m_soundPlayer;
         AnimationPlayer m_animationPlayer;
         DisplayVariables m_displayVars;
-        PositionCache m_positions;
 
         std::vector<IActorUPtr_t> m_actors;
         std::vector<IPickupUPtr_t> m_pickups;
