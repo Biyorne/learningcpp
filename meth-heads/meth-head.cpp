@@ -14,7 +14,7 @@
 namespace methhead
 {
     MethHeadBase::MethHeadBase(const SimContext & context)
-        : ScopedBoardPosition(context)
+        : BoardPositionHandler_t(context)
         , m_score(0)
         , m_turnDelaySec(s_turnDelayDefaultSec)
         , m_turnDelaySoFarSec(0.0f)
@@ -135,7 +135,7 @@ namespace methhead
             return false;
         }
 
-        ScopedBoardPosition::set(context, context.random.from(possibleMoves));
+        BoardPositionHandler_t::set(context, context.random.from(possibleMoves));
         return true;
     }
 } // namespace methhead

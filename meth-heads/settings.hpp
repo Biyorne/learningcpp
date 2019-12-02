@@ -20,7 +20,7 @@ namespace methhead
         {
             None = sf::Keyboard::KeyCount,
             SpecialEffects = sf::Keyboard::Num0,
-            DrawBoardWithVerts = sf::Keyboard::Num1
+            BoardPositionOptimization = sf::Keyboard::Num1
         };
 
         struct Entry
@@ -35,7 +35,7 @@ namespace methhead
         Settings()
         {
             setupEntry(Enum::SpecialEffects, false);
-            setupEntry(Enum::DrawBoardWithVerts, true);
+            setupEntry(Enum::BoardPositionOptimization, true);
         }
 
         template <typename T>

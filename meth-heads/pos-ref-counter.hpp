@@ -13,11 +13,11 @@ namespace methhead
 
     //
 
-    class ScopedBoardPosition
+    class ScopedBoardPositionRefCount
     {
       protected:
-        ScopedBoardPosition(const SimContext & context);
-        virtual ~ScopedBoardPosition() { free(); }
+        ScopedBoardPositionRefCount(const SimContext & context);
+        virtual ~ScopedBoardPositionRefCount() { free(); }
 
         inline BoardPos_t get() const noexcept { return m_boardPos; }
 
@@ -30,14 +30,46 @@ namespace methhead
         // assumes there is at least one free space
         static std::size_t findRandomFreePosIndex(const SimContext & context) noexcept;
 
-        inline void free() const noexcept { --m_refCounts[m_index]; }
-        inline void occupy() const noexcept { ++m_refCounts[m_index]; }
+        inline void free() const noexcept { --s_refCounts[m_index]; }
+        inline void occupy() const noexcept { ++s_refCounts[m_index]; }
 
       private:
         std::size_t m_index;
         BoardPos_t m_boardPos;
-        static inline std::vector<int> m_refCounts;
+        static inline std::vector<int> s_refCounts;
     };
+
+    //
+
+    class ScopedBoardPositionBruteForce
+    {
+      protected:
+        ScopedBoardPositionBruteForce(const SimContext & context)
+            : m_boardPos(findRandomFreePos(context))
+        {}
+
+        virtual ~ScopedBoardPositionBruteForce() = default;
+
+        inline BoardPos_t get() const noexcept { return m_boardPos; }
+
+        void set(const SimContext &, const BoardPos_t & newPos) noexcept { m_boardPos = newPos; }
+
+      public:
+        static void reset(const SimContext &) {}
+
+      private:
+        // assumes there is at least one free space
+        static BoardPos_t findRandomFreePos(const SimContext & context) noexcept;
+
+      private:
+        BoardPos_t m_boardPos;
+        static inline std::vector<BoardPos_t> s_allPositions;
+        static inline std::vector<BoardPos_t> s_freePositions;
+    };
+
+    using BoardPositionHandler_t = ScopedBoardPositionRefCount;
+
+    //
 } // namespace methhead
 
 #endif // METHHEADS_POS_REF_COUNTER_HPP_INCLUDED

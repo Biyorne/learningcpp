@@ -8,10 +8,10 @@ using namespace methhead;
 
 int main()
 {
-    //{
-    //    methhead::Simulator simulator(Mode::Normal);
-    //    simulator.run();
-    //}
+    {
+        methhead::Simulator simulator(Mode::Normal);
+        simulator.run();
+    }
 
     {
         methhead::Simulator simulator(Mode::SpeedTest);

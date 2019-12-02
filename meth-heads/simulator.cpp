@@ -79,7 +79,7 @@ namespace methhead
         m_pickups.clear();
 
         // this must happen AFTER ALL pieces(actors and pickups) have destructed
-        ScopedBoardPosition::reset(m_context);
+        BoardPositionHandler_t::reset(m_context);
     }
 
     void Simulator::run()
@@ -384,9 +384,6 @@ namespace methhead
     {
         const BoardPos_t actorPos{ actor.boardPos() };
 
-        // assert(m_context.isActorAt(actorPos) == true);
-        // assert(m_positions.isFree(actorPos) == false);
-
         const auto foundIter = std::find_if(
             std::begin(m_pickups), std::end(m_pickups), [&actorPos](const IPickupUPtr_t & pickup) {
                 return (pickup->boardPos() == actorPos);
@@ -459,31 +456,31 @@ namespace methhead
         }
 
         std::cout.imbue(std::locale("")); // this is only to put commas in the big
-        std::cout << std::setw(3) << std::right << m_statusCount++ << "  ";
+        std::cout << std::setw(2) << std::right << m_statusCount++ << "  ";
 
 #ifdef WIN32
-        std::cout << "Win_";
+        std::cout << "Win/";
 #else
-        std::cout << "Mac_";
+        std::cout << "Mac/";
 #endif
 
 #ifdef NDEBUG
-        std::cout << "Rel  ";
+        std::cout << "Rel/";
 #else
-        std::cout << "Dbg  ";
+        std::cout << "Dbg/";
 #endif
 
         if (m_isModeNormal)
         {
-            std::cout << "Normal  ";
+            std::cout << "Show";
         }
         else
         {
-            std::cout << "SpeedTest  ";
+            std::cout << "Hide";
         }
 
-        std::cout << fps << " / " << m_framesPerSecondMax << "   ";
-        std::cout << m_actors.size() << " / " << m_pickups.size() << "  ";
+        std::cout << "  " << fps << " / " << m_framesPerSecondMax << "  ";
+        std::cout << m_actors.size() << "/" << m_pickups.size() << "  ";
         std::cout << scores.lazy << " / " << scores.greedy << std::endl;
     }
 
