@@ -44,49 +44,27 @@ namespace methhead
         return false;
     }
 
-    // TODO Nel:
-    //  Look closely at the if statements below.   Where are errors most likely to be?  Are there
-    //  any?
-    //
-    // Note that each if will be considered every time this function runs.  Is that required, or is
-    // it possible to optimize by skipping some of those ifs some of the time?
-    std::vector<BoardPos_t>
-        MethHeadBase::makeAllPossibleBoardMoves(const SimContext & context) const
+    void MethHeadBase::makeAllPossibleBoardMoves(const SimContext & context) const
     {
         const BoardPos_t currentPos{ boardPos() };
 
-        std::vector<BoardPos_t> moves;
+        m_possibleMoves.clear();
 
-        if (currentPos.x > 0)
-        {
-            moves.push_back(currentPos + sf::Vector2i(-1, 0));
-        }
+        // clang-format off
+        if (currentPos.x > 0)                                     { m_possibleMoves.push_back(currentPos + sf::Vector2i(-1,  0)); }
+        if (currentPos.x < (context.display.cell_countsI.x - 1))  { m_possibleMoves.push_back(currentPos + sf::Vector2i( 1,  0)); }
+        if (currentPos.y > 0)                                     { m_possibleMoves.push_back(currentPos + sf::Vector2i( 0, -1)); }
+        if (currentPos.y < (context.display.cell_countsI.y - 1))  { m_possibleMoves.push_back(currentPos + sf::Vector2i( 0,  1)); }
+        // clang-format on
 
-        if (currentPos.x < (context.display.cell_countsI.x - 1))
-        {
-            moves.push_back(currentPos + sf::Vector2i(1, 0));
-        }
-
-        if (currentPos.y > 0)
-        {
-            moves.push_back(currentPos + sf::Vector2i(0, -1));
-        }
-
-        if (currentPos.y < (context.display.cell_countsI.y - 1))
-        {
-            moves.push_back(currentPos + sf::Vector2i(0, 1));
-        }
-
-        moves.erase(
+        m_possibleMoves.erase(
             std::remove_if(
-                std::begin(moves),
-                std::end(moves),
+                std::begin(m_possibleMoves),
+                std::end(m_possibleMoves),
                 [&context](const BoardPos_t & possiblePos) {
                     return context.isActorAt(possiblePos);
                 }),
-            std::end(moves));
-
-        return moves;
+            std::end(m_possibleMoves));
     }
 
     bool MethHeadBase::move(const SimContext & context)
@@ -98,8 +76,8 @@ namespace methhead
 
         const auto targetBoardPos(findMostDesiredPickupBoardPos(context));
 
-        std::vector<BoardPos_t> possibleMoves(makeAllPossibleBoardMoves(context));
-        if (possibleMoves.empty())
+        makeAllPossibleBoardMoves(context);
+        if (m_possibleMoves.empty())
         {
             // std::cout << "Methhead cannot move because other methheads are in the way."
             //          << std::endl;
@@ -107,8 +85,8 @@ namespace methhead
         }
 
         std::sort(
-            std::begin(possibleMoves),
-            std::end(possibleMoves),
+            std::begin(m_possibleMoves),
+            std::end(m_possibleMoves),
             [&](const BoardPos_t & left, const BoardPos_t & right) {
                 return (
                     walkDistanceBetween(targetBoardPos, left) <
@@ -116,26 +94,26 @@ namespace methhead
             });
 
         const int closestToTargetDistance{ walkDistanceBetween(
-            targetBoardPos, possibleMoves.front()) };
+            targetBoardPos, m_possibleMoves.front()) };
 
-        possibleMoves.erase(
+        m_possibleMoves.erase(
             std::remove_if(
-                std::begin(possibleMoves),
-                std::end(possibleMoves),
+                std::begin(m_possibleMoves),
+                std::end(m_possibleMoves),
                 [&](const BoardPos_t & pos) {
                     return (walkDistanceBetween(targetBoardPos, pos) > closestToTargetDistance);
                 }),
-            std::end(possibleMoves));
+            std::end(m_possibleMoves));
 
-        assert(!possibleMoves.empty());
+        assert(!m_possibleMoves.empty());
 
-        if (possibleMoves.empty())
+        if (m_possibleMoves.empty())
         {
             std::cout << "Methhead cannot move because of unknown error." << std::endl;
             return false;
         }
 
-        BoardPositionHandler_t::set(context, context.random.from(possibleMoves));
+        BoardPositionHandler_t::set(context, context.random.from(m_possibleMoves));
         return true;
     }
 } // namespace methhead

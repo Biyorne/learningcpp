@@ -124,7 +124,7 @@ namespace methhead
             return walkDistanceBetween(boardPos(), to);
         }
 
-        std::vector<BoardPos_t> makeAllPossibleBoardMoves(const SimContext & context) const;
+        void makeAllPossibleBoardMoves(const SimContext & context) const;
 
         // assumes there are pickups on the board
         virtual BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const = 0;
@@ -133,6 +133,10 @@ namespace methhead
         int m_score;
         float m_turnDelaySec;
         float m_turnDelaySoFarSec;
+
+        // this was moved out of the makeAllPossibleBoardMoves() funciton only for runtime
+        // optimization
+        static inline std::vector<BoardPos_t> m_possibleMoves;
 
         static inline const float s_turnDelayDefaultSec{ 0.333f };
     };
