@@ -59,6 +59,8 @@ namespace methhead
 
         Scores calcScores() const;
 
+        void sortPiecesVectors();
+
       private:
         bool m_isModeNormal;
         bool m_willStop;

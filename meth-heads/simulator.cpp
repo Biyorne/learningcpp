@@ -47,13 +47,42 @@ namespace methhead
         spawnLoot(5);
         spawnMethHead(Motivation::lazy, 1);
         spawnMethHead(Motivation::greedy, 1);
+    }
 
-        std::sort(
-            std::begin(m_pickups),
-            std::end(m_pickups),
-            [](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-                return (left->boardPos() < right->boardPos());
-            });
+    void Simulator::sortPiecesVectors()
+    {
+        // sync all actor turn delays
+        if (m_actors.size() > 1)
+        {
+            const float minWaitPerTurnSec =
+                (*std::min_element(
+                     std::begin(m_actors),
+                     std::end(m_actors),
+                     [](const IActorUPtr_t & left, const IActorUPtr_t & right) {
+                         return (left->turnDelaySec() < right->turnDelaySec());
+                     }))
+                    ->turnDelaySec();
+
+            for (IActorUPtr_t & actor : m_actors)
+            {
+                actor->turnDelaySec(minWaitPerTurnSec);
+            }
+
+            std::partition(
+                std::begin(m_actors), std::end(m_actors), [](const IActorUPtr_t & actor) {
+                    return (actor->motivation() == Motivation::lazy);
+                });
+        }
+
+        if (m_pickups.size() > 1)
+        {
+            std::sort(
+                std::begin(m_pickups),
+                std::end(m_pickups),
+                [](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
+                    return (left->boardPos() < right->boardPos());
+                });
+        }
     }
 
     void Simulator::reset()
@@ -140,23 +169,6 @@ namespace methhead
             // std::cout << "Spawning "
             //          << ((m_actors.back()->motivation() == Motivation::lazy) ? "Lazy" : "Greedy")
             //          << " at " << m_actors.back()->boardPos() << std::endl;
-        }
-
-        if (m_actors.size() > 1)
-        {
-            const float minWaitPerTurnSec =
-                (*std::min_element(
-                     std::begin(m_actors),
-                     std::end(m_actors),
-                     [](const IActorUPtr_t & left, const IActorUPtr_t & right) {
-                         return (left->turnDelaySec() < right->turnDelaySec());
-                     }))
-                    ->turnDelaySec();
-
-            for (IActorUPtr_t & actor : m_actors)
-            {
-                actor->turnDelaySec(minWaitPerTurnSec);
-            }
         }
     }
 
@@ -482,6 +494,8 @@ namespace methhead
         std::cout << "  " << fps << " / " << m_framesPerSecondMax << "  ";
         std::cout << m_actors.size() << "/" << m_pickups.size() << "  ";
         std::cout << scores.lazy << " / " << scores.greedy << std::endl;
+
+        sortPiecesVectors();
     }
 
     void Simulator::draw()

@@ -21,7 +21,8 @@ namespace methhead
         , m_fpsText(m_constants.default_text)
         , m_pickupText(m_constants.default_text)
         , m_pickupSprite(m_constants.loot_texture)
-        , m_actorSprite(m_constants.lazy_texture) // since both same, either works here
+        , m_lazySprite(m_constants.lazy_texture)
+        , m_greedySprite(m_constants.greedy_texture)
     {
         setupBoardDrawingVerts();
         setupColorsAndStyles();
@@ -42,7 +43,8 @@ namespace methhead
     {
         scale(m_pickupText, m_constants.cell_size);
         scale(m_pickupSprite, m_constants.cell_size);
-        scale(m_actorSprite, m_constants.cell_size);
+        scale(m_lazySprite, m_constants.cell_size);
+        scale(m_greedySprite, m_constants.cell_size);
     }
 
     void DisplayVariables::setupBoardDrawingVerts()
@@ -114,15 +116,14 @@ namespace methhead
 
             if (actor->motivation() == Motivation::lazy)
             {
-                m_actorSprite.setTexture(m_constants.lazy_texture, true);
+                center(m_lazySprite, windowRect);
+                target.draw(m_lazySprite, states);
             }
             else
             {
-                m_actorSprite.setTexture(m_constants.greedy_texture, true);
+                center(m_greedySprite, windowRect);
+                target.draw(m_greedySprite, states);
             }
-
-            center(m_actorSprite, windowRect);
-            target.draw(m_actorSprite, states);
         }
     }
 

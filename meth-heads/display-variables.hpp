@@ -53,7 +53,8 @@ namespace methhead
         sf::Text m_fpsText;
         mutable sf::Text m_pickupText;
         mutable sf::Sprite m_pickupSprite;
-        mutable sf::Sprite m_actorSprite;
+        mutable sf::Sprite m_lazySprite;
+        mutable sf::Sprite m_greedySprite;
     };
 } // namespace methhead
 
