@@ -448,6 +448,12 @@ namespace methhead
     {
         ++m_framesSinceStatusCount;
 
+        // only bother checking if it's time to display status every 100th frame
+        if ((m_framesSinceStatusCount % 100) != 0)
+        {
+            return;
+        }
+
         const float elapsedStatusTimeSec{ m_statusClock.getElapsedTime().asSeconds() };
         if (elapsedStatusTimeSec < m_statusIntervalSec)
         {
