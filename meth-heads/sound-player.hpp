@@ -14,13 +14,18 @@
 
 namespace methhead
 {
-
     class SoundPlayer
     {
-    public:
+      public:
         SoundPlayer();
 
         void play(const std::string & name, const Random & random);
+
+        void stopAll();
+        void loadAll();
+
+        bool load(const std::initializer_list<std::string> names);
+        bool load(const std::string & name);
 
         void volumeUp();
         void volumeDown();
@@ -29,13 +34,16 @@ namespace methhead
         void muteButton();
         inline bool isMuted() const { return m_isMuted; }
 
-    private:
+      private:
         void volume(const float newVolume);
 
         std::vector<std::size_t> findNameMatchingIndexes(const std::string & name) const;
 
-        void loadFiles();
-        void loadFile(const std::filesystem::directory_entry & entry);
+        bool loadFiles(const std::string & nameMustMatch = "");
+
+        bool loadFile(
+            const std::filesystem::directory_entry & entry, const std::string & nameMustMatch = "");
+
         bool willLoad(const std::filesystem::directory_entry & entry) const;
 
         struct SoundEffect
@@ -47,7 +55,7 @@ namespace methhead
             sf::SoundBuffer buffer;
         };
 
-    private:
+      private:
         bool m_isMuted;
 
         float m_volume;
@@ -58,7 +66,6 @@ namespace methhead
         std::string m_fileExtensions;
         std::vector<std::unique_ptr<SoundEffect>> m_soundEffects;
     };
-
 } // namespace methhead
 
 #endif // METHHEADS_SOUND_PLAYER_HPP_INCLUDED

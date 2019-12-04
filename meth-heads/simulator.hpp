@@ -3,11 +3,14 @@
 
 #include "animation-player.hpp"
 #include "display-variables.hpp"
+#include "enums.hpp"
 #include "meth-head.hpp"
 #include "random.hpp"
+#include "settings.hpp"
 #include "sound-player.hpp"
 #include "utils.hpp"
 
+#include <fstream>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
@@ -23,21 +26,23 @@ namespace methhead
             int greedy = 0;
         };
 
-    public:
+      public:
         explicit Simulator(const Mode mode);
 
         void run();
 
-    private:
-        bool willKeepRunning() const;
+      private:
+        void reset();
 
-        void consoleStatus();
-        void printConsoleStatus();
+        void spawnInitialPieces();
+        float getSimFrameTimeElapsed();
+        void printStatus();
 
-        std::pair<BoardPos_t, sf::FloatRect> randomSpawnPos() const;
+        void spawnMethHead(const Motivation motive, const std::size_t count = 1);
+        void spawnLoot(const std::size_t count = 1);
 
-        void spawnMethHead(const Motivation motive);
-        void spawnLoot();
+        void killMethHead(const std::size_t count = 1);
+        void killLoot(const std::size_t count = 1);
 
         void handleEvents();
         void handleEvent(const sf::Event & event);
@@ -45,14 +50,26 @@ namespace methhead
         void update(const float elapsedSec);
         void draw();
 
+        void handleActorPickingUp(IActor & actor);
+
+        inline bool isFreeBoardPos() const noexcept
+        {
+            return ((m_actors.size() + m_pickups.size()) < m_displayVars.constants().cell_count);
+        }
+
         Scores calcScores() const;
 
-    private:
-        Mode m_mode;
-        sf::VideoMode m_videoMode;
+        void sortPiecesVectors();
 
+      private:
+        bool m_isModeNormal;
+        bool m_willStop;
+
+        sf::VideoMode m_videoMode;
         sf::RenderWindow m_window;
+
         Random m_random;
+        Settings m_settings;
         SoundPlayer m_soundPlayer;
         AnimationPlayer m_animationPlayer;
         DisplayVariables m_displayVars;
@@ -61,13 +78,15 @@ namespace methhead
         std::vector<IPickupUPtr_t> m_pickups;
 
         sf::Clock m_frameClock;
-        float m_timeMultiplier;
+        std::size_t m_framesPerSecondMax;
 
-        sf::Clock m_consoleStatusClock;
-        std::size_t m_consoleStatusFrameCount;
-        std::size_t m_consoleStatusFrameCountMax;
+        sf::Clock m_statusClock;
+        std::size_t m_framesSinceStatusCount;
+        float m_statusIntervalSec;
+        std::size_t m_statusCount;
+
+        SimContext m_context;
     };
-
 } // namespace methhead
 
 #endif // METHHEADS_SIMULATOR_HPP_INCLUDED

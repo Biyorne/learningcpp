@@ -11,36 +11,55 @@
 
 namespace methhead
 {
-
     SoundPlayer::SoundPlayer()
         : m_isMuted(false)
         , m_volume(0.0f)
-        , m_volumeMin(0.0f) // this is what sfml uses
-        , m_volumeMax(100.0f) // this is what sfml uses
-        , m_volumeInc(m_volumeMax / 10.0f) // only ten different vol levels possible
+        , m_volumeMin(0.0f)                 // this is what sfml uses
+        , m_volumeMax(100.0f)               // this is what sfml uses
+        , m_volumeInc(m_volumeMax / 10.0f)  // only ten different vol levels possible
         , m_fileExtensions(".ogg.flac.wav") // dots are required here
         , m_soundEffects()
     {
-        loadFiles();
-
-        // start all sounds at quarter volume
-        volume(m_volumeMax * 0.25f);
+        m_volume = (m_volumeMin + ((m_volumeMax - m_volumeMin) * 0.5f));
     }
 
     void SoundPlayer::play(const std::string & name, const Random & random)
     {
-        if (name.empty() || m_soundEffects.empty() || (m_volume < 1.0f))
+        if (m_volume < 1.0f)
         {
             return;
         }
 
-        const std::vector<std::size_t> nameMatchingIndexes(findNameMatchingIndexes(name));
+        if (name.empty())
+        {
+            std::cerr << "SoundPlayer::play() called with an empty name." << std::endl;
+            return;
+        }
+
+        std::vector<std::size_t> nameMatchingIndexes(findNameMatchingIndexes(name));
         if (nameMatchingIndexes.empty())
         {
-            std::cerr << "SoundPlayer Error:  .play(\"" << name
-                      << "\") called, but none had that name." << std::endl;
+            std::cout << "SoundPlayer::play(\"" << name << "\") called, but none had that name...";
 
-            return;
+            if (!loadFiles(name))
+            {
+                std::cout << "AND none were found to load either.  So nothing will happen."
+                          << std::endl;
+                return;
+            }
+
+            nameMatchingIndexes = findNameMatchingIndexes(name);
+            if (nameMatchingIndexes.empty())
+            {
+                std::cout
+                    << "AND even though some sound effects with that name were loaded, something "
+                       "else went wrong away.  Go figure.  So nothing will happen."
+                    << std::endl;
+
+                return;
+            }
+
+            std::cout << "BUT was able to find and load it.  So it's gonna play now." << std::endl;
         }
 
         const std::size_t index(random.from(nameMatchingIndexes));
@@ -52,6 +71,53 @@ namespace methhead
         }
 
         sfx->sound.play();
+    }
+
+    void SoundPlayer::stopAll()
+    {
+        for (auto & sfx : m_soundEffects)
+        {
+            sfx->sound.stop();
+        }
+    }
+
+    void SoundPlayer::loadAll()
+    {
+        stopAll();
+        m_soundEffects.clear();
+        loadFiles();
+    }
+
+    bool SoundPlayer::load(const std::initializer_list<std::string> names)
+    {
+        bool success{ true };
+
+        for (const std::string & name : names)
+        {
+            if (!load(name))
+            {
+                success = false;
+            }
+        }
+
+        return success;
+    }
+
+    bool SoundPlayer::load(const std::string & name)
+    {
+        if (name.empty())
+        {
+            return false;
+        }
+
+        if (!findNameMatchingIndexes(name).empty())
+        {
+            return true;
+        }
+
+        loadFiles(name);
+
+        return !findNameMatchingIndexes(name).empty();
     }
 
     std::vector<std::size_t> SoundPlayer::findNameMatchingIndexes(const std::string & name) const
@@ -113,28 +179,46 @@ namespace methhead
         }
     }
 
-    void SoundPlayer::loadFiles()
+    bool SoundPlayer::loadFiles(const std::string & nameMustMatch)
     {
         std::filesystem::recursive_directory_iterator dirIter(std::filesystem::current_path());
 
+        bool success{ false };
         for (const std::filesystem::directory_entry & entry : dirIter)
         {
-            if (willLoad(entry))
+            if (!willLoad(entry))
             {
-                loadFile(entry);
+                continue;
+            }
+
+            if (loadFile(entry, nameMustMatch))
+            {
+                success = true;
             }
         }
 
-        if (m_soundEffects.empty())
+        if (!success || m_soundEffects.empty())
         {
             std::cerr << "SoundPlayer Error:  No sound files were found.  Remember that "
                          "MP3s are not supported, only: "
                       << m_fileExtensions << std::endl;
+
+            return false;
         }
+
+        return true;
     }
 
-    void SoundPlayer::loadFile(const std::filesystem::directory_entry & entry)
+    bool SoundPlayer::loadFile(
+        const std::filesystem::directory_entry & entry, const std::string & nameMustMatch)
     {
+        const std::string filename{ entry.path().filename().string() };
+
+        if (!nameMustMatch.empty() && !startsWith(filename, nameMustMatch))
+        {
+            return false;
+        }
+
         auto sfx(std::make_unique<SoundEffect>());
 
         if (!sfx->buffer.loadFromFile(entry.path().string()))
@@ -142,14 +226,30 @@ namespace methhead
             std::cerr << "SoundPlayer Error:  Found a supported file: \"" << entry.path().string()
                       << "\", but an error occurred while loading it." << std::endl;
 
-            return;
+            return false;
         }
 
         sfx->sound.setBuffer(sfx->buffer);
-        sfx->filename = entry.path().filename().string();
+
+        sfx->filename = filename;
+
+        if (!nameMustMatch.empty() && !startsWith(sfx->filename, nameMustMatch))
+        {
+            return false;
+        }
+
+        if ((m_volume > 0.0f) && !m_isMuted)
+        {
+            sfx->sound.setVolume(m_volume);
+        }
+        else
+        {
+            sfx->sound.setVolume(0.0f);
+        }
 
         std::cout << "Loaded Sound Effect: " << sfx->toString() << std::endl;
         m_soundEffects.push_back(std::move(sfx));
+        return true;
     }
 
     bool SoundPlayer::willLoad(const std::filesystem::directory_entry & entry) const
@@ -209,5 +309,4 @@ namespace methhead
 
         return ss.str();
     }
-
 } // namespace methhead

@@ -4,58 +4,82 @@
 
 #include "utils.hpp"
 
+#include <cassert>
 #include <cmath>
 #include <iostream>
 
 namespace methhead
 {
     DisplayConstants::DisplayConstants(const sf::Vector2u & windowSize)
-        : window_size(windowSize)
-        , score_window_bounds(0.0f, 0.0f, 0.0f, 0.0f)
-        , board_window_bounds(0.0f, 0.0f, 0.0f, 0.0f)
+        : inner_window_rect({ 0.0f, 0.0f }, sf::Vector2f(windowSize))
+        , score_rect(0.0f, 0.0f, 0.0f, 0.0f)
+        , board_rect(0.0f, 0.0f, 0.0f, 0.0f)
         , cell_size(0.0f, 0.0f)
-        , horiz_cell_count(0)
-        , vert_cell_count(0)
+        , cell_counts(20, 20)
+        , cell_countsI(cell_counts)
+        , cell_count(cell_counts.x * cell_counts.y)
+        , cell_line_thickness(2.0f)
+        , cell_line_color(220, 220, 220)
+        , cell_background_color(32, 32, 32)
         , font()
         , default_text()
         , loot_texture()
-        , board_map()
-        , cell_background_color(32, 32, 32)
-        , cell_line_color(220, 220, 220)
-        , off_screen_pair()
+        , lazy_texture()
+        , greedy_texture()
         , lazy_color()
         , greedy_color()
     {
-        // shrink the drawable window bounds a bit to create nice looking border
+        assert((cell_counts.x > 0) && (cell_counts.x < windowSize.x));
+        assert((cell_counts.y > 0) && (cell_counts.y < windowSize.y));
+
+        // shrink the drawable window rect a bit to create nice looking border
         const float windowBorderRatio(0.975f);
-        sf::FloatRect window_bounds({ 0.0f, 0.0f }, window_size);
-        scaleRectInPlace(window_bounds, windowBorderRatio);
-
-        // partition the window into a region for drawing scores on the left and board on the right
-        score_window_bounds = window_bounds;
-        score_window_bounds.width *= 0.1f;
-
-        board_window_bounds = window_bounds;
-
-        board_window_bounds.left
-            = (score_window_bounds.left + score_window_bounds.width + score_window_bounds.left);
-
-        board_window_bounds.width -= (score_window_bounds.width + score_window_bounds.left);
+        scaleRectInPlace(inner_window_rect, windowBorderRatio);
+        const sf::Vector2f inner_window_pos(inner_window_rect.left, inner_window_rect.top);
 
         // figure out the cell size (must be square)
-        horiz_cell_count = 20;
-        vert_cell_count = 20;
-        const std::size_t maxCellCount(std::max(horiz_cell_count, vert_cell_count));
+        const std::size_t maxCellsPerSideCount(std::max(cell_counts.x, cell_counts.y));
 
-        const float minBoardWindowBounds(
-            std::min(board_window_bounds.width, board_window_bounds.height));
+        const float minBoardRectSideLength(
+            std::min(inner_window_rect.width, inner_window_rect.height));
 
-        const float cellSideLength(minBoardWindowBounds / static_cast<float>(maxCellCount));
+        const float cellSideLength(
+            minBoardRectSideLength / static_cast<float>(maxCellsPerSideCount));
 
         cell_size.x = cellSideLength;
         cell_size.y = cellSideLength;
 
+        // once we know how many cells there are and what size they are, we can split the screen
+        // into the score and board rects
+        const sf::Vector2f boardSize((cell_counts.x * cell_size.x), (cell_counts.y * cell_size.y));
+
+        const sf::Vector2f boardPos(
+            ((inner_window_rect.left + inner_window_rect.width) - boardSize.x),
+            inner_window_rect.top);
+
+        board_rect = sf::FloatRect(boardPos, boardSize);
+
+        //
+
+        const sf::Vector2f fpsSize(
+            ((inner_window_rect.width - boardSize.x) - inner_window_pos.x), (boardSize.y * 0.1f));
+
+        const sf::Vector2f fpsPos(
+            inner_window_pos.x, (inner_window_rect.top + inner_window_rect.height - fpsSize.y));
+
+        fps_rect = sf::FloatRect(fpsPos, fpsSize);
+
+        //
+
+        const sf::Vector2f scoreSize(
+            fpsSize.x, ((boardSize.y - fpsSize.y) - inner_window_rect.top));
+
+        const sf::Vector2f scorePos(inner_window_pos);
+
+        score_rect = sf::FloatRect(scorePos, scoreSize);
+
         // load the font and setup the default text options
+
         const std::string fontFilePath("font/gentium-plus.ttf");
 
         if (font.loadFromFile(fontFilePath))
@@ -68,78 +92,26 @@ namespace methhead
         }
 
         // this is a handy trick to calc the right font size when working with sfml
-        default_text.setCharacterSize(static_cast<unsigned int>(std::sqrt(window_size.x)));
+        default_text.setCharacterSize(static_cast<unsigned int>(std::sqrt(windowSize.x)));
 
+        //
         if (!loot_texture.loadFromFile("image/loot.png"))
         {
             std::cerr << "Error:  Unable to load loot image from: image/loot.png" << std::endl;
         }
 
-        populateBoardMap();
+        if (!lazy_texture.loadFromFile("image/head-1.png"))
+        {
+            std::cerr << "Unable to load lazy image: image/head-1.png" << std::endl;
+        }
 
-        off_screen_pair.first = BoardPos_t((horiz_cell_count * 2), (vert_cell_count * 2));
-        off_screen_pair.second = sf::FloatRect((window_size * 2.0f), cell_size);
+        if (!greedy_texture.loadFromFile("image/head-2.png"))
+        {
+            std::cerr << "Unable to load greedy image: image/head-2.png" << std::endl;
+        }
 
         // these colors should move after cleanup
         lazy_color = sf::Color(80, 80, 255);
         greedy_color = sf::Color(100, 255, 100);
     }
-
-    sf::Vector2f DisplayConstants::boardToWindowPos(const BoardPos_t & boardPos) const
-    {
-        const auto bounds(board_window_bounds);
-
-        const sf::Vector2f windowPos(bounds.left, bounds.top);
-
-        const sf::Vector2f gridTotalSize(
-            (cell_size.x * static_cast<float>(horiz_cell_count)),
-            (cell_size.y * static_cast<float>(vert_cell_count)));
-
-        const float centerOffsetHoriz((bounds.width - gridTotalSize.x) * 0.5f);
-        const float centerOffsetVert((bounds.height - gridTotalSize.y) * 0.5f);
-        const sf::Vector2f centerOffset(centerOffsetHoriz, centerOffsetVert);
-
-        sf::Vector2f pos(
-            (static_cast<float>(boardPos.x) * cell_size.x),
-            (static_cast<float>(boardPos.y) * cell_size.y));
-
-        pos += (windowPos + centerOffset);
-        return pos;
-    }
-
-    sf::FloatRect DisplayConstants::cellBounds(const BoardPos_t & boardPos) const
-    {
-        const auto foundIter(board_map.find(boardPos));
-
-        if (foundIter == std::end(board_map))
-        {
-            return off_screen_pair.second;
-        }
-
-        return foundIter->second.getGlobalBounds();
-    }
-
-    void DisplayConstants::populateBoardMap()
-    {
-        const float outlineThickness(cell_size.x * 0.025f);
-
-        for (std::size_t horiz(0); horiz < horiz_cell_count; ++horiz)
-        {
-            for (std::size_t vert(0); vert < vert_cell_count; ++vert)
-            {
-                const BoardPos_t boardPos(static_cast<int>(horiz), static_cast<int>(vert));
-                const sf::Vector2f windowPos(boardToWindowPos(boardPos));
-
-                sf::RectangleShape rectangle;
-                rectangle.setPosition(windowPos);
-                rectangle.setSize(cell_size);
-                rectangle.setOutlineThickness(outlineThickness);
-                rectangle.setFillColor(cell_background_color);
-                rectangle.setOutlineColor(cell_line_color);
-
-                board_map.insert(std::make_pair(boardPos, rectangle));
-            }
-        }
-    }
-
 } // namespace methhead

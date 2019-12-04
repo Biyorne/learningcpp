@@ -61,7 +61,7 @@ namespace methhead
 
         struct Animation
         {
-            bool is_finished = false;
+            bool is_finished = true;
             sf::Sprite sprite;
             std::size_t cache_index = 0;
             std::size_t frame_index = 0;
@@ -69,26 +69,46 @@ namespace methhead
             float sec_per_frame = 0.0f;
         };
 
-    public:
-        AnimationPlayer();
+      public:
+        explicit AnimationPlayer();
+
+        void loadAll();
+        bool load(const std::initializer_list<std::string> names);
+        bool load(const std::string & name);
 
         void play(
             const Random & random,
             const std::string & name,
             const sf::Vector2f & pos,
             const sf::Vector2f & size,
-            const sf::Color & color = sf::Color::White,
-            const float secPerFrame = m_defaultSecPerFrame);
+            const float secPerFrame = m_defaultSecPerFrame,
+            const sf::Color & color = sf::Color::White);
+
+        void play(
+            const Random & random,
+            const std::string & name,
+            const sf::FloatRect & rect,
+            const float secPerFrame = m_defaultSecPerFrame,
+            const sf::Color & color = sf::Color::White)
+        {
+            const sf::Vector2f pos(rect.left, rect.top);
+            const sf::Vector2f size(rect.width, rect.height);
+            play(random, name, pos, size, secPerFrame, color);
+        }
 
         void update(const float elapsedTimeSec);
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
-    private:
-        void loadAnimationDirectories();
+        void stopAll();
+
+      private:
+        void loadAnimationDirectories(const std::string & nameToLoad = "");
 
         bool willLoadAnimationDirectory(
-            const std::filesystem::directory_entry & dirEntry, ParsedDirectoryName & parse) const;
+            const std::filesystem::directory_entry & dirEntry,
+            ParsedDirectoryName & parse,
+            const std::string & nameToLoad = "") const;
 
         void loadAnimationDirectory(
             const std::filesystem::directory_entry & dirEntry, const ParsedDirectoryName & parse);
@@ -127,14 +147,13 @@ namespace methhead
 
         std::vector<std::size_t> findNameMatchingIndexes(const std::string & name) const;
 
-    private:
+      private:
         std::vector<Animation> m_animations;
         std::vector<std::unique_ptr<ImageCache>> m_imageCaches;
         std::string m_fileExtensions;
 
-        static inline float m_defaultSecPerFrame = 0.15f;
+        static inline float m_defaultSecPerFrame = 0.025f;
     };
-
 } // namespace methhead
 
 #endif // METHHEADS_ANIMATION_HPP_INCLUDED

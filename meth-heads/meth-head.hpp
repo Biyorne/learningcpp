@@ -1,14 +1,16 @@
 #ifndef METHHEADS_BASE_HPP_INCLUDED
 #define METHHEADS_BASE_HPP_INCLUDED
 
-#include "animation-player.hpp"
 #include "display-constants.hpp"
 #include "random.hpp"
-#include "sound-player.hpp"
+#include "scoped-board-pos-handler.hpp"
+#include "sim-context.hpp"
+#include "utils.hpp"
 
 #include <SFML/Graphics.hpp>
 
 #include <algorithm>
+#include <cassert>
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,10 +20,10 @@ namespace methhead
     // TODO in the end of all cleanup this should have a different home...
     //
     // also... TODO In the end, after cleaning up everything, there should be no more need for
-    // "none" none/invalid options in enums is not always code smell, it is not always wrong, but on
-    // the other hand, always adding none/invalid to your enums as a default/habit just in case it
-    // is needed IS ALWAYS A BAD HABIT, becauase any enum that has a none/invalid option that is not
-    // needed is often a huge source of errors and mess.
+    // "none" none/invalid options in enums is not always code smell, it is not always wrong,
+    // but on the other hand, always adding none/invalid to your enums as a default/habit just
+    // in case it is needed IS ALWAYS A BAD HABIT, becauase any enum that has a none/invalid
+    // option that is not needed is often a huge source of errors and mess.
     enum class Motivation
     {
         none,
@@ -31,191 +33,149 @@ namespace methhead
 
     //
 
-    struct IActor : public sf::Drawable
+    struct IActor
     {
         virtual ~IActor() = default;
 
-        virtual int score() const = 0;
-        virtual void score(const int value) = 0;
+        virtual int score() const noexcept = 0;
+        virtual void score(const int value) noexcept = 0;
 
-        virtual Motivation motivation() const = 0;
+        virtual Motivation motivation() const noexcept = 0;
+        virtual BoardPos_t boardPos() const noexcept = 0;
 
-        virtual BoardPos_t boardPos() const = 0;
+        virtual float turnDelaySec() const noexcept = 0;
+        virtual void turnDelaySec(const float sec) noexcept = 0;
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
-
-        virtual void update(
-            const float elapsedMs,
-            SoundPlayer & soundPlayer,
-            const Random & random,
-            AnimationPlayer & animationPlayer)
-            = 0;
+        virtual void update(const SimContext & context, const float elapsedMs) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
-    using IActorUVec_t = std::vector<IActorUPtr_t>;
 
     //
 
-    struct IPickup : public sf::Drawable
+    struct IPickup
     {
         virtual ~IPickup() = default;
 
         virtual void changeActor(IActor & actor) = 0;
-
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
-
-        virtual void update(
-            const float elapsedMs,
-            SoundPlayer & soundPlayer,
-            const Random & random,
-            AnimationPlayer & animationPlayer)
-            = 0;
-
         virtual BoardPos_t boardPos() const = 0;
-
         virtual int value() const = 0;
     };
 
     using IPickupUPtr_t = std::unique_ptr<IPickup>;
-    using IPickupUVec_t = std::vector<IPickupUPtr_t>;
 
     //
 
-    class Loot : public IPickup
+    class Loot
+        : public IPickup
+        , public ScopedBoardPosHandler
     {
-    public:
-        Loot(
-            const std::string & imagePath,
-            const BoardPos_t & boardPos,
-            const sf::FloatRect & windowBounds,
-            const int value,
-            const DisplayConstants & displayConstants)
-            : m_texture()
-            , m_sprite()
-            , m_value(value)
-            , m_boardPos(boardPos)
-            , m_text(displayConstants.default_text)
-        {
-            if (!m_texture.loadFromFile(imagePath))
-            {
-                throw std::runtime_error("Unable to load image: " + imagePath);
-            }
-
-            m_sprite.setTexture(m_texture, true);
-            placeInBounds(m_sprite, windowBounds);
-            m_sprite.setColor(sf::Color(255, 255, 255, 127));
-
-            m_text.setFillColor(sf::Color::Yellow);
-            m_text.setString(std::to_string(m_value));
-            placeInBounds(m_text, windowBounds);
-        }
+      public:
+        explicit Loot(const SimContext & context)
+            : ScopedBoardPosHandler(context)
+            , m_value(context.random.fromTo(1, 99))
+        {}
 
         virtual ~Loot() = default;
 
-        void changeActor(IActor & actor) override { actor.score(actor.score() + m_value); }
+        inline int value() const noexcept final { return m_value; }
+        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosHandler::get(); }
+        inline void changeActor(IActor & actor) override { actor.score(actor.score() + m_value); }
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
-        {
-            target.draw(m_sprite, states);
-            target.draw(m_text, states);
-        }
-
-        void update(const float, SoundPlayer &, const Random &, AnimationPlayer &) override {}
-
-        BoardPos_t boardPos() const final { return m_boardPos; }
-
-        int value() const final { return m_value; }
-
-    private:
-        sf::Texture m_texture;
-        sf::Sprite m_sprite;
+      private:
         int m_value;
-        BoardPos_t m_boardPos;
-        sf::Text m_text;
     };
 
     //
 
-    class MethHeadBase : public IActor
+    class MethHeadBase
+        : public IActor
+        , public ScopedBoardPosHandler
     {
-    protected:
-        MethHeadBase(
-            const std::string & imagePath,
-            const BoardPos_t & boardPos,
-            const sf::FloatRect & windowBounds,
-            const float waitBetweenActionsSec = 0.333f);
-
+      protected:
+        explicit MethHeadBase(const SimContext & context);
         virtual ~MethHeadBase() = default;
 
-    public:
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const final;
+      public:
+        void update(const SimContext & context, const float elapsedSec) override;
 
-        void update(
-            const float elapsedSec,
-            SoundPlayer & soundPlayer,
-            const Random & random,
-            AnimationPlayer & animationPlayer) override;
+        inline int score() const noexcept final { return m_score; }
+        inline void score(const int value) noexcept final { m_score = value; }
 
-        int score() const final { return m_score; }
-        void score(const int value) final { m_score = value; }
+        inline float turnDelaySec() const noexcept final { return m_turnDelaySec; }
+        inline void turnDelaySec(const float sec) noexcept final { m_turnDelaySec = sec; }
 
-        BoardPos_t boardPos() const final { return m_boardPos; }
+        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosHandler::get(); }
 
-    protected:
-        void moveToward(
-            SoundPlayer & soundPlayer,
-            const Random & random,
-            AnimationPlayer & animationPlayer,
-            const BoardPos_t & targetBoardPos);
+      protected:
+        bool isTimeToMove(const float elapsedSec) noexcept;
 
-        static inline int calcDistance(const BoardPos_t & from, const BoardPos_t & to)
+        bool move(const SimContext & context);
+
+        inline int walkDistanceBetween(const BoardPos_t & from, const BoardPos_t & to) const
+            noexcept
         {
-            return (std::abs(to.x - from.x) + std::abs(to.y - from.y));
+            const BoardPos_t posDiff(to - from);
+            return (std::abs(posDiff.x) + std::abs(posDiff.y));
         }
 
-        BoardPos_t pickTarget() const;
+        inline int walkDistanceTo(const BoardPos_t & to) const noexcept
+        {
+            return walkDistanceBetween(boardPos(), to);
+        }
 
-        virtual void sortPickups(IPickupUVec_t & pickups) const = 0;
+        void makeAllPossibleBoardMoves(const SimContext & context) const;
 
-    private:
+        // assumes there are pickups on the board
+        virtual BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const = 0;
+
+      private:
         int m_score;
-        sf::Texture m_texture;
-        sf::Sprite m_sprite;
-        BoardPos_t m_boardPos;
+        float m_turnDelaySec;
+        float m_turnDelaySoFarSec;
 
-        float m_waitBetweenActionsSec;
-        float m_elapsedSinceLastActionSec;
+        // this was moved out of the makeAllPossibleBoardMoves() funciton only for runtime
+        // optimization
+        static inline std::vector<BoardPos_t> m_possibleMoves;
+
+        static inline const float s_turnDelayDefaultSec{ 0.333f };
     };
 
     //
 
     class Lazy : public MethHeadBase
     {
-    public:
-        Lazy(
-            const std::string & imagePath,
-            const BoardPos_t & boardPos,
-            const sf::FloatRect & windowBounds)
-            : MethHeadBase(imagePath, boardPos, windowBounds)
+      public:
+        explicit Lazy(const SimContext & context)
+            : MethHeadBase(context)
         {}
 
         virtual ~Lazy() = default;
 
-        Motivation motivation() const final { return Motivation::lazy; }
+        inline Motivation motivation() const noexcept final { return Motivation::lazy; }
 
-    private:
-        void sortPickups(IPickupUVec_t & pickups) const final
+      private:
+        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
         {
-            std::sort(
-                std::begin(pickups),
-                std::end(pickups),
-                [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-                    const int distLeft(calcDistance(boardPos(), left->boardPos()));
-                    const int distRight(calcDistance(boardPos(), right->boardPos()));
+            std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
+            std::size_t bestDistance(std::numeric_limits<std::size_t>::max());
 
-                    return (distLeft < distRight);
-                });
+            for (std::size_t i(0); i < context.pickups.size(); ++i)
+            {
+                const std::size_t distance{ static_cast<std::size_t>(
+                    walkDistanceTo(context.pickups.at(i)->boardPos())) };
+
+                if (distance < bestDistance)
+                {
+                    bestIndex = i;
+                    bestDistance = distance;
+                }
+            }
+
+            assert(bestIndex < context.pickups.size());
+            assert(bestDistance <= context.display.cell_count);
+
+            return context.pickups.at(bestIndex)->boardPos();
         }
     };
 
@@ -223,30 +183,38 @@ namespace methhead
 
     class Greedy : public MethHeadBase
     {
-    public:
-        Greedy(
-            const std::string & imagePath,
-            const BoardPos_t & boardPos,
-            const sf::FloatRect & windowBounds)
-            : MethHeadBase(imagePath, boardPos, windowBounds)
+      public:
+        explicit Greedy(const SimContext & context)
+            : MethHeadBase(context)
         {}
 
         virtual ~Greedy() = default;
 
-        Motivation motivation() const final { return Motivation::greedy; }
+        inline Motivation motivation() const noexcept final { return Motivation::greedy; }
 
-    private:
-        void sortPickups(IPickupUVec_t & pickups) const final
+      private:
+        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
         {
-            std::sort(
-                std::begin(pickups),
-                std::end(pickups),
-                [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-                    return (left->value() > right->value());
-                });
+            std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
+            std::size_t bestValue(0);
+
+            for (std::size_t i(0); i < context.pickups.size(); ++i)
+            {
+                const std::size_t value{ static_cast<std::size_t>(context.pickups.at(i)->value()) };
+
+                if (value > bestValue)
+                {
+                    bestIndex = i;
+                    bestValue = value;
+                }
+            }
+
+            assert(bestIndex < context.pickups.size());
+            assert(bestValue > 0);
+
+            return context.pickups.at(bestIndex)->boardPos();
         }
     };
-
 } // namespace methhead
 
 #endif // METHHEADS_BASE_HPP_INCLUDED

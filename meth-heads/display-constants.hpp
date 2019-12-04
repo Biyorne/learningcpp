@@ -1,50 +1,68 @@
 #ifndef METHHEADS_DISPLAY_CONSTANTS_HPP_INCLUDED
 #define METHHEADS_DISPLAY_CONSTANTS_HPP_INCLUDED
+//
+// display-constants.hpp
+//
+#include "utils.hpp"
 
 #include <SFML/Graphics.hpp>
 
 namespace methhead
 {
-    using BoardPos_t = sf::Vector2i;
-    using BoardMap_t = std::map<BoardPos_t, sf::RectangleShape>;
-
     struct DisplayConstants
     {
         explicit DisplayConstants(const sf::Vector2u & windowSize);
 
-        sf::Vector2f boardToWindowPos(const BoardPos_t & boardPos) const;
+        inline sf::Vector2f boardPosToWindowPos(const BoardPos_t & boardPos) const noexcept
+        {
+            return (
+                sf::Vector2f(board_rect.left, board_rect.top) +
+                (sf::Vector2f(boardPos) * cell_size));
+        }
 
-        sf::FloatRect cellBounds(const BoardPos_t & boardPos) const;
+        inline sf::FloatRect boardPosToWindowRect(const BoardPos_t & boardPos) const noexcept
+        {
+            return sf::FloatRect(boardPosToWindowPos(boardPos), cell_size);
+        }
 
-        sf::Vector2f window_size;
+        inline BoardPos_t indexToBoardPos(const std::size_t index) const noexcept
+        {
+            return { static_cast<int>(index % cell_counts.x),
+                     static_cast<int>(index / cell_counts.x) };
+        }
 
-        sf::FloatRect score_window_bounds;
-        sf::FloatRect board_window_bounds;
+        inline std::size_t boardPosToIndex(const BoardPos_t & pos) const noexcept
+        {
+            return static_cast<std::size_t>((pos.y * cell_countsI.x) + pos.x);
+        }
+
+        // just smaller than the actual window size to create a border
+        sf::FloatRect inner_window_rect;
+
+        sf::FloatRect score_rect;
+        sf::FloatRect board_rect;
+        sf::FloatRect fps_rect;
 
         sf::Vector2f cell_size;
-        std::size_t horiz_cell_count;
-        std::size_t vert_cell_count;
+        sf::Vector2s cell_counts;
+        sf::Vector2i cell_countsI;
+        std::size_t cell_count;
+
+        float cell_line_thickness;
+        sf::Color cell_line_color;
+        sf::Color cell_background_color;
 
         sf::Font font;
         sf::Text default_text;
 
         sf::Texture loot_texture;
-
-        BoardMap_t board_map;
-
-        sf::Color cell_background_color;
-        sf::Color cell_line_color;
-
-        std::pair<BoardPos_t, sf::FloatRect> off_screen_pair;
+        sf::Texture lazy_texture;
+        sf::Texture greedy_texture;
 
         // TODO these two probably don't belong here
         sf::Color lazy_color;
         sf::Color greedy_color;
-
-    private:
-        void populateBoardMap();
     };
-
 } // namespace methhead
 
 #endif // METHHEADS_DISPLAY_CONSTANTS_HPP_INCLUDED

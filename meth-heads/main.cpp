@@ -4,14 +4,19 @@
 
 #include <cstddef>
 
-inline std::string makeImageFilename(const std::size_t) { return ""; }
+using namespace methhead;
 
 int main()
 {
-    using namespace methhead;
+    {
+        methhead::Simulator simulator(Mode::Normal);
+        simulator.run();
+    }
 
-    Simulator simulator(Mode::Normal);
-    simulator.run();
+    {
+        methhead::Simulator simulator(Mode::SpeedTest);
+        simulator.run();
+    }
 
     return EXIT_SUCCESS;
 }

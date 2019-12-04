@@ -12,12 +12,12 @@ namespace methhead
 {
     class Random
     {
-    public:
+      public:
         Random()
             : m_engine()
         {
             std::random_device randomDevice;
-            std::seed_seq seedSequence { randomDevice() };
+            std::seed_seq seedSequence{ randomDevice() };
             m_engine.seed(seedSequence);
 
             // anything from thousands to hundred-thousands will work here
@@ -109,10 +109,9 @@ namespace methhead
             shuffle(std::begin(container), std::end(container));
         }
 
-    private:
+      private:
         mutable std::mt19937 m_engine;
     };
-
 } // namespace methhead
 
 #endif // METHHEADS_RANDOM_HPP_INCLUDED

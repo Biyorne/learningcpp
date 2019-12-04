@@ -8,141 +8,112 @@
 #include "error-handling.hpp"
 #include "utils.hpp"
 
-#include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <stdexcept>
 
 namespace methhead
 {
+    MethHeadBase::MethHeadBase(const SimContext & context)
+        : ScopedBoardPosHandler(context)
+        , m_score(0)
+        , m_turnDelaySec(s_turnDelayDefaultSec)
+        , m_turnDelaySoFarSec(0.0f)
+    {}
 
-    MethHeadBase::MethHeadBase(
-        const std::string & imagePath,
-        const BoardPos_t & boardPos,
-        const sf::FloatRect & windowBounds,
-        const float waitBetweenActionsSec)
-        : m_score(0)
-        , m_texture()
-        , m_sprite()
-        , m_boardPos(boardPos)
-        , m_waitBetweenActionsSec(waitBetweenActionsSec)
-        , m_elapsedSinceLastActionSec(0.0f)
+    void MethHeadBase::update(const SimContext & context, const float elapsedSec)
     {
-        if (!m_texture.loadFromFile(imagePath))
+        assert(context.isPickupAt(boardPos()) == false);
+        assert(context.isActorAt(boardPos()) == true);
+
+        if (isTimeToMove(elapsedSec))
         {
-            throw std::runtime_error("Unable to load image: " + imagePath);
-        }
-
-        m_sprite.setTexture(m_texture, true);
-        placeInBounds(m_sprite, windowBounds);
-    }
-
-    void MethHeadBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
-    {
-        target.draw(m_sprite, states);
-    }
-
-    void MethHeadBase::update(
-        const float elapsedSec,
-        SoundPlayer & soundPlayer,
-        const Random & random,
-        AnimationPlayer & animationPlayer)
-    {
-        m_elapsedSinceLastActionSec += elapsedSec;
-
-        if (m_elapsedSinceLastActionSec > m_waitBetweenActionsSec)
-        {
-            m_elapsedSinceLastActionSec = 0.0f;
-            moveToward(soundPlayer, random, animationPlayer, pickTarget());
+            move(context);
         }
     }
 
-    void MethHeadBase::moveToward(
-        SoundPlayer & soundPlayer,
-        const Random & random,
-        AnimationPlayer & animationPlayer,
-        const BoardPos_t & targetBoardPos)
+    bool MethHeadBase::isTimeToMove(const float elapsedSec) noexcept
     {
-        //   assertOrThrow(
-        //       (targetBoardPos.x >= 0) && (targetBoardPos.y >= 0),
-        //       "Target Cell Position is invalid (x or y was negative).");
-        //
-        //   const BoardPos_t oldCellPos(m_boardPos);
-        //   BoardPos_t newCellPos(m_boardPos);
-        //
-        //   // TODO make move decision random
-        //   if (targetBoardPos.x < oldCellPos.x)
-        //   {
-        //       --newCellPos.x;
-        //   }
-        //   else if (targetBoardPos.x > oldCellPos.x)
-        //   {
-        //       ++newCellPos.x;
-        //   }
-        //   else if (targetBoardPos.y < oldCellPos.y)
-        //   {
-        //       --newCellPos.y;
-        //   }
-        //   else if (targetBoardPos.y > oldCellPos.y)
-        //   {
-        //       ++newCellPos.y;
-        //   }
-        //
-        //   assertOrThrow(
-        //       (newCellPos != oldCellPos),
-        //       "MethHead::moveToward() failed because target_cellPos was the same as "
-        //       "current_cellPos.");
-        //
-        //   m_boardPos = newCellPos;
-        //
-        //   board[oldCellPos].motivation = Motivation::none;
-        //
-        //   Cell & newCell(board[newCellPos]);
-        //
-        //   const bool didBumpIntoOtherActor { (Motivation::none != newCell.motivation) };
-        //
-        //   newCell.motivation = motivation();
-        //
-        //   placeInBounds(m_sprite, board[newCellPos].bounds());
-        //
-        //   if (newCell.loot > 0)
-        //   {
-        //       m_score += static_cast<int>(newCell.loot);
-        //       newCell.loot = 0;
-        //
-        //       soundPlayer.play("coin", random);
-        //       spawnLoot(board, random);
-        //
-        //       return true;
-        //   }
-        //   else if (didBumpIntoOtherActor)
-        //   {
-        //       soundPlayer.play(random.from({ "punch", "ouch" }), random);
-        //
-        //       const sf::Vector2f spriteSize { m_sprite.getGlobalBounds().width,
-        //                                       m_sprite.getGlobalBounds().height };
-        //
-        //       const sf::Vector2f animPos { m_sprite.getPosition() + (spriteSize * 0.5f) };
-        //
-        //       animationPlayer.play(random, "explode", animPos, (spriteSize * 4.0f));
-        //   }
-        //
-        //   return false;
+        m_turnDelaySoFarSec += elapsedSec;
+
+        if (m_turnDelaySoFarSec > m_turnDelaySec)
+        {
+            m_turnDelaySoFarSec = (m_turnDelaySoFarSec - m_turnDelaySec);
+            return true;
+        }
+
+        return false;
     }
 
-    BoardPos_t MethHeadBase::pickTarget() const
+    void MethHeadBase::makeAllPossibleBoardMoves(const SimContext & context) const
     {
-        //   auto allLootPos = MethHeadBase::findAllLoot(board);
-        //
-        //   if (allLootPos.empty())
-        //   {
-        //       return { -1, -1 };
-        //   }
-        //
-        //   sortAllLoot(allLootPos);
-        //
-        //   return allLootPos.front().cell_pos;
-        return m_boardPos;
+        const BoardPos_t currentPos{ boardPos() };
+
+        m_possibleMoves.clear();
+
+        // clang-format off
+        if (currentPos.x > 0)                                     { m_possibleMoves.push_back(currentPos + sf::Vector2i(-1,  0)); }
+        if (currentPos.x < (context.display.cell_countsI.x - 1))  { m_possibleMoves.push_back(currentPos + sf::Vector2i( 1,  0)); }
+        if (currentPos.y > 0)                                     { m_possibleMoves.push_back(currentPos + sf::Vector2i( 0, -1)); }
+        if (currentPos.y < (context.display.cell_countsI.y - 1))  { m_possibleMoves.push_back(currentPos + sf::Vector2i( 0,  1)); }
+        // clang-format on
+
+        m_possibleMoves.erase(
+            std::remove_if(
+                std::begin(m_possibleMoves),
+                std::end(m_possibleMoves),
+                [&context](const BoardPos_t & possiblePos) {
+                    return context.isActorAt(possiblePos);
+                }),
+            std::end(m_possibleMoves));
     }
 
+    bool MethHeadBase::move(const SimContext & context)
+    {
+        if (context.pickups.empty())
+        {
+            return false;
+        }
+
+        const auto targetBoardPos(findMostDesiredPickupBoardPos(context));
+
+        makeAllPossibleBoardMoves(context);
+        if (m_possibleMoves.empty())
+        {
+            // std::cout << "Methhead cannot move because other methheads are in the way."
+            //          << std::endl;
+            return false;
+        }
+
+        std::sort(
+            std::begin(m_possibleMoves),
+            std::end(m_possibleMoves),
+            [&](const BoardPos_t & left, const BoardPos_t & right) {
+                return (
+                    walkDistanceBetween(targetBoardPos, left) <
+                    walkDistanceBetween(targetBoardPos, right));
+            });
+
+        const int closestToTargetDistance{ walkDistanceBetween(
+            targetBoardPos, m_possibleMoves.front()) };
+
+        m_possibleMoves.erase(
+            std::remove_if(
+                std::begin(m_possibleMoves),
+                std::end(m_possibleMoves),
+                [&](const BoardPos_t & pos) {
+                    return (walkDistanceBetween(targetBoardPos, pos) > closestToTargetDistance);
+                }),
+            std::end(m_possibleMoves));
+
+        assert(!m_possibleMoves.empty());
+
+        if (m_possibleMoves.empty())
+        {
+            std::cout << "Methhead cannot move because of unknown error." << std::endl;
+            return false;
+        }
+
+        ScopedBoardPosHandler::set(context, context.random.from(m_possibleMoves));
+        return true;
+    }
 } // namespace methhead
