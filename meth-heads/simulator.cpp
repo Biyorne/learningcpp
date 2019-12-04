@@ -35,8 +35,11 @@ namespace methhead
         {
             m_window.create(m_videoMode, "Meth Heads", sf::Style::Default);
 
-            m_animationPlayer.load({ "orb", "puff" });
-            m_soundPlayer.load({ "coins-1", "coins-2" });
+            if (m_settings.query(Settings::SpecialEffects))
+            {
+                m_animationPlayer.load({ "orb", "puff" });
+                m_soundPlayer.load({ "coins-1", "coins-2" });
+            }
         }
 
         spawnInitialPieces();
@@ -52,42 +55,47 @@ namespace methhead
     void Simulator::sortPiecesVectors()
     {
         // sync all actor turn delays
-        if (m_actors.size() > 1)
-        {
-            const float minWaitPerTurnSec =
-                (*std::min_element(
-                     std::begin(m_actors),
-                     std::end(m_actors),
-                     [](const IActorUPtr_t & left, const IActorUPtr_t & right) {
-                         return (left->turnDelaySec() < right->turnDelaySec());
-                     }))
-                    ->turnDelaySec();
-
-            for (IActorUPtr_t & actor : m_actors)
-            {
-                actor->turnDelaySec(minWaitPerTurnSec);
-            }
-
-            std::partition(
-                std::begin(m_actors), std::end(m_actors), [](const IActorUPtr_t & actor) {
-                    return (actor->motivation() == Motivation::lazy);
-                });
-        }
-
-        if (m_pickups.size() > 1)
-        {
-            std::sort(
-                std::begin(m_pickups),
-                std::end(m_pickups),
-                [](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-                    return (left->boardPos() < right->boardPos());
-                });
-        }
+        // if (m_actors.size() > 1)
+        //{
+        //    const float minWaitPerTurnSec =
+        //        (*std::min_element(
+        //             std::begin(m_actors),
+        //             std::end(m_actors),
+        //             [](const IActorUPtr_t & left, const IActorUPtr_t & right) {
+        //                 return (left->turnDelaySec() < right->turnDelaySec());
+        //             }))
+        //            ->turnDelaySec();
+        //
+        //    for (IActorUPtr_t & actor : m_actors)
+        //    {
+        //        actor->turnDelaySec(minWaitPerTurnSec);
+        //    }
+        //
+        //    std::partition(
+        //        std::begin(m_actors), std::end(m_actors), [](const IActorUPtr_t & actor) {
+        //            return (actor->motivation() == Motivation::lazy);
+        //        });
+        //}
+        //
+        // if (m_pickups.size() > 1)
+        //{
+        //    std::sort(
+        //        std::begin(m_pickups),
+        //        std::end(m_pickups),
+        //        [](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
+        //            return (left->boardPos() < right->boardPos());
+        //        });
+        //}
     }
 
     void Simulator::reset()
     {
         std::cout << "Reset to initial state." << std::endl;
+
+        m_soundPlayer.stopAll();
+        m_animationPlayer.stopAll();
+
+        m_settings = Settings();
 
         m_statusCount = 0;
         m_framesPerSecondMax = 0;
@@ -96,19 +104,13 @@ namespace methhead
         m_frameClock.restart();
         m_statusClock.restart();
 
-        m_settings = Settings();
-
-        m_soundPlayer.stopAll();
-        m_animationPlayer.stopAll();
-
-        m_displayVars.setFps(0);
-        m_displayVars.updateScoreBars(0, 0);
-
         m_actors.clear();
         m_pickups.clear();
 
         // this must happen AFTER ALL pieces(actors and pickups) have destructed
         BoardPositionHandler_t::reset(m_context);
+
+        m_displayVars.updatePerStatus(0, 0, 0);
     }
 
     void Simulator::run()
@@ -335,6 +337,8 @@ namespace methhead
             }
         }
 
+        m_displayVars.updatePerFrame(m_context, elapsedSec);
+
         if (m_isModeNormal && m_settings.query(Settings::SpecialEffects))
         {
             m_animationPlayer.update(elapsedSec);
@@ -463,8 +467,7 @@ namespace methhead
 
         if (m_isModeNormal)
         {
-            m_displayVars.setFps(fps);
-            m_displayVars.updateScoreBars(scores.lazy, scores.greedy);
+            m_displayVars.updatePerStatus(fps, scores.lazy, scores.greedy);
         }
 
         std::cout.imbue(std::locale("")); // this is only to put commas in the big

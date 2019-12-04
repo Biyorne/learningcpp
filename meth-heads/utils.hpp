@@ -135,6 +135,77 @@ namespace methhead
 
     // sfml utils
 
+    template <typename Container_t>
+    void setupQuadVerts(
+        const sf::Vector2f & pos,
+        const sf::Vector2f & size,
+        const std::size_t index,
+        Container_t & verts,
+        const sf::Color & color = sf::Color::Transparent)
+    {
+        // clang-format off
+        verts[index + 0].position = pos;
+        verts[index + 1].position = sf::Vector2f((pos.x + size.x),  pos.y          );
+        verts[index + 2].position = sf::Vector2f((pos.x + size.x), (pos.y + size.y));
+        verts[index + 3].position = sf::Vector2f( pos.x          , (pos.y + size.y));
+        // clang-format on
+
+        if (color.a > 0)
+        {
+            verts[index + 0].color = color;
+            verts[index + 1].color = color;
+            verts[index + 2].color = color;
+            verts[index + 3].color = color;
+        }
+    }
+
+    template <typename Container_t>
+    void setupQuadVerts(
+        const sf::FloatRect & rect,
+        const std::size_t index,
+        Container_t & verts,
+        const sf::Color & color = sf::Color::Transparent)
+    {
+        setupQuadVerts(
+            sf::Vector2f(rect.left, rect.top),
+            sf::Vector2f(rect.width, rect.height),
+            index,
+            verts,
+            color);
+    }
+
+    template <typename Container_t>
+    void appendQuadVerts(
+        const sf::Vector2f & pos,
+        const sf::Vector2f & size,
+        Container_t & verts,
+        const sf::Color & color = sf::Color::Transparent)
+    {
+        std::size_t origSize{ 0 };
+        if constexpr (std::is_same_v<std::remove_cv_t<Container_t>, sf::VertexArray>)
+        {
+            origSize = verts.getVertexCount();
+        }
+        else
+        {
+            origSize = verts.size();
+        }
+
+        verts.resize(origSize + 4);
+
+        setupQuadVerts(pos, size, origSize, verts, color);
+    }
+
+    template <typename Container_t>
+    void appendQuadVerts(
+        const sf::FloatRect & rect,
+        Container_t & verts,
+        const sf::Color & color = sf::Color::Transparent)
+    {
+        appendQuadVerts(
+            sf::Vector2f(rect.left, rect.top), sf::Vector2f(rect.width, rect.height), verts, color);
+    }
+
     // sf::Text needs correction after changing the: string, scale, or characterSize
     template <typename T>
     void localOffsetCorrection(T & text)
@@ -191,6 +262,10 @@ namespace methhead
             return;
         }
 
+        // make sure the origina istop-left (0,0) before scaling or looking at global bounds
+        const auto originOrig{ thing.getOrigin() };
+        thing.setOrigin({});
+
         {
             const float scaleHoriz{ size.x / localBounds.width };
             thing.setScale(scaleHoriz, scaleHoriz);
@@ -202,6 +277,10 @@ namespace methhead
             thing.setScale(scaleVert, scaleVert);
         }
 
+        // restore the original origin
+        thing.setOrigin(originOrig);
+
+        // if T is sf::Text then adjust the origin after scaling
         localOffsetCorrection(thing);
     }
 

@@ -20,6 +20,7 @@ namespace methhead
         {
             None = sf::Keyboard::KeyCount,
             SpecialEffects = sf::Keyboard::Num0,
+            DrawImagesWithVerts = sf::Keyboard::Num1
         };
 
         struct Entry
@@ -31,7 +32,11 @@ namespace methhead
             Enum enumeration{ static_cast<Enum>(sf::Keyboard::KeyCount) };
         };
 
-        Settings() { setupEntry(Enum::SpecialEffects, false); }
+        Settings()
+        {
+            setupEntry(Enum::SpecialEffects, false);
+            setupEntry(Enum::DrawImagesWithVerts, true);
+        }
 
         template <typename T>
         bool query(const T & findBy) const
