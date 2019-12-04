@@ -2,8 +2,8 @@
 #define METHHEADS_BASE_HPP_INCLUDED
 
 #include "display-constants.hpp"
-#include "pos-ref-counter.hpp"
 #include "random.hpp"
+#include "scoped-board-pos-handler.hpp"
 #include "sim-context.hpp"
 #include "utils.hpp"
 
@@ -68,18 +68,18 @@ namespace methhead
 
     class Loot
         : public IPickup
-        , public BoardPositionHandler_t
+        , public ScopedBoardPosHandler
     {
       public:
         explicit Loot(const SimContext & context)
-            : BoardPositionHandler_t(context)
+            : ScopedBoardPosHandler(context)
             , m_value(context.random.fromTo(1, 99))
         {}
 
         virtual ~Loot() = default;
 
         inline int value() const noexcept final { return m_value; }
-        inline BoardPos_t boardPos() const noexcept final { return BoardPositionHandler_t::get(); }
+        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosHandler::get(); }
         inline void changeActor(IActor & actor) override { actor.score(actor.score() + m_value); }
 
       private:
@@ -90,7 +90,7 @@ namespace methhead
 
     class MethHeadBase
         : public IActor
-        , public BoardPositionHandler_t
+        , public ScopedBoardPosHandler
     {
       protected:
         explicit MethHeadBase(const SimContext & context);
@@ -105,7 +105,7 @@ namespace methhead
         inline float turnDelaySec() const noexcept final { return m_turnDelaySec; }
         inline void turnDelaySec(const float sec) noexcept final { m_turnDelaySec = sec; }
 
-        inline BoardPos_t boardPos() const noexcept final { return BoardPositionHandler_t::get(); }
+        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosHandler::get(); }
 
       protected:
         bool isTimeToMove(const float elapsedSec) noexcept;

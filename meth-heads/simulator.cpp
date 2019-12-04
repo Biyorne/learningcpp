@@ -2,7 +2,7 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "simulator.hpp"
 
-#include "pos-ref-counter.hpp"
+#include "scoped-board-pos-handler.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -107,7 +107,7 @@ namespace methhead
         m_pickups.clear();
 
         // this must happen AFTER ALL pieces(actors and pickups) have destructed
-        BoardPositionHandler_t::reset(m_context);
+        ScopedBoardPosHandler::reset(m_context);
 
         m_displayVars.updatePerStatus(0, 0, 0);
     }
