@@ -13,10 +13,10 @@ int main()
         simulator.run();
     }
 
-    //{
-    //    methhead::Simulator simulator(Mode::SpeedTest);
-    //    simulator.run();
-    //}
+    {
+        methhead::Simulator simulator(Mode::SpeedTest);
+        simulator.run();
+    }
 
     return EXIT_SUCCESS;
 }

@@ -54,38 +54,37 @@ namespace methhead
 
     void Simulator::sortPiecesVectors()
     {
-        // sync all actor turn delays
-        // if (m_actors.size() > 1)
-        //{
-        //    const float minWaitPerTurnSec =
-        //        (*std::min_element(
-        //             std::begin(m_actors),
-        //             std::end(m_actors),
-        //             [](const IActorUPtr_t & left, const IActorUPtr_t & right) {
-        //                 return (left->turnDelaySec() < right->turnDelaySec());
-        //             }))
-        //            ->turnDelaySec();
-        //
-        //    for (IActorUPtr_t & actor : m_actors)
-        //    {
-        //        actor->turnDelaySec(minWaitPerTurnSec);
-        //    }
-        //
-        //    std::partition(
-        //        std::begin(m_actors), std::end(m_actors), [](const IActorUPtr_t & actor) {
-        //            return (actor->motivation() == Motivation::lazy);
-        //        });
-        //}
-        //
-        // if (m_pickups.size() > 1)
-        //{
-        //    std::sort(
-        //        std::begin(m_pickups),
-        //        std::end(m_pickups),
-        //        [](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-        //            return (left->boardPos() < right->boardPos());
-        //        });
-        //}
+        // sync all actor turn delays if (m_actors.size() > 1)
+        {
+            const float minWaitPerTurnSec =
+                (*std::min_element(
+                     std::begin(m_actors),
+                     std::end(m_actors),
+                     [](const IActorUPtr_t & left, const IActorUPtr_t & right) {
+                         return (left->turnDelaySec() < right->turnDelaySec());
+                     }))
+                    ->turnDelaySec();
+
+            for (IActorUPtr_t & actor : m_actors)
+            {
+                actor->turnDelaySec(minWaitPerTurnSec);
+            }
+
+            std::partition(
+                std::begin(m_actors), std::end(m_actors), [](const IActorUPtr_t & actor) {
+                    return (actor->motivation() == Motivation::lazy);
+                });
+        }
+
+        if (m_pickups.size() > 1)
+        {
+            std::sort(
+                std::begin(m_pickups),
+                std::end(m_pickups),
+                [](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
+                    return (left->boardPos() < right->boardPos());
+                });
+        }
     }
 
     void Simulator::reset()
@@ -337,11 +336,14 @@ namespace methhead
             }
         }
 
-        m_displayVars.updatePerFrame(m_context, elapsedSec);
-
-        if (m_isModeNormal && m_settings.query(Settings::SpecialEffects))
+        if (m_isModeNormal)
         {
-            m_animationPlayer.update(elapsedSec);
+            m_displayVars.updatePerFrame(m_context, elapsedSec);
+
+            if (m_settings.query(Settings::SpecialEffects))
+            {
+                m_animationPlayer.update(elapsedSec);
+            }
         }
 
         assert((m_actors.size() + m_pickups.size()) <= m_displayVars.constants().cell_count);
