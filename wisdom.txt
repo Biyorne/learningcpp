@@ -1,22 +1,39 @@
-"Think of programming as iterative."
-
 "Simple, correct, fast.  In that order."
 
 "Early optimization is the root of all evil."
 
-"Names must be quick/easy/intuitive to say out loud, search for, and say WHAT they are, instead of HOW they got there."
-
 "Everything should have a singular, clear, and intuitive responsibility."
+
+"Hide the complicated behind the simple."
 
 "Functions should do one thing, and error handling is often one thing."
 
-"Hide the complicated behind the simple."
+"Prefer to put data in the objects clearly responsible for it, rather than in one giant container."
+
+"Names must be quick/easy/intuitive to say out loud, search for, and say WHAT they are, instead of HOW they got there."
 
 "It is easier to write code than it is to read it."
 
 "An if() is small price to pay for intuitive/well-defined/correct/stable behavior."
 
 "A print/cout/log-entry is a small price to pay compared to hours of confused rage-fueled debugging."
+
+"Think of programming as iterative."
+
+"Do not change the container you are iterating through."
+
+-
+
+If your calculation is any kind of "from" and "to", and you want the difference (Or subtract), then always:
+"Take where you're going (To) and subtract where you are (From), and then you get a diff that you add to (From) and get to (To)"
+
+loot=(-100, -100);
+lazy=(5, 20);
+
+const sf::Vector2i diff( loot - lazy); //(-105, -120)
+
+lazy += diff; //(-100, -100)
+
 
 -
 
@@ -140,3 +157,30 @@ Why do so many large/experienced/well-funded software projects not just fail, bu
 	- This is only made worse by programmers who write more code than is required, thinking that they are making the code better, but in the end they just add more bugs, testing time, and worst of all, assumptions.
 
 
+Design Patterns
+	
+	Smart pointer
+
+
+
+Model/View/Controller Architecture Pattern
+
+	+ The point of this architecture pattern is to create a good object oriented design that minimizes coupling and maximizes cohesion.
+	- Too general, never the final solution. Must be customized.
+	
+	Model = How the data is laid out in memory (or on the disc, etc.)
+	View = How we pull data out of the model and change it so it can be output to something else. (Presenter, any kind of output, how it's translated for consumption)
+	Controller = How data comes in and is given to the model
+	
+
+
+How to start writing an application (Architecture)
+
+	Object Oriented Design (OOD)
+		Human intuitive way of breaking the code into who's responsible for what
+	
+	Model/View/Controller
+		Clearest and simplest way for the different parts of the code to communicate
+		
+	Finite State Machine
+		Helps make a fence around the infinite possibilities, helps to see the whole picture
