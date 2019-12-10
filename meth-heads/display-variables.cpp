@@ -254,7 +254,7 @@ namespace methhead
         appendQuadVerts(greedyPos, greedySize, m_scoreQuadVerts, m_constants.greedy_color);
     }
 
-    void DisplayVariables::updatePerFrame(const SimContext & context, const float elapsedMs)
+    void DisplayVariables::updatePerFrame(const SimContext & context, const float)
     {
         m_allLazyImageVerts.clear();
         m_allGreedyImageVerts.clear();

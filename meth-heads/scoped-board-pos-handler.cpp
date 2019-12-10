@@ -20,12 +20,18 @@ namespace methhead
         occupy();
     }
 
-    void ScopedBoardPosHandler::set(const SimContext & context, const BoardPos_t & newPos) noexcept
+    void ScopedBoardPosHandler::setPos(
+        const SimContext & context, const BoardPos_t & newPos) noexcept
     {
         free();
         m_boardPos = newPos;
         m_index = context.display.boardPosToIndex(newPos);
         occupy();
+    }
+
+    bool ScopedBoardPosHandler::isPosFree(const SimContext & context, const BoardPos_t & pos)
+    {
+        return (0 == s_refCounts[context.display.boardPosToIndex(pos)]);
     }
 
     void ScopedBoardPosHandler::reset(const SimContext & context)

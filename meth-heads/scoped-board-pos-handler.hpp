@@ -19,9 +19,11 @@ namespace methhead
         ScopedBoardPosHandler(const SimContext & context);
         virtual ~ScopedBoardPosHandler() { free(); }
 
-        inline BoardPos_t get() const noexcept { return m_boardPos; }
+        inline BoardPos_t getPos() const noexcept { return m_boardPos; }
 
-        void set(const SimContext & context, const BoardPos_t & newPos) noexcept;
+        void setPos(const SimContext & context, const BoardPos_t & newPos) noexcept;
+
+        static bool isPosFree(const SimContext & context, const BoardPos_t & pos);
 
       public:
         static void reset(const SimContext & context);

@@ -79,7 +79,12 @@ namespace methhead
         virtual ~Loot() = default;
 
         inline int value() const noexcept final { return m_value; }
-        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosHandler::get(); }
+
+        inline BoardPos_t boardPos() const noexcept final
+        {
+            return ScopedBoardPosHandler::getPos();
+        }
+
         inline void changeActor(IActor & actor) override { actor.score(actor.score() + m_value); }
 
       private:
@@ -105,40 +110,38 @@ namespace methhead
         inline float turnDelaySec() const noexcept final { return m_turnDelaySec; }
         inline void turnDelaySec(const float sec) noexcept final { m_turnDelaySec = sec; }
 
-        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosHandler::get(); }
+        inline BoardPos_t boardPos() const noexcept final
+        {
+            return ScopedBoardPosHandler::getPos();
+        }
 
       protected:
         bool isTimeToMove(const float elapsedSec) noexcept;
 
-        bool move(const SimContext & context);
-
-        inline int walkDistanceBetween(const BoardPos_t & from, const BoardPos_t & to) const
-            noexcept
-        {
-            const BoardPos_t posDiff(to - from);
-            return (std::abs(posDiff.x) + std::abs(posDiff.y));
-        }
+        void move(const SimContext & context);
 
         inline int walkDistanceTo(const BoardPos_t & to) const noexcept
         {
-            return walkDistanceBetween(boardPos(), to);
+            return walkDistance(boardPos(), to);
         }
 
-        void makeAllPossibleBoardMoves(const SimContext & context) const;
+        WalkDIstVec_t::iterator findAllPossibleMovesEndIter(const SimContext & context);
 
-        // assumes there are pickups on the board
-        virtual BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const = 0;
+        BoardPos_t
+            findMostDesiredMovePos(const SimContext & context, WalkDIstVec_t::iterator & endIter);
+
+        virtual BoardPos_t findMostDesiredPickup(const SimContext & context) const = 0;
 
       private:
         int m_score;
         float m_turnDelaySec;
         float m_turnDelaySoFarSec;
 
-        // this was moved out of the makeAllPossibleBoardMoves() funciton only for runtime
-        // optimization
-        static inline std::vector<BoardPos_t> m_possibleMoves;
+        static inline const float s_turnDelayDefaultSec{ 0.3f };
 
-        static inline const float s_turnDelayDefaultSec{ 0.333f };
+        // this vector was pulled from the move() funciton only as a runtime
+        // optimization, so no other functions should read or write to this member
+        static inline WalkDIstVec_t m_moves{ 4, WalkDistance{} };
     };
 
     //
@@ -155,7 +158,7 @@ namespace methhead
         inline Motivation motivation() const noexcept final { return Motivation::lazy; }
 
       private:
-        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
+        BoardPos_t findMostDesiredPickup(const SimContext & context) const final
         {
             std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
             std::size_t bestDistance(std::numeric_limits<std::size_t>::max());
@@ -193,7 +196,7 @@ namespace methhead
         inline Motivation motivation() const noexcept final { return Motivation::greedy; }
 
       private:
-        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
+        BoardPos_t findMostDesiredPickup(const SimContext & context) const final
         {
             std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
             std::size_t bestValue(0);

@@ -347,55 +347,6 @@ namespace methhead
         }
 
         assert((m_actors.size() + m_pickups.size()) <= m_displayVars.constants().cell_count);
-
-        /*
-        if ((m_statusCount > 1) && (m_random.zeroTo(2000) == 0))
-        {
-            const int doWhat{ m_random.zeroTo(10) };
-
-            if (doWhat < 8)
-            {
-                if (m_random.boolean())
-                {
-                    // std::cout << "RAND kill\n";
-                    if (m_random.boolean())
-                    {
-                        killMethHead(1);
-                    }
-                    else
-                    {
-                        killLoot(1);
-                    }
-                }
-                else
-                {
-                    // std::cout << "RAND spawn\n";
-                    if (m_random.boolean())
-                    {
-                        spawnLoot(1);
-                    }
-                    else if (m_random.boolean())
-                    {
-                        spawnMethHead(Motivation::lazy, 2);
-                    }
-                    else
-                    {
-                        spawnMethHead(Motivation::greedy, 2);
-                    }
-                }
-            }
-            else
-            {
-                // std::cout << "RAND reset\n";
-                reset();
-
-                if (m_random.boolean())
-                {
-                    spawnInitialPieces();
-                }
-            }
-        }
-        */
     }
 
     void Simulator::handleActorPickingUp(IActor & actor)
@@ -411,8 +362,6 @@ namespace methhead
         {
             return;
         }
-
-        assert(m_context.isPickupAt(actorPos) == true);
 
         if (m_isModeNormal && m_settings.query(Settings::SpecialEffects))
         {

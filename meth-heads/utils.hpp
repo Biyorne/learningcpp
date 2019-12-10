@@ -16,6 +16,11 @@ constexpr std::size_t operator"" _st(unsigned long long number)
     return static_cast<std::size_t>(number);
 }
 
+constexpr std::ptrdiff_t operator"" _pd(unsigned long long number)
+{
+    return static_cast<std::ptrdiff_t>(number);
+}
+
 //
 // adding some things into the sf namespace...being naughty here...
 namespace sf
@@ -67,6 +72,25 @@ namespace methhead
         Normal,
         SpeedTest
     };
+
+    struct WalkDistance
+    {
+        BoardPos_t pos{ 0, 0 };
+        int dist{ 0 };
+    };
+
+    using WalkDIstVec_t = std::vector<WalkDistance>;
+
+    inline int walkDistance(const BoardPos_t & from, const BoardPos_t & to) noexcept
+    {
+        const BoardPos_t posDiff(to - from);
+        return (std::abs(posDiff.x) + std::abs(posDiff.y));
+    }
+
+    inline int walkDistance(const WalkDistance & from, const WalkDistance & to) noexcept
+    {
+        return walkDistance(from.pos, to.pos);
+    }
 
     // bit utils
 

@@ -30,16 +30,13 @@ namespace methhead
             const std::vector<IActorUPtr_t> & acts,
             const std::vector<IPickupUPtr_t> & pups,
             const DisplayConstants & disp,
-            const Settings & sets);
-
-        // TODO move these to a better place...probaby PosRefCounter
-        bool isActorAt(const BoardPos_t & posToCheck) const;
-        bool isPickupAt(const BoardPos_t & posToCheck) const;
-
-        inline bool isAnythingAt(const BoardPos_t & posToCheck) const
-        {
-            return (isPickupAt(posToCheck) || isActorAt(posToCheck));
-        }
+            const Settings & sets)
+            : random(rand)
+            , actors(acts)
+            , pickups(pups)
+            , display(disp)
+            , settings(sets)
+        {}
 
         const Random & random;
         const std::vector<IActorUPtr_t> & actors;
