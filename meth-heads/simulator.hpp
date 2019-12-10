@@ -59,8 +59,6 @@ namespace methhead
 
         Scores calcScores() const;
 
-        void sortPiecesVectors();
-
       private:
         bool m_isModeNormal;
         bool m_willStop;
@@ -79,6 +77,7 @@ namespace methhead
 
         sf::Clock m_frameClock;
         std::size_t m_framesPerSecondMax;
+        float m_simTimeMult;
 
         sf::Clock m_statusClock;
         std::size_t m_framesSinceStatusCount;

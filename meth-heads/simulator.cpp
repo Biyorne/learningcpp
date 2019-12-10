@@ -23,12 +23,16 @@ namespace methhead
         , m_actors()
         , m_frameClock()
         , m_framesPerSecondMax(0)
+        , m_simTimeMult(1.0)
         , m_statusClock()
         , m_framesSinceStatusCount(0)
         , m_statusIntervalSec(1.0f)
         , m_statusCount(0)
         , m_context(m_random, m_actors, m_pickups, m_displayVars.constants(), m_settings)
     {
+        m_actors.reserve(1000);
+        m_pickups.reserve(1000);
+
         m_settings.printAll();
 
         if (m_isModeNormal)
@@ -52,41 +56,6 @@ namespace methhead
         spawnMethHead(Motivation::greedy, 1);
     }
 
-    void Simulator::sortPiecesVectors()
-    {
-        // sync all actor turn delays if (m_actors.size() > 1)
-        {
-            const float minWaitPerTurnSec =
-                (*std::min_element(
-                     std::begin(m_actors),
-                     std::end(m_actors),
-                     [](const IActorUPtr_t & left, const IActorUPtr_t & right) {
-                         return (left->turnDelaySec() < right->turnDelaySec());
-                     }))
-                    ->turnDelaySec();
-
-            for (IActorUPtr_t & actor : m_actors)
-            {
-                actor->turnDelaySec(minWaitPerTurnSec);
-            }
-
-            std::partition(
-                std::begin(m_actors), std::end(m_actors), [](const IActorUPtr_t & actor) {
-                    return (actor->motivation() == Motivation::lazy);
-                });
-        }
-
-        if (m_pickups.size() > 1)
-        {
-            std::sort(
-                std::begin(m_pickups),
-                std::end(m_pickups),
-                [](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-                    return (left->boardPos() < right->boardPos());
-                });
-        }
-    }
-
     void Simulator::reset()
     {
         std::cout << "Reset to initial state." << std::endl;
@@ -97,6 +66,7 @@ namespace methhead
         m_settings = Settings();
 
         m_statusCount = 0;
+        m_simTimeMult = 1.0f;
         m_framesPerSecondMax = 0;
         m_framesSinceStatusCount = 0;
 
@@ -140,6 +110,7 @@ namespace methhead
         while (actualElapsedSec < std::numeric_limits<float>::epsilon())
         {
             actualElapsedSec = m_frameClock.getElapsedTime().asSeconds();
+            actualElapsedSec *= m_simTimeMult;
         }
 
         m_frameClock.restart();
@@ -258,20 +229,22 @@ namespace methhead
         {
             m_soundPlayer.volumeDown();
         }
-        else if (sf::Keyboard::Left == event.key.code)
-        {
-            for (const IActorUPtr_t & actor : m_actors)
-            {
-                const float newWaitTimeSec(actor->turnDelaySec() * 1.1f);
-                actor->turnDelaySec(newWaitTimeSec);
-            }
-        }
         else if (sf::Keyboard::Right == event.key.code)
         {
-            for (const IActorUPtr_t & actor : m_actors)
+            m_simTimeMult *= 1.1f;
+
+            if (m_simTimeMult > 50.0f)
             {
-                const float newWaitTimeSec(actor->turnDelaySec() * 0.9f);
-                actor->turnDelaySec(newWaitTimeSec);
+                m_simTimeMult = 50.0f;
+            }
+        }
+        else if (sf::Keyboard::Left == event.key.code)
+        {
+            m_simTimeMult *= 0.9f;
+
+            if (m_simTimeMult < 0.1f)
+            {
+                m_simTimeMult = 0.1f;
             }
         }
         else if (sf::Keyboard::M == event.key.code)
@@ -326,11 +299,9 @@ namespace methhead
     {
         for (IActorUPtr_t & actor : m_actors)
         {
-            const BoardPos_t posBefore{ actor->boardPos() };
             actor->update(m_context, elapsedSec);
-            const BoardPos_t posAfter{ actor->boardPos() };
 
-            if (posBefore != posAfter)
+            if (ScopedBoardPosHandler::refCount(m_context, actor->boardPos()) > 1)
             {
                 handleActorPickingUp(*actor);
             }
@@ -454,8 +425,6 @@ namespace methhead
         std::cout << "  " << fps << " / " << m_framesPerSecondMax << "  ";
         std::cout << m_actors.size() << "/" << m_pickups.size() << "  ";
         std::cout << scores.lazy << " / " << scores.greedy << std::endl;
-
-        sortPiecesVectors();
     }
 
     void Simulator::draw()

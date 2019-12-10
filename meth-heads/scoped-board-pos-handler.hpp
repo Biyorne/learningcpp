@@ -3,16 +3,14 @@
 //
 // scoped-board-pos-handler.hpp
 //
+#include "display-constants.hpp"
+#include "sim-context.hpp"
 #include "utils.hpp"
 
 #include <vector>
 
 namespace methhead
 {
-    struct SimContext;
-
-    //
-
     class ScopedBoardPosHandler
     {
       protected:
@@ -23,9 +21,19 @@ namespace methhead
 
         void setPos(const SimContext & context, const BoardPos_t & newPos) noexcept;
 
-        static bool isPosFree(const SimContext & context, const BoardPos_t & pos);
-
       public:
+        int refCount() const noexcept { return s_refCounts[m_index]; }
+
+        inline static int refCount(const SimContext & context, const BoardPos_t & pos)
+        {
+            return s_refCounts[context.display.boardPosToIndex(pos)];
+        }
+
+        inline static bool isPosFree(const SimContext & context, const BoardPos_t & pos)
+        {
+            return (refCount(context, pos) == 0);
+        }
+
         static void reset(const SimContext & context);
 
       private:

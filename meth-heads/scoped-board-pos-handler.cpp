@@ -29,11 +29,6 @@ namespace methhead
         occupy();
     }
 
-    bool ScopedBoardPosHandler::isPosFree(const SimContext & context, const BoardPos_t & pos)
-    {
-        return (0 == s_refCounts[context.display.boardPosToIndex(pos)]);
-    }
-
     void ScopedBoardPosHandler::reset(const SimContext & context)
     {
         s_refCounts.clear();
