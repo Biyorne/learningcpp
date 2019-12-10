@@ -1,0 +1,68 @@
+Windows Command Prompt (CMD) Tricks
+
+
+Type "cmd" into the address bar of any explorer window to open cmd in that window
+
+
+If cmd is disabled, you can still get to it this way:
+	(1) Create a text file (on the desktop or wherever) with just one line of text: "cmd"
+	(2) Rename that .txt file to .bat
+	(3) double-click, or cntrl+shift+double-click, or right-click and run-as-admin
+
+
+
+Find out if cmd is running as admin:
+	net session
+	
+	If admin:
+		"There are no entries in the list."
+	
+	If NOT admin:
+		"System error 5 has occurred."
+		"Access is denied."
+
+
+
+Sorting dir:
+	"dir | sort" won't work because the date/time/etc appears first.  So...
+	dir /b /s | sort
+
+ 
+Move all cmd output to the clipboard:
+	<command> | clip
+	or
+	dir /b /s | sort | clip
+	
+
+
+Get a list of all apps installed:
+	wmic product get name
+	or
+	wmic product get name | clip
+	
+	
+Get a list of all running processes:
+	tasklist
+	(or if you want all the details)
+	tasklist /v
+
+	
+Create a folder named "aux" that cannot be copied/moved/deleted, and only removed by cmd if empty.
+	md aux\
+	rd aux\
+ 
+ 
+ Hide a folder even if "show hidden":
+	attrib +h +s +r <name>
+	attrib -h -s -r <name>
+
+
+
+
+
+
+
+
+
+
+
