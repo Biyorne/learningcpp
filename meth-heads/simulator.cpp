@@ -30,8 +30,8 @@ namespace methhead
         , m_statusCount(0)
         , m_context(m_random, m_actors, m_pickups, m_displayVars.constants(), m_settings)
     {
-        m_actors.reserve(1000);
-        m_pickups.reserve(1000);
+        m_actors.reserve(m_displayVars.constants().cell_count);
+        m_pickups.reserve(m_displayVars.constants().cell_count);
 
         m_settings.printAll();
 
@@ -124,7 +124,7 @@ namespace methhead
 
         for (std::size_t i(0); i < count; ++i)
         {
-            if (!isFreeBoardPos())
+            if (!ScopedBoardPosHandler::isAnyPosFree(m_context))
             {
                 break;
             }
@@ -148,7 +148,7 @@ namespace methhead
     {
         for (std::size_t i(0); i < count; ++i)
         {
-            if (!isFreeBoardPos())
+            if (!ScopedBoardPosHandler::isAnyPosFree(m_context))
             {
                 break;
             }
@@ -233,9 +233,9 @@ namespace methhead
         {
             m_simTimeMult *= 1.1f;
 
-            if (m_simTimeMult > 50.0f)
+            if (m_simTimeMult > 100.0f)
             {
-                m_simTimeMult = 50.0f;
+                m_simTimeMult = 100.0f;
             }
         }
         else if (sf::Keyboard::Left == event.key.code)
@@ -346,14 +346,14 @@ namespace methhead
                 m_soundPlayer.play("coins-1", m_random);
 
                 m_animationPlayer.play(
-                    m_random, "puff", animWindowBounds, (actor.turnDelaySec() * 2.5f));
+                    m_random, "puff", animWindowBounds, (actor.moveDelaySec() * 2.5f));
             }
             else
             {
                 m_soundPlayer.play("coins-2", m_random);
 
                 m_animationPlayer.play(
-                    m_random, "orb", animWindowBounds, (actor.turnDelaySec() * 2.5f));
+                    m_random, "orb", animWindowBounds, (actor.moveDelaySec() * 2.5f));
             }
         }
 

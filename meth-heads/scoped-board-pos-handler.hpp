@@ -34,6 +34,11 @@ namespace methhead
             return (refCount(context, pos) == 0);
         }
 
+        inline static bool isAnyPosFree(const SimContext & context) noexcept
+        {
+            return ((context.actors.size() + context.pickups.size()) < context.display.cell_count);
+        }
+
         static void reset(const SimContext & context);
 
       private:

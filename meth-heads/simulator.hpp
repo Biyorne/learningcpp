@@ -52,11 +52,6 @@ namespace methhead
 
         void handleActorPickingUp(IActor & actor);
 
-        inline bool isFreeBoardPos() const noexcept
-        {
-            return ((m_actors.size() + m_pickups.size()) < m_displayVars.constants().cell_count);
-        }
-
         Scores calcScores() const;
 
       private:

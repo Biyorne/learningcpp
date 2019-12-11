@@ -23,6 +23,11 @@ namespace methhead
     void ScopedBoardPosHandler::setPos(
         const SimContext & context, const BoardPos_t & newPos) noexcept
     {
+        if (m_boardPos == newPos)
+        {
+            return;
+        }
+
         free();
         m_boardPos = newPos;
         m_index = context.display.boardPosToIndex(newPos);

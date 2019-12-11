@@ -43,8 +43,8 @@ namespace methhead
         virtual Motivation motivation() const noexcept = 0;
         virtual BoardPos_t boardPos() const noexcept = 0;
 
-        virtual float turnDelaySec() const noexcept = 0;
-        virtual void turnDelaySec(const float sec) noexcept = 0;
+        virtual float moveDelaySec() const noexcept = 0;
+        virtual void moveDelaySec(const float sec) noexcept = 0;
 
         virtual void update(const SimContext & context, const float elapsedMs) = 0;
     };
@@ -93,13 +93,13 @@ namespace methhead
 
     //
 
-    class MethHeadBase
+    class ActorBase
         : public IActor
         , public ScopedBoardPosHandler
     {
       protected:
-        explicit MethHeadBase(const SimContext & context);
-        virtual ~MethHeadBase() = default;
+        explicit ActorBase(const SimContext & context);
+        virtual ~ActorBase() = default;
 
       public:
         void update(const SimContext & context, const float elapsedSec) override;
@@ -107,8 +107,8 @@ namespace methhead
         inline int score() const noexcept final { return m_score; }
         inline void score(const int value) noexcept final { m_score = value; }
 
-        inline float turnDelaySec() const noexcept final { return m_turnDelaySec; }
-        inline void turnDelaySec(const float sec) noexcept final { m_turnDelaySec = sec; }
+        inline float moveDelaySec() const noexcept final { return m_moveDelaySec; }
+        inline void moveDelaySec(const float sec) noexcept final { m_moveDelaySec = sec; }
 
         inline BoardPos_t boardPos() const noexcept final
         {
@@ -125,16 +125,16 @@ namespace methhead
             return walkDistance(boardPos(), to);
         }
 
-        WalkDIstVec_t::iterator findAllPossibleMovesEndIter(const SimContext & context);
+        WalkDIstVec_t::iterator findAllPossibleMoves(const SimContext & context);
 
         BoardPos_t
-            findMostDesiredMovePos(const SimContext & context, WalkDIstVec_t::iterator & endIter);
+            findBestMoveTowardTarget(const SimContext & context, WalkDIstVec_t::iterator & endIter);
 
-        virtual BoardPos_t findMostDesiredPickup(const SimContext & context) const = 0;
+        virtual BoardPos_t findTargetPos(const SimContext & context) const = 0;
 
       private:
         int m_score;
-        float m_turnDelaySec;
+        float m_moveDelaySec;
         float m_turnDelaySoFarSec;
 
         static inline const float s_turnDelayDefaultSec{ 0.3f };
@@ -146,11 +146,11 @@ namespace methhead
 
     //
 
-    class Lazy : public MethHeadBase
+    class Lazy : public ActorBase
     {
       public:
         explicit Lazy(const SimContext & context)
-            : MethHeadBase(context)
+            : ActorBase(context)
         {}
 
         virtual ~Lazy() = default;
@@ -158,37 +158,31 @@ namespace methhead
         inline Motivation motivation() const noexcept final { return Motivation::lazy; }
 
       private:
-        BoardPos_t findMostDesiredPickup(const SimContext & context) const final
+        BoardPos_t findTargetPos(const SimContext & context) const final
         {
-            std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
-            std::size_t bestDistance(std::numeric_limits<std::size_t>::max());
+            assert(!context.pickups.empty());
 
-            for (std::size_t i(0); i < context.pickups.size(); ++i)
-            {
-                const std::size_t distance{ static_cast<std::size_t>(
-                    walkDistanceTo(context.pickups.at(i)->boardPos())) };
+            const BoardPos_t pos{ boardPos() };
 
-                if (distance < bestDistance)
-                {
-                    bestIndex = i;
-                    bestDistance = distance;
-                }
-            }
-
-            assert(bestIndex < context.pickups.size());
-            assert(bestDistance <= context.display.cell_count);
-
-            return context.pickups.at(bestIndex)->boardPos();
+            return (*std::min_element(
+                        std::begin(context.pickups),
+                        std::end(context.pickups),
+                        [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
+                            return (
+                                walkDistance(pos, left->boardPos()) <
+                                walkDistance(pos, right->boardPos()));
+                        }))
+                ->boardPos();
         }
     };
 
     //
 
-    class Greedy : public MethHeadBase
+    class Greedy : public ActorBase
     {
       public:
         explicit Greedy(const SimContext & context)
-            : MethHeadBase(context)
+            : ActorBase(context)
         {}
 
         virtual ~Greedy() = default;
@@ -196,26 +190,17 @@ namespace methhead
         inline Motivation motivation() const noexcept final { return Motivation::greedy; }
 
       private:
-        BoardPos_t findMostDesiredPickup(const SimContext & context) const final
+        BoardPos_t findTargetPos(const SimContext & context) const final
         {
-            std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
-            std::size_t bestValue(0);
+            assert(!context.pickups.empty());
 
-            for (std::size_t i(0); i < context.pickups.size(); ++i)
-            {
-                const std::size_t value{ static_cast<std::size_t>(context.pickups.at(i)->value()) };
-
-                if (value > bestValue)
-                {
-                    bestIndex = i;
-                    bestValue = value;
-                }
-            }
-
-            assert(bestIndex < context.pickups.size());
-            assert(bestValue > 0);
-
-            return context.pickups.at(bestIndex)->boardPos();
+            return (*std::min_element(
+                        std::begin(context.pickups),
+                        std::end(context.pickups),
+                        [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
+                            return (left->value() > right->value());
+                        }))
+                ->boardPos();
         }
     };
 } // namespace methhead

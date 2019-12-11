@@ -65,33 +65,6 @@ namespace sf
 
 namespace methhead
 {
-    using BoardPos_t = sf::Vector2i;
-
-    enum class Mode
-    {
-        Normal,
-        SpeedTest
-    };
-
-    struct WalkDistance
-    {
-        BoardPos_t pos{ 0, 0 };
-        int dist{ 0 };
-    };
-
-    using WalkDIstVec_t = std::vector<WalkDistance>;
-
-    inline int walkDistance(const BoardPos_t & from, const BoardPos_t & to) noexcept
-    {
-        const BoardPos_t posDiff(to - from);
-        return (std::abs(posDiff.x) + std::abs(posDiff.y));
-    }
-
-    inline int walkDistance(const WalkDistance & from, const WalkDistance & to) noexcept
-    {
-        return walkDistance(from.pos, to.pos);
-    }
-
     // bit utils
 
     // Counting High Bits
@@ -364,6 +337,29 @@ namespace methhead
         }
 
         return destIter;
+    }
+
+    //
+
+    using BoardPos_t = sf::Vector2i;
+
+    enum class Mode
+    {
+        Normal,
+        SpeedTest
+    };
+
+    struct WalkDistance
+    {
+        BoardPos_t pos{ 0, 0 };
+        int dist{ 0 };
+    };
+
+    using WalkDIstVec_t = std::vector<WalkDistance>;
+
+    inline int walkDistance(const BoardPos_t & from, const BoardPos_t & to) noexcept
+    {
+        return (simpleAbs(to.x - from.x) + simpleAbs(to.y - from.y));
     }
 } // namespace methhead
 
