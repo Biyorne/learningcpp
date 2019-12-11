@@ -56,17 +56,47 @@ namespace methhead
             pickTarget(context);
         }
 
-        WalkDIstVec_t::iterator endIter = findAllPossibleMoves(context);
+        const BoardPos_t currPos{ boardPos() };
+        const sf::Vector2i counts{ context.display.cell_countsI };
 
-        // NOTE: This ensures tha m_moves is NOT empty, which would cause crashes below.
+        // start with all four possible direction moves
+        // clang-format off
+        m_moves.resize(4);
+        m_moves[0].pos = (currPos + sf::Vector2i(-1,  0));
+        m_moves[1].pos = (currPos + sf::Vector2i( 1,  0));
+        m_moves[2].pos = (currPos + sf::Vector2i( 0, -1));
+        m_moves[3].pos = (currPos + sf::Vector2i( 0,  1));
+        // clang-format on
+
+        // remove any off-board moves
+        WalkDIstVec_t::iterator endIter = std::remove_if(
+            std::begin(m_moves), std::end(m_moves), [&](const WalkDistance & walkDist) {
+                const BoardPos_t & pos{ walkDist.pos };
+                return ((pos.x < 0) || (pos.y < 0) || (pos.x >= counts.x) || (pos.y >= counts.y));
+            });
+
+        // remove any moves already taken by other actors
+        endIter = std::remove_if(std::begin(m_moves), endIter, [&](const WalkDistance & walkDist) {
+            if (isPosFree(context, walkDist.pos))
+            {
+                return false;
+            }
+
+            const auto foundIter = std::find_if(
+                std::begin(context.actors),
+                std::end(context.actors),
+                [&](const IActorUPtr_t & actor) { return (walkDist.pos == actor->boardPos()); });
+
+            return foundIter != std::end(context.actors);
+        });
+
+        // bail if no valid moves remain
         if (std::begin(m_moves) == endIter)
         {
             return false;
         }
 
-        assert(std::distance(std::begin(m_moves), endIter) > 0);
-
-        // handle the case where there is only one possible move
+        // finish here if there is only one possible move
         if ((std::begin(m_moves) + 1) == endIter)
         {
             ScopedBoardPosHandler::setPos(context, m_moves[0].pos);
@@ -75,82 +105,31 @@ namespace methhead
 
         assert(std::distance(std::begin(m_moves), endIter) > 1);
 
-        setPos(context, findBestMoveTowardTarget(context, endIter));
-        return true;
-    }
-
-    WalkDIstVec_t::iterator ActorBase::findAllPossibleMoves(const SimContext & context)
-    {
-        m_moves.clear();
-
-        const BoardPos_t pos{ boardPos() };
-        const sf::Vector2i counts{ context.display.cell_countsI };
-
-        // clang-format off
-        if (pos.x > 0)              m_moves.push_back({(pos + sf::Vector2i(-1,  0)), 0 });
-        if (pos.x < (counts.x - 1)) m_moves.push_back({(pos + sf::Vector2i( 1,  0)), 0 });
-        if (pos.y > 0)              m_moves.push_back({(pos + sf::Vector2i( 0, -1)), 0 });
-        if (pos.y < (counts.y - 1)) m_moves.push_back({(pos + sf::Vector2i( 0,  1)), 0 });
-        // clang-format on
-
-        return std::remove_if(
-            std::begin(m_moves), std::end(m_moves), [&](const WalkDistance & walkDist) {
-                if (isPosFree(context, walkDist.pos))
-                {
-                    return false;
-                }
-
-                const auto foundIter = std::find_if(
-                    std::begin(context.actors),
-                    std::end(context.actors),
-                    [&](const IActorUPtr_t & actor) {
-                        return (walkDist.pos == actor->boardPos());
-                    });
-
-                return foundIter != std::end(context.actors);
-            });
-    }
-
-    BoardPos_t ActorBase::findBestMoveTowardTarget(
-        const SimContext & context, WalkDIstVec_t::iterator & endIter)
-    {
-        assert(std::distance(std::begin(m_moves), endIter) > 1);
-
-        int shortestWalkingDistance{ std::numeric_limits<int>::max() };
+        // calc how far each move is from the target
         for (auto iter(std::begin(m_moves)); iter != endIter; ++iter)
         {
             iter->dist = walkDistance(iter->pos, m_targetBoardPos);
-
-            if (iter->dist < shortestWalkingDistance)
-            {
-                shortestWalkingDistance = iter->dist;
-            }
         }
 
+        // find the shortest distance among all remaining moves
+        const int shortestWalkDist =
+            (*std::min_element(
+                 std::begin(m_moves),
+                 endIter,
+                 [&](const WalkDistance & left, const WalkDistance & right) {
+                     return (left.dist < right.dist);
+                 }))
+                .dist;
+
+        // remove any moves that are farther than the shortest distance
         endIter = std::remove_if(std::begin(m_moves), endIter, [&](const WalkDistance & posDist) {
-            return posDist.dist > shortestWalkingDistance;
+            return posDist.dist > shortestWalkDist;
         });
 
-        const auto beginIter{ std::begin(m_moves) };
+        // random select one
+        const BoardPos_t newPos{ context.random.from(std::begin(m_moves), endIter).pos };
 
-        if ((beginIter + 1) == endIter)
-        {
-            return m_moves[0].pos;
-        }
-        else if ((beginIter + 2) == endIter)
-        {
-            if (context.random.boolean())
-            {
-                return m_moves[0].pos;
-            }
-            else
-            {
-                return m_moves[1].pos;
-            }
-        }
-        else
-        {
-            return m_moves[context.random.fromTo(0_st, 2_st)].pos;
-        }
+        setPos(context, newPos);
+        return true;
     }
 } // namespace methhead

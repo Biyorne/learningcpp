@@ -423,7 +423,14 @@ namespace methhead
 
         std::cout << "  " << fps << " / " << m_framesPerSecondMax << "  ";
         std::cout << m_actors.size() << "/" << m_pickups.size() << "  ";
-        std::cout << scores.lazy << " / " << scores.greedy << std::endl;
+        std::cout << scores.lazy << " / " << scores.greedy << "  ";
+
+        std::cout << "lazy by "
+                  << 100.0f - (100.0f * (static_cast<float>(scores.greedy) /
+                                         static_cast<float>(scores.lazy)))
+                  << "%";
+
+        std::cout << std::endl;
     }
 
     void Simulator::draw()

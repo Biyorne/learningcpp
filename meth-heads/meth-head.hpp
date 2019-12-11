@@ -118,7 +118,7 @@ namespace methhead
             return ScopedBoardPosHandler::getPos();
         }
 
-        virtual void pickTarget(const SimContext & context) = 0;
+        void pickTarget(const SimContext & context) override = 0;
 
       protected:
         bool isTimeToMove(const float elapsedSec) noexcept;
@@ -129,11 +129,6 @@ namespace methhead
         {
             return walkDistance(boardPos(), to);
         }
-
-        WalkDIstVec_t::iterator findAllPossibleMoves(const SimContext & context);
-
-        BoardPos_t
-            findBestMoveTowardTarget(const SimContext & context, WalkDIstVec_t::iterator & endIter);
 
       protected:
         BoardPos_t m_targetBoardPos;
@@ -147,7 +142,7 @@ namespace methhead
 
         // this vector was pulled from the move() funciton only as a runtime
         // optimization, so no other functions should read or write to this member
-        static inline WalkDIstVec_t m_moves{ 4, WalkDistance{} };
+        static inline WalkDIstVec_t m_moves;
     };
 
     //

@@ -47,25 +47,22 @@ namespace methhead
             reset(context);
         }
 
-        const std::size_t count{ s_refCounts.size() };
-        const std::size_t startIndex{ context.random.zeroTo(count - 1) };
-        std::size_t currentIndex{ startIndex };
+        const std::size_t size{ s_refCounts.size() };
+        const std::size_t finalIndex{ context.random.zeroTo(size - 1) };
 
-        do
+        for (std::size_t index(finalIndex + 1); index != finalIndex; ++index)
         {
-            if (currentIndex >= count)
+            if (index >= size)
             {
-                currentIndex = 0;
+                index = 0;
             }
 
-            if (0 == s_refCounts[currentIndex])
+            if (0 == s_refCounts[index])
             {
-                break;
+                return index;
             }
-        } while (++currentIndex != startIndex);
+        }
 
-        assert(s_refCounts[currentIndex] == 0);
-
-        return currentIndex;
+        return 0;
     }
 } // namespace methhead

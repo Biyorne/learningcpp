@@ -24,7 +24,6 @@ namespace methhead
 #endif
         }
     }
-
 } // namespace methhead
 
 #endif // METHHEADS_ERROR_HANDLING_HPP_INCLUDED
