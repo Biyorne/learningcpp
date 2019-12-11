@@ -46,7 +46,7 @@ namespace methhead
             }
         }
 
-        spawnInitialPieces();
+        reset();
     }
 
     void Simulator::spawnInitialPieces()
@@ -58,12 +58,12 @@ namespace methhead
 
     void Simulator::reset()
     {
-        std::cout << "Reset to initial state." << std::endl;
+        m_settings = Settings();
+
+        m_displayVars.updatePerStatus(0, 0, 0);
 
         m_soundPlayer.stopAll();
         m_animationPlayer.stopAll();
-
-        m_settings = Settings();
 
         m_statusCount = 0;
         m_simTimeMult = 1.0f;
@@ -73,13 +73,12 @@ namespace methhead
         m_frameClock.restart();
         m_statusClock.restart();
 
+        // the order of these remaining items is critical
+        // for example, ScopedBoardPosHandler::reset() must happen AFTER all pieces are destructed
         m_actors.clear();
         m_pickups.clear();
-
-        // this must happen AFTER ALL pieces(actors and pickups) have destructed
         ScopedBoardPosHandler::reset(m_context);
-
-        m_displayVars.updatePerStatus(0, 0, 0);
+        spawnInitialPieces();
     }
 
     void Simulator::run()
@@ -154,10 +153,9 @@ namespace methhead
             }
 
             m_pickups.push_back(std::make_unique<Loot>(m_context));
-
-            // std::cout << "Spawning Loot worth " << m_pickups.back()->value() << " at "
-            //          << m_pickups.back()->boardPos() << std::endl;
         }
+
+        forceActorsToPickNewTargets();
     }
 
     void Simulator::killMethHead(const std::size_t count)
@@ -187,11 +185,10 @@ namespace methhead
                 break;
             }
 
-            // std::cout << "Killing Loot worth " << m_pickups.back()->value() << " at "
-            //          << m_pickups.back()->boardPos() << std::endl;
-
             m_pickups.pop_back();
         }
+
+        forceActorsToPickNewTargets();
     }
 
     void Simulator::handleEvents()
@@ -287,7 +284,6 @@ namespace methhead
         else if (sf::Keyboard::R == event.key.code)
         {
             reset();
-            spawnInitialPieces();
         }
         else
         {
@@ -299,11 +295,14 @@ namespace methhead
     {
         for (IActorUPtr_t & actor : m_actors)
         {
-            actor->update(m_context, elapsedSec);
+            if (!actor->update(m_context, elapsedSec))
+            {
+                continue;
+            }
 
             if (ScopedBoardPosHandler::refCount(m_context, actor->boardPos()) > 1)
             {
-                handleActorPickingUp(*actor);
+                handlePiecesColliding(*actor);
             }
         }
 
@@ -320,7 +319,7 @@ namespace methhead
         assert((m_actors.size() + m_pickups.size()) <= m_displayVars.constants().cell_count);
     }
 
-    void Simulator::handleActorPickingUp(IActor & actor)
+    void Simulator::handlePiecesColliding(IActor & actor)
     {
         const BoardPos_t actorPos{ actor.boardPos() };
 
@@ -460,5 +459,13 @@ namespace methhead
         }
 
         return scores;
+    }
+
+    void Simulator::forceActorsToPickNewTargets()
+    {
+        for (IActorUPtr_t & actor : m_actors)
+        {
+            actor->pickTarget(m_context);
+        }
     }
 } // namespace methhead

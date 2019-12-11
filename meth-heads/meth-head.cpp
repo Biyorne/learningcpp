@@ -15,19 +15,20 @@ namespace methhead
 {
     ActorBase::ActorBase(const SimContext & context)
         : ScopedBoardPosHandler(context)
+        , m_targetBoardPos(0, 0)
         , m_score(0)
         , m_moveDelaySec(s_turnDelayDefaultSec)
         , m_turnDelaySoFarSec(0.0f)
     {}
 
-    void ActorBase::update(const SimContext & context, const float elapsedSec)
+    bool ActorBase::update(const SimContext & context, const float elapsedSec)
     {
         if (!isTimeToMove(elapsedSec))
         {
-            return;
+            return false;
         }
 
-        move(context);
+        return move(context);
     }
 
     bool ActorBase::isTimeToMove(const float elapsedSec) noexcept
@@ -43,11 +44,16 @@ namespace methhead
         return false;
     }
 
-    void ActorBase::move(const SimContext & context)
+    bool ActorBase::move(const SimContext & context)
     {
         if (context.pickups.empty())
         {
-            return;
+            return false;
+        }
+
+        if (boardPos() == m_targetBoardPos)
+        {
+            pickTarget(context);
         }
 
         WalkDIstVec_t::iterator endIter = findAllPossibleMoves(context);
@@ -55,7 +61,7 @@ namespace methhead
         // NOTE: This ensures tha m_moves is NOT empty, which would cause crashes below.
         if (std::begin(m_moves) == endIter)
         {
-            return;
+            return false;
         }
 
         assert(std::distance(std::begin(m_moves), endIter) > 0);
@@ -64,12 +70,13 @@ namespace methhead
         if ((std::begin(m_moves) + 1) == endIter)
         {
             ScopedBoardPosHandler::setPos(context, m_moves[0].pos);
-            return;
+            return true;
         }
 
         assert(std::distance(std::begin(m_moves), endIter) > 1);
 
         setPos(context, findBestMoveTowardTarget(context, endIter));
+        return true;
     }
 
     WalkDIstVec_t::iterator ActorBase::findAllPossibleMoves(const SimContext & context)
@@ -109,14 +116,10 @@ namespace methhead
     {
         assert(std::distance(std::begin(m_moves), endIter) > 1);
 
-        const BoardPos_t targetPos{ findTargetPos(context) };
-
-        assert(targetPos != boardPos());
-
         int shortestWalkingDistance{ std::numeric_limits<int>::max() };
         for (auto iter(std::begin(m_moves)); iter != endIter; ++iter)
         {
-            iter->dist = walkDistance(iter->pos, targetPos);
+            iter->dist = walkDistance(iter->pos, m_targetBoardPos);
 
             if (iter->dist < shortestWalkingDistance)
             {
@@ -129,20 +132,25 @@ namespace methhead
         });
 
         const auto beginIter{ std::begin(m_moves) };
-        BoardPos_t newPos{ beginIter->pos };
 
-        if ((beginIter + 2) == endIter)
+        if ((beginIter + 1) == endIter)
+        {
+            return m_moves[0].pos;
+        }
+        else if ((beginIter + 2) == endIter)
         {
             if (context.random.boolean())
             {
-                newPos = m_moves[1].pos;
+                return m_moves[0].pos;
+            }
+            else
+            {
+                return m_moves[1].pos;
             }
         }
-        else if ((beginIter + 3) == endIter)
+        else
         {
-            newPos = m_moves[context.random.fromTo(0_st, 2_st)].pos;
+            return m_moves[context.random.fromTo(0_st, 2_st)].pos;
         }
-
-        return newPos;
     }
 } // namespace methhead

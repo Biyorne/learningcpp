@@ -46,7 +46,10 @@ namespace methhead
         virtual float moveDelaySec() const noexcept = 0;
         virtual void moveDelaySec(const float sec) noexcept = 0;
 
-        virtual void update(const SimContext & context, const float elapsedMs) = 0;
+        // returns true if the actor moved or needs attention from the Simulator
+        virtual bool update(const SimContext & context, const float elapsedMs) = 0;
+
+        virtual void pickTarget(const SimContext & context) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
@@ -102,7 +105,7 @@ namespace methhead
         virtual ~ActorBase() = default;
 
       public:
-        void update(const SimContext & context, const float elapsedSec) override;
+        bool update(const SimContext & context, const float elapsedSec) override;
 
         inline int score() const noexcept final { return m_score; }
         inline void score(const int value) noexcept final { m_score = value; }
@@ -115,10 +118,12 @@ namespace methhead
             return ScopedBoardPosHandler::getPos();
         }
 
+        virtual void pickTarget(const SimContext & context) = 0;
+
       protected:
         bool isTimeToMove(const float elapsedSec) noexcept;
 
-        void move(const SimContext & context);
+        bool move(const SimContext & context);
 
         inline int walkDistanceTo(const BoardPos_t & to) const noexcept
         {
@@ -130,7 +135,8 @@ namespace methhead
         BoardPos_t
             findBestMoveTowardTarget(const SimContext & context, WalkDIstVec_t::iterator & endIter);
 
-        virtual BoardPos_t findTargetPos(const SimContext & context) const = 0;
+      protected:
+        BoardPos_t m_targetBoardPos;
 
       private:
         int m_score;
@@ -151,28 +157,35 @@ namespace methhead
       public:
         explicit Lazy(const SimContext & context)
             : ActorBase(context)
-        {}
+        {
+            pickTarget(context);
+        }
 
         virtual ~Lazy() = default;
 
+        // TODO TEACH
         inline Motivation motivation() const noexcept final { return Motivation::lazy; }
 
       private:
-        BoardPos_t findTargetPos(const SimContext & context) const final
+        void pickTarget(const SimContext & context) final
         {
-            assert(!context.pickups.empty());
-
             const BoardPos_t pos{ boardPos() };
 
-            return (*std::min_element(
-                        std::begin(context.pickups),
-                        std::end(context.pickups),
-                        [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-                            return (
-                                walkDistance(pos, left->boardPos()) <
-                                walkDistance(pos, right->boardPos()));
-                        }))
-                ->boardPos();
+            if (context.pickups.empty())
+            {
+                m_targetBoardPos = pos;
+                return;
+            }
+
+            const auto foundIter = std::min_element(
+                std::begin(context.pickups),
+                std::end(context.pickups),
+                [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
+                    return (
+                        walkDistance(pos, left->boardPos()) < walkDistance(pos, right->boardPos()));
+                });
+
+            m_targetBoardPos = (*foundIter)->boardPos();
         }
     };
 
@@ -183,24 +196,31 @@ namespace methhead
       public:
         explicit Greedy(const SimContext & context)
             : ActorBase(context)
-        {}
+        {
+            pickTarget(context);
+        }
 
         virtual ~Greedy() = default;
 
         inline Motivation motivation() const noexcept final { return Motivation::greedy; }
 
       private:
-        BoardPos_t findTargetPos(const SimContext & context) const final
+        void pickTarget(const SimContext & context) final
         {
-            assert(!context.pickups.empty());
+            if (context.pickups.empty())
+            {
+                m_targetBoardPos = boardPos();
+                return;
+            }
 
-            return (*std::min_element(
-                        std::begin(context.pickups),
-                        std::end(context.pickups),
-                        [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
-                            return (left->value() > right->value());
-                        }))
-                ->boardPos();
+            const auto foundIter = std::max_element(
+                std::begin(context.pickups),
+                std::end(context.pickups),
+                [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
+                    return (left->value() < right->value());
+                });
+
+            m_targetBoardPos = (*foundIter)->boardPos();
         }
     };
 } // namespace methhead

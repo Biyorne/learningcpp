@@ -28,6 +28,7 @@ namespace methhead
 
       public:
         explicit Simulator(const Mode mode);
+        ~Simulator() { m_window.close(); }
 
         void run();
 
@@ -50,7 +51,9 @@ namespace methhead
         void update(const float elapsedSec);
         void draw();
 
-        void handleActorPickingUp(IActor & actor);
+        void handlePiecesColliding(IActor & actor);
+
+        void forceActorsToPickNewTargets();
 
         Scores calcScores() const;
 
