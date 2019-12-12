@@ -65,7 +65,7 @@ namespace methhead
     }
 
     void AnimationPlayer::play(
-        const Random & random,
+        const RandomCache & random,
         const std::string & name,
         const sf::Vector2f & pos,
         const sf::Vector2f & size,

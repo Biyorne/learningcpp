@@ -64,7 +64,7 @@ namespace methhead
         sf::VideoMode m_videoMode;
         sf::RenderWindow m_window;
 
-        Random m_random;
+        RandomCache m_random;
         Settings m_settings;
         SoundPlayer m_soundPlayer;
         AnimationPlayer m_animationPlayer;

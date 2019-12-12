@@ -19,7 +19,7 @@ namespace methhead
       public:
         SoundPlayer();
 
-        void play(const std::string & name, const Random & random);
+        void play(const std::string & name, const RandomCache & random);
 
         void stopAll();
         void loadAll();

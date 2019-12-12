@@ -77,7 +77,7 @@ namespace methhead
         bool load(const std::string & name);
 
         void play(
-            const Random & random,
+            const RandomCache & random,
             const std::string & name,
             const sf::Vector2f & pos,
             const sf::Vector2f & size,
@@ -85,7 +85,7 @@ namespace methhead
             const sf::Color & color = sf::Color::White);
 
         void play(
-            const Random & random,
+            const RandomCache & random,
             const std::string & name,
             const sf::FloatRect & rect,
             const float secPerFrame = m_defaultSecPerFrame,

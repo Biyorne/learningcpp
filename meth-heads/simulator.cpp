@@ -15,7 +15,7 @@ namespace methhead
         , m_willStop(false)
         , m_videoMode(1600u, 1200u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
-        , m_random()
+        , m_random(10000)
         , m_settings()
         , m_soundPlayer()
         , m_animationPlayer()

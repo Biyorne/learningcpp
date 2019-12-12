@@ -113,13 +113,13 @@ namespace methhead
 
         // find the shortest distance among all remaining moves
         const int shortestWalkDist =
-            (*std::min_element(
-                 std::begin(m_moves),
-                 endIter,
-                 [&](const WalkDistance & left, const WalkDistance & right) {
-                     return (left.dist < right.dist);
-                 }))
-                .dist;
+            std::min_element(
+                std::begin(m_moves),
+                endIter,
+                [&](const WalkDistance & left, const WalkDistance & right) {
+                    return (left.dist < right.dist);
+                })
+                ->dist;
 
         // remove any moves that are farther than the shortest distance
         endIter = std::remove_if(std::begin(m_moves), endIter, [&](const WalkDistance & posDist) {

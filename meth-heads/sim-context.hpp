@@ -10,8 +10,8 @@
 
 namespace methhead
 {
-    class Random;
     class Settings;
+    class RandomCache;
     class PosRefCounter;
     struct DisplayConstants;
 
@@ -26,7 +26,7 @@ namespace methhead
     struct SimContext
     {
         SimContext(
-            const Random & rand,
+            const RandomCache & rand,
             const std::vector<IActorUPtr_t> & acts,
             const std::vector<IPickupUPtr_t> & pups,
             const DisplayConstants & disp,
@@ -38,7 +38,7 @@ namespace methhead
             , settings(sets)
         {}
 
-        const Random & random;
+        const RandomCache & random;
         const std::vector<IActorUPtr_t> & actors;
         const std::vector<IPickupUPtr_t> & pickups;
         const DisplayConstants & display;
