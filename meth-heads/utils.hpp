@@ -339,6 +339,22 @@ namespace methhead
         return destIter;
     }
 
+    template <typename Container_t>
+    void swapAndPop(Container_t & container, const typename Container_t::iterator & toErase)
+    {
+        if (container.empty())
+        {
+            return;
+        }
+
+        if (container.size() > 1)
+        {
+            std::iter_swap(toErase, (std::end(container) - 1));
+        }
+
+        container.pop_back();
+    }
+
     //
 
     using BoardPos_t = sf::Vector2i;

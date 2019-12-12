@@ -2,7 +2,7 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "simulator.hpp"
 
-#include "scoped-board-pos-handler.hpp"
+#include "scoped-board-position.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -74,10 +74,10 @@ namespace methhead
         m_statusClock.restart();
 
         // the order of these remaining items is critical
-        // for example, ScopedBoardPosHandler::reset() must happen AFTER all pieces are destructed
+        // for example, ScopedBoardPosition::reset() must happen AFTER all pieces are destructed
         m_actors.clear();
         m_pickups.clear();
-        ScopedBoardPosHandler::reset(m_context);
+        ScopedBoardPosition::reset(m_context);
         spawnInitialPieces();
     }
 
@@ -123,7 +123,7 @@ namespace methhead
 
         for (std::size_t i(0); i < count; ++i)
         {
-            if (!ScopedBoardPosHandler::isAnyPosFree(m_context))
+            if (!ScopedBoardPosition::isAnyPosFree(m_context))
             {
                 break;
             }
@@ -147,7 +147,7 @@ namespace methhead
     {
         for (std::size_t i(0); i < count; ++i)
         {
-            if (!ScopedBoardPosHandler::isAnyPosFree(m_context))
+            if (!ScopedBoardPosition::isAnyPosFree(m_context))
             {
                 break;
             }
@@ -300,7 +300,7 @@ namespace methhead
                 continue;
             }
 
-            if (ScopedBoardPosHandler::refCount(m_context, actor->boardPos()) > 1)
+            if (ScopedBoardPosition::refCount(m_context, actor->boardPos()) > 1)
             {
                 handlePiecesColliding(*actor);
             }
@@ -343,23 +343,17 @@ namespace methhead
             if (actor.motivation() == Motivation::lazy)
             {
                 m_soundPlayer.play("coins-1", m_random);
-
-                m_animationPlayer.play(
-                    m_random, "puff", animWindowBounds, (actor.moveDelaySec() * 2.5f));
+                m_animationPlayer.play(m_random, "puff", animWindowBounds, 0.5f);
             }
             else
             {
                 m_soundPlayer.play("coins-2", m_random);
-
-                m_animationPlayer.play(
-                    m_random, "orb", animWindowBounds, (actor.moveDelaySec() * 2.5f));
+                m_animationPlayer.play(m_random, "orb", animWindowBounds, 0.5f);
             }
         }
 
-        (*foundIter)->changeActor(actor);
-
-        m_pickups.erase(foundIter);
-
+        actor.pickup(m_context, **foundIter);
+        swapAndPop(m_pickups, foundIter);
         spawnLoot();
     }
 

@@ -14,7 +14,7 @@
 namespace methhead
 {
     ActorBase::ActorBase(const SimContext & context)
-        : ScopedBoardPosHandler(context)
+        : ScopedBoardPosition(context)
         , m_targetBoardPos(0, 0)
         , m_score(0)
         , m_moveDelaySec(s_turnDelayDefaultSec)
@@ -99,7 +99,7 @@ namespace methhead
         // finish here if there is only one possible move
         if ((std::begin(m_moves) + 1) == endIter)
         {
-            ScopedBoardPosHandler::setPos(context, m_moves[0].pos);
+            ScopedBoardPosition::set(context, m_moves[0].pos);
             return true;
         }
 
@@ -129,7 +129,7 @@ namespace methhead
         // random select one
         const BoardPos_t newPos{ context.random.from(std::begin(m_moves), endIter).pos };
 
-        setPos(context, newPos);
+        ScopedBoardPosition::set(context, newPos);
         return true;
     }
 } // namespace methhead

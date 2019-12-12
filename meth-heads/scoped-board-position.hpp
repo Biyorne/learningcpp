@@ -1,7 +1,7 @@
 #ifndef METHHEADS_SCOPED_BOARD_POS_HANDLER_HPP_INCLUDED
 #define METHHEADS_SCOPED_BOARD_POS_HANDLER_HPP_INCLUDED
 //
-// scoped-board-pos-handler.hpp
+// scoped-board-position.hpp
 //
 #include "display-constants.hpp"
 #include "sim-context.hpp"
@@ -11,17 +11,18 @@
 
 namespace methhead
 {
-    class ScopedBoardPosHandler
+    class ScopedBoardPosition
     {
       protected:
-        ScopedBoardPosHandler(const SimContext & context);
-        virtual ~ScopedBoardPosHandler() { free(); }
+        ScopedBoardPosition(const SimContext & context);
 
-        inline BoardPos_t getPos() const noexcept { return m_boardPos; }
-
-        void setPos(const SimContext & context, const BoardPos_t & newPos) noexcept;
+        void set(const SimContext & context, const BoardPos_t & newPos) noexcept;
 
       public:
+        virtual ~ScopedBoardPosition() { free(); }
+
+        inline BoardPos_t get() const noexcept { return m_boardPos; }
+
         int refCount() const noexcept { return s_refCounts[m_index]; }
 
         inline static int refCount(const SimContext & context, const BoardPos_t & pos)

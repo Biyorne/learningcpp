@@ -3,18 +3,16 @@
 //
 // enum.hpp
 //
-#include "nameof.hpp"
-#include "utils.hpp"
-
-#include <array>
-#include <iostream>
-#include <string>
-
-#include <SFML/Graphics.hpp>
-
-/*
 namespace methhead
 {
+    enum class Motivation
+    {
+        none,
+        lazy,
+        greedy
+    };
+
+    /*
     struct Pieces
     {
         using type_t = std::uint_fast32_t;
@@ -89,7 +87,8 @@ namespace methhead
         sf::Sprite sprite;
         sf::Color color;
     };
+
+    */
 } // namespace methhead
 
-        */
 #endif // METHHEADS_ENUMS_HPP_INCLUDED

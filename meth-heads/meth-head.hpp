@@ -2,8 +2,9 @@
 #define METHHEADS_BASE_HPP_INCLUDED
 
 #include "display-constants.hpp"
+#include "enums.hpp"
 #include "random.hpp"
-#include "scoped-board-pos-handler.hpp"
+#include "scoped-board-position.hpp"
 #include "sim-context.hpp"
 #include "utils.hpp"
 
@@ -17,18 +18,33 @@
 
 namespace methhead
 {
-    // TODO in the end of all cleanup this should have a different home...
-    //
-    // also... TODO In the end, after cleaning up everything, there should be no more need for
-    // "none" none/invalid options in enums is not always code smell, it is not always wrong,
-    // but on the other hand, always adding none/invalid to your enums as a default/habit just
-    // in case it is needed IS ALWAYS A BAD HABIT, becauase any enum that has a none/invalid
-    // option that is not needed is often a huge source of errors and mess.
-    enum class Motivation
+    struct IPickup
     {
-        none,
-        lazy,
-        greedy
+        virtual ~IPickup() = default;
+        virtual int value() const noexcept = 0;
+        virtual BoardPos_t boardPos() const noexcept = 0;
+    };
+
+    using IPickupUPtr_t = std::unique_ptr<IPickup>;
+
+    //
+
+    struct Loot
+        : public IPickup
+        , public ScopedBoardPosition
+    {
+        explicit Loot(const SimContext & context)
+            : ScopedBoardPosition(context)
+            , m_loot(context.random.fromTo(1, 99))
+        {}
+
+        virtual ~Loot() = default;
+
+        int value() const noexcept final { return m_loot; }
+        BoardPos_t boardPos() const noexcept final { return ScopedBoardPosition::get(); }
+
+      private:
+        int m_loot;
     };
 
     //
@@ -38,97 +54,45 @@ namespace methhead
         virtual ~IActor() = default;
 
         virtual int score() const noexcept = 0;
-        virtual void score(const int value) noexcept = 0;
-
-        virtual Motivation motivation() const noexcept = 0;
         virtual BoardPos_t boardPos() const noexcept = 0;
-
-        virtual float moveDelaySec() const noexcept = 0;
-        virtual void moveDelaySec(const float sec) noexcept = 0;
-
-        // returns true if the actor moved or needs attention from the Simulator
-        virtual bool update(const SimContext & context, const float elapsedMs) = 0;
-
+        virtual Motivation motivation() const noexcept = 0;
         virtual void pickTarget(const SimContext & context) = 0;
+        virtual void pickup(const SimContext & context, const IPickup & pickup) = 0;
+        virtual bool update(const SimContext & context, const float elapsedMs) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
 
     //
 
-    struct IPickup
-    {
-        virtual ~IPickup() = default;
-
-        virtual void changeActor(IActor & actor) = 0;
-        virtual BoardPos_t boardPos() const = 0;
-        virtual int value() const = 0;
-    };
-
-    using IPickupUPtr_t = std::unique_ptr<IPickup>;
-
-    //
-
-    class Loot
-        : public IPickup
-        , public ScopedBoardPosHandler
-    {
-      public:
-        explicit Loot(const SimContext & context)
-            : ScopedBoardPosHandler(context)
-            , m_value(context.random.fromTo(1, 99))
-        {}
-
-        virtual ~Loot() = default;
-
-        inline int value() const noexcept final { return m_value; }
-
-        inline BoardPos_t boardPos() const noexcept final
-        {
-            return ScopedBoardPosHandler::getPos();
-        }
-
-        inline void changeActor(IActor & actor) override { actor.score(actor.score() + m_value); }
-
-      private:
-        int m_value;
-    };
-
-    //
-
     class ActorBase
         : public IActor
-        , public ScopedBoardPosHandler
+        , public ScopedBoardPosition
     {
       protected:
         explicit ActorBase(const SimContext & context);
-        virtual ~ActorBase() = default;
 
       public:
+        virtual ~ActorBase() = default;
+
+        BoardPos_t boardPos() const noexcept final { return ScopedBoardPosition::get(); }
         bool update(const SimContext & context, const float elapsedSec) override;
-
         inline int score() const noexcept final { return m_score; }
-        inline void score(const int value) noexcept final { m_score = value; }
 
-        inline float moveDelaySec() const noexcept final { return m_moveDelaySec; }
-        inline void moveDelaySec(const float sec) noexcept final { m_moveDelaySec = sec; }
-
-        inline BoardPos_t boardPos() const noexcept final
+        void pickup(const SimContext &, const IPickup & pickup) override
         {
-            return ScopedBoardPosHandler::getPos();
+            m_score += pickup.value();
         }
 
-        void pickTarget(const SimContext & context) override = 0;
-
-      protected:
+      private:
         bool isTimeToMove(const float elapsedSec) noexcept;
-
-        bool move(const SimContext & context);
 
         inline int walkDistanceTo(const BoardPos_t & to) const noexcept
         {
             return walkDistance(boardPos(), to);
         }
+
+        bool move(const SimContext & context);
 
       protected:
         BoardPos_t m_targetBoardPos;
@@ -147,28 +111,24 @@ namespace methhead
 
     //
 
-    class Lazy : public ActorBase
+    struct Lazy : public ActorBase
     {
-      public:
         explicit Lazy(const SimContext & context)
             : ActorBase(context)
-        {
-            pickTarget(context);
-        }
+        {}
 
         virtual ~Lazy() = default;
 
-        // TODO TEACH
         inline Motivation motivation() const noexcept final { return Motivation::lazy; }
 
       private:
         void pickTarget(const SimContext & context) final
         {
-            const BoardPos_t pos{ boardPos() };
+            const BoardPos_t currPos{ boardPos() };
 
             if (context.pickups.empty())
             {
-                m_targetBoardPos = pos;
+                m_targetBoardPos = currPos;
                 return;
             }
 
@@ -177,7 +137,8 @@ namespace methhead
                 std::end(context.pickups),
                 [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
                     return (
-                        walkDistance(pos, left->boardPos()) < walkDistance(pos, right->boardPos()));
+                        walkDistance(currPos, left->boardPos()) <
+                        walkDistance(currPos, right->boardPos()));
                 });
 
             m_targetBoardPos = (*foundIter)->boardPos();
@@ -186,14 +147,11 @@ namespace methhead
 
     //
 
-    class Greedy : public ActorBase
+    struct Greedy : public ActorBase
     {
-      public:
         explicit Greedy(const SimContext & context)
             : ActorBase(context)
-        {
-            pickTarget(context);
-        }
+        {}
 
         virtual ~Greedy() = default;
 

@@ -1,9 +1,9 @@
 // This is an open source non-commercial project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 //
-// scoped-board-pos-handler.cpp
+// scoped-board-position.cpp
 //
-#include "scoped-board-pos-handler.hpp"
+#include "scoped-board-position.hpp"
 
 #include "display-constants.hpp"
 #include "random.hpp"
@@ -13,15 +13,14 @@
 
 namespace methhead
 {
-    ScopedBoardPosHandler::ScopedBoardPosHandler(const SimContext & context)
+    ScopedBoardPosition::ScopedBoardPosition(const SimContext & context)
         : m_index(findRandomFreePosIndex(context))
         , m_boardPos(context.display.indexToBoardPos(m_index))
     {
         occupy();
     }
 
-    void ScopedBoardPosHandler::setPos(
-        const SimContext & context, const BoardPos_t & newPos) noexcept
+    void ScopedBoardPosition::set(const SimContext & context, const BoardPos_t & newPos) noexcept
     {
         if (m_boardPos == newPos)
         {
@@ -34,13 +33,13 @@ namespace methhead
         occupy();
     }
 
-    void ScopedBoardPosHandler::reset(const SimContext & context)
+    void ScopedBoardPosition::reset(const SimContext & context)
     {
         s_refCounts.clear();
         s_refCounts.resize(context.display.cell_count, 0);
     }
 
-    std::size_t ScopedBoardPosHandler::findRandomFreePosIndex(const SimContext & context) noexcept
+    std::size_t ScopedBoardPosition::findRandomFreePosIndex(const SimContext & context) noexcept
     {
         if (s_refCounts.empty())
         {
