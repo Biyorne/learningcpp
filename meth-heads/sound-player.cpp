@@ -23,7 +23,7 @@ namespace methhead
         m_volume = (m_volumeMin + ((m_volumeMax - m_volumeMin) * 0.5f));
     }
 
-    void SoundPlayer::play(const std::string & name, const RandomCache & random)
+    void SoundPlayer::play(const std::string & name, const Random & random)
     {
         if (m_volume < 1.0f)
         {

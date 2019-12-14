@@ -15,7 +15,7 @@ namespace methhead
         , m_willStop(false)
         , m_videoMode(1600u, 1200u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
-        , m_random(10000)
+        , m_random()
         , m_settings()
         , m_soundPlayer()
         , m_animationPlayer()
@@ -79,6 +79,7 @@ namespace methhead
         m_pickups.clear();
         ScopedBoardPosition::reset(m_context);
         spawnInitialPieces();
+        forceActorsToPickTargets();
     }
 
     void Simulator::run()
@@ -155,7 +156,7 @@ namespace methhead
             m_pickups.push_back(std::make_unique<Loot>(m_context));
         }
 
-        forceActorsToPickNewTargets();
+        forceActorsToPickTargets();
     }
 
     void Simulator::killMethHead(const std::size_t count)
@@ -188,7 +189,7 @@ namespace methhead
             m_pickups.pop_back();
         }
 
-        forceActorsToPickNewTargets();
+        forceActorsToPickTargets();
     }
 
     void Simulator::handleEvents()
@@ -462,7 +463,7 @@ namespace methhead
         return scores;
     }
 
-    void Simulator::forceActorsToPickNewTargets()
+    void Simulator::forceActorsToPickTargets()
     {
         for (IActorUPtr_t & actor : m_actors)
         {

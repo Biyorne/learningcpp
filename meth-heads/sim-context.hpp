@@ -3,6 +3,7 @@
 //
 // sim-context.hpp
 //
+#include "random.hpp"
 #include "utils.hpp"
 
 #include <memory>
@@ -11,7 +12,6 @@
 namespace methhead
 {
     class Settings;
-    class RandomCache;
     class PosRefCounter;
     struct DisplayConstants;
 
@@ -26,7 +26,7 @@ namespace methhead
     struct SimContext
     {
         SimContext(
-            const RandomCache & rand,
+            const Random & rand,
             const std::vector<IActorUPtr_t> & acts,
             const std::vector<IPickupUPtr_t> & pups,
             const DisplayConstants & disp,
@@ -38,7 +38,7 @@ namespace methhead
             , settings(sets)
         {}
 
-        const RandomCache & random;
+        const Random & random;
         const std::vector<IActorUPtr_t> & actors;
         const std::vector<IPickupUPtr_t> & pickups;
         const DisplayConstants & display;

@@ -7,7 +7,7 @@ add_executable(${PROJECT_NAME} ${source_files})
 
 
 find_package(SFML 2.5 COMPONENTS window graphics audio REQUIRED)
-target_link_libraries(${PROJECT_NAME} sfml-window sfml-graphics sfml-audio)
+target_link_libraries(${PROJECT_NAME} sfml-system sfml-window sfml-graphics sfml-audio)
 
 
 #compiler/linker options
@@ -24,7 +24,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         /wd26451
         /w14254
         /w14263
-	/w14265
+        /w14265
         /w14287
         /w14296
         /w14311
@@ -33,7 +33,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         /w14547
         /w14549
         /w14555
-	/w14619
+        /w14619
         /w14640
         /w14826
         /w14905
@@ -60,13 +60,13 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         -Wno-exit-time-destructors
         -Wno-global-constructors
         -Wno-inconsistent-missing-destructor-override
-	-Wno-newline-eof
+        -Wno-newline-eof
         -Wno-padded
         -Wno-unused-command-line-argument
         -Wno-weak-vtables
         -Woverloaded-virtual
         -Wcast-align
-	-Wformat=2)
+        -Wformat=2)
 
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 
@@ -96,11 +96,11 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         -Wcast-align
         -Wmisleading-indentation
         -Wduplicated-cond
-	-Wduplicated-branches
-	-Wlogical-op
-	-Wnull-dereference
-	-Wuseless-cast
-	-Wformat=2)
+        -Wduplicated-branches
+        -Wlogical-op
+        -Wnull-dereference
+        -Wuseless-cast
+        -Wformat=2)
 
 else()
 

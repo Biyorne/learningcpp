@@ -1,28 +1,53 @@
 #ifndef METHHEADS_RANDOM_HPP_INCLUDED
 #define METHHEADS_RANDOM_HPP_INCLUDED
-
+//
+// random.hpp
+//
+#include "nameof.hpp"
 #include "utils.hpp"
 
 #include <initializer_list>
+#include <iostream>
 #include <limits>
 #include <random>
 #include <stdexcept>
+#include <string>
 
 namespace methhead
 {
-    class Random
+    // Remember:
+    //  It's about 10-100x faster to re-generate random numbers than to shuffle containers.
+    template <typename Ratio_t = float, std::size_t CacheSize = 0>
+    class RandomMt
     {
+        static_assert(std::is_floating_point_v<Ratio_t>);
+
       public:
-        Random()
+        RandomMt()
+            : RandomMt(std::random_device{}())
+        {}
+
+        explicit RandomMt(const std::random_device::result_type seed)
             : m_engine()
+            , m_cache()
+            , m_cacheIndex(0)
         {
-            std::random_device randomDevice;
-            std::seed_seq seedSequence{ randomDevice() };
+            std::seed_seq seedSequence{ seed };
             m_engine.seed(seedSequence);
 
-            // anything from thousands to hundred-thousands will work here
-            const unsigned long long WARMUP_SKIP(12345);
-            m_engine.discard(WARMUP_SKIP);
+            std::cout << "Random number generator <" << NAMEOF(m_engine)
+                      << "> (Mersenne Twister)'s seed: " << seed << std::endl;
+
+            // Warm-up-skipping is good standard practice when working with PRNGs, but the Mersenne
+            // Twister is notoriously predictable in the beginning.  This is especially true when
+            // you don't provide a good (full sized) seed, which I am not because I want the ease of
+            // troubleshooting games. Anything from thousands to hundreds-thousands works fine here.
+            m_engine.discard(123456);
+
+            if constexpr (isCacheEnabled())
+            {
+                setupCache();
+            }
         }
 
         template <typename T>
@@ -33,13 +58,26 @@ namespace methhead
                 return fromTo(to, from);
             }
 
-            if (isRealClose(from, to))
+            if constexpr (isCacheEnabled())
             {
-                return from;
+                Ratio_t offset{ incrementAndGetCachedRatio() *
+                                (static_cast<Ratio_t>(to) - static_cast<Ratio_t>(from)) };
+
+                if constexpr (std::is_integral_v<T>)
+                {
+                    offset = std::round(offset);
+                }
+
+                return static_cast<T>(static_cast<Ratio_t>(from) + offset);
             }
 
             if constexpr (std::is_floating_point_v<T>)
             {
+                if (isRealClose(from, to))
+                {
+                    return from;
+                }
+
                 std::uniform_real_distribution<T> distribution(
                     from, std::nextafter(to, std::numeric_limits<T>::max()));
 
@@ -47,8 +85,7 @@ namespace methhead
             }
             else
             {
-                static_assert(std::is_integral_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>);
-
+                static_assert(std::is_integral_v<T>);
                 std::uniform_int_distribution<T> distribution(from, to);
                 return distribution(m_engine);
             }
@@ -60,28 +97,73 @@ namespace methhead
             return fromTo(T(0), to);
         }
 
-        inline bool boolean() const { return (zeroTo(1) == 1); }
-
-        template <typename T>
-        std::size_t index(const T & container) const
+        inline Ratio_t ratio() const
         {
-            if (container.empty())
+            if constexpr (isCacheEnabled())
             {
-                throw std::runtime_error("Random::index() but the container was empty!");
+                return incrementAndGetCachedRatio();
             }
-
-            return zeroTo(container.size() - 1);
+            else
+            {
+                return zeroTo(Ratio_t(1));
+            }
         }
 
-        template <typename Iterator_t>
-        auto & from(Iterator_t first, const Iterator_t last) const
+        template <typename T>
+        std::enable_if_t<std::is_unsigned_v<T>, std::size_t> index(const T size) const
+        {
+            if (size <= 1)
+            {
+                return 0;
+            }
+
+            const T randomValue{ zeroTo(size - T(1)) };
+            return static_cast<std::size_t>(randomValue);
+        }
+
+        template <typename T>
+        std::enable_if_t<!std::is_unsigned_v<T>, std::size_t> index(const T & container) const
+        {
+            if (container.size() == 0)
+            {
+                std::string message;
+                message += "Random::index(container<";
+                message += nameof::nameof_full_type<T>();
+                message += ">) but that container.size() == 0!";
+
+                throw std::runtime_error(message);
+            }
+
+            return index(container.size());
+        }
+
+        inline bool boolean() const
+        {
+            if constexpr (isCacheEnabled())
+            {
+                return (incrementAndGetCachedRatio() < Ratio_t(0.5));
+            }
+            else
+            {
+                return (zeroTo(1) == 0);
+            }
+        }
+
+        template <typename Iter_t>
+        auto & from(Iter_t first, const Iter_t last) const
         {
             if (last == first)
             {
-                throw std::runtime_error("Random::from() but the container was empty!");
+                std::string message;
+                message += "Random::from(<";
+                message += nameof::nameof_full_type<Iter_t>();
+                message += ">) but the container was empty!";
+
+                throw std::runtime_error(message);
             }
 
-            std::advance(first, zeroTo(std::distance(first, last) - 1));
+            const auto offset{ zeroTo(std::distance(first, last) - 1) };
+            std::advance(first, static_cast<std::ptrdiff_t>(offset));
             return *first;
         }
 
@@ -97,8 +179,8 @@ namespace methhead
             return from(std::begin(list), std::end(list));
         }
 
-        template <typename Iterator_t>
-        void shuffle(const Iterator_t first, const Iterator_t last) const
+        template <typename Iter_t>
+        void shuffle(const Iter_t first, const Iter_t last) const
         {
             std::shuffle(first, last, m_engine);
         }
@@ -107,120 +189,46 @@ namespace methhead
         void shuffle(T & container) const
         {
             shuffle(std::begin(container), std::end(container));
+        }
+
+        static constexpr bool isCacheEnabled() noexcept { return (CacheSize > 0); }
+
+        static constexpr std::size_t cacheSize() noexcept { return CacheSize; }
+
+      private:
+        void setupCache()
+        {
+            std::uniform_real_distribution<Ratio_t> dist(
+                Ratio_t(0), std::nextafter(Ratio_t(1), Ratio_t(2)));
+
+            m_cache.resize(CacheSize);
+
+            for (Ratio_t & number : m_cache)
+            {
+                number = dist(m_engine);
+            }
+        }
+
+        constexpr Ratio_t incrementAndGetCachedRatio() const noexcept
+        {
+            ++m_cacheIndex;
+
+            if (m_cacheIndex >= CacheSize)
+            {
+                m_cacheIndex = 0;
+            }
+
+            return m_cache[m_cacheIndex];
         }
 
       private:
         mutable std::mt19937 m_engine;
+
+        mutable std::vector<Ratio_t> m_cache;
+        mutable std::size_t m_cacheIndex;
     };
 
-    //
-
-    class RandomCache
-    {
-      public:
-        explicit RandomCache(const std::size_t size)
-            : m_engine()
-            , m_index(0)
-            , m_ratios(size)
-        {
-            if (0 == size)
-            {
-                throw std::runtime_error("RandomCache constructor given size of zero.");
-            }
-
-            for (double & number : m_ratios)
-            {
-                number = m_engine.zeroTo(1.0);
-            }
-        }
-
-        template <typename T>
-        T fromTo(const T from, const T to) const noexcept
-        {
-            if (to < from)
-            {
-                return fromTo(to, from);
-            }
-
-            const double offset{ getAndIncrement() *
-                                 (static_cast<double>(to) - static_cast<double>(from)) };
-
-            return static_cast<T>(static_cast<double>(from) + offset);
-        }
-
-        template <typename T>
-        T zeroTo(const T to) const noexcept
-        {
-            return fromTo(T(0), to);
-        }
-
-        inline bool boolean() const noexcept { return (getAndIncrement() < 0.5); }
-
-        template <typename T>
-        std::size_t index(const T & container) const
-        {
-            if (container.empty())
-            {
-                throw std::runtime_error("RandomCache::index() but the container was empty!");
-            }
-
-            return zeroTo(container.size() - 1);
-        }
-
-        template <typename Iterator_t>
-        auto & from(Iterator_t first, const Iterator_t last) const
-        {
-            if (last == first)
-            {
-                throw std::runtime_error("RandomCache::from() but the container was empty!");
-            }
-
-            std::advance(first, zeroTo(std::distance(first, last) - 1));
-            return *first;
-        }
-
-        template <typename T>
-        auto & from(T & container) const
-        {
-            return from(std::begin(container), std::end(container));
-        }
-
-        template <typename T>
-        const T & from(const std::initializer_list<T> & list) const
-        {
-            return from(std::begin(list), std::end(list));
-        }
-
-        template <typename Iterator_t>
-        void shuffle(const Iterator_t first, const Iterator_t last) const
-        {
-            std::shuffle(first, last, m_engine);
-        }
-
-        template <typename T>
-        void shuffle(T & container) const
-        {
-            shuffle(std::begin(container), std::end(container));
-        }
-
-      private:
-        double getAndIncrement() const
-        {
-            ++m_index;
-
-            if (m_index >= m_ratios.size())
-            {
-                m_index = m_engine.index(m_ratios);
-            }
-
-            return m_ratios[m_index];
-        }
-
-      private:
-        Random m_engine;
-        mutable std::size_t m_index;
-        std::vector<double> m_ratios;
-    };
+    using Random = RandomMt<float, 10000>;
 } // namespace methhead
 
 #endif // METHHEADS_RANDOM_HPP_INCLUDED

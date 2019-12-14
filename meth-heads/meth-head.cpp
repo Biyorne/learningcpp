@@ -15,7 +15,7 @@ namespace methhead
 {
     ActorBase::ActorBase(const SimContext & context)
         : ScopedBoardPosition(context)
-        , m_targetBoardPos(0, 0)
+        , m_targetBoardPos(boardPos()) // pickTarget() is called when targetPos==selfPos
         , m_score(0)
         , m_moveDelaySec(s_turnDelayDefaultSec)
         , m_turnDelaySoFarSec(0.0f)
