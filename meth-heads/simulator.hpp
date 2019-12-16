@@ -6,11 +6,10 @@
 #include "enums.hpp"
 #include "meth-head.hpp"
 #include "random.hpp"
-#include "settings.hpp"
+#include "score.hpp"
 #include "sound-player.hpp"
 #include "utils.hpp"
 
-#include <fstream>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
@@ -20,23 +19,18 @@ namespace methhead
 {
     class Simulator
     {
-        struct Scores
-        {
-            int lazy = 0;
-            int greedy = 0;
-        };
-
       public:
         explicit Simulator(const Mode mode);
 
-        void run();
+        // return true if need to re-start in test mode
+        bool run();
 
       private:
         void reset();
 
-        void spawnInitialPieces();
-        float getSimFrameTimeElapsed();
-        void printStatus();
+        void randomTestAction();
+
+        float getElapsedSimFrameTimeSec();
 
         void spawnMethHead(const Motivation motive, const std::size_t count = 1);
         void spawnLoot(const std::size_t count = 1);
@@ -50,26 +44,20 @@ namespace methhead
         void update(const float elapsedSec);
         void draw();
 
-        void handleActorPickingUp(IActor & actor);
+        void handleActorPickingup(IActor & actor);
 
-        inline bool isFreeBoardPos() const noexcept
-        {
-            return ((m_actors.size() + m_pickups.size()) < m_displayVars.constants().cell_count);
-        }
-
-        Scores calcScores() const;
-
-        void sortPiecesVectors();
+        void forceActorsToPickTargets();
 
       private:
-        bool m_isModeNormal;
         bool m_willStop;
+        bool m_enableSpecialEffects;
+        bool m_willReRunInTestMode;
 
         sf::VideoMode m_videoMode;
         sf::RenderWindow m_window;
 
+        Score m_score;
         Random m_random;
-        Settings m_settings;
         SoundPlayer m_soundPlayer;
         AnimationPlayer m_animationPlayer;
         DisplayVariables m_displayVars;
@@ -77,15 +65,13 @@ namespace methhead
         std::vector<IActorUPtr_t> m_actors;
         std::vector<IPickupUPtr_t> m_pickups;
 
+        SimContext m_context;
+
         sf::Clock m_frameClock;
         std::size_t m_framesPerSecondMax;
+        float m_simTimeMult;
 
-        sf::Clock m_statusClock;
-        std::size_t m_framesSinceStatusCount;
-        float m_statusIntervalSec;
-        std::size_t m_statusCount;
-
-        SimContext m_context;
+        std::size_t m_testTurnCountdown;
     };
 } // namespace methhead
 

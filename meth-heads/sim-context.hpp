@@ -3,6 +3,7 @@
 //
 // sim-context.hpp
 //
+#include "random.hpp"
 #include "utils.hpp"
 
 #include <memory>
@@ -10,8 +11,6 @@
 
 namespace methhead
 {
-    class Random;
-    class Settings;
     class PosRefCounter;
     struct DisplayConstants;
 
@@ -26,26 +25,23 @@ namespace methhead
     struct SimContext
     {
         SimContext(
+            const bool isModeNormal,
             const Random & rand,
             const std::vector<IActorUPtr_t> & acts,
             const std::vector<IPickupUPtr_t> & pups,
-            const DisplayConstants & disp,
-            const Settings & sets);
+            const DisplayConstants & disp)
+            : is_mode_normal(isModeNormal)
+            , random(rand)
+            , actors(acts)
+            , pickups(pups)
+            , display(disp)
+        {}
 
-        // TODO move these to a better place...probaby PosRefCounter
-        bool isActorAt(const BoardPos_t & posToCheck) const;
-        bool isPickupAt(const BoardPos_t & posToCheck) const;
-
-        inline bool isAnythingAt(const BoardPos_t & posToCheck) const
-        {
-            return (isPickupAt(posToCheck) || isActorAt(posToCheck));
-        }
-
+        const bool is_mode_normal;
         const Random & random;
         const std::vector<IActorUPtr_t> & actors;
         const std::vector<IPickupUPtr_t> & pickups;
         const DisplayConstants & display;
-        const Settings & settings;
     };
 } // namespace methhead
 

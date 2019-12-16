@@ -41,7 +41,6 @@ namespace methhead
 
         sf::FloatRect score_rect;
         sf::FloatRect board_rect;
-        sf::FloatRect fps_rect;
 
         sf::Vector2f cell_size;
         sf::Vector2s cell_counts;

@@ -8,13 +8,15 @@ using namespace methhead;
 
 int main()
 {
+    bool willReRunInTestMode{ false };
     {
-        methhead::Simulator simulator(Mode::Normal);
-        simulator.run();
+        Simulator simulator(Mode::Normal);
+        willReRunInTestMode = simulator.run();
     }
 
+    if (willReRunInTestMode)
     {
-        methhead::Simulator simulator(Mode::SpeedTest);
+        Simulator simulator(Mode::Test);
         simulator.run();
     }
 

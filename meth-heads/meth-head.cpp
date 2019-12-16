@@ -13,107 +13,123 @@
 
 namespace methhead
 {
-    MethHeadBase::MethHeadBase(const SimContext & context)
-        : ScopedBoardPosHandler(context)
+    ActorBase::ActorBase(const SimContext & context)
+        : ScopedBoardPosition(context)
+        , m_targetBoardPos(boardPos()) // pickTarget() is called when targetPos==selfPos
         , m_score(0)
-        , m_turnDelaySec(s_turnDelayDefaultSec)
+        , m_moveDelaySec(s_turnDelayDefaultSec)
         , m_turnDelaySoFarSec(0.0f)
     {}
 
-    void MethHeadBase::update(const SimContext & context, const float elapsedSec)
+    bool ActorBase::update(const SimContext & context, const float elapsedSec)
     {
-        assert(context.isPickupAt(boardPos()) == false);
-        assert(context.isActorAt(boardPos()) == true);
-
-        if (isTimeToMove(elapsedSec))
+        if (!isTimeToMove(elapsedSec))
         {
-            move(context);
+            return false;
         }
+
+        return move(context);
     }
 
-    bool MethHeadBase::isTimeToMove(const float elapsedSec) noexcept
+    bool ActorBase::isTimeToMove(const float elapsedSec) noexcept
     {
         m_turnDelaySoFarSec += elapsedSec;
 
-        if (m_turnDelaySoFarSec > m_turnDelaySec)
+        if (m_turnDelaySoFarSec > m_moveDelaySec)
         {
-            m_turnDelaySoFarSec = (m_turnDelaySoFarSec - m_turnDelaySec);
+            m_turnDelaySoFarSec = (m_turnDelaySoFarSec - m_moveDelaySec);
             return true;
         }
 
         return false;
     }
 
-    void MethHeadBase::makeAllPossibleBoardMoves(const SimContext & context) const
-    {
-        const BoardPos_t currentPos{ boardPos() };
-
-        m_possibleMoves.clear();
-
-        // clang-format off
-        if (currentPos.x > 0)                                     { m_possibleMoves.push_back(currentPos + sf::Vector2i(-1,  0)); }
-        if (currentPos.x < (context.display.cell_countsI.x - 1))  { m_possibleMoves.push_back(currentPos + sf::Vector2i( 1,  0)); }
-        if (currentPos.y > 0)                                     { m_possibleMoves.push_back(currentPos + sf::Vector2i( 0, -1)); }
-        if (currentPos.y < (context.display.cell_countsI.y - 1))  { m_possibleMoves.push_back(currentPos + sf::Vector2i( 0,  1)); }
-        // clang-format on
-
-        m_possibleMoves.erase(
-            std::remove_if(
-                std::begin(m_possibleMoves),
-                std::end(m_possibleMoves),
-                [&context](const BoardPos_t & possiblePos) {
-                    return context.isActorAt(possiblePos);
-                }),
-            std::end(m_possibleMoves));
-    }
-
-    bool MethHeadBase::move(const SimContext & context)
+    bool ActorBase::move(const SimContext & context)
     {
         if (context.pickups.empty())
         {
             return false;
         }
 
-        const auto targetBoardPos(findMostDesiredPickupBoardPos(context));
-
-        makeAllPossibleBoardMoves(context);
-        if (m_possibleMoves.empty())
+        if (boardPos() == m_targetBoardPos)
         {
-            // std::cout << "Methhead cannot move because other methheads are in the way."
-            //          << std::endl;
-            return false;
+            pickTarget(context);
         }
 
-        std::sort(
-            std::begin(m_possibleMoves),
-            std::end(m_possibleMoves),
-            [&](const BoardPos_t & left, const BoardPos_t & right) {
-                return (
-                    walkDistanceBetween(targetBoardPos, left) <
-                    walkDistanceBetween(targetBoardPos, right));
+        const BoardPos_t currPos{ boardPos() };
+        const sf::Vector2i counts{ context.display.cell_countsI };
+
+        // start with all four possible direction moves
+        // clang-format off
+        m_moves.resize(4);
+        m_moves[0].pos = (currPos + sf::Vector2i(-1,  0));
+        m_moves[1].pos = (currPos + sf::Vector2i( 1,  0));
+        m_moves[2].pos = (currPos + sf::Vector2i( 0, -1));
+        m_moves[3].pos = (currPos + sf::Vector2i( 0,  1));
+        // clang-format on
+
+        // remove any off-board moves
+        WalkDIstVec_t::iterator endIter = std::remove_if(
+            std::begin(m_moves), std::end(m_moves), [&](const WalkDistance & walkDist) {
+                const BoardPos_t & pos{ walkDist.pos };
+                return ((pos.x < 0) || (pos.y < 0) || (pos.x >= counts.x) || (pos.y >= counts.y));
             });
 
-        const int closestToTargetDistance{ walkDistanceBetween(
-            targetBoardPos, m_possibleMoves.front()) };
+        // remove any moves already taken by other actors
+        endIter = std::remove_if(std::begin(m_moves), endIter, [&](const WalkDistance & walkDist) {
+            if (isPosFree(context, walkDist.pos))
+            {
+                return false;
+            }
 
-        m_possibleMoves.erase(
-            std::remove_if(
-                std::begin(m_possibleMoves),
-                std::end(m_possibleMoves),
-                [&](const BoardPos_t & pos) {
-                    return (walkDistanceBetween(targetBoardPos, pos) > closestToTargetDistance);
-                }),
-            std::end(m_possibleMoves));
+            const auto foundIter = std::find_if(
+                std::begin(context.actors),
+                std::end(context.actors),
+                [&](const IActorUPtr_t & actor) { return (walkDist.pos == actor->boardPos()); });
 
-        assert(!m_possibleMoves.empty());
+            return foundIter != std::end(context.actors);
+        });
 
-        if (m_possibleMoves.empty())
+        // bail if no valid moves remain
+        if (std::begin(m_moves) == endIter)
         {
-            std::cout << "Methhead cannot move because of unknown error." << std::endl;
             return false;
         }
 
-        ScopedBoardPosHandler::set(context, context.random.from(m_possibleMoves));
+        // finish here if there is only one possible move
+        if ((std::begin(m_moves) + 1) == endIter)
+        {
+            ScopedBoardPosition::set(context, m_moves[0].pos);
+            return true;
+        }
+
+        assert(std::distance(std::begin(m_moves), endIter) > 1);
+
+        // calc how far each move is from the target
+        for (auto iter(std::begin(m_moves)); iter != endIter; ++iter)
+        {
+            iter->dist = walkDistance(iter->pos, m_targetBoardPos);
+        }
+
+        // find the shortest distance among all remaining moves
+        const int shortestWalkDist =
+            std::min_element(
+                std::begin(m_moves),
+                endIter,
+                [&](const WalkDistance & left, const WalkDistance & right) {
+                    return (left.dist < right.dist);
+                })
+                ->dist;
+
+        // remove any moves that are farther than the shortest distance
+        endIter = std::remove_if(std::begin(m_moves), endIter, [&](const WalkDistance & posDist) {
+            return posDist.dist > shortestWalkDist;
+        });
+
+        // random select one
+        const BoardPos_t newPos{ context.random.from(std::begin(m_moves), endIter).pos };
+
+        ScopedBoardPosition::set(context, newPos);
         return true;
     }
 } // namespace methhead

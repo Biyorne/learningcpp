@@ -8,7 +8,7 @@ file(GLOB source_files *.?pp)
 add_executable(${PROJECT_NAME} ${source_files})
 
 
-find_package(SFML 2.5 COMPONENTS window graphics REQUIRED)
+find_package(SFML 2.5 COMPONENTS window graphics audio REQUIRED)
 target_link_libraries(${PROJECT_NAME} sfml-window sfml-graphics sfml-audio)
 
 

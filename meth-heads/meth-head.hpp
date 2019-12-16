@@ -2,8 +2,9 @@
 #define METHHEADS_BASE_HPP_INCLUDED
 
 #include "display-constants.hpp"
+#include "enums.hpp"
 #include "random.hpp"
-#include "scoped-board-pos-handler.hpp"
+#include "scoped-board-position.hpp"
 #include "sim-context.hpp"
 #include "utils.hpp"
 
@@ -17,18 +18,33 @@
 
 namespace methhead
 {
-    // TODO in the end of all cleanup this should have a different home...
-    //
-    // also... TODO In the end, after cleaning up everything, there should be no more need for
-    // "none" none/invalid options in enums is not always code smell, it is not always wrong,
-    // but on the other hand, always adding none/invalid to your enums as a default/habit just
-    // in case it is needed IS ALWAYS A BAD HABIT, becauase any enum that has a none/invalid
-    // option that is not needed is often a huge source of errors and mess.
-    enum class Motivation
+    struct IPickup
     {
-        none,
-        lazy,
-        greedy
+        virtual ~IPickup() = default;
+        virtual int value() const noexcept = 0;
+        virtual BoardPos_t boardPos() const noexcept = 0;
+    };
+
+    using IPickupUPtr_t = std::unique_ptr<IPickup>;
+
+    //
+
+    struct Loot
+        : public IPickup
+        , public ScopedBoardPosition
+    {
+        explicit Loot(const SimContext & context)
+            : ScopedBoardPosition(context)
+            , m_loot(context.random.fromTo(1, 99))
+        {}
+
+        virtual ~Loot() = default;
+
+        int value() const noexcept final { return m_loot; }
+        BoardPos_t boardPos() const noexcept final { return ScopedBoardPosition::get(); }
+
+      private:
+        int m_loot;
     };
 
     //
@@ -38,116 +54,67 @@ namespace methhead
         virtual ~IActor() = default;
 
         virtual int score() const noexcept = 0;
-        virtual void score(const int value) noexcept = 0;
-
-        virtual Motivation motivation() const noexcept = 0;
         virtual BoardPos_t boardPos() const noexcept = 0;
-
-        virtual float turnDelaySec() const noexcept = 0;
-        virtual void turnDelaySec(const float sec) noexcept = 0;
-
-        virtual void update(const SimContext & context, const float elapsedMs) = 0;
+        virtual Motivation motivation() const noexcept = 0;
+        virtual void pickTarget(const SimContext & context) = 0;
+        virtual void pickup(const SimContext & context, const IPickup & pickup) = 0;
+        virtual bool update(const SimContext & context, const float elapsedMs) = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
 
     //
 
-    struct IPickup
+    class ActorBase
+        : public IActor
+        , public ScopedBoardPosition
     {
-        virtual ~IPickup() = default;
+      protected:
+        explicit ActorBase(const SimContext & context);
 
-        virtual void changeActor(IActor & actor) = 0;
-        virtual BoardPos_t boardPos() const = 0;
-        virtual int value() const = 0;
-    };
-
-    using IPickupUPtr_t = std::unique_ptr<IPickup>;
-
-    //
-
-    class Loot
-        : public IPickup
-        , public ScopedBoardPosHandler
-    {
       public:
-        explicit Loot(const SimContext & context)
-            : ScopedBoardPosHandler(context)
-            , m_value(context.random.fromTo(1, 99))
-        {}
+        virtual ~ActorBase() = default;
 
-        virtual ~Loot() = default;
+        BoardPos_t boardPos() const noexcept final { return ScopedBoardPosition::get(); }
+        bool update(const SimContext & context, const float elapsedSec) override;
+        inline int score() const noexcept final { return m_score; }
 
-        inline int value() const noexcept final { return m_value; }
-        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosHandler::get(); }
-        inline void changeActor(IActor & actor) override { actor.score(actor.score() + m_value); }
+        void pickup(const SimContext &, const IPickup & pickup) override
+        {
+            m_score += pickup.value();
+        }
 
       private:
-        int m_value;
-    };
-
-    //
-
-    class MethHeadBase
-        : public IActor
-        , public ScopedBoardPosHandler
-    {
-      protected:
-        explicit MethHeadBase(const SimContext & context);
-        virtual ~MethHeadBase() = default;
-
-      public:
-        void update(const SimContext & context, const float elapsedSec) override;
-
-        inline int score() const noexcept final { return m_score; }
-        inline void score(const int value) noexcept final { m_score = value; }
-
-        inline float turnDelaySec() const noexcept final { return m_turnDelaySec; }
-        inline void turnDelaySec(const float sec) noexcept final { m_turnDelaySec = sec; }
-
-        inline BoardPos_t boardPos() const noexcept final { return ScopedBoardPosHandler::get(); }
-
-      protected:
         bool isTimeToMove(const float elapsedSec) noexcept;
-
-        bool move(const SimContext & context);
-
-        inline int walkDistanceBetween(const BoardPos_t & from, const BoardPos_t & to) const
-            noexcept
-        {
-            const BoardPos_t posDiff(to - from);
-            return (std::abs(posDiff.x) + std::abs(posDiff.y));
-        }
 
         inline int walkDistanceTo(const BoardPos_t & to) const noexcept
         {
-            return walkDistanceBetween(boardPos(), to);
+            return walkDistance(boardPos(), to);
         }
 
-        void makeAllPossibleBoardMoves(const SimContext & context) const;
+        bool move(const SimContext & context);
 
-        // assumes there are pickups on the board
-        virtual BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const = 0;
+      protected:
+        BoardPos_t m_targetBoardPos;
 
       private:
         int m_score;
-        float m_turnDelaySec;
+        float m_moveDelaySec;
         float m_turnDelaySoFarSec;
 
-        // this was moved out of the makeAllPossibleBoardMoves() funciton only for runtime
-        // optimization
-        static inline std::vector<BoardPos_t> m_possibleMoves;
+        static inline const float s_turnDelayDefaultSec{ 0.3f };
 
-        static inline const float s_turnDelayDefaultSec{ 0.333f };
+        // this vector was pulled from the move() funciton only as a runtime
+        // optimization, so no other functions should read or write to this member
+        static inline WalkDIstVec_t m_moves;
     };
 
     //
 
-    class Lazy : public MethHeadBase
+    struct Lazy : public ActorBase
     {
-      public:
         explicit Lazy(const SimContext & context)
-            : MethHeadBase(context)
+            : ActorBase(context)
         {}
 
         virtual ~Lazy() = default;
@@ -155,37 +122,35 @@ namespace methhead
         inline Motivation motivation() const noexcept final { return Motivation::lazy; }
 
       private:
-        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
+        void pickTarget(const SimContext & context) final
         {
-            std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
-            std::size_t bestDistance(std::numeric_limits<std::size_t>::max());
+            const BoardPos_t currPos{ boardPos() };
 
-            for (std::size_t i(0); i < context.pickups.size(); ++i)
+            if (context.pickups.empty())
             {
-                const std::size_t distance{ static_cast<std::size_t>(
-                    walkDistanceTo(context.pickups.at(i)->boardPos())) };
-
-                if (distance < bestDistance)
-                {
-                    bestIndex = i;
-                    bestDistance = distance;
-                }
+                m_targetBoardPos = currPos;
+                return;
             }
 
-            assert(bestIndex < context.pickups.size());
-            assert(bestDistance <= context.display.cell_count);
+            const auto foundIter = std::min_element(
+                std::begin(context.pickups),
+                std::end(context.pickups),
+                [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
+                    return (
+                        walkDistance(currPos, left->boardPos()) <
+                        walkDistance(currPos, right->boardPos()));
+                });
 
-            return context.pickups.at(bestIndex)->boardPos();
+            m_targetBoardPos = (*foundIter)->boardPos();
         }
     };
 
     //
 
-    class Greedy : public MethHeadBase
+    struct Greedy : public ActorBase
     {
-      public:
         explicit Greedy(const SimContext & context)
-            : MethHeadBase(context)
+            : ActorBase(context)
         {}
 
         virtual ~Greedy() = default;
@@ -193,26 +158,22 @@ namespace methhead
         inline Motivation motivation() const noexcept final { return Motivation::greedy; }
 
       private:
-        BoardPos_t findMostDesiredPickupBoardPos(const SimContext & context) const final
+        void pickTarget(const SimContext & context) final
         {
-            std::size_t bestIndex(std::numeric_limits<std::size_t>::max());
-            std::size_t bestValue(0);
-
-            for (std::size_t i(0); i < context.pickups.size(); ++i)
+            if (context.pickups.empty())
             {
-                const std::size_t value{ static_cast<std::size_t>(context.pickups.at(i)->value()) };
-
-                if (value > bestValue)
-                {
-                    bestIndex = i;
-                    bestValue = value;
-                }
+                m_targetBoardPos = boardPos();
+                return;
             }
 
-            assert(bestIndex < context.pickups.size());
-            assert(bestValue > 0);
+            const auto foundIter = std::max_element(
+                std::begin(context.pickups),
+                std::end(context.pickups),
+                [&](const IPickupUPtr_t & left, const IPickupUPtr_t & right) {
+                    return (left->value() < right->value());
+                });
 
-            return context.pickups.at(bestIndex)->boardPos();
+            m_targetBoardPos = (*foundIter)->boardPos();
         }
     };
 } // namespace methhead
