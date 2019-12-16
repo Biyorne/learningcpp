@@ -11,35 +11,30 @@
 namespace methhead
 {
     Simulator::Simulator(const Mode mode)
-        : m_isModeNormal(mode == Mode::Normal)
-        , m_willStop(false)
+        : m_willStop(false)
+        , m_enableSpecialEffects(mode == Mode::Normal)
         , m_videoMode(1600u, 1200u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
+        , m_score()
         , m_random()
-        , m_settings()
         , m_soundPlayer()
         , m_animationPlayer()
         , m_displayVars(sf::Vector2u(m_videoMode.width, m_videoMode.height))
         , m_actors()
         , m_frameClock()
         , m_framesPerSecondMax(0)
-        , m_simTimeMult(1.0)
-        , m_statusClock()
-        , m_framesSinceStatusCount(0)
-        , m_statusIntervalSec(1.0f)
-        , m_statusCount(0)
-        , m_context(m_random, m_actors, m_pickups, m_displayVars.constants(), m_settings)
+        , m_simTimeMult(1.0f)
+        , m_context(
+              (mode == Mode::Normal), m_random, m_actors, m_pickups, m_displayVars.constants())
     {
         m_actors.reserve(m_displayVars.constants().cell_count);
         m_pickups.reserve(m_displayVars.constants().cell_count);
 
-        m_settings.printAll();
-
-        if (m_isModeNormal)
+        if (m_context.is_mode_normal)
         {
             m_window.create(m_videoMode, "Meth Heads", sf::Style::Default);
 
-            if (m_settings.query(Settings::SpecialEffects))
+            if (m_enableSpecialEffects)
             {
                 m_animationPlayer.load({ "orb", "puff" });
                 m_soundPlayer.load({ "coins-1", "coins-2" });
@@ -49,62 +44,47 @@ namespace methhead
         reset();
     }
 
-    void Simulator::spawnInitialPieces()
-    {
-        spawnLoot(5);
-        spawnMethHead(Motivation::lazy, 1);
-        spawnMethHead(Motivation::greedy, 1);
-    }
-
     void Simulator::reset()
     {
-        m_settings = Settings();
+        m_frameClock.restart();
 
-        m_displayVars.updatePerStatus(0, 0, 0);
+        m_simTimeMult = 1.0f;
+        m_framesPerSecondMax = 0;
 
         m_soundPlayer.stopAll();
         m_animationPlayer.stopAll();
 
-        m_statusCount = 0;
-        m_simTimeMult = 1.0f;
-        m_framesPerSecondMax = 0;
-        m_framesSinceStatusCount = 0;
-
-        m_frameClock.restart();
-        m_statusClock.restart();
-
         // the order of these remaining items is critical
-        // for example, ScopedBoardPosition::reset() must happen AFTER all pieces are destructed
         m_actors.clear();
         m_pickups.clear();
         ScopedBoardPosition::reset(m_context);
-        spawnInitialPieces();
-        forceActorsToPickTargets();
+        //
+        spawnMethHead(Motivation::lazy, 1);
+        spawnMethHead(Motivation::greedy, 1);
+        // if you spawn the loot last, you don't have to forceActorsToPickTargets()
+        spawnLoot(5);
     }
 
     void Simulator::run()
     {
         while (!m_willStop)
         {
-            if (m_isModeNormal)
+            if (m_context.is_mode_normal)
             {
                 handleEvents();
-                update(getSimFrameTimeElapsed());
+                update(getElapsedSimFrameTimeSec());
                 draw();
             }
             else
             {
-                update(0.1f);
+                update(1.0f);
             }
-
-            printStatus();
         }
 
         reset();
-        m_window.close();
     }
 
-    float Simulator::getSimFrameTimeElapsed()
+    float Simulator::getElapsedSimFrameTimeSec()
     {
         float actualElapsedSec{ 0.0f };
         while (actualElapsedSec < std::numeric_limits<float>::epsilon())
@@ -137,10 +117,6 @@ namespace methhead
             {
                 m_actors.push_back(std::make_unique<Greedy>(m_context));
             }
-
-            // std::cout << "Spawning "
-            //          << ((m_actors.back()->motivation() == Motivation::lazy) ? "Lazy" : "Greedy")
-            //          << " at " << m_actors.back()->boardPos() << std::endl;
         }
     }
 
@@ -167,11 +143,6 @@ namespace methhead
             {
                 break;
             }
-
-            // std::cout << "Killing "
-            //          << ((m_actors.back()->motivation() == Motivation::lazy) ? "Lazy" : "Greedy")
-            //          << " with score of " << m_actors.back()->score() << " at "
-            //          << m_actors.back()->boardPos() << std::endl;
 
             m_actors.pop_back();
         }
@@ -286,9 +257,9 @@ namespace methhead
         {
             reset();
         }
-        else
+        else if (sf::Keyboard::E == event.key.code)
         {
-            m_settings.flip(event.key.code);
+            m_enableSpecialEffects = !m_enableSpecialEffects;
         }
     }
 
@@ -303,15 +274,15 @@ namespace methhead
 
             if (ScopedBoardPosition::refCount(m_context, actor->boardPos()) > 1)
             {
-                handlePiecesColliding(*actor);
+                handleActorPickingup(*actor);
             }
         }
 
-        if (m_isModeNormal)
-        {
-            m_displayVars.updatePerFrame(m_context, elapsedSec);
+        m_score.update(m_context, elapsedSec);
 
-            if (m_settings.query(Settings::SpecialEffects))
+        if (m_context.is_mode_normal)
+        {
+            if (m_enableSpecialEffects)
             {
                 m_animationPlayer.update(elapsedSec);
             }
@@ -320,7 +291,7 @@ namespace methhead
         assert((m_actors.size() + m_pickups.size()) <= m_displayVars.constants().cell_count);
     }
 
-    void Simulator::handlePiecesColliding(IActor & actor)
+    void Simulator::handleActorPickingup(IActor & actor)
     {
         const BoardPos_t actorPos{ actor.boardPos() };
 
@@ -334,7 +305,7 @@ namespace methhead
             return;
         }
 
-        if (m_isModeNormal && m_settings.query(Settings::SpecialEffects))
+        if (m_context.is_mode_normal && m_enableSpecialEffects)
         {
             const sf::FloatRect actorWindowBounds(
                 m_displayVars.constants().boardPosToWindowRect(actorPos));
@@ -358,76 +329,6 @@ namespace methhead
         spawnLoot();
     }
 
-    void Simulator::printStatus()
-    {
-        ++m_framesSinceStatusCount;
-
-        // only bother checking if it's time to display status every 100th frame
-        if ((m_framesSinceStatusCount % 100) != 0)
-        {
-            return;
-        }
-
-        const float elapsedStatusTimeSec{ m_statusClock.getElapsedTime().asSeconds() };
-        if (elapsedStatusTimeSec < m_statusIntervalSec)
-        {
-            return;
-        }
-
-        const Scores scores(calcScores());
-
-        const float fpsReal(static_cast<float>(m_framesSinceStatusCount) / elapsedStatusTimeSec);
-        const std::size_t fps(static_cast<std::size_t>(fpsReal));
-
-        m_statusClock.restart();
-        m_framesSinceStatusCount = 0;
-
-        if (m_framesPerSecondMax < fps)
-        {
-            m_framesPerSecondMax = fps;
-        }
-
-        if (m_isModeNormal)
-        {
-            m_displayVars.updatePerStatus(fps, scores.lazy, scores.greedy);
-        }
-
-        std::cout.imbue(std::locale("")); // this is only to put commas in the big
-        std::cout << std::setw(2) << std::right << m_statusCount++ << "  ";
-
-#ifdef WIN32
-        std::cout << "Win/";
-#else
-        std::cout << "Mac/";
-#endif
-
-#ifdef NDEBUG
-        std::cout << "Rel/";
-#else
-        std::cout << "Dbg/";
-#endif
-
-        if (m_isModeNormal)
-        {
-            std::cout << "Show";
-        }
-        else
-        {
-            std::cout << "Hide";
-        }
-
-        std::cout << "  " << fps << " / " << m_framesPerSecondMax << "  ";
-        std::cout << m_actors.size() << "/" << m_pickups.size() << "  ";
-        std::cout << scores.lazy << " / " << scores.greedy << "  ";
-
-        std::cout << "lazy by "
-                  << 100.0f - (100.0f * (static_cast<float>(scores.greedy) /
-                                         static_cast<float>(scores.lazy)))
-                  << "%";
-
-        std::cout << std::endl;
-    }
-
     void Simulator::draw()
     {
         const sf::RenderStates renderStates;
@@ -436,31 +337,14 @@ namespace methhead
 
         m_displayVars.draw(m_context, m_window, renderStates);
 
-        if (m_isModeNormal && m_settings.query(Settings::SpecialEffects))
+        m_score.draw(m_window, renderStates);
+
+        if (m_context.is_mode_normal && m_enableSpecialEffects)
         {
             m_animationPlayer.draw(m_window, renderStates);
         }
 
         m_window.display();
-    }
-
-    Simulator::Scores Simulator::calcScores() const
-    {
-        Scores scores;
-
-        for (const IActorUPtr_t & actorUPtr : m_actors)
-        {
-            if (actorUPtr->motivation() == Motivation::lazy)
-            {
-                scores.lazy = actorUPtr->score();
-            }
-            else
-            {
-                scores.greedy = actorUPtr->score();
-            }
-        }
-
-        return scores;
     }
 
     void Simulator::forceActorsToPickTargets()

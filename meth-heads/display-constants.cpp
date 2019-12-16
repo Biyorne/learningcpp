@@ -49,6 +49,7 @@ namespace methhead
         cell_size.x = cellSideLength;
         cell_size.y = cellSideLength;
 
+        //
         // once we know how many cells there are and what size they are, we can split the screen
         // into the score and board rects
         const sf::Vector2f boardSize((cell_counts.x * cell_size.x), (cell_counts.y * cell_size.y));
@@ -60,26 +61,16 @@ namespace methhead
         board_rect = sf::FloatRect(boardPos, boardSize);
 
         //
-
-        const sf::Vector2f fpsSize(
-            ((inner_window_rect.width - boardSize.x) - inner_window_pos.x), (boardSize.y * 0.1f));
-
-        const sf::Vector2f fpsPos(
-            inner_window_pos.x, (inner_window_rect.top + inner_window_rect.height - fpsSize.y));
-
-        fps_rect = sf::FloatRect(fpsPos, fpsSize);
-
-        //
-
         const sf::Vector2f scoreSize(
-            fpsSize.x, ((boardSize.y - fpsSize.y) - inner_window_rect.top));
+            ((inner_window_rect.width - boardSize.x) - inner_window_pos.x),
+            (boardSize.y - inner_window_rect.top));
 
         const sf::Vector2f scorePos(inner_window_pos);
 
         score_rect = sf::FloatRect(scorePos, scoreSize);
 
+        //
         // load the font and setup the default text options
-
         const std::string fontFilePath("font/gentium-plus.ttf");
 
         if (font.loadFromFile(fontFilePath))
