@@ -13,6 +13,7 @@ namespace methhead
     Simulator::Simulator(const Mode mode)
         : m_willStop(false)
         , m_enableSpecialEffects(mode == Mode::Normal)
+        , m_willReRunInTestMode(false)
         , m_videoMode(1600u, 1200u, sf::VideoMode::getDesktopMode().bitsPerPixel)
         , m_window()
         , m_score()
@@ -26,6 +27,7 @@ namespace methhead
         , m_simTimeMult(1.0f)
         , m_context(
               (mode == Mode::Normal), m_random, m_actors, m_pickups, m_displayVars.constants())
+        , m_testTurnCountdown(1) // anything > 0 works here
     {
         m_actors.reserve(m_displayVars.constants().cell_count);
         m_pickups.reserve(m_displayVars.constants().cell_count);
@@ -65,7 +67,7 @@ namespace methhead
         spawnLoot(5);
     }
 
-    void Simulator::run()
+    bool Simulator::run()
     {
         while (!m_willStop)
         {
@@ -77,11 +79,53 @@ namespace methhead
             }
             else
             {
+                randomTestAction();
                 update(1.0f);
             }
         }
 
         reset();
+        return m_willReRunInTestMode;
+    }
+
+    void Simulator::randomTestAction()
+    {
+        if (--m_testTurnCountdown > 0)
+        {
+            return;
+        }
+
+        m_testTurnCountdown = (10 + m_random.zeroTo(90));
+
+        sf::Event event;
+        event.type = sf::Event::KeyPressed;
+
+        event.key.shift = false;
+        if ((m_actors.size() > 50) && (m_pickups.size() > 50))
+        {
+            event.key.shift = (m_random.zeroTo(10) == 0);
+        }
+
+        event.key.control = m_random.boolean();
+
+        event.key.code = [&]() {
+            switch (m_random.zeroTo(10_st))
+            {
+                case 0: return sf::Keyboard::R;
+
+                case 1:
+                case 2:
+                case 3: return sf::Keyboard::L;
+
+                case 4:
+                case 5:
+                case 6: return sf::Keyboard::M;
+
+                default: return sf::Keyboard::S;
+            }
+        }();
+
+        handleEvent(event);
     }
 
     float Simulator::getElapsedSimFrameTimeSec()
@@ -260,6 +304,11 @@ namespace methhead
         else if (sf::Keyboard::E == event.key.code)
         {
             m_enableSpecialEffects = !m_enableSpecialEffects;
+        }
+        else if (sf::Keyboard::T == event.key.code)
+        {
+            m_willReRunInTestMode = true;
+            m_willStop = true;
         }
     }
 

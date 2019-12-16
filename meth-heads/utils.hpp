@@ -429,7 +429,7 @@ namespace methhead
     enum class Mode
     {
         Normal,
-        SpeedTest
+        Test
     };
 
     struct WalkDistance

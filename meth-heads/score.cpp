@@ -159,7 +159,7 @@ namespace methhead
             std::cout << "Tst";
         }
 
-        std::cout << sep << fpsCount << sep;
+        std::cout << sep << fpsCount << "fps";
         std::cout << sep << lazyActorCount << "l";
         std::cout << sep << greedyActorCount << "g";
         std::cout << sep << context.pickups.size() << "p";

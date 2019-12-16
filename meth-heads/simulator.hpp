@@ -22,10 +22,13 @@ namespace methhead
       public:
         explicit Simulator(const Mode mode);
 
-        void run();
+        // return true if need to re-start in test mode
+        bool run();
 
       private:
         void reset();
+
+        void randomTestAction();
 
         float getElapsedSimFrameTimeSec();
 
@@ -48,6 +51,7 @@ namespace methhead
       private:
         bool m_willStop;
         bool m_enableSpecialEffects;
+        bool m_willReRunInTestMode;
 
         sf::VideoMode m_videoMode;
         sf::RenderWindow m_window;
@@ -66,6 +70,8 @@ namespace methhead
         sf::Clock m_frameClock;
         std::size_t m_framesPerSecondMax;
         float m_simTimeMult;
+
+        std::size_t m_testTurnCountdown;
     };
 } // namespace methhead
 
