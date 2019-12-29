@@ -57,10 +57,6 @@ namespace methhead
         sf::Texture loot_texture;
         sf::Texture lazy_texture;
         sf::Texture greedy_texture;
-
-        // TODO these two probably don't belong here
-        sf::Color lazy_color;
-        sf::Color greedy_color;
     };
 } // namespace methhead
 

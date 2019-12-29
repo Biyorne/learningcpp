@@ -102,7 +102,6 @@ namespace methhead
         }
 
         // these colors should move after cleanup
-        lazy_color = sf::Color(80, 80, 255);
-        greedy_color = sf::Color(100, 255, 100);
+        lazy_color = greedy_color =
     }
 } // namespace methhead
