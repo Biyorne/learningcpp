@@ -23,8 +23,11 @@ Game::Game()
     , m_sprite()
     , m_rotateSpeed(0.0f)
     , m_moveSpeed(0.0f)
-    , m_willClear()
-    , m_willBlendAdd()
+    , m_willClear(false)
+    , m_willBlendAdd(false)
+    , m_windowSize(m_window.getSize())
+    , m_velocity(0.0f, 0.0f)
+    , m_acceleration(0.0f, 0.0f)
 {
     m_window.setFramerateLimit(60);
 
@@ -45,11 +48,16 @@ Game::Game()
 
 void Game::reset()
 {
-    m_sprite.setPosition(0.0f, 0.0f);
+    m_sprite.setPosition(
+        (m_windowSize.x * 0.5f),
+        (m_windowSize.y - (m_sprite.getGlobalBounds().height * 0.5f)) + 2.0f);
+
     m_rotateSpeed = 150.0f;
-    m_moveSpeed = 1.0f;
+    m_moveSpeed = 20.0f;
     m_willClear = true;
     m_willBlendAdd = false;
+    m_velocity = { 0.0f, 0.0f };
+    m_acceleration = { 0.0f, 0.5f };
 }
 
 void Game::run()
@@ -100,7 +108,23 @@ void Game::update(const float frameTimeSec)
 
     const sf::Vector2f posDiff(mousePos - spritePos);
 
-    m_sprite.move(posDiff * (frameTimeSec * m_moveSpeed));
+    m_velocity += (posDiff * frameTimeSec * 0.1f);
+
+    m_velocity += m_acceleration;
+    m_sprite.move(m_velocity * (frameTimeSec * m_moveSpeed));
+
+    const float spriteBottom{ m_sprite.getPosition().y +
+                              (m_sprite.getGlobalBounds().height * 0.5f) };
+
+    if ((spriteBottom > m_windowSize.y) && (m_velocity.y > 0.0f))
+    {
+        // bounce
+        // m_velocity.y *= -1.0f;
+
+        // land and stop
+        m_velocity.y = 0.0f;
+    }
+
     m_sprite.rotate(m_rotateSpeed * frameTimeSec);
 }
 
@@ -142,15 +166,21 @@ void Game::handleKeyPress(const sf::Keyboard::Key key)
     {
         m_willBlendAdd = !m_willBlendAdd;
     }
+    else if (key == sf::Keyboard::Space)
+    {
+        m_velocity.y = -25.0f;
+    }
     else if ((key == sf::Keyboard::Left) || (key == sf::Keyboard::Right))
     {
+        const bool willIncrease(key == sf::Keyboard::Right);
+
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
         {
-            changeSpeed(key, m_rotateSpeed);
+            changeSpeed(willIncrease, m_rotateSpeed);
         }
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::M))
         {
-            changeSpeed(key, m_moveSpeed);
+            changeSpeed(willIncrease, m_moveSpeed);
         }
     }
 }

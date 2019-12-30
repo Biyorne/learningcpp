@@ -3,15 +3,41 @@
 
 #include <SFML/Graphics.hpp>
 
-// struct Thing
-//{
 //
-//    void update(const float frameTimeSec);
-//    void draw(sf::RenderTarget & target, sf::RenderStates states);
-//
-//    sf::Sprite sprite;
-//    float m_rotateSpeed = 120.0f;
-//};
+// About vectors
+//  Two types of vectors. Euclid uses x and y, polar uses angle and magnitude.
+//  All vectors of both kinds have a hypotenuse that is often called the magnitude.
+//  A normalized vector (sometimes called a unit vector) has a magnitude of 1.
+//  To normalize a vector, simply divide it by its magnitude.
+//  Velocity is a change to position. The hypotenuse can be magnitude or speed.
+
+struct Mover
+{
+    explicit Mover(
+        const sf::Vector2f & pos = sf::Vector2f(0.0f, 0.0f),
+        const sf::Vector2f & vel = sf::Vector2f(0.0f, 0.0f),
+        const sf::Vector2f & acc = sf::Vector2f(0.0f, 0.0f))
+        : position(pos)
+        , velocity(vel)
+        , accelerations()
+    {
+        accelerations.push_back(acc);
+    }
+
+    void move()
+    {
+        for (const sf::Vector2f & acc : accelerations)
+        {
+            velocity += acc;
+        }
+
+        position += velocity;
+    }
+
+    sf::Vector2f position;                   // the result we wanted in the first place
+    sf::Vector2f velocity;                   // change to position
+    std::vector<sf::Vector2f> accelerations; // changes to velocity
+};
 
 class Game
 {
@@ -27,9 +53,9 @@ class Game
 
     void handleKeyPress(const sf::Keyboard::Key key);
 
-    void changeSpeed(const sf::Keyboard::Key key, float & speed)
+    void changeSpeed(const bool willIncrease, float & speed)
     {
-        if (key == sf::Keyboard::Right)
+        if (willIncrease)
         {
             speed *= 1.15f;
         }
@@ -43,14 +69,17 @@ class Game
 
   private:
     sf::RenderWindow m_window;
-    sf::Texture m_texture;
+    sf::Texture m_texture; // TODO
     sf::RenderStates m_states;
     bool m_willClear;
     bool m_willBlendAdd;
+    sf::Vector2f m_windowSize;
 
     sf::Sprite m_sprite;
     float m_rotateSpeed;
     float m_moveSpeed;
+    sf::Vector2f m_velocity;
+    sf::Vector2f m_acceleration;
 };
 
 #endif // BULLET_HELL_GAME_HPP_INCLUDED
