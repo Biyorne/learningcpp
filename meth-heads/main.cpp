@@ -3,11 +3,12 @@
 #include "simulator.hpp"
 
 #include <cstddef>
-
-using namespace methhead;
+#include <string>
 
 int main()
 {
+    using namespace methhead;
+
     bool willReRunInTestMode{ false };
     {
         Simulator simulator(Mode::Normal);

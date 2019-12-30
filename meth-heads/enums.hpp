@@ -5,90 +5,47 @@
 //
 namespace methhead
 {
-    enum class Motivation
+    enum class Piece
     {
-        none,
-        lazy,
-        greedy
+        Lazy,
+        Greedy,
+        Loot,
+        Wall
     };
 
-    /*
-    struct Pieces
+    inline std::string pieceName(const Piece piece)
     {
-        using type_t = std::uint_fast32_t;
-
-        // clang-format off
-        enum Enum : type_t
+        switch (piece)
         {
-            None    = 0,
-            Lazy    = 1 << 0,
-            Greedy  = 1 << 1,
-            Loot    = 1 << 2
-        };
-        // clang-format on
-
-        static Enum actor(const Enum en) noexept { return static_cast<Enum>(en & allActors); }
-        static Enum pickup(const Enum en) noexept { return static_cast<Enum>(en & allPickups); }
-
-        static bool hasActor(const Enum en) noexcept { return (actor(en) != None); }
-        static bool hasPickup(const Enum en) noexcept { return (pickup(en) != None); }
-
-      private:
-        static const type_t allActors{ Lazy | Greedy };
-        static const type_t allPickups{ Loot };
-    };
-
-    {
-        std::string name(const Enum piece) const { return ; }
-
-      private:
-        std::string getImagePath(const Enum piece) const noexcept
-        {
-            // clang-format off
-            switch (piece)
-            {
-                default:
-                case Lazy:    { return "image/head-1.png"; }
-                case Greedy:  { return "image/head-2.png"; }
-                case Loot:    { return "image/loot.png";   }
-            }
-            // clang-format on
-        };
-
-        //
-
-        struct Media
-    {
-        Media() = default;
-
-        Media(
-            const Enum which,
-            const std::string & imagePath,
-            const sf::Color & clr,
-            const sf::Vector2f & size)
-            : enumeration(which)
-            , name(nameof::nameof_enum(which))
-            , texture()
-            , sprite()
-            , color(clr)
-        {
-            if (!texture.loadFromFile(imagePath))
-            {
-                std::cerr << "Error:  Unable to load Actor " << name
-                          << "'s image from: " << imagePath << std::endl;
-            }
-
-            sprite.setTexture(texture, true);
-            scale(sprite, size);
+            case Lazy: return "Lazy";
+            case Greedy: return "Greedy";
+            case Loot: return "Loot";
+            case Wall: return "Wall";
+            default: return "";
         }
+    }
 
-        std::string name;
-        sf::Texture texture;
-        sf::Sprite sprite;
-        sf::Color color;
-    };
+    // static std::string imagePath(const Enum piece)
+    //{
+    //    switch (piece)
+    //    {
+    //        case Lazy: return "image/head-1.png";
+    //        case Greedy: return "image/head-2.png";
+    //        case Loot: return ;
+    //        default: return "";
+    //    }
+    //}
 
-    */
+    // static sf::Color color(const Enum piece)
+    //{
+    //    switch (piece)
+    //    {
+    //        case Lazy: return sf::Color(80, 80, 255);
+    //        case Greedy: return sf::Color(100, 255, 100);
+    //        case Loot: return ;
+    //        default: return sf::Color::Transparent;
+    //    }
+    //}
 } // namespace methhead
 
 #endif // METHHEADS_ENUMS_HPP_INCLUDED

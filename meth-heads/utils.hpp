@@ -30,7 +30,7 @@ namespace sf
     using Vector2s = sf::Vector2<std::size_t>;
 
     template <typename T>
-    inline bool operator<(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
+    bool operator<(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
     {
         if (left.x != right.x)
         {
@@ -438,7 +438,7 @@ namespace methhead
         int dist{ 0 };
     };
 
-    using WalkDIstVec_t = std::vector<WalkDistance>;
+    using WalkDistVec_t = std::vector<WalkDistance>;
 
     inline int walkDistance(const BoardPos_t & from, const BoardPos_t & to) noexcept
     {

@@ -18,11 +18,56 @@
 
 namespace methhead
 {
-    struct IPickup
+    struct MediaShared
+    {
+        explicit MediaShared(
+            const sf::Color & col = sf::Color::Transparent, const std::string & imgPath = "")
+            : color(col)
+            , texture()
+        {
+            if (!imgPath.empty())
+            {
+                if (!texture.loadFromFile(imgPath))
+                {
+                    std::cout << "Failed to load image: \"" << imgPath << "\"" << std::endl;
+                }
+            }
+        }
+
+        sf::Color color;
+        sf::Texture texture;
+    };
+
+    //
+
+    struct MediaSpecific : public sf::Drawable
+    {
+        MediaSpecific(const SimContext & context, const MediaShared & mediaShared)
+            : text(context.display.default_text)
+            , sprite(mediaShared.texture)
+        {}
+
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
+        {
+            target.draw(sprite, states);
+            target.draw(text, states);
+        }
+
+        sf::Text text;
+        sf::Sprite sprite;
+    };
+
+    //
+
+    struct IPickup : public sf::Drawable
     {
         virtual ~IPickup() = default;
-        virtual int value() const noexcept = 0;
-        virtual BoardPos_t boardPos() const noexcept = 0;
+
+        virtual Piece piece() const = 0;
+        virtual int scoreChange() const = 0;
+        virtual float speedChangeMult() const = 0;
+        virtual BoardPos_t boardPos() const = 0;
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
     };
 
     using IPickupUPtr_t = std::unique_ptr<IPickup>;
@@ -36,29 +81,42 @@ namespace methhead
         explicit Loot(const SimContext & context)
             : ScopedBoardPosition(context)
             , m_loot(context.random.fromTo(1, 99))
+            , m_media(context, m_mediaShared)
         {}
 
         virtual ~Loot() = default;
 
-        int value() const noexcept final { return m_loot; }
-        BoardPos_t boardPos() const noexcept final { return ScopedBoardPosition::get(); }
+        Piece piece() const override { return Piece::Loot; }
+        int scoreChange() const override { return m_loot; }
+        float speedChangeMult() const override { return 1.0f; }
+        BoardPos_t boardPos() const final { return ScopedBoardPosition::get(); }
+
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
+        {
+            m_media.draw(target, states);
+        }
 
       private:
         int m_loot;
+        MediaSpecific m_media;
+        static inline MediaShared m_mediaShared{ sf::Color(253, 173, 57), "image/loot.png" };
     };
 
     //
 
-    struct IActor
+    struct IActor : public sf::Drawable
     {
         virtual ~IActor() = default;
 
-        virtual int score() const noexcept = 0;
-        virtual BoardPos_t boardPos() const noexcept = 0;
-        virtual Motivation motivation() const noexcept = 0;
+        virtual int score() const = 0;
+        virtual Piece piece() const = 0;
+        virtual BoardPos_t boardPos() const = 0;
+
         virtual void pickTarget(const SimContext & context) = 0;
         virtual void pickup(const SimContext & context, const IPickup & pickup) = 0;
         virtual bool update(const SimContext & context, const float elapsedMs) = 0;
+
+        // void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
     };
 
     using IActorUPtr_t = std::unique_ptr<IActor>;
@@ -75,19 +133,17 @@ namespace methhead
       public:
         virtual ~ActorBase() = default;
 
-        BoardPos_t boardPos() const noexcept final { return ScopedBoardPosition::get(); }
-        bool update(const SimContext & context, const float elapsedSec) override;
-        inline int score() const noexcept final { return m_score; }
+        inline int score() const final { return m_score; }
+        inline BoardPos_t boardPos() const final { return ScopedBoardPosition::get(); }
 
-        void pickup(const SimContext &, const IPickup & pickup) override
-        {
-            m_score += pickup.value();
-        }
+        void pickup(const SimContext &, const IPickup & pickup) override;
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
+        bool update(const SimContext & context, const float elapsedSec) override;
 
       private:
-        bool isTimeToMove(const float elapsedSec) noexcept;
+        bool isTimeToMove(const float elapsedSec);
 
-        inline int walkDistanceTo(const BoardPos_t & to) const noexcept
+        inline int walkDistanceTo(const BoardPos_t & to) const
         {
             return walkDistance(boardPos(), to);
         }
@@ -103,10 +159,6 @@ namespace methhead
         float m_turnDelaySoFarSec;
 
         static inline const float s_turnDelayDefaultSec{ 0.3f };
-
-        // this vector was pulled from the move() funciton only as a runtime
-        // optimization, so no other functions should read or write to this member
-        static inline WalkDIstVec_t m_moves;
     };
 
     //
@@ -119,7 +171,7 @@ namespace methhead
 
         virtual ~Lazy() = default;
 
-        inline Motivation motivation() const noexcept final { return Motivation::lazy; }
+        inline Motivation motivation() const final { return Motivation::lazy; }
 
       private:
         void pickTarget(const SimContext & context) final
@@ -155,7 +207,7 @@ namespace methhead
 
         virtual ~Greedy() = default;
 
-        inline Motivation motivation() const noexcept final { return Motivation::greedy; }
+        inline Motivation motivation() const final { return Motivation::greedy; }
 
       private:
         void pickTarget(const SimContext & context) final
