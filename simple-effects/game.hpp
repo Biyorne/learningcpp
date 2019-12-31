@@ -1,6 +1,7 @@
 #ifndef BULLET_HELL_GAME_HPP_INCLUDED
 #define BULLET_HELL_GAME_HPP_INCLUDED
 
+#include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 
 //
@@ -39,6 +40,8 @@ struct Mover
     std::vector<sf::Vector2f> accelerations; // changes to velocity
 };
 
+//
+
 class Game
 {
   public:
@@ -53,33 +56,23 @@ class Game
 
     void handleKeyPress(const sf::Keyboard::Key key);
 
-    void changeSpeed(const bool willIncrease, float & speed)
-    {
-        if (willIncrease)
-        {
-            speed *= 1.15f;
-        }
-        else
-        {
-            speed *= 0.85f;
-        }
-    }
+    // void scrollValue(float amount);
 
     void reset();
 
   private:
     sf::RenderWindow m_window;
-    sf::Texture m_texture; // TODO
+    sf::Texture m_bgTexture;
+    sf::Texture m_warnTexture;
     sf::RenderStates m_states;
     bool m_willClear;
     bool m_willBlendAdd;
     sf::Vector2f m_windowSize;
 
-    sf::Sprite m_sprite;
-    float m_rotateSpeed;
-    float m_moveSpeed;
-    sf::Vector2f m_velocity;
-    sf::Vector2f m_acceleration;
+    sf::Sprite m_bgSprite;
+    std::vector<sf::Sprite> m_warnSprites;
+    float m_bgRotateSpeed;
+    sf::Music m_music;
 };
 
 #endif // BULLET_HELL_GAME_HPP_INCLUDED
