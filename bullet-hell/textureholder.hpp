@@ -6,7 +6,7 @@
 
 #include <SFML/Graphics.hpp>
 
-namespace Textures
+namespace Resources
 {
 
     enum ID
@@ -16,15 +16,15 @@ namespace Textures
         Missile
     };
 
-    class TextureHolder
+    template <typename Resource_t, typename Identifier_t>
+    class ResourceHolder
     {
-
       public:
-        TextureHolder()
+        ResourceHolder()
             : m_textureMap()
         {}
 
-        void load(const Textures::ID id, const std::string & filename)
+        void load(Identifier_t id, const std::string & filename)
         {
             assert(!filename.empty());
 
@@ -36,17 +36,25 @@ namespace Textures
             m_textureMap.insert(std::make_pair(id, std::move(textureUPtr)));
         }
 
-        sf::Texture & get(const Textures::ID id)
+        Resource_t & get(Identifier_t id)
         {
-            const auto found(m_textureMap.find(id));
+            auto found(m_textureMap.find(id));
+            assert(found != std::end(m_textureMap));
+
+            return *(found->second);
+        }
+
+        const Resource_t & get(Identifier_t id) const
+        {
+            auto found(m_textureMap.find(id));
             assert(found != std::end(m_textureMap));
 
             return *(found->second);
         }
 
       private:
-        std::map<Textures::ID, std::unique_ptr<sf::Texture>> m_textureMap;
+        std::map<Identifier_t, std::unique_ptr<Resource_t>> m_textureMap;
     };
-} // namespace Textures
+} // namespace Resources
 
 #endif // BULLET_HELL_TEXTURE_HOLDER_HPP_INCLUDED
