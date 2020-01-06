@@ -1,5 +1,6 @@
 
 #include "game.hpp"
+#include "textureholder.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -8,7 +9,6 @@
 
 int main()
 {
-
     Game game;
     game.run();
 }
