@@ -10,21 +10,26 @@ Game::Game()
     , m_warnTexture()
     , m_states()
     , m_willClear(false)
-    , m_willBlendAdd(false)
     , m_windowSize(m_window.getSize())
     , m_bgSprite()
-    , m_warnSprites()
     , m_bgRotateSpeed(0.0f)
     , m_music()
+    , m_random()
+    , m_audio(m_random, "C:/src/learningcpp/media/sfx")
+    , m_context(m_window, m_random, m_audio)
+    , m_risingEffect()
+    , m_trippyMushrooms()
 {
     m_window.setFramerateLimit(60);
+
+    m_audio.loadAll();
 
     if (!m_music.openFromFile("C:/src/learningcpp/media/music/trippy-shpongle.ogg"))
     {
         std::cout << "Unable to load music: trippy-shpongle" << std::endl;
     }
 
-    m_music.setVolume(50.0f);
+    m_music.setVolume(10.0f);
     m_music.play();
 
     if (!m_bgTexture.loadFromFile("C:/src/learningcpp/media/image/tiles/kaleidoscope.jpg"))
@@ -35,8 +40,7 @@ Game::Game()
     m_bgTexture.setSmooth(true);
     m_bgSprite.setTexture(m_bgTexture);
 
-    m_bgSprite.setOrigin(
-        (m_bgSprite.getLocalBounds().width * 0.5f), (m_bgSprite.getLocalBounds().height * 0.5f));
+    util::setOrigin2Center(m_bgSprite);
 
     m_bgSprite.setPosition(m_windowSize * 0.5f);
     m_bgSprite.setScale(2.0f, 2.0f);
@@ -57,7 +61,6 @@ void Game::reset()
 {
     m_states = sf::RenderStates();
     m_willClear = true;
-    m_willBlendAdd = false;
     m_bgRotateSpeed = 0.05f;
 }
 
@@ -100,20 +103,10 @@ void Game::processEvents()
 
             case sf::Event::MouseButtonPressed:
             {
+                m_audio.play("pretty.ogg", 0.5f);
                 const sf::Vector2f mousePos(sf::Mouse::getPosition(m_window));
 
-                sf::Sprite warnSprite;
-                warnSprite.setTexture(m_warnTexture);
-
-                warnSprite.setOrigin(
-                    (warnSprite.getLocalBounds().width * 0.5f),
-                    (warnSprite.getLocalBounds().height * 0.5f));
-
-                warnSprite.setPosition(mousePos);
-                warnSprite.setColor(sf::Color(255, 64, 64, 255));
-                warnSprite.setScale(0.2f, 0.2f);
-
-                m_warnSprites.push_back(warnSprite);
+                m_risingEffect = RisingFadeEffect(m_warnTexture, mousePos);
 
                 break;
             }
@@ -132,46 +125,28 @@ void Game::processEvents()
 void Game::update(const float elapsedTimeSec)
 {
     m_bgSprite.rotate(m_bgRotateSpeed);
-
-    const float scaleDelta(1.0f + (elapsedTimeSec * 0.02f));
-    m_bgSprite.scale(scaleDelta, scaleDelta);
-
-    for (sf::Sprite & sprite : m_warnSprites)
-    {
-        sprite.setColor(sprite.getColor() - sf::Color(0, 0, 0, 5));
-        sprite.scale(1.03f, 1.03f);
-        sprite.rotate(scaleDelta * 10.0f);
-    }
+    m_risingEffect.update(elapsedTimeSec, m_context);
+    m_trippyMushrooms.update(elapsedTimeSec, m_context);
 }
 
 void Game::render()
 {
-    if (m_willBlendAdd)
-    {
-        m_states.blendMode = sf::BlendAdd;
-    }
-    else
-    {
-        m_states.blendMode = sf::BlendAlpha;
-    }
-
     if (m_willClear)
     {
         m_window.clear();
     }
 
     m_window.draw(m_bgSprite, m_states);
-
-    for (const sf::Sprite & sprite : m_warnSprites)
-    {
-        m_window.draw(sprite, m_states);
-    }
+    m_window.draw(m_risingEffect, m_states);
+    m_window.draw(m_trippyMushrooms, m_states);
 
     m_window.display();
 }
 
 void Game::handleKeyPress(const sf::Keyboard::Key key)
 {
+    m_audio.play("tap");
+
     if (key == sf::Keyboard::Escape)
     {
         m_window.close();
@@ -183,10 +158,6 @@ void Game::handleKeyPress(const sf::Keyboard::Key key)
     else if (key == sf::Keyboard::C)
     {
         m_willClear = !m_willClear;
-    }
-    else if (key == sf::Keyboard::B)
-    {
-        m_willBlendAdd = !m_willBlendAdd;
     }
 }
 
