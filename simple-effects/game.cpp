@@ -4,55 +4,33 @@
 #include <iostream>
 
 Game::Game()
-    : m_window(
+    : m_resources()
+    , m_window(
           sf::VideoMode(1280, 1024, sf::VideoMode::getDesktopMode().bitsPerPixel), "Simple Effect")
-    , m_bgTexture()
-    , m_warnTexture()
     , m_states()
     , m_willClear(false)
     , m_windowSize(m_window.getSize())
     , m_bgSprite()
     , m_bgRotateSpeed(0.0f)
-    , m_music()
     , m_random()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
     , m_context(m_window, m_random, m_audio)
-    , m_risingEffect()
-    , m_trippyMushrooms()
+    , m_follower(
+          25.0f,
+          m_resources.rabbit_texture,
+          { 100.0f, 100.0f },
+          m_resources.carrot_texture,
+          (m_context.window_size * 0.5f))
 {
     m_window.setFramerateLimit(60);
 
     m_audio.loadAll();
 
-    if (!m_music.openFromFile("C:/src/learningcpp/media/music/trippy-shpongle.ogg"))
-    {
-        std::cout << "Unable to load music: trippy-shpongle" << std::endl;
-    }
-
-    m_music.setVolume(10.0f);
-    m_music.play();
-
-    if (!m_bgTexture.loadFromFile("C:/src/learningcpp/media/image/tiles/kaleidoscope.jpg"))
-    {
-        std::cout << "Unable to load texure: kaleidoscope" << std::endl;
-    }
-
-    m_bgTexture.setSmooth(true);
-    m_bgSprite.setTexture(m_bgTexture);
-
-    util::setOrigin2Center(m_bgSprite);
-
-    m_bgSprite.setPosition(m_windowSize * 0.5f);
-    m_bgSprite.setScale(2.0f, 2.0f);
-
-    m_bgSprite.setColor(sf::Color(255, 255, 255, 127));
-
-    if (!m_warnTexture.loadFromFile("C:/src/learningcpp/media/image/warning.png"))
-    {
-        std::cout << "Unable to load texure: warning" << std::endl;
-    }
-
-    m_warnTexture.setSmooth(true);
+    // m_bgSprite.setTexture(m_resources.bg_texture);
+    // util::setOrigin2Center(m_bgSprite);
+    // m_bgSprite.setPosition(m_windowSize * 0.5f);
+    // m_bgSprite.setScale(2.0f, 2.0f);
+    // m_bgSprite.setColor(sf::Color(255, 255, 255, 127));
 
     reset();
 }
@@ -70,13 +48,11 @@ void Game::run()
 
     while (m_window.isOpen())
     {
+        const sf::Vector2f mousePos(sf::Mouse::getPosition(m_window));
+        m_context.mouse_pos = mousePos;
+
         processEvents();
-
-        const float frameTimeSec(clock.getElapsedTime().asSeconds());
-        clock.restart();
-
-        update(frameTimeSec);
-
+        update(clock.restart().asSeconds());
         render();
     }
 }
@@ -106,8 +82,6 @@ void Game::processEvents()
                 m_audio.play("pretty.ogg", 0.5f);
                 const sf::Vector2f mousePos(sf::Mouse::getPosition(m_window));
 
-                m_risingEffect = RisingFadeEffect(m_warnTexture, mousePos);
-
                 break;
             }
 
@@ -124,9 +98,8 @@ void Game::processEvents()
 
 void Game::update(const float elapsedTimeSec)
 {
-    m_bgSprite.rotate(m_bgRotateSpeed);
-    m_risingEffect.update(elapsedTimeSec, m_context);
-    m_trippyMushrooms.update(elapsedTimeSec, m_context);
+    // m_bgSprite.rotate(m_bgRotateSpeed);
+    m_follower.update(elapsedTimeSec, m_context);
 }
 
 void Game::render()
@@ -136,9 +109,8 @@ void Game::render()
         m_window.clear();
     }
 
-    m_window.draw(m_bgSprite, m_states);
-    m_window.draw(m_risingEffect, m_states);
-    m_window.draw(m_trippyMushrooms, m_states);
+    // m_window.draw(m_bgSprite, m_states);
+    m_window.draw(m_follower, m_states);
 
     m_window.display();
 }

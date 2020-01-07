@@ -33,25 +33,66 @@ namespace util
 struct Mover
 {
     explicit Mover(
+        const float spd = 1.0f,
         const sf::Vector2f & pos = sf::Vector2f(0.0f, 0.0f),
         const sf::Vector2f & vel = sf::Vector2f(0.0f, 0.0f),
         const sf::Vector2f & acc = sf::Vector2f(0.0f, 0.0f))
-        : position(pos)
+        : speed(spd)
+        , position(pos)
         , velocity(vel)
         , acceleration(acc)
     {}
 
-    void update()
+    void update(const float elapsedTimeSec)
     {
         velocity += acceleration;
+        velocity *= elapsedTimeSec;
+        velocity *= speed;
         position += velocity;
     }
 
+    float speed;
     sf::Vector2f position;     // the result we wanted in the first place
     sf::Vector2f velocity;     // change to position
     sf::Vector2f acceleration; // changes to velocity
 };
 
+//
+struct Resources
+{
+    Resources()
+    {
+        if (!music.openFromFile("C:/src/learningcpp/media/music/trippy-shpongle.ogg"))
+        {
+            std::cout << "Unable to load music: trippy-shpongle" << std::endl;
+        }
+
+        music.setVolume(10.0f);
+        music.play();
+
+        loadTexture("C:/src/learningcpp/media/image/warning.png", warn_texture);
+        loadTexture("C:/src/learningcpp/media/image/tile/kaleidoscope-color.jpg", bg_texture);
+        loadTexture("C:/src/learningcpp/media/image/rabbit.png", rabbit_texture);
+        loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
+    }
+
+    void loadTexture(const std::string & filePath, sf::Texture & texture)
+    {
+        if (!texture.loadFromFile(filePath))
+        {
+            std::cerr << "Unable to load texure: " << filePath << std::endl;
+        }
+
+        texture.setSmooth(true);
+    }
+
+    sf::Texture bg_texture;
+    sf::Texture warn_texture;
+    sf::Texture rabbit_texture;
+    sf::Texture carrot_texture;
+
+    sf::Music music;
+};
 //
 
 struct Context
@@ -61,12 +102,14 @@ struct Context
         , audio(aud)
         , window_size(window.getSize())
         , window_rect({}, window_size)
+        , mouse_pos(0.0f, 0.0f)
     {}
 
     util::Random & random;
     util::SoundPlayer & audio;
     sf::Vector2f window_size;
     sf::FloatRect window_rect;
+    sf::Vector2f mouse_pos;
 };
 
 //
@@ -100,9 +143,9 @@ struct EffectBase : public sf::Drawable
         }
     }
 
-    virtual void update(const float, const Context & context)
+    virtual void update(const float elapsedTimeSec, const Context & context)
     {
-        mover.update();
+        mover.update(elapsedTimeSec);
         sprite.setPosition(mover.position);
         handleFencing(context);
     }
@@ -190,7 +233,7 @@ struct RisingFadeEffect : public EffectBase
     }
 
     RisingFadeEffect(const sf::Texture & tex, const sf::Vector2f & pos)
-        : EffectBase(tex, Mover(pos, { 0.0f, -1.5f }))
+        : EffectBase(tex, Mover(100.0f, pos, { 0.0f, -1.5f }))
     {
         sprite.setScale(0.25f, 0.25f);
     }
@@ -202,6 +245,50 @@ struct RisingFadeEffect : public EffectBase
         EffectBase::update(elapsedTimeSec, context);
         sprite.setColor(sprite.getColor() - sf::Color(0, 0, 0, 8));
     }
+};
+
+//
+
+struct FollowerEffect : public EffectBase
+{
+    FollowerEffect(
+        const float speed,
+        const sf::Texture & followTex,
+        const sf::Vector2f & followPos,
+        const sf::Texture & leadTex,
+        const sf::Vector2f & leadPos)
+        : EffectBase(followTex, Mover(speed, followPos))
+        , leader_sprite(leadTex)
+    {
+        util::setOrigin2Center(leaderSprite());
+        leaderSprite().setPosition(leadPos);
+
+        followerSprite().setScale(0.5f, 0.5f);
+        leaderSprite().setScale(0.5f, 0.5f);
+    }
+
+    virtual ~FollowerEffect() = default;
+
+    sf::Sprite & followerSprite() { return sprite; }
+    sf::Sprite & leaderSprite() { return leader_sprite; }
+
+    void draw(sf::RenderTarget & target, sf::RenderStates states) const override
+    {
+        EffectBase::draw(target, states);
+        target.draw(leader_sprite, states);
+    }
+
+    void update(const float elapsedTimeSec, const Context & context) override
+    {
+        // TODO need to stop distance from changing acceleration, so need to normalize all
+        const sf::Vector2f posDiff(context.mouse_pos - mover.position);
+        mover.velocity += (posDiff * elapsedTimeSec);
+
+        EffectBase::update(elapsedTimeSec, context);
+        leaderSprite().setPosition(context.mouse_pos);
+    }
+
+    sf::Sprite leader_sprite;
 };
 
 //
@@ -324,23 +411,20 @@ class Game
     void reset();
 
   private:
+    Resources m_resources;
     sf::RenderWindow m_window;
-    sf::Texture m_bgTexture;
-    sf::Texture m_warnTexture;
     sf::RenderStates m_states;
     bool m_willClear;
     sf::Vector2f m_windowSize;
 
     sf::Sprite m_bgSprite;
     float m_bgRotateSpeed;
-    sf::Music m_music;
+
     util::Random m_random;
     util::SoundPlayer m_audio;
 
     Context m_context;
-    RisingFadeEffect m_risingEffect;
-
-    TrippyMushrooms m_trippyMushrooms;
+    FollowerEffect m_follower;
 };
 
 #endif // BULLET_HELL_GAME_HPP_INCLUDED
