@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
+#include <iostream>
+#include <sstream>
 
 #include <SFML/Graphics.hpp>
 
@@ -493,12 +495,20 @@ namespace util
 
     // slow running but handy debugging shapes
 
-    [[nodiscard]] inline sf::VertexArray makeRectangleVertexArray(
-        const sf::FloatRect & rect, const sf::Color & color = sf::Color::White)
+    [[nodiscard]] inline sf::VertexArray
+        makeRectangleVerts(const sf::FloatRect & rect, const sf::Color & color = sf::Color::White)
     {
         sf::VertexArray verts(sf::Quads, 4);
         setupQuadVerts(position(rect), size(rect), 0, verts, color);
         return verts;
+    }
+
+    inline void drawRectangleVerts(
+        sf::RenderTarget & target,
+        const sf::FloatRect & rect,
+        const sf::Color & color = sf::Color::White)
+    {
+        target.draw(makeRectangleVerts(rect, color));
     }
 
     [[nodiscard]] inline sf::RectangleShape
@@ -575,7 +585,7 @@ namespace util
     }
 
     inline sf::VertexArray makeLines(
-        const std::initializer_list<sf::Vector2f> initListPoints,
+        const std::initializer_list<sf::Vector2f> & initListPoints,
         const sf::Color & color = sf::Color::White)
     {
         std::vector<sf::Vector2f> points;
@@ -599,7 +609,7 @@ namespace util
 
     inline void drawlines(
         sf::RenderTarget & target,
-        const std::initializer_list<sf::Vector2f> points,
+        const std::initializer_list<sf::Vector2f> & points,
         const sf::Color & color = sf::Color::White)
     {
         target.draw(makeLines(points, color));
@@ -704,10 +714,6 @@ namespace util
             else if (!std::filesystem::is_directory(path))
             {
                 return "Path is not a directory.";
-            }
-            else if (!std::filesystem::is_empty(path))
-            {
-                return "Media directory is empty.";
             }
             else
             {

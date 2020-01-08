@@ -333,15 +333,15 @@ void main()\
             }
         }
 
-        bool isEnabled() const { return m_isEnabled; }
-        void isEnabled(const bool willEnable) { m_isEnabled = willEnable; }
-
         bool isOpen() const { return m_window.isOpen(); }
         void close()
         {
             m_window.close();
             isEnabled(false);
         }
+
+        bool isEnabled() const { return (m_isEnabled && isOpen()); }
+        void isEnabled(const bool willEnable) { m_isEnabled = (willEnable && isOpen()); }
 
         std::size_t blurMultipassCount() const { return m_bloomEffect.blurMultiPassCount(); }
 
@@ -350,22 +350,11 @@ void main()\
             m_bloomEffect.blurMultiPassCount(newCount);
         }
 
-        void clear(const sf::Color & color = sf::Color::Black)
-        {
-            m_sideTexture.clear(color);
-            m_window.clear(color);
-        }
+        void clear(const sf::Color & color = sf::Color::Black) { renderTarget().clear(color); }
 
         void draw(sf::Drawable & toDraw, const sf::RenderStates & states = {})
         {
-            if (m_isEnabled)
-            {
-                m_sideTexture.draw(toDraw, states);
-            }
-            else
-            {
-                m_window.draw(toDraw, states);
-            }
+            renderTarget().draw(toDraw, states);
         }
 
         void display()
@@ -377,6 +366,18 @@ void main()\
             }
 
             m_window.display();
+        }
+
+        sf::RenderTarget & renderTarget()
+        {
+            if (m_isEnabled)
+            {
+                return m_sideTexture;
+            }
+            else
+            {
+                return m_window;
+            }
         }
 
       private:

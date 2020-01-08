@@ -24,8 +24,8 @@ namespace util
 
         explicit AnimConfig(
             const float durationSec,
-            const sf::Color colorParam = sf::Color::White,
-            const sf::BlendMode blendModeParam = sf::BlendAlpha)
+            const sf::Color & colorParam = sf::Color::White,
+            const sf::BlendMode & blendModeParam = sf::BlendAlpha)
             : is_default(false)
             , duration_sec(durationSec)
             , color(colorParam)
@@ -115,7 +115,7 @@ namespace util
         void playingAtOnceMax(const std::size_t maxCount) { m_maxPlayingAtOnceCount = maxCount; }
 
         bool loadAll(const AnimConfig & config = {});
-        bool load(const std::initializer_list<std::string> names, const AnimConfig & config = {});
+        bool load(const std::initializer_list<std::string> & names, const AnimConfig & config = {});
         bool load(const std::string & name, const AnimConfig & config = {});
 
         void configure(const std::string & name, const AnimConfig & config);

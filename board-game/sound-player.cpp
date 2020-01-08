@@ -104,7 +104,7 @@ namespace util
         loadFiles();
     }
 
-    bool SoundPlayer::load(const std::initializer_list<std::string> names)
+    bool SoundPlayer::load(const std::initializer_list<std::string> & names)
     {
         bool success{ true };
 

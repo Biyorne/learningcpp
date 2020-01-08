@@ -50,7 +50,7 @@ namespace util
     }
 
     bool AnimationPlayer::load(
-        const std::initializer_list<std::string> names, const AnimConfig & config)
+        const std::initializer_list<std::string> & names, const AnimConfig & config)
     {
         bool success{ true };
 

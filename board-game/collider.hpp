@@ -4,13 +4,24 @@
 // collider.hpp
 //
 #include "context.hpp"
-#include "meth-head.hpp"
+#include "pieces.hpp"
 #include "sound-player.hpp"
 
 namespace boardgame
 {
     struct Collider
     {
+        template <typename T>
+        static void collide(const Context & context, T & movingPiece, const BoardPos_t & newPos)
+        {
+            if (context.board.pieceAt(newPos) == Piece::Empty)
+            {
+                movingPiece.m_boardPos = newPos;
+                movingPiece.m_sprite.setPosition(context.board.cell(newPos).center);
+            }
+        }
+
+        /*
         void collide(
             const Context & context, PieceBase & mover, const PieceUPtrVec_t::iterator targetIter)
         {
@@ -21,7 +32,7 @@ namespace boardgame
                 return;
             }
 
-            if (target.piece() == Piece::None)
+            if (target.piece() == Piece::Empty)
             {
                 mover.set(context, target.piece(), target.boardPos());
                 return;
@@ -56,6 +67,7 @@ namespace boardgame
                 collide(context, mover, foundIter);
             }
         }
+        */
     };
 } // namespace boardgame
 

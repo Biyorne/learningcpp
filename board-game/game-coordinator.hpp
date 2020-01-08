@@ -1,10 +1,11 @@
-#ifndef BOARDGAME_BOARDGAME_HPP_INCLUDED
-#define BOARDGAME_BOARDGAME_HPP_INCLUDED
+#ifndef BOARDGAME_GAMECOORDINATOR_HPP_INCLUDED
+#define BOARDGAME_GAMECOORDINATOR_HPP_INCLUDED
 
 #include "animation-player.hpp"
 #include "bloom-shader.hpp"
+#include "board.hpp"
 #include "collider.hpp"
-#include "meth-head.hpp"
+#include "pieces.hpp"
 #include "random.hpp"
 #include "resources.hpp"
 #include "sound-player.hpp"
@@ -18,10 +19,10 @@
 
 namespace boardgame
 {
-    class BoardGame
+    class GameCoordinator
     {
       public:
-        explicit BoardGame(const std::string & mediaDirPath);
+        explicit GameCoordinator(const std::string & mediaDirPath);
 
         void run();
 
@@ -33,12 +34,27 @@ namespace boardgame
         void handleEvents();
         void handleEvent(const sf::Event & event);
 
-        void update(const float elapsedSec);
+        void update(const float elapsedTimeSec);
         void draw();
 
+        template <typename T>
+        void update(const float elapsedTimeSec, T & piece)
+        {
+            const BoardPos_t origPos{ piece.boardPos() };
+            const BoardPos_t newPos{ piece.update(m_context, elapsedTimeSec) };
+
+            // skip if the piece does not want to move
+            if (newPos == origPos)
+            {
+                return;
+            }
+
+            m_collider.collide(m_context, piece, newPos);
+        }
+
       private:
-        std::string m_mediaDirPath;
         bool m_enableSpecialEffects;
+        Resources m_resources;
 
         float m_simTimeMult;
         sf::Clock m_frameClock;
@@ -47,17 +63,14 @@ namespace boardgame
         sf::RenderWindow m_window;
         util::BloomEffectHelper m_bloomWindow;
 
-        Resources m_resources;
         util::Random m_random;
         util::SoundPlayer m_soundPlayer;
         util::AnimationPlayer m_animationPlayer;
-        DisplayConstants m_display;
+        Board m_board;
         Collider m_collider;
-
-        PieceUPtrVec_t m_pieces;
 
         Context m_context;
     };
 } // namespace boardgame
 
-#endif // BOARDGAME_BOARDGAME_HPP_INCLUDED
+#endif // BOARDGAME_GAMECOORDINATOR_HPP_INCLUDED

@@ -3,8 +3,9 @@
 //
 // resources.hpp
 //
-#include "meth-head.hpp"
+#include "pieces.hpp"
 
+#include <filesystem>
 #include <sstream>
 #include <vector>
 
@@ -15,30 +16,48 @@ namespace boardgame
     struct Resources
     {
         Resources(const std::string & mediaDirPath)
+            : media_dir_path(mediaDirPath)
         {
-            load(mediaDirPath, "/font/gentium-plus.ttf", font);
-
-            default_text.setFont(font);
-            default_text.setCharacterSize(99);
-
-            load(mediaDirPath, PlayerPiece::imageRelativePath(), hero_texture);
-            load(mediaDirPath, DemonPiece::imageRelativePath(), demon_texture);
-            load(mediaDirPath, ChildPiece::imageRelativePath(), child_texture);
-            load(mediaDirPath, WallPiece::imageRelativePath(), wall_texture);
-        }
-
-        template <typename T>
-        static void
-            load(const std::string & mediaDirPath, const std::string & relativePath, T & loadable)
-        {
-            const std::string fullPath{ mediaDirPath + relativePath };
-
-            if (!loadable.loadFromFile(fullPath))
+            if (!std::filesystem::exists(media_dir_path) ||
+                !std::filesystem::is_directory(media_dir_path))
             {
                 std::ostringstream ss;
 
-                ss << "Error:  Resources::load(media_dir=\"" << mediaDirPath << "\", rel_path=\""
-                   << relativePath << "\")  full_path=\"" << fullPath << "\" -failed to load.";
+                ss << "Error:  Resources::Resources(\"" << mediaDirPath << "\", which_became=\""
+                   << media_dir_path.string()
+                   << "\") either does not exist, or is not a directory.";
+
+                throw std::runtime_error(ss.str());
+            }
+
+            load(media_dir_path / "font/gentium-plus/gentium-plus.ttf", font);
+            load(media_dir_path / PlayerPiece::imageRelativePath(), hero_texture);
+            load(media_dir_path / DemonPiece::imageRelativePath(), demon_texture);
+            load(media_dir_path / ChildPiece::imageRelativePath(), child_texture);
+            load(media_dir_path / WallPiece::imageRelativePath(), wall_texture);
+        }
+
+        template <typename T>
+        static void load(const std::filesystem::path & path, T & loadable)
+        {
+            const std::string pathStr{ path.string() };
+
+            if (!std::filesystem::exists(path) || !std::filesystem::is_regular_file(path))
+            {
+                std::ostringstream ss;
+
+                ss << "Error:  Resources::load(\"" << pathStr
+                   << "\") failed because that file does not exist, or is not a regular file.";
+
+                throw std::runtime_error(ss.str());
+            }
+
+            if (!loadable.loadFromFile(pathStr))
+            {
+                std::ostringstream ss;
+
+                ss << "Error:  Resources::load(\"" << pathStr
+                   << "\")  failed the sfml.loadFromFile() call.";
 
                 throw std::runtime_error(ss.str());
             }
@@ -49,9 +68,9 @@ namespace boardgame
             }
         }
 
-        sf::Font font;
-        sf::Text default_text;
+        const std::filesystem::path media_dir_path;
 
+        sf::Font font;
         sf::Texture hero_texture;
         sf::Texture demon_texture;
         sf::Texture child_texture;

@@ -4,27 +4,32 @@
 // types.hpp
 //
 #include <array>
+#include <string>
 
 #include <SFML/System/Vector2.hpp>
 
 namespace boardgame
 {
+    // TODO move to board class
     using BoardPos_t = sf::Vector2i;
+
+    const BoardPos_t InvalidBoardPos = { std::numeric_limits<int>::lowest(),
+                                         std::numeric_limits<int>::lowest() };
 
     enum class Piece
     {
-        None = 0,
+        Empty,
         Hero,
         Demon,
         Child,
         Wall
     };
 
-    inline std::string name(const Piece piece)
+    inline std::string pieceName(const Piece piece)
     {
         switch (piece)
         {
-            case Piece::None: return "None";
+            case Piece::Empty: return "None";
             case Piece::Hero: return "Hero";
             case Piece::Demon: return "Demon";
             case Piece::Child: return "Child";
