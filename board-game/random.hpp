@@ -35,6 +35,8 @@ namespace util
         template <typename T>
         T fromTo(const T from, const T to) const
         {
+            static_assert(std::is_arithmetic_v<T>);
+
             if (to < from)
             {
                 return fromTo(to, from);
@@ -42,19 +44,17 @@ namespace util
 
             if constexpr (std::is_floating_point_v<T>)
             {
-                // if (isRealClose(from, to))
-                //{
-                //    return from;
-                //}
-
                 std::uniform_real_distribution<T> distribution(
                     from, std::nextafter(to, std::numeric_limits<T>::max()));
 
                 return distribution(m_engine);
             }
+            else if constexpr (sizeof(T) == 1)
+            {
+                return static_cast<T>(fromTo<int>(static_cast<int>(from), static_cast<int>(to)));
+            }
             else
             {
-                static_assert(std::is_integral_v<T>);
                 std::uniform_int_distribution<T> distribution(from, to);
                 return distribution(m_engine);
             }

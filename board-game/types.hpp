@@ -10,33 +10,34 @@
 
 namespace boardgame
 {
-    // TODO move to board class
+    using Score_t = int;
+
     using BoardPos_t = sf::Vector2i;
 
-    const BoardPos_t InvalidBoardPos = { std::numeric_limits<int>::lowest(),
-                                         std::numeric_limits<int>::lowest() };
-
-    enum class Piece
+    struct Piece
     {
-        Empty,
-        Hero,
-        Demon,
-        Child,
-        Wall
-    };
-
-    inline std::string pieceName(const Piece piece)
-    {
-        switch (piece)
+        enum Enum : std::size_t
         {
-            case Piece::Empty: return "None";
-            case Piece::Hero: return "Hero";
-            case Piece::Demon: return "Demon";
-            case Piece::Child: return "Child";
-            case Piece::Wall: return "Wall";
-            default: return "";
+            Player = 0,
+            Demon,
+            Victim,
+            Wall,
+            Count
+        };
+
+        static std::string name(const Enum piece)
+        {
+            switch (piece)
+            {
+                case Player: return "Player";
+                case Demon: return "Demon";
+                case Victim: return "Victim";
+                case Wall: return "Wall";
+                case Count: return "Count";
+                default: return "";
+            }
         }
-    }
+    };
 
     // these are used by the pieces that move to help find where they want to go
     struct WalkDistance

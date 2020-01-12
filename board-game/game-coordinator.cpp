@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 namespace boardgame
@@ -25,6 +26,8 @@ namespace boardgame
         , m_board(m_window.getSize())
         , m_collider()
         , m_context(m_resources, m_board, m_random, m_soundPlayer, m_animationPlayer)
+        , m_boardBaseSprite()
+        , m_boardBaseTexture()
     {
         m_window.setFramerateLimit(60);
 
@@ -37,6 +40,89 @@ namespace boardgame
         }
 
         reset();
+        setupBoardBackgroundImage();
+    }
+
+    void GameCoordinator::setupBoardBackgroundImage()
+    {
+        // create
+        if (!m_boardBaseTexture.create(m_window.getSize().x, m_window.getSize().y))
+        {
+            std::ostringstream ss;
+
+            ss << "Error:  GameCoordinator::GameCoordinator() unable to create an "
+                  "sf::RenderTexture for the board base of size="
+               << m_window.getSize() << ".";
+
+            throw std::runtime_error(ss.str());
+        }
+
+        m_boardBaseTexture.clear();
+
+        // draw wood floor
+        sf::Sprite sprite(m_resources.tile_texture);
+        for (const auto & [boardPos, cell] : m_board.cells)
+        {
+            const Image::Enum imageEnum{ m_random.from({ Image::WoodFloor1,
+                                                         Image::WoodFloor2,
+                                                         Image::WoodFloor3,
+                                                         Image::WoodFloor4,
+                                                         Image::WoodFloor5,
+                                                         Image::WoodFloor6 }) };
+
+            sprite.setTextureRect(Image::coords(imageEnum));
+
+            util::scale(sprite, m_board.cell_size);
+            util::setOriginToCenter(sprite);
+            sprite.setPosition(cell.window_rect_center);
+            m_boardBaseTexture.draw(sprite);
+        }
+
+        // draw the walls and the shadows on top of them
+        for (const auto & [boardPos, cell] : m_board.cells)
+        {
+            if (cell.piece_enum != Piece::Wall)
+            {
+                continue;
+            }
+
+            const sf::Vector2s boardPosS(boardPos);
+            const char mapChar{ m_board.map_strings.at(boardPosS.y).at(boardPosS.x) };
+            const Image::Enum imageEnum{ Image::charToEnum(mapChar) };
+
+            sprite.setTextureRect(Image::coords(imageEnum));
+
+            util::scale(sprite, m_board.cell_size);
+            util::setOriginToCenter(sprite);
+            sprite.setPosition(cell.window_rect_center);
+            m_boardBaseTexture.draw(sprite);
+
+            if ((imageEnum == Image::WallHoriz) && (boardPos.x > 0))
+            {
+                const char mapCharToTheLeft{
+                    m_board.map_strings.at(boardPosS.y).at(boardPosS.x - 1)
+                };
+
+                const Image::Enum imageEnumToTheLeft{ Image::charToEnum(mapCharToTheLeft) };
+
+                if (Image::isBlock(imageEnumToTheLeft))
+                {
+                    sprite.setTextureRect(Image::coords(Image::Shadow));
+
+                    const float horizScale{ m_random.fromTo(1.0f, 1.9f) };
+                    const float horizSizeBefore{ sprite.getGlobalBounds().width };
+
+                    sprite.scale(horizScale, 1.0f);
+                    sprite.move((horizSizeBefore * (horizScale - 1.0f) * 0.5f), 0.0f);
+
+                    m_boardBaseTexture.draw(sprite);
+                }
+            }
+        }
+
+        m_boardBaseTexture.display();
+
+        m_boardBaseSprite.setTexture(m_boardBaseTexture.getTexture());
     }
 
     void GameCoordinator::reset()
@@ -50,7 +136,6 @@ namespace boardgame
         m_soundPlayer.stopAll();
         m_animationPlayer.stopAll();
 
-        // piece vector must be clear()  before ScopedBoardPosition::reset()
         m_board.reset();
 
         loadMap();
@@ -58,31 +143,35 @@ namespace boardgame
 
     void GameCoordinator::loadMap()
     {
-        const Board & display{ m_board };
-
-        for (int horiz(0); horiz < display.cellCounts<int>().x; ++horiz)
+        // setup the walls
+        for (auto & [boardPos, cell] : m_board.cells)
         {
-            m_board.walls.push_back(std::make_unique<WallPiece>(m_context, BoardPos_t(horiz, 0)));
+            if (cell.piece_enum != Piece::Wall)
+            {
+                continue;
+            }
 
-            m_board.walls.push_back(std::make_unique<WallPiece>(
-                m_context, BoardPos_t(horiz, (display.cellCounts<int>().y - 1))));
+            const sf::Vector2s boardPosS(boardPos);
+            const char mapChar{ m_board.map_strings.at(boardPosS.y).at(boardPosS.x) };
+            const Image::Enum mapImageEnum{ Image::charToEnum(mapChar) };
+
+            m_board.pieces.push_back(
+                std::make_unique<WallPiece>(m_context, cell.board_pos, mapImageEnum));
+
+            cell.piece_index = m_board.pieces.size();
         }
 
-        for (int vert(1); vert < (display.cellCounts<int>().y - 1); ++vert)
-        {
-            m_board.walls.push_back(std::make_unique<WallPiece>(m_context, BoardPos_t(0, vert)));
+        m_board.pieces.push_back(std::make_unique<VictimPiece>(m_context, BoardPos_t(10, 5)));
+        m_board.cellAt(BoardPos_t(10, 5)).piece_enum = Piece::Wall;
+        m_board.cellAt(BoardPos_t(10, 5)).piece_index = m_board.pieces.size();
 
-            m_board.walls.push_back(std::make_unique<WallPiece>(
-                m_context, BoardPos_t((display.cellCounts<int>().x - 1), vert)));
-        }
+        m_board.pieces.push_back(std::make_unique<PlayerPiece>(m_context, BoardPos_t(23, 0)));
+        m_board.cellAt(BoardPos_t(23, 0)).piece_enum = Piece::Wall;
+        m_board.cellAt(BoardPos_t(23, 0)).piece_index = m_board.pieces.size();
 
-        for (std::size_t i(0); i < 3; ++i)
-        {
-            m_board.kids.push_back(std::make_unique<ChildPiece>(m_context));
-        }
-
-        m_board.players.push_back(std::make_unique<PlayerPiece>(m_context));
-        m_board.demons.push_back(std::make_unique<DemonPiece>(m_context));
+        m_board.pieces.push_back(std::make_unique<DemonPiece>(m_context, BoardPos_t(16, 6)));
+        m_board.cellAt(BoardPos_t(16, 6)).piece_enum = Piece::Wall;
+        m_board.cellAt(BoardPos_t(16, 6)).piece_index = m_board.pieces.size();
     }
 
     void GameCoordinator::run()
@@ -128,43 +217,6 @@ namespace boardgame
         {
             reset();
         }
-        else if (sf::Keyboard::E == event.key.code)
-        {
-            m_enableSpecialEffects = !m_enableSpecialEffects;
-            m_bloomWindow.isEnabled(m_enableSpecialEffects);
-        }
-        else if (sf::Keyboard::B == event.key.code)
-        {
-            m_bloomWindow.isEnabled(!m_bloomWindow.isEnabled());
-        }
-        else if (sf::Keyboard::Up == event.key.code)
-        {
-            for (PlayerUPtr_t & player : m_context.board.players)
-            {
-                player->nextMovePos({ 0, -1 });
-            }
-        }
-        else if (sf::Keyboard::Down == event.key.code)
-        {
-            for (PlayerUPtr_t & player : m_context.board.players)
-            {
-                player->nextMovePos({ 0, 1 });
-            }
-        }
-        else if (sf::Keyboard::Right == event.key.code)
-        {
-            for (PlayerUPtr_t & player : m_context.board.players)
-            {
-                player->nextMovePos({ 1, 0 });
-            }
-        }
-        else if (sf::Keyboard::Left == event.key.code)
-        {
-            for (PlayerUPtr_t & player : m_context.board.players)
-            {
-                player->nextMovePos({ -1, 0 });
-            }
-        }
         else if ((sf::Keyboard::Equal == event.key.code) || (sf::Keyboard::Add == event.key.code))
         {
             m_simTimeMult *= 1.1f;
@@ -183,16 +235,64 @@ namespace boardgame
                 m_simTimeMult = 0.1f;
             }
         }
+        else if (sf::Keyboard::E == event.key.code)
+        {
+            m_enableSpecialEffects = !m_enableSpecialEffects;
+            m_bloomWindow.isEnabled(m_enableSpecialEffects);
+
+            std::cout << "Special Effets turned " << ((m_enableSpecialEffects) ? "ON" : "OFF")
+                      << std::endl;
+        }
+        else if (sf::Keyboard::B == event.key.code)
+        {
+            m_bloomWindow.isEnabled(!m_bloomWindow.isEnabled());
+        }
+
+        BoardPos_t posAdj{ 0, 0 };
+
+        if (sf::Keyboard::Right == event.key.code)
+        {
+            posAdj.x = 1;
+        }
+        else if (sf::Keyboard::Left == event.key.code)
+        {
+            posAdj.x = -1;
+        }
+        else if (sf::Keyboard::Up == event.key.code)
+        {
+            posAdj.y = -1;
+        }
+        else if (sf::Keyboard::Down == event.key.code)
+        {
+            posAdj.y = 1;
+        }
+
+        if (posAdj == BoardPos_t(0, 0))
+        {
+            return;
+        }
+
+        for (IPieceUPtr_t & piece : m_context.board.pieces)
+        {
+            if (piece->piece() == Piece::Player)
+            {
+                dynamic_cast<PlayerPiece &>(*piece).nextMovePosAdj(posAdj);
+            }
+        }
     }
 
     void GameCoordinator::update(const float elapsedTimeSec)
     {
-        // clang-format off
-        for (auto & uptr : m_board.walls)   update(elapsedTimeSec, *uptr);
-        for (auto & uptr : m_board.players) update(elapsedTimeSec, *uptr);
-        for (auto & uptr : m_board.kids)    update(elapsedTimeSec, *uptr);
-        for (auto & uptr : m_board.demons)  update(elapsedTimeSec, *uptr);
-        // clang-format on
+        for (IPieceUPtr_t & piece : m_context.board.pieces)
+        {
+            const BoardPos_t oldPos{ piece->boardPos() };
+            const BoardPos_t newPos{ piece->update(m_context, elapsedTimeSec) };
+
+            if (newPos != oldPos)
+            {
+                m_collider.handle(m_context, *piece, newPos);
+            }
+        }
 
         if (m_enableSpecialEffects)
         {
@@ -202,41 +302,20 @@ namespace boardgame
 
     void GameCoordinator::draw()
     {
-        m_bloomWindow.clear(sf::Color(64, 64, 64));
+        m_bloomWindow.clear();
 
-        util::drawRectangleVerts(
-            m_bloomWindow.renderTarget(), m_context.board.board_region, sf::Color(0, 0, 255, 64));
+        m_bloomWindow.draw(m_boardBaseSprite);
 
-        util::drawRectangleVerts(
-            m_bloomWindow.renderTarget(), m_context.board.status_region, sf::Color(0, 255, 0, 64));
-
-        // for (const Cell & cell : m_board.cells)
-        //{
-        //    sf::Color color = m_random.from({ sf::Color::Blue,
-        //                                      sf::Color::Cyan,
-        //                                      sf::Color::Green,
-        //                                      sf::Color::Magenta,
-        //                                      sf::Color::Red,
-        //                                      sf::Color::White,
-        //                                      sf::Color::Yellow });
-        //
-        //    color.a = 127;
-        //
-        //    util::drawRectangleShape(m_bloomWindow.renderTarget(), cell.rect, color);
-        //}
-
-        // clang-format off
-        for (const auto & uptr : m_board.walls)   m_bloomWindow.draw(*uptr);
-        for (const auto & uptr : m_board.players) m_bloomWindow.draw(*uptr);
-        for (const auto & uptr : m_board.kids)    m_bloomWindow.draw(*uptr);
-        for (const auto & uptr : m_board.demons)  m_bloomWindow.draw(*uptr);
-        // clang-format on
+        for (IPieceUPtr_t & piece : m_context.board.pieces)
+        {
+            m_bloomWindow.draw(*piece);
+        }
 
         // if (m_enableSpecialEffects)
         //{
         //    m_animationPlayer.draw(m_window, {});
         //}
 
-        m_window.display();
+        m_bloomWindow.display();
     }
 } // namespace boardgame

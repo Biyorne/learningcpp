@@ -3,145 +3,114 @@
 //
 // board.hpp
 //
+#include "resources.hpp"
 #include "types.hpp"
 #include "util.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
+#include <functional>
+#include <map>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
 
 namespace boardgame
 {
-    struct IPiece;
-
     struct Context;
 
-    struct DemonPiece;
-    struct PlayerPiece;
-    struct ChildPiece;
-    struct WallPiece;
-
-    using DemonUPtr_t = std::unique_ptr<DemonPiece>;
-    using PlayerUPtr_t = std::unique_ptr<PlayerPiece>;
-    using ChildUPtr_t = std::unique_ptr<ChildPiece>;
-    using WallUPtr_t = std::unique_ptr<WallPiece>;
+    struct IPiece;
+    using IPieceUPtr_t = std::unique_ptr<IPiece>;
+    using IPieceUVec_t = std::vector<IPieceUPtr_t>;
+    using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
+    using IPieceCOpt_t = std::optional<std::reference_wrapper<const IPiece>>;
 
     //
 
     struct Cell
     {
-        Cell(const std::size_t ind, const BoardPos_t & pos, const sf::FloatRect & rec)
-            : index(ind)
-            , board_pos(pos)
-            , rect(rec)
-            , center(util::center(rec))
+        Cell(
+            const BoardPos_t & boardPos,
+            const sf::Vector2f & pixelPos,
+            const sf::Vector2f & pixelSize)
+            : piece_enum(Piece::Count)
+            , piece_index(0) // this value is only correct if piece_enum != Count
+            , board_pos(boardPos)
+            , window_pos(pixelPos)
+            , window_size(pixelSize)
+            , window_rect(pixelPos, pixelSize)
+            , window_rect_center(util::center(window_rect))
         {}
 
-        std::size_t index;
+        Piece::Enum piece_enum;
+        std::size_t piece_index;
         BoardPos_t board_pos;
-        sf::FloatRect rect;
-        sf::Vector2f center;
+        sf::Vector2f window_pos;
+        sf::Vector2f window_size;
+        sf::FloatRect window_rect;
+        sf::Vector2f window_rect_center;
     };
+
     //
 
     struct Board
     {
         explicit Board(const sf::Vector2u & windowSize);
 
-        const Cell & cell(const BoardPos_t & pos) const
+        // std::size_t cellIndex(const BoardPos_t & pos) const
+        //{
+        //    assert(isPosValid(pos) == true);
+        //
+        //    return (
+        //        (static_cast<std::size_t>(pos.y) * (cell_counts.x)) +
+        //        static_cast<std::size_t>(pos.x));
+        //}
+
+        bool isPosValid(const BoardPos_t & pos) const
         {
-            const sf::Vector2i cellCountsI{ cellCounts<int>() };
+            return (
+                (pos.x >= 0) && (pos.x < cell_countsI.x) && (pos.y >= 0) &&
+                (pos.y < cell_countsI.y));
+        }
 
-            if ((pos.x < 0) || (pos.x >= cellCountsI.x) || (pos.y < 0) || (pos.y >= cellCountsI.y))
+        const Cell & cellAt(const BoardPos_t & pos) const { return cells.find(pos)->second; }
+        Cell & cellAt(const BoardPos_t & pos) { return cells.find(pos)->second; }
+
+        const IPieceCOpt_t pieceAt(const BoardPos_t & pos) const
+        {
+            const Cell & cell{ cellAt(pos) };
+            if (cell.piece_enum == Piece::Count)
             {
-                std::ostringstream ss;
-
-                ss << "Board::cell(pos=" << pos
-                   << ") is out of range with cellCounts=" << cell_counts;
-
-                throw std::runtime_error(ss.str());
+                return std::nullopt;
             }
 
-            return cells.at(
-                (static_cast<std::size_t>(pos.y) * (cell_counts.x)) +
-                static_cast<std::size_t>(pos.x));
-        }
-
-        void setupSprite(
-            sf::Sprite & sprite,
-            const BoardPos_t & boardPos,
-            const sf::Color & color = sf::Color::White) const
-        {
-            sprite.setColor(color);
-            util::scale(sprite, cell_size);
-            util::setOriginToCenter(sprite);
-            sprite.setPosition(cell(boardPos).center);
-        }
-
-        template <typename T = float>
-        sf::Vector2<T> cellSize() const
-        {
-            return sf::Vector2<T>{ cell_size };
-        }
-
-        template <typename T = std::size_t>
-        sf::Vector2<T> cellCounts() const
-        {
-            return sf::Vector2<T>{ cell_counts };
-        }
-
-        template <typename T = std::size_t>
-        T cellCountTotal() const
-        {
-            return static_cast<T>(cell_counts.x + cell_counts.y);
-        }
-
-        std::size_t count(const std::initializer_list<Piece> & list) const
-        {
-            std::size_t count{ 0 };
-
-            for (const Piece piece : list)
+            const std::size_t pieceIndex{ cell.piece_index };
+            if (pieceIndex >= pieces.size())
             {
-                switch (piece)
-                {
-                    case Piece::Hero:
-                    {
-                        count += players.size();
-                        break;
-                    }
-
-                    case Piece::Demon:
-                    {
-                        count += demons.size();
-                        break;
-                    }
-
-                    case Piece::Child:
-                    {
-                        count += kids.size();
-                        break;
-                    }
-
-                    case Piece::Wall:
-                    {
-                        count += walls.size();
-                        break;
-                    }
-
-                    case Piece::Empty:
-                    default: break;
-                }
+                return std::nullopt;
             }
 
-            return count;
+            return { *pieces.at(pieceIndex) };
         }
 
-        std::size_t countAllExceptEmpty() const
+        IPieceOpt_t pieceAt(const BoardPos_t & pos)
         {
-            return count({ Piece::Child, Piece::Demon, Piece::Hero, Piece::Wall });
+            const Cell & cell{ cellAt(pos) };
+            if (cell.piece_enum == Piece::Count)
+            {
+                return std::nullopt;
+            }
+
+            const std::size_t pieceIndex{ cell.piece_index };
+            if (pieceIndex >= pieces.size())
+            {
+                return std::nullopt;
+            }
+
+            return { *pieces.at(pieceIndex) };
         }
 
         static int walkDistance(const BoardPos_t & from, const BoardPos_t & to)
@@ -153,32 +122,43 @@ namespace boardgame
 
         void reset();
 
-        BoardPos_t randomAvailBoardPos(const Context & context) const;
+        std::optional<BoardPos_t> findRandomEmptyPos(const Context & context);
 
-        Piece pieceAt(const BoardPos_t & pos) const;
+        // clang-format off
+        const std::vector<std::string> map_strings = {
+            "CHHHHHHHTHHHHHHHHHHHHHCFCHHHHT",
+            "VFFFFFFFVFFFFFFFFFFFFFVFVFFFFV",
+            "VFFFTFBHBFFBHTHBFTFFFFBFBFFFFV",
+            "VFFFVFFFFFFFFVFFFVFFFFFFFFFFFV",
+            "VFCHBFFBHTFFFBFFFBHTHBFFCHHBFV",
+            "VFVFFFFFFVFFFFFFFFFVFFFFVFFFFV",
+            "VFBFFFFFFVFTFFFFTFFBFFFFBFFBHB",
+            "VFFFFFFFFBFVFFFFVFFFFFCFFFFFFF",
+            "VFBHTHHBFFFVFCHHBFFFFFVFFFFBHT",
+            "VFFFVFFFFBHBFVFFFFFFFFBHHTFFFV",
+            "VFFFVFTFFFFFFBFFFTFFFFFFFVFFFV",
+            "VFFFBFVFFFFFFFFFFVFFFFFFFVFFFV",
+            "BHBFFFBHBFTHBFBHHBHBFTFTFBFFFV",
+            "FFFFFFFFFFVFFFFFFFFFFVFVFFFFFV",
+            "BHHHHHHHHHBHHHHHHHHHHBFBHHHHHB" };
+        // clang-format on
 
         const sf::Vector2f window_size;
         const sf::FloatRect window_rect;
-        const float inner_window_scale;
         const float board_region_vert_size_ratio;
-        const float cell_size_ratio;
         const float between_region_vert_scale;
 
-        sf::FloatRect inner_window_rect;
-        sf::Vector2f cell_size;
-        sf::Vector2s cell_counts;
-        std::size_t cell_count_total;
         sf::FloatRect board_region;
         sf::FloatRect status_region;
+        sf::Vector2s cell_counts;
+        std::size_t cell_count_total;
+        sf::Vector2i cell_countsI;
+        sf::Vector2f cell_size;
+        sf::FloatRect board_rect;
 
-        std::vector<Cell> cells;
-
-        // std::vector<BoardPos_t> empty_board_pos;
-        std::vector<DemonUPtr_t> demons;
-        std::vector<PlayerUPtr_t> players;
-        std::vector<ChildUPtr_t> kids;
-        std::vector<WallUPtr_t> walls;
-    }; // namespace boardgame
+        std::map<BoardPos_t, Cell> cells;
+        std::vector<IPieceUPtr_t> pieces;
+    };
 } // namespace boardgame
 
 #endif // BOARDGAME_BOARD_HPP_INCLUDED

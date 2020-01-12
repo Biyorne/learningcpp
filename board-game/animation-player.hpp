@@ -49,7 +49,7 @@ namespace util
     //  immorally-suggestive-cartoon-128x
     //
     // If multiple animations directories start with the same name...
-    //  addictive-carcinogenic-product-advertisement-for-kids-100x
+    //  addictive-carcinogenic-product-advertisement-for-children-100x
     //  addictive-carcinogenic-product-advertisement-for-teens-100x
     //  addictive-carcinogenic-product-advertisement-for-liberals-100x
     //  addictive-carcinogenic-product-advertisement-for-conservatives-100x

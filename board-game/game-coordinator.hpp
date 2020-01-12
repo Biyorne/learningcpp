@@ -29,6 +29,8 @@ namespace boardgame
       private:
         void reset();
 
+        void setupBoardBackgroundImage();
+
         void loadMap();
 
         void handleEvents();
@@ -36,21 +38,6 @@ namespace boardgame
 
         void update(const float elapsedTimeSec);
         void draw();
-
-        template <typename T>
-        void update(const float elapsedTimeSec, T & piece)
-        {
-            const BoardPos_t origPos{ piece.boardPos() };
-            const BoardPos_t newPos{ piece.update(m_context, elapsedTimeSec) };
-
-            // skip if the piece does not want to move
-            if (newPos == origPos)
-            {
-                return;
-            }
-
-            m_collider.collide(m_context, piece, newPos);
-        }
 
       private:
         bool m_enableSpecialEffects;
@@ -70,6 +57,9 @@ namespace boardgame
         Collider m_collider;
 
         Context m_context;
+
+        sf::Sprite m_boardBaseSprite;
+        sf::RenderTexture m_boardBaseTexture;
     };
 } // namespace boardgame
 

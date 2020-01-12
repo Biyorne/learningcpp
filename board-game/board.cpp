@@ -16,72 +16,43 @@ namespace boardgame
     Board::Board(const sf::Vector2u & windowSize)
         : window_size(windowSize)
         , window_rect({}, window_size)
-        , inner_window_scale(1.0f - (1.0f / 100.0f))
         , board_region_vert_size_ratio(1.0f - (1.0f / 8.0f))
-        , cell_size_ratio(1.0f / 16.0f)
-        , between_region_vert_scale((1.0f - inner_window_scale) * 2.0f)
-        , inner_window_rect()
-        , cell_size()
-        , cell_counts()
-        , cell_count_total(0)
+        , between_region_vert_scale(1.0f / 100.0f)
         , board_region()
         , status_region()
+        , cell_counts()
+        , cell_count_total(0)
+        , cell_countsI()
+        , cell_size()
+        , board_rect()
+        , cells()
+        , pieces()
     {
-        // inner window that puts a border around everything drawn
-        inner_window_rect =
-            sf::FloatRect(sf::IntRect(util::scaleRectInPlaceCopy(window_rect, inner_window_scale)));
+        board_region = window_rect;
+        board_region.height *= board_region_vert_size_ratio;
 
-        // cell size
-        const float cellSizeLength{ std::floor(inner_window_rect.height * cell_size_ratio) };
-        cell_size = { cellSizeLength, cellSizeLength };
+        status_region = window_rect;
+        status_region.height = (window_rect.height - board_region.height);
+        status_region.top = util::bottom(board_region);
 
-        // cell counts
-        const sf::FloatRect maxBoardRect{
-            inner_window_rect.left,
-            inner_window_rect.top,
-            inner_window_rect.width,
-            std::floor(inner_window_rect.height * board_region_vert_size_ratio)
-        };
-
-        cell_counts.x = static_cast<std::size_t>(maxBoardRect.width / cell_size.x);
-        cell_counts.y = static_cast<std::size_t>(maxBoardRect.height / cell_size.y);
+        cell_counts = sf::Vector2s(map_strings.front().size(), map_strings.size());
         cell_count_total = (cell_counts.x * cell_counts.y);
+        cell_countsI = sf::Vector2i(cell_counts);
 
-        // board region
-        const sf::Vector2f boardRegionSize{ sf::Vector2i(cellCounts<float>() * cell_size) };
+        const sf::Vector2f cellSizeOrig{ util::size(board_region) /
+                                         sf::Vector2f(cell_counts) };
 
-        board_region = { (util::center(inner_window_rect) - (boardRegionSize * 0.5f)),
-                         boardRegionSize };
+        // cell_size = cellSizeOrig;
+        const float cellSideLength{ std::min(cellSizeOrig.x, cellSizeOrig.y) };
+        cell_size.x = cellSideLength;
+        cell_size.y = cellSideLength;
 
-        board_region.top = board_region.left;
+        const sf::Vector2f boardRectSize{ sf::Vector2f(cell_counts) * cell_size };
 
-        // status region
-        status_region = board_region;
+        const sf::Vector2f boardRectPosToCenter{ util::center(board_region) -
+                                                 (boardRectSize * 0.5f) };
 
-        status_region.top =
-            (util::bottom(board_region) + (inner_window_rect.height * between_region_vert_scale));
-
-        status_region.height =
-            ((util::bottom(window_rect) - board_region.left) - status_region.top);
-
-        // cells
-        for (std::size_t i(0); i < cell_count_total; ++i)
-        {
-            auto calcBoardPos = [&](const std::size_t index) {
-                return BoardPos_t(
-                    static_cast<int>(index % cell_counts.x),
-                    static_cast<int>(index / cell_counts.x));
-            };
-
-            auto calcWindowRect = [&](const std::size_t index) {
-                const BoardPos_t boardPos{ calcBoardPos(index) };
-
-                return sf::FloatRect(
-                    util::position(board_region) + (sf::Vector2f(boardPos) * cell_size), cell_size);
-            };
-
-            cells.push_back(Cell(i, calcBoardPos(i), calcWindowRect(i)));
-        }
+        board_rect = sf::FloatRect(boardRectPosToCenter, boardRectSize);
 
         reset();
     }
@@ -93,67 +64,50 @@ namespace boardgame
 
     void Board::reset()
     {
-        demons.clear();
-        players.clear();
-        kids.clear();
-        walls.clear();
+        pieces.clear();
 
-        // empty_board_pos.clear();
-        // for (const Cell & cell : cells)
-        //{
-        //    empty_board_pos.push_back(cell.board_pos);
-        //}
+        // cells
+        for (std::size_t vert(0); vert < cell_counts.y; ++vert)
+        {
+            for (std::size_t horiz(0); horiz < cell_counts.x; ++horiz)
+            {
+                const BoardPos_t boardPos{ sf::Vector2s(horiz, vert) };
+
+                const sf::Vector2f windowPos{ util::position(board_rect) +
+                                              (sf::Vector2f(boardPos) * cell_size) };
+
+                Cell cell(boardPos, windowPos, cell_size);
+
+                const bool isWall{ Image::isWall(map_strings.at(vert).at(horiz)) };
+                if (isWall)
+                {
+                    cell.piece_enum = Piece::Wall;
+                }
+
+                cells.insert({ boardPos, cell });
+            }
+        }
     }
 
-    BoardPos_t Board::randomAvailBoardPos(const Context & context) const
+    // TODO optimize this crap
+    std::optional<BoardPos_t> Board::findRandomEmptyPos(const Context & context)
     {
         std::set<BoardPos_t> emptyPositions;
-        for (const Cell & cell : cells)
+        for (auto & [boardPos, cell] : cells)
         {
-            emptyPositions.insert(cell.board_pos);
+            emptyPositions.insert(boardPos);
         }
 
-        // clang-format off
-        for (const auto & uptr : walls)   emptyPositions.erase(uptr->boardPos());
-        for (const auto & uptr : players) emptyPositions.erase(uptr->boardPos());
-        for (const auto & uptr : kids)    emptyPositions.erase(uptr->boardPos());
-        for (const auto & uptr : demons)  emptyPositions.erase(uptr->boardPos());
-        // clang-format on
+        for (const auto & piece : pieces)
+        {
+            emptyPositions.erase(piece->boardPos());
+        }
 
         if (emptyPositions.empty())
         {
-            throw std::runtime_error(
-                "Board::randomAvailBoardPos() called when there are no avail spaces");
+            return std::nullopt;
         }
 
         return context.random.from(emptyPositions);
-    }
-
-    Piece Board::pieceAt(const BoardPos_t & pos) const
-    {
-        Piece piece{ Piece::Empty };
-
-        auto findAndSet = [&](const auto & container) {
-            if (piece != Piece::Empty)
-            {
-                return;
-            }
-
-            for (const auto & uptr : container)
-            {
-                if (uptr->boardPos() == pos)
-                {
-                    piece = uptr->piece();
-                    break;
-                }
-            }
-        };
-
-        findAndSet(demons);
-        findAndSet(players);
-        findAndSet(kids);
-        findAndSet(walls);
-
-        return piece;
     }
 } // namespace boardgame

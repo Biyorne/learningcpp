@@ -3,40 +3,105 @@
 //
 // resources.hpp
 //
-#include "pieces.hpp"
-
+#include <array>
 #include <filesystem>
 #include <sstream>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
 
+namespace util
+{
+    class Random;
+}
+
+//
+
 namespace boardgame
 {
-    struct Resources
+    struct Image
     {
-        Resources(const std::string & mediaDirPath)
-            : media_dir_path(mediaDirPath)
+        enum Enum : std::size_t
         {
-            if (!std::filesystem::exists(media_dir_path) ||
-                !std::filesystem::is_directory(media_dir_path))
-            {
-                std::ostringstream ss;
+            Demon = 0,
+            Victim,
+            Player,
+            //
+            WhitePuff,
+            //
+            Shadow,
+            WallVert,
+            WallHoriz,
+            //
+            BlockCorner,
+            BlockTop,
+            BlockBottom,
+            //
+            WoodFloor1,
+            WoodFloor2,
+            WoodFloor3,
+            WoodFloor4,
+            WoodFloor5,
+            WoodFloor6,
+            //
+            Count
+        };
 
-                ss << "Error:  Resources::Resources(\"" << mediaDirPath << "\", which_became=\""
-                   << media_dir_path.string()
-                   << "\") either does not exist, or is not a directory.";
-
-                throw std::runtime_error(ss.str());
-            }
-
-            load(media_dir_path / "font/gentium-plus/gentium-plus.ttf", font);
-            load(media_dir_path / PlayerPiece::imageRelativePath(), hero_texture);
-            load(media_dir_path / DemonPiece::imageRelativePath(), demon_texture);
-            load(media_dir_path / ChildPiece::imageRelativePath(), child_texture);
-            load(media_dir_path / WallPiece::imageRelativePath(), wall_texture);
+        static bool isWall(const char mapChar)
+        {
+            return (
+                (mapChar == 'C') || (mapChar == 'V') || (mapChar == 'H') || (mapChar == 'T') ||
+                (mapChar == 'B'));
         }
 
+        // clang-format off
+        static sf::IntRect coords(const Enum image)
+        {
+            switch(image)
+            {
+                case Player     : return {  96,   0,  64,  64 };
+                case Demon      : return { 160,   0,  96, 128 };
+                case Victim     : return { 128, 128, 128, 128 };
+                //
+                case WhitePuff  : return {   0, 128, 128, 128 };
+                //
+                case BlockCorner: return {   0,   0,  32,  32 };
+                case Shadow     : return {  32,  32,  32,  32 };
+                case WallVert   : return {   0,  32,  32,  32 };
+                case WallHoriz  : return {  32,   0,  32,  32 };
+                case BlockTop   : return {  64,   0,  32,  32 };
+                case BlockBottom: return {  64,  32,  32,  32 };
+                //
+                case WoodFloor1 : return {   0,  64,  32,  32 };
+                case WoodFloor2 : return {  32,  64,  32,  32 };
+                case WoodFloor3 : return {  64,  64,  32,  32 };
+                case WoodFloor4 : return {   0,  96,  32,  32 };
+                case WoodFloor5 : return {  32,  96,  32,  32 };
+                case WoodFloor6 : return {  64,  96,  32,  32 };
+                //
+                case Count      :
+                default         :  return {  0,   0,   0,   0 };
+            }
+        }
+        // clang-format on
+
+        static Image::Enum charToEnum(const char mapChar);
+
+        static bool isBlock(const Enum image)
+        {
+            return ((image == BlockCorner) || (image == BlockTop) || (image == BlockBottom));
+        }
+    };
+
+    struct Resources
+    {
+        explicit Resources(const std::string & mediaDirPath);
+
+        const std::filesystem::path media_dir_path;
+        sf::Font font;
+        sf::Texture tile_texture;
+
+      private:
         template <typename T>
         static void load(const std::filesystem::path & path, T & loadable)
         {
@@ -64,17 +129,9 @@ namespace boardgame
 
             if constexpr (std::is_same_v<std::remove_cv_t<T>, sf::Texture>)
             {
-                loadable.setSmooth(true);
+                // loadable.setSmooth(true);
             }
         }
-
-        const std::filesystem::path media_dir_path;
-
-        sf::Font font;
-        sf::Texture hero_texture;
-        sf::Texture demon_texture;
-        sf::Texture child_texture;
-        sf::Texture wall_texture;
     };
 } // namespace boardgame
 

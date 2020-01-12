@@ -16,8 +16,8 @@ namespace util
 
 namespace boardgame
 {
-    struct Resources;
     struct Board;
+    struct Resources;
 
     //
 

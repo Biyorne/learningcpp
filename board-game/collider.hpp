@@ -11,63 +11,66 @@ namespace boardgame
 {
     struct Collider
     {
-        template <typename T>
-        static void collide(const Context & context, T & movingPiece, const BoardPos_t & newPos)
+        static void handle(Context & context, IPiece & pieceMoving, const BoardPos_t & targetPos)
         {
-            if (context.board.pieceAt(newPos) == Piece::Empty)
-            {
-                movingPiece.m_boardPos = newPos;
-                movingPiece.m_sprite.setPosition(context.board.cell(newPos).center);
-            }
-        }
+            assert(context.board.isPosValid(targetPos));
 
-        /*
-        void collide(
-            const Context & context, PieceBase & mover, const PieceUPtrVec_t::iterator targetIter)
-        {
-            PieceBase & target{ **targetIter };
+            const Piece::Enum pieceMovingEnum{ pieceMoving.piece() };
+            assert(pieceMovingEnum != Piece::Count);
+            assert(pieceMovingEnum != Piece::Wall);
 
-            if (target.piece() == Piece::Wall)
+            const Piece::Enum pieceTargetEnum{ context.board.cellAt(targetPos).piece_enum };
+
+            const auto & walkablePieces{ pieceMoving.walkablePieces() };
+
+            const bool canWalkOnTargetPiece{
+                std::find(std::begin(walkablePieces), std::end(walkablePieces), pieceTargetEnum) !=
+                std::end(walkablePieces)
+            };
+
+            if (!canWalkOnTargetPiece)
             {
                 return;
             }
 
-            if (target.piece() == Piece::Empty)
+            if (pieceTargetEnum != Piece::Count)
             {
-                mover.set(context, target.piece(), target.boardPos());
                 return;
             }
 
-            if (mover.piece() == Piece::Hero)
+            switch (pieceMovingEnum)
             {
-                if (target.piece() == Piece::Child)
-                {
-                    util::swapAndPop(context.pieces, targetIter);
-                    mover.set(context, target.piece(), target.boardPos());
+                case Piece::Player: {
+                    move(context, dynamic_cast<PlayerPiece &>(pieceMoving), targetPos);
+                    break;
                 }
-            }
-            else if (mover.piece() == Piece::Demon)
-            {
-                if (target.piece() == Piece::Hero)
-                {
-                    target.m_waitedSoFarSec = -3.0f;
+                case Piece::Demon: {
+                    move(context, dynamic_cast<DemonPiece &>(pieceMoving), targetPos);
+                    break;
                 }
+                case Piece::Victim: {
+                    move(context, dynamic_cast<VictimPiece &>(pieceMoving), targetPos);
+                    break;
+                }
+
+                case Piece::Wall:
+                case Piece::Count:
+                default: break;
             }
         }
 
-        void collide(const Context & context, PieceBase & mover, const BoardPos_t & newPos)
+        template <typename Piece_t>
+        static void move(Context & context, Piece_t & pieceMoving, const BoardPos_t & targetPos)
         {
-            const auto foundIter = std::find(
-                std::begin(context.pieces),
-                std::end(context.pieces),
-                [&](const PieceUPtr_t & uptr) { return (uptr->boardPos() == newPos); });
+            Cell & fromCell{ context.board.cellAt(pieceMoving.boardPos()) };
+            Cell & toCell{ context.board.cellAt(targetPos) };
 
-            if (foundIter != std::end(context.pieces))
-            {
-                collide(context, mover, foundIter);
-            }
+            fromCell.piece_enum = Piece::Count;
+            toCell.piece_enum = pieceMoving.piece();
+
+            pieceMoving.m_boardPos = targetPos;
+            pieceMoving.m_sprite.setPosition(toCell.window_rect_center);
         }
-        */
     };
 } // namespace boardgame
 
