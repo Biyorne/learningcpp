@@ -38,15 +38,6 @@ namespace boardgame
             }
         }
     };
-
-    // these are used by the pieces that move to help find where they want to go
-    struct WalkDistance
-    {
-        int dist{ 0 };
-        BoardPos_t pos{ 0, 0 };
-    };
-
-    using MovesArray_t = std::array<WalkDistance, 4>;
 } // namespace boardgame
 
 #endif // #define BOARDGAME_TYPES_HPP_INCLUDED

@@ -7,6 +7,8 @@
 #include "pieces.hpp"
 #include "sound-player.hpp"
 
+#include <cassert>
+
 namespace boardgame
 {
     struct Collider
@@ -14,24 +16,23 @@ namespace boardgame
         static void handle(Context & context, IPiece & pieceMoving, const BoardPos_t & targetPos)
         {
             assert(context.board.isPosValid(targetPos));
-
             const Piece::Enum pieceMovingEnum{ pieceMoving.piece() };
             assert(pieceMovingEnum != Piece::Count);
             assert(pieceMovingEnum != Piece::Wall);
 
             const Piece::Enum pieceTargetEnum{ context.board.cellAt(targetPos).piece_enum };
 
-            const auto & walkablePieces{ pieceMoving.walkablePieces() };
-
-            const bool canWalkOnTargetPiece{
-                std::find(std::begin(walkablePieces), std::end(walkablePieces), pieceTargetEnum) !=
-                std::end(walkablePieces)
-            };
-
-            if (!canWalkOnTargetPiece)
-            {
-                return;
-            }
+            // const auto & walkablePieces{ pieceMoving.walkablePieces() };
+            //
+            // const bool canWalkOnTargetPiece{
+            //    std::find(std::begin(walkablePieces), std::end(walkablePieces), pieceTargetEnum)
+            //    != std::end(walkablePieces)
+            //};
+            //
+            // if (!canWalkOnTargetPiece)
+            //{
+            //    return;
+            //}
 
             if (pieceTargetEnum != Piece::Count)
             {
@@ -69,9 +70,9 @@ namespace boardgame
             toCell.piece_enum = pieceMoving.piece();
 
             pieceMoving.m_boardPos = targetPos;
-            pieceMoving.m_sprite.setPosition(toCell.window_rect_center);
+            pieceMoving.m_isDoneMovingThisTurn = false;
         }
-    };
+    }; // namespace boardgame
 } // namespace boardgame
 
 #endif // BOARDGAME_COLLIDER_HPP_INCLUDED

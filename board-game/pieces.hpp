@@ -22,24 +22,36 @@ namespace boardgame
 
     //
 
+    struct WalkTarget
+    {
+        WalkTarget() = default;
+
+        WalkTarget(const Context & context, const BoardPos_t & boardPos, const int walkDistance = 0)
+            : position(boardPos)
+            , piece(context.board.cellAt(boardPos).piece_enum)
+            , distance(walkDistance)
+        {}
+
+        BoardPos_t position = { 0, 0 };
+        Piece::Enum piece = Piece::Count;
+        int distance = 0;
+    };
+
+    using WalkTargetArray_t = std::array<WalkTarget, 4>;
+
+    //
+
     struct IPiece : public sf::Drawable
     {
         virtual ~IPiece() = default;
 
         virtual Piece::Enum piece() const = 0;
-
         virtual BoardPos_t boardPos() const = 0;
-
-        virtual Score_t score() const = 0;
-        virtual void scoreAdj(const Score_t adj) = 0;
-
-        virtual const std::vector<Piece::Enum> & walkablePieces() const = 0;
-
-        virtual std::string toString() const = 0;
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
 
-        // returns the new desired pos, but the Collider has to allow it and make it happen
+        // returns the new pos that this piece wants to walk on, but has not yet done so
+        // only Collider decides if so, and actually moves pieces as needed
         virtual BoardPos_t update(const Context & context, const float elapsedTimeSec) = 0;
     };
 
@@ -61,26 +73,22 @@ namespace boardgame
             const Piece::Enum piece,
             const sf::Color & color,
             const Image::Enum image,
-            const std::vector<Piece::Enum> & walkablePieces = {})
+            const std::vector<Piece::Enum> & walkablePieces = {},
+            const float speed = 0.0f)
             : m_piece(piece)
             , m_boardPos(position)
             , m_image(image)
-            , m_score(0)
-            //, m_text("", context.resources.font, 99)
             , m_sprite()
+            , m_windowPosPrev()
             , m_color(color)
-            , m_waitedSoFarSec(0.0f)
-            , m_waitBetweenTurnsSec(0.5f)
-            , m_walkAllowedPieces(walkablePieces)
+            , m_speed(speed)
+            , m_walkablePieces(walkablePieces)
         {
             assert(m_piece != Piece::Count);
             assert(context.board.isPosValid(position));
 
             setupSprite(context);
-            // m_text.setFillColor(m_color);
-
-            // making this random prevents all pieces from moving at the same time, which looks lame
-            m_waitedSoFarSec = context.random.zeroTo(m_waitBetweenTurnsSec);
+            m_windowPosPrev = m_sprite.getPosition();
         }
 
         virtual ~PieceBase() = default;
@@ -88,45 +96,13 @@ namespace boardgame
         Piece::Enum piece() const final { return m_piece; }
         BoardPos_t boardPos() const final { return m_boardPos; }
 
-        Score_t score() const final { return m_score; }
-
-        void scoreAdj(const Score_t adj) final
-        {
-            m_score += adj;
-
-            if (m_score < 0)
-            {
-                m_score = 0;
-            }
-        }
-
-        const std::vector<Piece::Enum> & walkablePieces() const final
-        {
-            return m_walkAllowedPieces;
-        }
-
-        std::string toString() const override;
-
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override
         {
-            if (m_sprite.getColor().a > 0)
-            {
-                target.draw(m_sprite, states);
-            }
-
-            // target.draw(m_text, states);
+            target.draw(m_sprite, states);
         }
 
-        // returns the new desired pos, but the Collider has to allow it and make it happen
-        BoardPos_t update(const Context & context, const float elapsedTimeSec) override
-        {
-            if (!isTimeToTakeTurn(elapsedTimeSec))
-            {
-                return boardPos();
-            }
-
-            return takeTurn(context);
-        }
+        // default does nothing
+        BoardPos_t update(const Context &, const float) override { return boardPos(); }
 
       protected:
         void setupSprite(const Context & context)
@@ -145,23 +121,6 @@ namespace boardgame
             m_sprite.setPosition(context.board.cellAt(boardPos()).window_rect_center);
         }
 
-        float turnWaitElapsedRatio() const
-        {
-            return std::clamp((m_waitedSoFarSec / m_waitBetweenTurnsSec), 0.0f, 1.0f);
-        }
-
-        virtual bool isTimeToTakeTurn(const float elapsedTimeSec)
-        {
-            m_waitedSoFarSec += elapsedTimeSec;
-            if (m_waitedSoFarSec < m_waitBetweenTurnsSec)
-            {
-                return false;
-            }
-
-            m_waitedSoFarSec = (m_waitedSoFarSec - m_waitBetweenTurnsSec);
-            return true;
-        }
-
         // default turn is to do nothing
         virtual BoardPos_t takeTurn(const Context &) { return boardPos(); }
 
@@ -169,14 +128,12 @@ namespace boardgame
         Piece::Enum m_piece;
         BoardPos_t m_boardPos;
         Image::Enum m_image;
-        Score_t m_score;
-        // sf::Text m_text;
         sf::Sprite m_sprite;
+        sf::Vector2f m_windowPosPrev;
         sf::Color m_color;
-        float m_waitedSoFarSec;
-        float m_waitBetweenTurnsSec;
-        std::vector<Piece::Enum> m_walkAllowedPieces;
-    };
+        float m_speed;
+        std::vector<Piece::Enum> m_walkablePieces;
+    }; // namespace boardgame
 
     //
 
@@ -189,33 +146,91 @@ namespace boardgame
             const Piece::Enum selfPiece,
             const Piece::Enum targetPiece,
             const sf::Color & color,
-            const Image::Enum image)
-            : PieceBase(context, pos, selfPiece, color, image, { Piece::Count, targetPiece })
+            const Image::Enum image,
+            const float speed,
+            const std::vector<Piece::Enum> & walkablePieces = {})
+            : PieceBase(context, pos, selfPiece, color, image, walkablePieces, speed)
             , m_targetPiece(targetPiece)
             , m_targetBoardPos(pos)
-        {}
+            , m_isDoneMovingThisTurn(false)
+
+        {
+            m_walkablePieces.push_back(Piece::Count);
+            m_walkablePieces.push_back(targetPiece);
+        }
 
         virtual ~SeekerPieceBase() = default;
 
-        std::string toString() const override;
+        // returns the new desired pos, but the Collider has to allow it and make it happen
+        BoardPos_t update(const Context & context, const float elapsedTimeSec) override
+        {
+            if (!(m_speed > 0.0f))
+            {
+                return boardPos();
+            }
+
+            if (m_isDoneMovingThisTurn)
+            {
+                return takeTurn(context);
+            }
+
+            const sf::Vector2f windowTargetPos{
+                context.board.cellAt(m_boardPos).window_rect_center
+            };
+
+            const sf::Vector2f posDiff{ util::difference(m_sprite.getPosition(), windowTargetPos) };
+            const float distanceBefore{ util::magnitude(posDiff) };
+            if (distanceBefore < 1.0f)
+            {
+                m_sprite.setPosition(windowTargetPos);
+                m_isDoneMovingThisTurn = true;
+                return takeTurn(context);
+            }
+
+            const float movePerFrame{ (m_speed / elapsedTimeSec) / context.board.cell_size.x };
+            m_sprite.move(util::normalize(posDiff) * movePerFrame);
+
+            const float distanceAfter{ util::distance(m_sprite.getPosition(), windowTargetPos) };
+            if (distanceBefore < distanceAfter)
+            {
+                m_sprite.setPosition(windowTargetPos);
+                m_isDoneMovingThisTurn = true;
+                return takeTurn(context);
+            }
+
+            return boardPos();
+        }
 
       protected:
+        WalkTargetArray_t
+            makePossibleMovesArray(const Context & context, const BoardPos_t & pos) const
+        {
+            // clang-format off
+            return { WalkTarget{ context, (pos + sf::Vector2i(-1,  0)) },
+                     WalkTarget{ context, (pos + sf::Vector2i( 1,  0)) },
+                     WalkTarget{ context, (pos + sf::Vector2i( 0, -1)) },
+                     WalkTarget{ context, (pos + sf::Vector2i( 0,  1)) } };
+            // clang-format on
+        }
+
         // if returns false then m_targetBoardPos=currentBoardPos, meaning no target was found
         virtual BoardPos_t pickTarget(const Context &);
 
         // default simply moves toward m_targetBoardPos if != currentBoardPos
         BoardPos_t takeTurn(const Context & context) override;
 
-        virtual MovesArray_t::iterator findAllPossibleMoves(const Context & context);
+        virtual WalkTargetArray_t::iterator
+            findAllPossibleMoves(const Context & context, WalkTargetArray_t & moves);
 
-        virtual BoardPos_t
-            pickMoveClosestToTarget(const Context & context, MovesArray_t::iterator movesEndIter);
+        virtual BoardPos_t pickMoveClosestToTarget(
+            const Context & context,
+            WalkTargetArray_t & moves,
+            WalkTargetArray_t::iterator & movesEndIter);
 
       protected:
         Piece::Enum m_targetPiece;
         BoardPos_t m_targetBoardPos;
-
-        static inline MovesArray_t m_moves;
+        bool m_isDoneMovingThisTurn;
     };
 
     //
@@ -235,17 +250,19 @@ namespace boardgame
 
     //
 
-    struct PlayerPiece : public PieceBase
+    struct PlayerPiece : public SeekerPieceBase
     {
         friend Collider;
 
         PlayerPiece(const Context & context, const BoardPos_t & pos)
-            : PieceBase(
+            : SeekerPieceBase(
                   context,
                   pos,
                   Piece::Player,
+                  Piece::Victim,
                   sf::Color(32, 255, 32),
                   Image::Player,
+                  10.0f,
                   { Piece::Count, Piece::Victim, Piece::Demon })
             , m_nextMovePosAdj(0, 0)
         {}
@@ -257,6 +274,11 @@ namespace boardgame
 
         BoardPos_t takeTurn(const Context & context) override
         {
+            if (sf::Vector2i(0, 0) == m_nextMovePosAdj)
+            {
+                return boardPos();
+            }
+
             const BoardPos_t newPos{ boardPos() + m_nextMovePosAdj };
 
             // reset next move if we actually will move
@@ -285,12 +307,9 @@ namespace boardgame
                   Piece::Victim,
                   Piece::Player,
                   sf::Color(255, 32, 255),
-                  Image::Victim)
-        {
-            // victims wait a lot longer before moving
-            m_waitBetweenTurnsSec = 5.0f;
-            m_waitedSoFarSec = 0.0f;
-        }
+                  Image::Victim,
+                  1.0f)
+        {}
 
         // victims only move half the time
         BoardPos_t takeTurn(const Context & context) override
@@ -316,7 +335,7 @@ namespace boardgame
 
         DemonPiece(const Context & context, const BoardPos_t & pos)
             : SeekerPieceBase(
-                  context, pos, Piece::Demon, Piece::Player, sf::Color::White, Image::Demon)
+                  context, pos, Piece::Demon, Piece::Player, sf::Color::White, Image::Demon, 4.0f)
         {}
 
         virtual ~DemonPiece() = default;

@@ -165,13 +165,13 @@ namespace boardgame
         m_board.cellAt(BoardPos_t(10, 5)).piece_enum = Piece::Wall;
         m_board.cellAt(BoardPos_t(10, 5)).piece_index = m_board.pieces.size();
 
-        m_board.pieces.push_back(std::make_unique<PlayerPiece>(m_context, BoardPos_t(23, 0)));
+        m_board.pieces.push_back(std::make_unique<PlayerPiece>(m_context, BoardPos_t(23, 1)));
         m_board.cellAt(BoardPos_t(23, 0)).piece_enum = Piece::Wall;
         m_board.cellAt(BoardPos_t(23, 0)).piece_index = m_board.pieces.size();
 
-        m_board.pieces.push_back(std::make_unique<DemonPiece>(m_context, BoardPos_t(16, 6)));
-        m_board.cellAt(BoardPos_t(16, 6)).piece_enum = Piece::Wall;
-        m_board.cellAt(BoardPos_t(16, 6)).piece_index = m_board.pieces.size();
+        m_board.pieces.push_back(std::make_unique<DemonPiece>(m_context, BoardPos_t(13, 7)));
+        m_board.cellAt(BoardPos_t(13, 7)).piece_enum = Piece::Wall;
+        m_board.cellAt(BoardPos_t(13, 7)).piece_index = m_board.pieces.size();
     }
 
     void GameCoordinator::run()
