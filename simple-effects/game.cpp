@@ -10,27 +10,19 @@ Game::Game()
     , m_states()
     , m_willClear(false)
     , m_windowSize(m_window.getSize())
-    , m_bgSprite()
-    , m_bgRotateSpeed(0.0f)
     , m_random()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
     , m_context(m_window, m_random, m_audio)
-    , m_follower(
-          25.0f,
-          m_resources.rabbit_texture,
-          { 100.0f, 100.0f },
-          m_resources.carrot_texture,
-          (m_context.window_size * 0.5f))
+    //, m_effect(m_context, 50.0f, m_resources.rabbit_texture)
+    , m_bgSprite(m_resources.bg_texture)
+    , m_effect(
+          55.0f, m_resources.particle_texture, (m_context.window_size * 0.5f), sf::Texture(), {})
 {
     m_window.setFramerateLimit(60);
 
-    m_audio.loadAll();
-
-    // m_bgSprite.setTexture(m_resources.bg_texture);
-    // util::setOrigin2Center(m_bgSprite);
-    // m_bgSprite.setPosition(m_windowSize * 0.5f);
-    // m_bgSprite.setScale(2.0f, 2.0f);
-    // m_bgSprite.setColor(sf::Color(255, 255, 255, 127));
+    // m_audio.loadAll();
+    m_resources.bg_texture.setRepeated(true);
+    m_bgSprite.setTextureRect({ { 0, 0 }, sf::Vector2i(m_context.window_size) });
 
     reset();
 }
@@ -39,7 +31,6 @@ void Game::reset()
 {
     m_states = sf::RenderStates();
     m_willClear = true;
-    m_bgRotateSpeed = 0.05f;
 }
 
 void Game::run()
@@ -72,8 +63,10 @@ void Game::processEvents()
 
             case sf::Event::MouseWheelScrolled:
             {
+                // On Nel's laptop, values are whole numbers from[-5,5] but usually just [-1,1] //
+                // On Til's laptop, values are reals around [0.0083, 5.0f]
                 const float scrollAmount(event.mouseWheelScroll.delta);
-                m_bgRotateSpeed += (scrollAmount * 0.5f);
+                std::cout << scrollAmount << std::endl;
                 break;
             }
 
@@ -98,8 +91,7 @@ void Game::processEvents()
 
 void Game::update(const float elapsedTimeSec)
 {
-    // m_bgSprite.rotate(m_bgRotateSpeed);
-    m_follower.update(elapsedTimeSec, m_context);
+    m_effect.update(elapsedTimeSec, m_context);
 }
 
 void Game::render()
@@ -108,9 +100,9 @@ void Game::render()
     {
         m_window.clear();
     }
-
-    // m_window.draw(m_bgSprite, m_states);
-    m_window.draw(m_follower, m_states);
+    m_window.draw(m_bgSprite);
+    // m_window.draw(m_bgSprite, sf::BlendAdd);
+    m_window.draw(m_effect, m_states);
 
     m_window.display();
 }

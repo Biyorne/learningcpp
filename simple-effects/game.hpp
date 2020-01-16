@@ -36,18 +36,30 @@ struct Mover
         const float spd = 1.0f,
         const sf::Vector2f & pos = sf::Vector2f(0.0f, 0.0f),
         const sf::Vector2f & vel = sf::Vector2f(0.0f, 0.0f),
-        const sf::Vector2f & acc = sf::Vector2f(0.0f, 0.0f))
+        const sf::Vector2f & acc = sf::Vector2f(0.0f, 0.0f),
+        const float spdLimit = 0.0f)
         : speed(spd)
         , position(pos)
         , velocity(vel)
         , acceleration(acc)
+        , speed_limit(spdLimit)
     {}
 
     void update(const float elapsedTimeSec)
     {
         velocity += acceleration;
-        velocity *= elapsedTimeSec;
-        velocity *= speed;
+        velocity *= (elapsedTimeSec * speed);
+
+        if (velocity.x > speed_limit)
+        {
+            velocity.x = speed_limit;
+        }
+
+        if (velocity.y > speed_limit)
+        {
+            velocity.y = speed_limit;
+        }
+
         position += velocity;
     }
 
@@ -55,6 +67,7 @@ struct Mover
     sf::Vector2f position;     // the result we wanted in the first place
     sf::Vector2f velocity;     // change to position
     sf::Vector2f acceleration; // changes to velocity
+    float speed_limit;
 };
 
 //
@@ -62,18 +75,22 @@ struct Resources
 {
     Resources()
     {
-        if (!music.openFromFile("C:/src/learningcpp/media/music/trippy-shpongle.ogg"))
+        // try this music:  "C:/src/learningcpp/media/music/trippy-shpongle.ogg"
+        if (!music.openFromFile(""))
         {
             std::cout << "Unable to load music: trippy-shpongle" << std::endl;
         }
-
-        music.setVolume(10.0f);
-        music.play();
+        else
+        {
+            music.setVolume(10.0f);
+            music.play();
+        }
 
         loadTexture("C:/src/learningcpp/media/image/warning.png", warn_texture);
-        loadTexture("C:/src/learningcpp/media/image/tile/kaleidoscope-color.jpg", bg_texture);
+        loadTexture("C:/src/learningcpp/media/image/seamless/brick-wall.jpg", bg_texture);
         loadTexture("C:/src/learningcpp/media/image/rabbit.png", rabbit_texture);
         loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
+        loadTexture("C:/src/learningcpp/media/image/particle/spiny-squary.png", particle_texture);
     }
 
     void loadTexture(const std::string & filePath, sf::Texture & texture)
@@ -90,6 +107,7 @@ struct Resources
     sf::Texture warn_texture;
     sf::Texture rabbit_texture;
     sf::Texture carrot_texture;
+    sf::Texture particle_texture;
 
     sf::Music music;
 };
@@ -257,14 +275,16 @@ struct FollowerEffect : public EffectBase
         const sf::Vector2f & followPos,
         const sf::Texture & leadTex,
         const sf::Vector2f & leadPos)
-        : EffectBase(followTex, Mover(speed, followPos))
+        : EffectBase(followTex, Mover(speed, followPos, {}, {}, speed))
         , leader_sprite(leadTex)
     {
         util::setOrigin2Center(leaderSprite());
         leaderSprite().setPosition(leadPos);
 
-        followerSprite().setScale(0.5f, 0.5f);
+        followerSprite().setScale(8.25f, 4.25f);
         leaderSprite().setScale(0.5f, 0.5f);
+
+        followerSprite().setColor(sf::Color::Red);
     }
 
     virtual ~FollowerEffect() = default;
@@ -275,20 +295,76 @@ struct FollowerEffect : public EffectBase
     void draw(sf::RenderTarget & target, sf::RenderStates states) const override
     {
         EffectBase::draw(target, states);
-        target.draw(leader_sprite, states);
+        // target.draw(leader_sprite, states);
     }
 
     void update(const float elapsedTimeSec, const Context & context) override
     {
-        // TODO need to stop distance from changing acceleration, so need to normalize all
+        // Accelerate rabbit
         const sf::Vector2f posDiff(context.mouse_pos - mover.position);
-        mover.velocity += (posDiff * elapsedTimeSec);
+        const float distance(std::sqrt((posDiff.x * posDiff.x) + (posDiff.y * posDiff.y)));
+        float rotate{ 8.0f };
+        if (distance > 1.0f)
+        {
+            const sf::Vector2f posDiffNorm(posDiff / distance);
+            mover.velocity += ((posDiffNorm * mover.speed) * elapsedTimeSec);
+            rotate += ((distance * 0.05f));
+        }
+        else
+        {
+            mover.position = context.mouse_pos;
+            mover.velocity = { 0.0f, 0.0f };
+        }
+        followerSprite().rotate(rotate);
 
         EffectBase::update(elapsedTimeSec, context);
+
+        // Set carrot to mouse
         leaderSprite().setPosition(context.mouse_pos);
     }
 
     sf::Sprite leader_sprite;
+};
+
+//
+
+struct DrifterEffect : public EffectBase
+{
+    DrifterEffect(const Context & context, const float speed, const sf::Texture & drifterTex)
+        : EffectBase(drifterTex, Mover(speed, (context.window_size * 0.5f), {}, {}, speed))
+        , target_pos(
+              context.random.zeroTo(context.window_size.x),
+              context.random.zeroTo(context.window_size.y))
+    {
+        sprite.setScale(0.5f, 0.5f);
+    }
+
+    virtual ~DrifterEffect() = default;
+
+    void update(const float elapsedTimeSec, const Context & context) override
+    {
+
+        // Accelerate toward target
+        const sf::Vector2f posDiff(target_pos - mover.position);
+        const float distance(std::sqrt((posDiff.x * posDiff.x) + (posDiff.y * posDiff.y)));
+
+        if (distance > 1.0f)
+        {
+            const sf::Vector2f posDiffNorm(posDiff / distance);
+            mover.velocity += ((posDiffNorm * mover.speed) * elapsedTimeSec);
+        }
+        else
+        {
+            mover.position = target_pos;
+            mover.velocity = { 0.0f, 0.0f };
+        }
+
+        EffectBase::update(elapsedTimeSec, context);
+
+        // Set target to random position
+    }
+
+    sf::Vector2f target_pos;
 };
 
 //
@@ -417,14 +493,12 @@ class Game
     bool m_willClear;
     sf::Vector2f m_windowSize;
 
-    sf::Sprite m_bgSprite;
-    float m_bgRotateSpeed;
-
     util::Random m_random;
     util::SoundPlayer m_audio;
 
     Context m_context;
-    FollowerEffect m_follower;
+    sf::Sprite m_bgSprite;
+    FollowerEffect m_effect;
 };
 
 #endif // BULLET_HELL_GAME_HPP_INCLUDED
