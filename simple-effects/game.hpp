@@ -4,6 +4,7 @@
 #include "sound-player.hpp"
 
 #include <array>
+#include <optional>
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
@@ -26,6 +27,43 @@ namespace util
     {
         sprite.setOrigin(
             (sprite.getLocalBounds().width * 0.5f), (sprite.getLocalBounds().height * 0.5f));
+    }
+
+    // Right-triangle
+
+    inline float rightTriHypotenuse(const sf::Vector2f & vec)
+    {
+        return std::sqrt((vec.x * vec.x) + (vec.y * vec.y));
+    }
+
+    // Position
+
+    inline sf::Vector2f posDifference(const sf::Vector2f & from, const sf::Vector2f & to)
+    {
+        return (to - from);
+    }
+
+    inline float posDistance(const sf::Vector2f & from, const sf::Vector2f & to)
+    {
+        return rightTriHypotenuse(posDifference(from, to));
+    }
+
+    // Vectors
+
+    inline float vecMagnitude(const sf::Vector2f & vec) { return rightTriHypotenuse(vec); }
+
+    inline sf::Vector2f
+        vecNormal(const sf::Vector2f & vec, const sf::Vector2f & onError = { 0.0f, 0.0f })
+    {
+        const float mag(vecMagnitude(vec));
+        if (mag > 0.0f)
+        {
+            return (vec / mag);
+        }
+        else
+        {
+            return onError;
+        }
     }
 
 } // namespace util
@@ -90,7 +128,8 @@ struct Resources
         loadTexture("C:/src/learningcpp/media/image/seamless/brick-wall.jpg", bg_texture);
         loadTexture("C:/src/learningcpp/media/image/rabbit.png", rabbit_texture);
         loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
-        loadTexture("C:/src/learningcpp/media/image/particle/spiny-squary.png", particle_texture);
+        loadTexture(
+            "C:/src/learningcpp/media/image/particle/spirit-recruit-5.png", particle_texture);
     }
 
     void loadTexture(const std::string & filePath, sf::Texture & texture)
@@ -281,10 +320,8 @@ struct FollowerEffect : public EffectBase
         util::setOrigin2Center(leaderSprite());
         leaderSprite().setPosition(leadPos);
 
-        followerSprite().setScale(8.25f, 4.25f);
+        followerSprite().setScale(5.0f, 5.0f);
         leaderSprite().setScale(0.5f, 0.5f);
-
-        followerSprite().setColor(sf::Color::Red);
     }
 
     virtual ~FollowerEffect() = default;
@@ -303,7 +340,7 @@ struct FollowerEffect : public EffectBase
         // Accelerate rabbit
         const sf::Vector2f posDiff(context.mouse_pos - mover.position);
         const float distance(std::sqrt((posDiff.x * posDiff.x) + (posDiff.y * posDiff.y)));
-        float rotate{ 8.0f };
+        float rotate{ 2.0f };
         if (distance > 1.0f)
         {
             const sf::Vector2f posDiffNorm(posDiff / distance);
@@ -499,6 +536,9 @@ class Game
     Context m_context;
     sf::Sprite m_bgSprite;
     FollowerEffect m_effect;
+    sf::VertexArray m_quadVerts;
+    sf::RenderTexture m_offScreenTexture;
+    sf::Image m_image;
 };
 
 #endif // BULLET_HELL_GAME_HPP_INCLUDED

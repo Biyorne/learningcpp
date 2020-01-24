@@ -17,12 +17,31 @@ Game::Game()
     , m_bgSprite(m_resources.bg_texture)
     , m_effect(
           55.0f, m_resources.particle_texture, (m_context.window_size * 0.5f), sf::Texture(), {})
+    , m_quadVerts(sf::Quads)
+    , m_offScreenTexture()
+    , m_image()
 {
     m_window.setFramerateLimit(60);
 
     // m_audio.loadAll();
     m_resources.bg_texture.setRepeated(true);
     m_bgSprite.setTextureRect({ { 0, 0 }, sf::Vector2i(m_context.window_size) });
+
+    //
+    m_quadVerts.append(sf::Vertex({ 0.0f, 0.0f }, sf::Color::Red));
+    m_quadVerts.append(sf::Vertex({ m_context.window_size.x, 0.0f }, sf::Color::Blue));
+    m_quadVerts.append(sf::Vertex(m_context.window_size, sf::Color::Green));
+    m_quadVerts.append(sf::Vertex({ 0.0f, m_context.window_size.y }, sf::Color::White));
+
+    //
+    const sf::Vector2u sizeU(m_context.window_size);
+    m_offScreenTexture.create(sizeU.x, sizeU.y);
+    m_offScreenTexture.clear();
+    m_offScreenTexture.draw(m_quadVerts);
+    m_offScreenTexture.display();
+
+    //
+    m_image = m_offScreenTexture.getTexture().copyToImage();
 
     reset();
 }
@@ -101,7 +120,11 @@ void Game::render()
         m_window.clear();
     }
     m_window.draw(m_bgSprite);
-    // m_window.draw(m_bgSprite, sf::BlendAdd);
+
+    sf::Vector2u spritePos(m_effect.sprite.getPosition());
+
+    m_effect.sprite.setColor(m_image.getPixel(spritePos.x, spritePos.y));
+
     m_window.draw(m_effect, m_states);
 
     m_window.display();
