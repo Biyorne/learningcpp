@@ -20,6 +20,8 @@ Game::Game()
     , m_quadVerts(sf::Quads)
     , m_offScreenTexture()
     , m_image()
+    , m_sprite(m_resources.carrot_texture)
+    , m_steadyMover(50.0f, sf::Vector2f(1.0f, 1.0f))
 {
     m_window.setFramerateLimit(60);
 
@@ -111,6 +113,9 @@ void Game::processEvents()
 void Game::update(const float elapsedTimeSec)
 {
     m_effect.update(elapsedTimeSec, m_context);
+    const sf::Vector2f spritePos(
+        m_steadyMover.movePerFrame(m_sprite.getPosition(), elapsedTimeSec));
+    m_sprite.setPosition(spritePos);
 }
 
 void Game::render()
@@ -121,11 +126,11 @@ void Game::render()
     }
     m_window.draw(m_bgSprite);
 
-    sf::Vector2u spritePos(m_effect.sprite.getPosition());
+    // sf::Vector2u spritePos(m_effect.sprite.getPosition());
+    // m_effect.sprite.setColor(m_image.getPixel(spritePos.x, spritePos.y));
+    // m_window.draw(m_effect, m_states);
 
-    m_effect.sprite.setColor(m_image.getPixel(spritePos.x, spritePos.y));
-
-    m_window.draw(m_effect, m_states);
+    m_window.draw(m_sprite);
 
     m_window.display();
 }

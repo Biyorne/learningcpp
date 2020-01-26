@@ -110,15 +110,26 @@ struct Mover
 
 //
 
-// Responsible for maintaining a position, that is moving with a const vel that has a
+// Encapsulates constant speed that changes a position.
 struct SteadyMover
 {
+    SteadyMover(const float speed, const sf::Vector2f & vel)
+        : speed(speed)
+        , velocity(vel)
+    {}
 
-    void update(const float elapsedTimeSec) {}
+    sf::Vector2f movePerFrame(const sf::Vector2f & pos, const float elapsedTimeSec) const
+    {
+        // Normalize the velocity
+        const sf::Vector2f velNormal(util::vecNormal(velocity));
+
+        // Scale the vector to match the speed, then multiply by the elapsed time.
+        const sf::Vector2f velAtSpeed(velNormal * speed * elapsedTimeSec);
+
+        return (pos + velAtSpeed);
+    }
 
     float speed;
-    float speed_limit;
-    sf::Vector2f position;
     sf::Vector2f velocity;
 };
 
@@ -553,6 +564,8 @@ class Game
     sf::VertexArray m_quadVerts;
     sf::RenderTexture m_offScreenTexture;
     sf::Image m_image;
+    sf::Sprite m_sprite;
+    SteadyMover m_steadyMover;
 };
 
 #endif // BULLET_HELL_GAME_HPP_INCLUDED
