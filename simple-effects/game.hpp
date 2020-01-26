@@ -109,6 +109,20 @@ struct Mover
 };
 
 //
+
+// Responsible for maintaining a position, that is moving with a const vel that has a
+struct SteadyMover
+{
+
+    void update(const float elapsedTimeSec) {}
+
+    float speed;
+    float speed_limit;
+    sf::Vector2f position;
+    sf::Vector2f velocity;
+};
+
+//
 struct Resources
 {
     Resources()
