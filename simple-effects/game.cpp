@@ -6,22 +6,21 @@
 Game::Game()
     : m_resources()
     , m_window(
-          sf::VideoMode(1280, 1024, sf::VideoMode::getDesktopMode().bitsPerPixel), "Simple Effect")
+          sf::VideoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel), "Simple Effect")
     , m_states()
     , m_willClear(false)
     , m_windowSize(m_window.getSize())
     , m_random()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
     , m_context(m_window, m_random, m_audio)
-    //, m_effect(m_context, 50.0f, m_resources.rabbit_texture)
     , m_bgSprite(m_resources.bg_texture)
-    , m_effect(
-          55.0f, m_resources.particle_texture, (m_context.window_size * 0.5f), sf::Texture(), {})
     , m_quadVerts(sf::Quads)
     , m_offScreenTexture()
     , m_image()
     , m_sprite(m_resources.carrot_texture)
-    , m_steadyMover(50.0f, sf::Vector2f(1.0f, 1.0f))
+    , m_velocity(sf::Vector2f(55.0f, 55.0f))
+    , m_gravity(sf::Vector2f(0.0f, 1000.0f))
+    , m_fence({ sf::Vector2f(0.0f, 0.0f), m_windowSize })
 {
     m_window.setFramerateLimit(60);
 
@@ -44,6 +43,8 @@ Game::Game()
 
     //
     m_image = m_offScreenTexture.getTexture().copyToImage();
+
+    util::setOrigin2Center(m_sprite);
 
     reset();
 }
@@ -112,10 +113,17 @@ void Game::processEvents()
 
 void Game::update(const float elapsedTimeSec)
 {
-    m_effect.update(elapsedTimeSec, m_context);
-    const sf::Vector2f spritePos(
-        m_steadyMover.movePerFrame(m_sprite.getPosition(), elapsedTimeSec));
-    m_sprite.setPosition(spritePos);
+    m_velocity.vector += m_gravity.updateDelta(elapsedTimeSec);
+
+    const sf::Vector2f posMoved(m_velocity.updateAbsolute(elapsedTimeSec, m_sprite.getPosition()));
+
+    m_sprite.setPosition(posMoved);
+
+    const entity::BounceResult bounceResult(
+        m_fence.updateDeltaBounce(m_sprite.getGlobalBounds(), m_velocity.vector));
+
+    m_velocity.vector = bounceResult.velocity;
+    m_sprite.move(bounceResult.pos_delta);
 }
 
 void Game::render()

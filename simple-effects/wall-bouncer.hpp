@@ -4,13 +4,16 @@
 #include "effect-base.hpp"
 #include "steady-mover.hpp"
 
-struct WallBouncerEffect : public EffectBase
+namespace entity
 {
-    WallBouncerEffect(const sf::Texture & tex, const Mover & mov)
-        : EffectBase(tex, mov, true)
-    {}
+    struct WallBouncerEffect : public EffectBase
+    {
+        WallBouncerEffect(const sf::Texture & tex, const Mover & mov)
+            : EffectBase(tex, mov, true)
+        {}
 
-    virtual ~WallBouncerEffect() = default;
-};
+        virtual ~WallBouncerEffect() = default;
+    };
+} // namespace entity
 
 #endif // SIMPLE_EFFECTS_WALL_BOUNCER_HPP_INCLUDED

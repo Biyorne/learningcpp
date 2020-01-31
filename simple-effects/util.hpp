@@ -5,14 +5,37 @@
 
 namespace util
 {
-    inline float right(const sf::FloatRect & rect) { return (rect.left + rect.width); }
-
-    inline float bottom(const sf::FloatRect & rect) { return (rect.top + rect.height); }
-
-    inline void setOrigin2Center(sf::Sprite & sprite)
+    template <typename T>
+    inline float right(const T & thing)
     {
-        sprite.setOrigin(
-            (sprite.getLocalBounds().width * 0.5f), (sprite.getLocalBounds().height * 0.5f));
+        if constexpr (std::is_same_v<std::remove_cv_t<T>, sf::FloatRect>)
+        {
+            return (thing.left + thing.width);
+        }
+        else
+        {
+            return right(thing.getGlobalBounds());
+        }
+    }
+
+    template <typename T>
+    inline float bottom(const T & thing)
+    {
+        if constexpr (std::is_same_v<std::remove_cv_t<T>, sf::FloatRect>)
+        {
+            return (thing.top + thing.height);
+        }
+        else
+        {
+            return bottom(thing.getGlobalBounds());
+        }
+    }
+
+    template <typename T>
+    inline void setOrigin2Center(T & thing)
+    {
+        thing.setOrigin(
+            (thing.getLocalBounds().width * 0.5f), (thing.getLocalBounds().height * 0.5f));
     }
 
     // Right-triangle
@@ -24,17 +47,17 @@ namespace util
 
     // Position
 
-    inline sf::Vector2f posDifference(const sf::Vector2f & from, const sf::Vector2f & to)
+    inline sf::Vector2f posDiffV(const sf::Vector2f & from, const sf::Vector2f & to)
     {
         return (to - from);
     }
 
     inline float posDistance(const sf::Vector2f & from, const sf::Vector2f & to)
     {
-        return rightTriHypotenuse(posDifference(from, to));
+        return rightTriHypotenuse(posDiffV(from, to));
     }
 
-    // Vectors
+    // Cartesian Vectors
 
     inline float vecMagnitude(const sf::Vector2f & vec) { return rightTriHypotenuse(vec); }
 

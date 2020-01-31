@@ -47,27 +47,149 @@ struct Mover
 
 //
 
-// Encapsulates constant speed that changes a position.
-struct SteadyMover
+namespace entity
 {
-    SteadyMover(const float speed, const sf::Vector2f & vel)
-        : speed(speed)
-        , velocity(vel)
-    {}
 
-    sf::Vector2f movePerFrame(const sf::Vector2f & pos, const float elapsedTimeSec) const
+    // Encapsulates constant speed that changes a position.
+    struct Velocity
     {
-        // Normalize the velocity
-        const sf::Vector2f velNormal(util::vecNormal(velocity));
+        explicit Velocity(const sf::Vector2f & vel)
+            : vector(vel)
+        {}
 
-        // Scale the vector to match the speed, then multiply by the elapsed time.
-        const sf::Vector2f velAtSpeed(velNormal * speed * elapsedTimeSec);
+        sf::Vector2f updateDelta(const float elapsedTimeSec) const
+        {
+            return (vector * elapsedTimeSec);
+        }
 
-        return (pos + velAtSpeed);
-    }
+        sf::Vector2f updateAbsolute(const float elapsedTimeSec, const sf::Vector2f & pos) const
+        {
+            return (pos + updateDelta(elapsedTimeSec));
+        }
 
-    float speed;
-    sf::Vector2f velocity;
-};
+        sf::Vector2f vector;
+    };
+
+    //
+
+    struct Acceleration
+    {
+        explicit Acceleration(const sf::Vector2f & acc)
+            : vector(acc)
+        {}
+
+        sf::Vector2f updateDelta(const float elapsedTimeSec) const
+        {
+            return (vector * elapsedTimeSec);
+        }
+
+        sf::Vector2f updateAbsolute(const float elapsedTimeSec, const sf::Vector2f & vel) const
+        {
+            return (vel + updateDelta(elapsedTimeSec));
+        }
+
+        sf::Vector2f vector;
+    };
+
+    //
+
+    // Fencing hard stop:
+    // sf::Floatrect fence
+    // sf::Floatrect objectSize
+    // Change position
+    //
+    // Fencing Bounce:
+    // sf::Vector2f velocity
+    // Change position and flip velocity
+
+    //
+
+    struct BounceResult
+    {
+        sf::Vector2f pos_delta{ 0.0f, 0.0f };
+        sf::Vector2f velocity{ 0.0f, 0.0f };
+    };
+
+    //
+
+    struct Fence
+    {
+        explicit Fence(const sf::FloatRect & bnd)
+            : bounds(bnd)
+        {}
+
+        // Returns change to entityBounds position
+        sf::Vector2f updateDelta(const sf::FloatRect & entityBounds) const
+        {
+            sf::Vector2f posDelta(0.0f, 0.0f);
+
+            if (entityBounds.left < bounds.left)
+            {
+                posDelta.x = (bounds.left - entityBounds.left);
+            }
+
+            if (entityBounds.top < bounds.top)
+            {
+                posDelta.y = (bounds.top - entityBounds.top);
+            }
+
+            const float entityRight{ util::right(entityBounds) };
+            const float boundsRight{ util::right(bounds) };
+            if (entityRight > boundsRight)
+            {
+                posDelta.x = (boundsRight - entityRight);
+            }
+
+            const float entityBottom{ util::bottom(entityBounds) };
+            const float boundsBottom{ util::bottom(bounds) };
+            if (entityBottom > boundsBottom)
+            {
+                posDelta.y = (boundsBottom - entityBottom);
+            }
+
+            return posDelta;
+        }
+
+        // Returns posDelta AND new absolute velocity
+        BounceResult
+            updateDeltaBounce(const sf::FloatRect & entityBounds, const sf::Vector2f & vel) const
+        {
+            BounceResult result{ updateDelta(entityBounds), vel };
+
+            if ((result.pos_delta.x > 0.0f) || (result.pos_delta.x < 0.0f))
+            {
+                result.velocity.x *= -1.0f;
+            }
+
+            if ((result.pos_delta.y > 0.0f) || (result.pos_delta.y < 0.0f))
+            {
+                result.velocity.y *= -1.0f;
+            }
+
+            return result;
+        }
+
+        sf::FloatRect bounds;
+    };
+
+    // void handleFencing(const Context & context)
+    //{
+    //    const sf::Vector2f posCorr{ calcFencePosCorrection(
+    //        sprite.getGlobalBounds(), context.window_rect) };
+    //
+    //    sprite.move(posCorr);
+    //
+    //    if ((posCorr.x > 0.0f) || (posCorr.x < 0.0f))
+    //    {
+    //        mover.velocity.x *= -1.0f;
+    //    }
+    //
+    //    if ((posCorr.y > 0.0f) || (posCorr.y < 0.0f))
+    //    {
+    //        mover.velocity.y *= -1.0f;
+    //    }
+    //}
+
+} // namespace entity
 
 #endif // SIMPLE_EFFECTS_STEADY_MOVER_HPP_INCLUDED

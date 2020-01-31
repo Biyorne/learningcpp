@@ -50,12 +50,13 @@ class Game
 
     Context m_context;
     sf::Sprite m_bgSprite;
-    FollowerEffect m_effect;
     sf::VertexArray m_quadVerts;
     sf::RenderTexture m_offScreenTexture;
     sf::Image m_image;
     sf::Sprite m_sprite;
-    SteadyMover m_steadyMover;
+    entity::Velocity m_velocity;
+    entity::Acceleration m_gravity;
+    entity::Fence m_fence;
 };
 
 #endif // SIMPLE_EFFECTS_GAME_HPP_INCLUDED

@@ -1,0 +1,51 @@
+
+The point of this project is to have fun and see how easy 
+it is to make simple special effects.
+
+Most of the special effects we're making have to do with movement,
+so we developed a mover class to handle all of our movement needs.
+
+It worked really well for a lot of simple effects, but the mover
+class became a "do everything" class. A jack of all trades is an
+expert of none. Its cohesion went too low and coupling became a problem.
+
+
+Classes
+
+-Movement
+	- Acceleration
+	- Speed limits
+	- Velocity
+	- Enforced bounds
+
+
+Movement classes will NOT keep their own position,
+because all the anticipated uses have their own way of
+keeping position.
+
+Our OOD will be composition, because these classes are "has a"
+and because we expect to need multiple of them at once.
+
+We will use structs for all the movement classes because 
+	1. All  movement members would need both getters and setters.
+	2. The choice of composition tends to work best with structs.
+	3. The movement classes are primarily data wrappers with only
+	   one function.
+
+All movement classes will be inside the entity namespace, beause 
+they will all use the game/sim update() function.
+
+-Special Effects
+	- Wall bouncer
+		(Sprite, velocity, enforced bounds)
+	- Rising Fade
+		(Sprite, velocity)
+	- Follower
+		(Sprite, velocity, acceleration, speed limit, 
+		maybe enforced bounds)
+	- Particle emitter
+		(Sprite)
+	- Growing fading spinner
+		(Sprite)
+	- Drifter
+		(Same as follower)
