@@ -4,6 +4,7 @@ Thumbs.db
 **/Release
 **/Debug
 **/.vscode
+**/small-game-svg-icons-black-and-white
 *.DS_Store
 *.dll
 *.obj
