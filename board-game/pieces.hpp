@@ -18,23 +18,17 @@
 
 namespace boardgame
 {
-    struct Collider;
-
-    //
-
     struct WalkTarget
     {
-        WalkTarget() = default;
-
         WalkTarget(const Context & context, const BoardPos_t & boardPos, const int walkDistance = 0)
             : position(boardPos)
-            , piece(context.board.cellAt(boardPos).piece_enum)
+            , piece(context.board.map.posToPiece(boardPos))
             , distance(walkDistance)
         {}
 
-        BoardPos_t position = { 0, 0 };
-        Piece::Enum piece = Piece::Count;
-        int distance = 0;
+        BoardPos_t position;
+        Piece piece;
+        int distance;
     };
 
     using WalkTargetArray_t = std::array<WalkTarget, 4>;
@@ -45,95 +39,146 @@ namespace boardgame
     {
         virtual ~IPiece() = default;
 
-        virtual Piece::Enum piece() const = 0;
+        virtual Piece piece() const = 0;
         virtual BoardPos_t boardPos() const = 0;
+        virtual sf::FloatRect bounds() const = 0;
 
+        virtual void handleEvent(Context &, const sf::Event & event) = 0;
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
-
-        // returns the new pos that this piece wants to walk on, but has not yet done so
-        // only Collider decides if so, and actually moves pieces as needed
-        virtual BoardPos_t update(const Context & context, const float elapsedTimeSec) = 0;
+        virtual void update(Context & context, const float elapsedTimeSec) = 0;
     };
 
     using IPieceUPtr_t = std::unique_ptr<IPiece>;
     using IPieceUVec_t = std::vector<IPieceUPtr_t>;
 
-    using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
-    using IPieceCOpt_t = std::optional<std::reference_wrapper<const IPiece>>;
-
     //
 
     struct PieceBase : public IPiece
     {
-        friend Collider;
-
         PieceBase(
-            const Context & context,
-            const BoardPos_t & position,
-            const Piece::Enum piece,
-            const sf::Color & color,
-            const Image::Enum image,
-            const std::vector<Piece::Enum> & walkablePieces = {},
-            const float speed = 0.0f)
-            : m_piece(piece)
-            , m_boardPos(position)
-            , m_image(image)
-            , m_sprite()
-            , m_windowPosPrev()
-            , m_color(color)
-            , m_speed(speed)
-            , m_walkablePieces(walkablePieces)
-        {
-            assert(m_piece != Piece::Count);
-            assert(context.board.isPosValid(position));
-
-            setupSprite(context);
-            m_windowPosPrev = m_sprite.getPosition();
-        }
+            const Piece piece,
+            const BoardPos_t & pos,
+            const sf::FloatRect & bounds,
+            const sf::Sprite & sprite);
 
         virtual ~PieceBase() = default;
 
-        Piece::Enum piece() const final { return m_piece; }
+        Piece piece() const final { return m_piece; }
         BoardPos_t boardPos() const final { return m_boardPos; }
+        sf::FloatRect bounds() const final { return m_bounds; }
+
+        void handleEvent(Context &, const sf::Event &) override {}
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override
         {
             target.draw(m_sprite, states);
         }
 
-        // default does nothing
-        BoardPos_t update(const Context &, const float) override { return boardPos(); }
+        void update(Context &, const float) override {}
 
       protected:
-        void setupSprite(const Context & context)
+        Piece m_piece;
+        BoardPos_t m_boardPos;
+        sf::FloatRect m_bounds;
+        sf::Sprite m_sprite;
+    };
+
+    //
+
+    struct EmptyPiece : public PieceBase
+    {
+        explicit EmptyPiece(
+            const ImageHandler & images, const BoardPos_t & pos, const sf::FloatRect & bounds)
+            : PieceBase(Piece::Empty, pos, bounds, images.makeSprite(Image::Blank, bounds))
+        {}
+
+        virtual ~EmptyPiece() = default;
+    };
+
+    //
+
+    struct WallPiece : public PieceBase
+    {
+        WallPiece(
+            const ImageHandler & images,
+            const Image whichWallImage,
+            const BoardPos_t & pos,
+            const sf::FloatRect & bounds,
+            const bool hasShadow = false)
+            : PieceBase(Piece::Obstacle, pos, bounds, images.makeSprite(whichWallImage, bounds))
+            , m_shadowSprite()
         {
-            m_sprite.setTexture(context.resources.tile_texture);
-
-            const sf::IntRect textureCoords{ Image::coords(m_image) };
-            if ((textureCoords.width > 0) && (textureCoords.height))
+            if (hasShadow)
             {
-                m_sprite.setTextureRect(textureCoords);
+                m_shadowSprite = images.makeSprite(Image::Shadow, m_bounds);
             }
-
-            m_sprite.setColor(m_color);
-            util::scale(m_sprite, context.board.cell_size);
-            util::setOriginToCenter(m_sprite);
-            m_sprite.setPosition(context.board.cellAt(boardPos()).window_rect_center);
         }
 
-        // default turn is to do nothing
-        virtual BoardPos_t takeTurn(const Context &) { return boardPos(); }
+        virtual ~WallPiece() = default;
 
-      protected:
-        Piece::Enum m_piece;
-        BoardPos_t m_boardPos;
-        Image::Enum m_image;
-        sf::Sprite m_sprite;
-        sf::Vector2f m_windowPosPrev;
-        sf::Color m_color;
-        float m_speed;
-        std::vector<Piece::Enum> m_walkablePieces;
-    }; // namespace boardgame
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
+        {
+            PieceBase::draw(target, states);
+            target.draw(m_shadowSprite, states);
+        }
+
+      private:
+        sf::Sprite m_shadowSprite;
+    };
+
+    //
+
+    struct PlayerPiece : public PieceBase
+    {
+        PlayerPiece(
+            const ImageHandler & images, const BoardPos_t & pos, const sf::FloatRect & bounds)
+            : PieceBase(
+                  Piece::Obstacle,
+                  pos,
+                  bounds,
+                  images.makeSprite(Image::Player, bounds, sf::Color::Green))
+        {}
+
+        virtual ~PlayerPiece() = default;
+
+        void handleEvent(Context & context, const sf::Event & event) override
+        {
+            if (sf::Event::KeyPressed != event.type)
+            {
+                return;
+            }
+
+            if (sf::Keyboard::Right == event.key.code)
+            {
+                move(context, (m_boardPos + BoardPos_t(1, 0)));
+            }
+            else if (sf::Keyboard::Left == event.key.code)
+            {
+                move(context, (m_boardPos + BoardPos_t(-1, 0)));
+            }
+            else if (sf::Keyboard::Up == event.key.code)
+            {
+                move(context, (m_boardPos + BoardPos_t(0, -1)));
+            }
+            else if (sf::Keyboard::Down == event.key.code)
+            {
+                move(context, (m_boardPos + BoardPos_t(0, 1)));
+            }
+        }
+
+        void attemptToMove(Context & context, const BoardPos_t & newPos)
+        {
+            const std::size_t targetIndex{ context.board.posToIndex(newPos) };
+
+            const IPiece & targetPiece{ context.board.pieces.at(targetIndex) };
+
+            if (targetPiece.piece() == Piece::Empty)
+            {
+            }
+        }
+
+        void move(Context & context, const BoardPos_t & newPos) {}
+    };
 
     //
 
@@ -141,21 +186,18 @@ namespace boardgame
     struct SeekerPieceBase : public PieceBase
     {
         SeekerPieceBase(
-            const Context & context,
+            const Piece selfPiece,
             const BoardPos_t & pos,
-            const Piece::Enum selfPiece,
-            const Piece::Enum targetPiece,
-            const sf::Color & color,
-            const Image::Enum image,
+            const sf::Sprite & sprite,
+            const Piece targetPiece,
             const float speed,
-            const std::vector<Piece::Enum> & walkablePieces = {})
-            : PieceBase(context, pos, selfPiece, color, image, walkablePieces, speed)
+            const std::vector<Piece> & walkablePieces = {})
+            : PieceBase(selfPiece, pos, sprite, walkablePieces, speed)
             , m_targetPiece(targetPiece)
             , m_targetBoardPos(pos)
             , m_isDoneMovingThisTurn(false)
-
         {
-            m_walkablePieces.push_back(Piece::Count);
+            m_walkablePieces.push_back(Piece::Empty);
             m_walkablePieces.push_back(targetPiece);
         }
 
@@ -202,6 +244,12 @@ namespace boardgame
         }
 
       protected:
+        void setBoardPos(const Context & context, const BoardPos_t & newPos) override
+        {
+            PieceBase::setBoardPos(context, newPos);
+            m_isDoneMovingThisTurn = false;
+        }
+
         WalkTargetArray_t
             makePossibleMovesArray(const Context & context, const BoardPos_t & pos) const
         {
@@ -228,42 +276,37 @@ namespace boardgame
             WalkTargetArray_t::iterator & movesEndIter);
 
       protected:
-        Piece::Enum m_targetPiece;
+        Piece m_targetPiece;
         BoardPos_t m_targetBoardPos;
         bool m_isDoneMovingThisTurn;
     };
 
     //
 
-    struct WallPiece : public PieceBase
+    struct PickupPiece : public PieceBase
     {
         friend Collider;
 
-        // transparent color prevents drawing because walls are not drawn as pieces,
-        // they are drawn to a common background
-        WallPiece(const Context & context, const BoardPos_t & pos, const Image::Enum image)
-            : PieceBase(context, pos, Piece::Wall, sf::Color::Transparent, image)
+        PickupPiece(const BoardPos_t & pos, const sf::Sprite & sprite)
+            : PieceBase(Piece::Pickup, pos, sprite)
         {}
 
-        virtual ~WallPiece() = default;
+        virtual ~PickupPiece() = default;
     };
 
     //
-
     struct PlayerPiece : public SeekerPieceBase
     {
         friend Collider;
 
-        PlayerPiece(const Context & context, const BoardPos_t & pos)
+        PlayerPiece(const BoardPos_t & pos, const sf::Sprite & sprite)
             : SeekerPieceBase(
-                  context,
-                  pos,
                   Piece::Player,
-                  Piece::Victim,
-                  sf::Color(32, 255, 32),
-                  Image::Player,
+                  pos,
+                  sprite,
+                  Piece::Pickup,
                   10.0f,
-                  { Piece::Count, Piece::Victim, Piece::Demon })
+                  { Piece::Empty, Piece::Pickup, Piece::Villan })
             , m_nextMovePosAdj(0, 0)
         {}
 
@@ -296,49 +339,21 @@ namespace boardgame
 
     //
 
-    struct VictimPiece : public SeekerPieceBase
+    struct VillanPiece : public SeekerPieceBase
     {
         friend Collider;
 
-        VictimPiece(const Context & context, const BoardPos_t & pos)
+        VillanPiece(const BoardPos_t & pos, const sf::Sprite & sprite)
             : SeekerPieceBase(
-                  context,
+                  Piece::Villan,
                   pos,
-                  Piece::Victim,
+                  sprite,
                   Piece::Player,
-                  sf::Color(255, 32, 255),
-                  Image::Victim,
-                  1.0f)
+                  1.0f,
+                  { Piece::Empty, Piece::Pickup, Piece::Villan })
         {}
 
-        // victims only move half the time
-        BoardPos_t takeTurn(const Context & context) override
-        {
-            if (context.random.boolean())
-            {
-                return SeekerPieceBase::takeTurn(context);
-            }
-            else
-            {
-                return boardPos();
-            }
-        }
-
-        virtual ~VictimPiece() = default;
-    };
-
-    //
-
-    struct DemonPiece : public SeekerPieceBase
-    {
-        friend Collider;
-
-        DemonPiece(const Context & context, const BoardPos_t & pos)
-            : SeekerPieceBase(
-                  context, pos, Piece::Demon, Piece::Player, sf::Color::White, Image::Demon, 4.0f)
-        {}
-
-        virtual ~DemonPiece() = default;
+        virtual ~VillanPiece() = default;
     };
 } // namespace boardgame
 

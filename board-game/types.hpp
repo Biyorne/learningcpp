@@ -10,33 +10,15 @@
 
 namespace boardgame
 {
-    using Score_t = int;
-
     using BoardPos_t = sf::Vector2i;
 
-    struct Piece
+    enum class Piece
     {
-        enum Enum : std::size_t
-        {
-            Player = 0,
-            Demon,
-            Victim,
-            Wall,
-            Count
-        };
-
-        static std::string name(const Enum piece)
-        {
-            switch (piece)
-            {
-                case Player: return "Player";
-                case Demon: return "Demon";
-                case Victim: return "Victim";
-                case Wall: return "Wall";
-                case Count: return "Count";
-                default: return "";
-            }
-        }
+        Empty,
+        Player,
+        Villan,
+        Pickup,
+        Obstacle,
     };
 } // namespace boardgame
 

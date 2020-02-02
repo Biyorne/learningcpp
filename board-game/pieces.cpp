@@ -11,6 +11,18 @@
 
 namespace boardgame
 {
+    PieceBase::PieceBase(
+        const Piece piece,
+        const BoardPos_t & pos,
+        const sf::FloatRect & bounds,
+        const sf::Sprite & sprite)
+        : m_piece(piece)
+        , m_boardPos(position)
+        , m_sprite(sprite)
+        , m_speed(speed)
+        , m_walkablePieces(walkablePieces)
+    {}
+
     // TODO this just picks the first, so eventually it will hae to do something smarter
     BoardPos_t SeekerPieceBase::pickTarget(const Context & context)
     {

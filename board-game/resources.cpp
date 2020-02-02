@@ -10,34 +10,41 @@
 
 namespace boardgame
 {
-    Resources::Resources(const std::string & mediaDirPath)
-        : media_dir_path(mediaDirPath)
+    ImageHandler::ImageHandler(const std::string & mediaDirPath)
+        : m_mediaDirPath(mediaDirPath)
+        , m_font()
+        , m_texture()
     {
-        if (!std::filesystem::exists(media_dir_path) ||
-            !std::filesystem::is_directory(media_dir_path))
+        if (!std::filesystem::exists(m_mediaDirPath) ||
+            !std::filesystem::is_directory(m_mediaDirPath))
         {
             std::ostringstream ss;
 
-            ss << "Error:  Resources::Resources(\"" << mediaDirPath << "\", which_became=\""
-               << media_dir_path.string() << "\") either does not exist, or is not a directory.";
+            ss << "Error:  ImageHandler::ImageHandler(\"" << mediaDirPath << "\", which_became=\""
+               << m_mediaDirPath.string() << "\") either does not exist, or is not a directory.";
 
             throw std::runtime_error(ss.str());
         }
 
-        load(media_dir_path / "font/gentium-plus/gentium-plus.ttf", font);
-        load(media_dir_path / "image/boardgame.png", tile_texture);
+        load(m_mediaDirPath / "font/gentium-plus/gentium-plus.ttf", m_font);
+        load(m_mediaDirPath / "image/boardgame.png", m_texture);
     }
 
-    Image::Enum Image::charToEnum(const char mapChar)
+    sf::Sprite ImageHandler::makeSprite(
+        const Image image, const sf::FloatRect & windowRect, const sf::Color & color) const
     {
-        switch (mapChar)
+        sf::Sprite sprite;
+
+        if (Image::Blank != image)
         {
-            case 'V': return WallVert;
-            case 'H': return WallHoriz;
-            case 'C': return BlockCorner;
-            case 'T': return BlockTop;
-            case 'B': return BlockBottom;
-            default: return Count;
+            sprite.setTexture(m_texture);
+            sprite.setTextureRect(coords(image));
+            sprite.setColor(color);
+            util::setOriginToCenter(sprite);
+            util::scale(sprite, util::size(windowRect));
+            sprite.setPosition(util::center(windowRect));
         }
+
+        return sprite;
     }
 } // namespace boardgame

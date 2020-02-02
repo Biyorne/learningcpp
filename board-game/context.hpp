@@ -17,26 +17,26 @@ namespace util
 namespace boardgame
 {
     struct Board;
-    struct Resources;
+    struct ImageHandler;
 
     //
 
     struct Context
     {
         Context(
-            const Resources & resourcesParam,
+            const ImageHandler & imagesParam,
             Board & boardParam,
             util::Random & randonParam,
             util::SoundPlayer & audioParam,
             util::AnimationPlayer & animParam)
-            : resources(resourcesParam)
+            : images(imagesParam)
             , board(boardParam)
             , random(randonParam)
             , audio(audioParam)
             , anim(animParam)
         {}
 
-        const Resources & resources;
+        const ImageHandler & images;
         Board & board;
         util::Random & random;
         util::SoundPlayer & audio;

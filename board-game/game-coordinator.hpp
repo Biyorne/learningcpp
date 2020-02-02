@@ -39,9 +39,13 @@ namespace boardgame
         void update(const float elapsedTimeSec);
         void draw();
 
+        float randomPickupSpawnDelaySec() const { return m_context.random.fromTo(4.0f, 8.0f); }
+
+        void updatePickupSpawn(const float elapsedTimeSec);
+
       private:
         bool m_enableSpecialEffects;
-        Resources m_resources;
+        Resources m_images;
 
         float m_simTimeMult;
         sf::Clock m_frameClock;
@@ -60,6 +64,13 @@ namespace boardgame
 
         sf::Sprite m_boardBaseSprite;
         sf::RenderTexture m_boardBaseTexture;
+
+        bool m_isPickupSpawnEffectRunning;
+        float m_victimSpawnWaitDurSec;
+        float m_victimSpawnWaitSoFarSec;
+        float m_victimSpawnScaler;
+        BoardPos_t m_victimSpawnBoardPos;
+        sf::Sprite m_victimSpawnSprite;
     };
 } // namespace boardgame
 

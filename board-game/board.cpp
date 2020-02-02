@@ -13,48 +13,40 @@
 
 namespace boardgame
 {
-    Board::Board(const sf::Vector2u & windowSize)
-        : window_size(windowSize)
+    Board::Board(const ImageHandler & images, const sf::Vector2u & windowSize, const Map & level)
+        : map(level)
+        , window_size(windowSize)
         , window_rect({}, window_size)
-        , board_region_vert_size_ratio(1.0f - (1.0f / 8.0f))
-        , between_region_vert_scale(1.0f / 100.0f)
+        , region_pad_ratio(0.95f)
+        , board_region_vert_size_ratio(0.875f)
+        , between_region_vert_scale(region_pad_ratio / 2.0f)
         , board_region()
         , status_region()
-        , cell_counts()
-        , cell_count_total(0)
-        , cell_countsI()
         , cell_size()
         , board_rect()
-        , cells()
         , pieces()
     {
         board_region = window_rect;
         board_region.height *= board_region_vert_size_ratio;
+        util::scaleRectInPlace(board_region, region_pad_ratio);
 
         status_region = window_rect;
-        status_region.height = (window_rect.height - board_region.height);
-        status_region.top = util::bottom(board_region);
+        status_region.height *= (1.0f - board_region_vert_size_ratio);
+        status_region.top = (window_size.y - status_region.height);
+        util::scaleRectInPlace(status_region, region_pad_ratio);
 
-        cell_counts = sf::Vector2s(map_strings.front().size(), map_strings.size());
-        cell_count_total = (cell_counts.x * cell_counts.y);
-        cell_countsI = sf::Vector2i(cell_counts);
+        const sf::Vector2s cellCounts(map.cell_count_horiz, map.cell_count_vert);
+        const sf::Vector2f cellRegionSize{ util::size(board_region) / sf::Vector2f(cellCounts) };
 
-        const sf::Vector2f cellSizeOrig{ util::size(board_region) /
-                                         sf::Vector2f(cell_counts) };
+        const float cellSize{ std::min(cellRegionSize.x, cellRegionSize.y) };
+        cell_size.x = cellSize;
+        cell_size.y = cellSize;
 
-        // cell_size = cellSizeOrig;
-        const float cellSideLength{ std::min(cellSizeOrig.x, cellSizeOrig.y) };
-        cell_size.x = cellSideLength;
-        cell_size.y = cellSideLength;
+        const sf::Vector2f boardRectSize{ sf::Vector2f(cellCounts) * cell_size };
+        const sf::Vector2f boardRectPos{ util::center(board_region) - (boardRectSize * 0.5f) };
+        board_rect = sf::FloatRect(boardRectPos, boardRectSize);
 
-        const sf::Vector2f boardRectSize{ sf::Vector2f(cell_counts) * cell_size };
-
-        const sf::Vector2f boardRectPosToCenter{ util::center(board_region) -
-                                                 (boardRectSize * 0.5f) };
-
-        board_rect = sf::FloatRect(boardRectPosToCenter, boardRectSize);
-
-        reset();
+        reset(images, random);
     }
 
     int Board::walkDistance(const IPiece & from, const IPiece & to)
@@ -62,29 +54,53 @@ namespace boardgame
         return walkDistance(from.boardPos(), to.boardPos());
     }
 
-    void Board::reset()
+    void Board::reset(const ImageHandler & images)
     {
         pieces.clear();
 
-        // cells
-        for (std::size_t vert(0); vert < cell_counts.y; ++vert)
+        for (std::size_t i(0); i < map.cell_count_total; ++i)
         {
-            for (std::size_t horiz(0); horiz < cell_counts.x; ++horiz)
-            {
-                const BoardPos_t boardPos{ sf::Vector2s(horiz, vert) };
+            const BoardPos_t boardPos{ indexToPos(i) };
 
-                const sf::Vector2f windowPos{ util::position(board_rect) +
-                                              (sf::Vector2f(boardPos) * cell_size) };
+            const sf::Vector2f windowPos{ util::position(board_rect) +
+                                          (sf::Vector2f(boardPos) * cell_size) };
 
-                Cell cell(boardPos, windowPos, cell_size);
+            const sf::FloatRect bounds{ windowPos, cell_size };
 
-                const bool isWall{ Image::isWall(map_strings.at(vert).at(horiz)) };
-                if (isWall)
-                {
-                    cell.piece_enum = Piece::Wall;
-                }
+            const Piece piece{ map.posToPiece(boardPos) };
 
-                cells.insert({ boardPos, cell });
+            pieces.push_back(makePiece(piece, boardPos, bounds));
+        }
+    }
+
+    IPieceUPtr_t Board::makePiece(
+        const ImageHandler & images,
+        const Piece piece,
+        const BoardPos_t & boardPos,
+        const sf::FloatRect & bounds) const
+    {
+        switch (piece)
+        {
+            case Piece::Player: {
+                const sf::Sprite sprite{ images.makeSprite(
+                    Image::Player, bounds, sf::Color::Green) };
+
+                return std::make_unique<PlayerPiece>(boardPos, sprite);
+            }
+
+            case Piece::Villan: {
+                const sf::Sprite sprite{ images.makeSprite(Image::Demon, bounds) };
+                return std::make_unique<VillanPiece>(boardPos, sprite);
+            }
+
+            case Piece::Obstacle: {
+                return std::make_unique<WallPiece>(boardPos, bounds);
+            }
+
+            case Piece::Pickup:
+            case Piece::Empty:
+            default: {
+                return std::make_unique<EmptyPiece>(boardPos, bounds);
             }
         }
     }
@@ -92,15 +108,15 @@ namespace boardgame
     // TODO optimize this crap
     std::optional<BoardPos_t> Board::findRandomEmptyPos(const Context & context)
     {
-        std::set<BoardPos_t> emptyPositions;
-        for (auto & [boardPos, cell] : cells)
-        {
-            emptyPositions.insert(boardPos);
-        }
+        std::vector<BoardPos_t> emptyPositions;
+        emptyPositions.reserve(map.cell_count_total);
 
-        for (const auto & piece : pieces)
+        for (const IPieceUPtr_t & uptr : pieces)
         {
-            emptyPositions.erase(piece->boardPos());
+            if (uptr->piece() == Piece::Empty)
+            {
+                emptyPositions.push_back(uptr->boardPos());
+            }
         }
 
         if (emptyPositions.empty())

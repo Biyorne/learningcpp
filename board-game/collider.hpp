@@ -16,11 +16,11 @@ namespace boardgame
         static void handle(Context & context, IPiece & pieceMoving, const BoardPos_t & targetPos)
         {
             assert(context.board.isPosValid(targetPos));
-            const Piece::Enum pieceMovingEnum{ pieceMoving.piece() };
+            const Piece pieceMovingEnum{ pieceMoving.piece() };
             assert(pieceMovingEnum != Piece::Count);
-            assert(pieceMovingEnum != Piece::Wall);
+            assert(pieceMovingEnum != Piece::Obstacle);
 
-            const Piece::Enum pieceTargetEnum{ context.board.cellAt(targetPos).piece_enum };
+            const Piece pieceTargetEnum{ context.board.cellAt(targetPos).piece_enum };
 
             // const auto & walkablePieces{ pieceMoving.walkablePieces() };
             //
@@ -45,16 +45,16 @@ namespace boardgame
                     move(context, dynamic_cast<PlayerPiece &>(pieceMoving), targetPos);
                     break;
                 }
-                case Piece::Demon: {
-                    move(context, dynamic_cast<DemonPiece &>(pieceMoving), targetPos);
+                case Piece::Villan: {
+                    move(context, dynamic_cast<VillanPiece &>(pieceMoving), targetPos);
                     break;
                 }
-                case Piece::Victim: {
-                    move(context, dynamic_cast<VictimPiece &>(pieceMoving), targetPos);
+                case Piece::Pickup: {
+                    move(context, dynamic_cast<PickupPiece &>(pieceMoving), targetPos);
                     break;
                 }
 
-                case Piece::Wall:
+                case Piece::Obstacle:
                 case Piece::Count:
                 default: break;
             }
@@ -69,8 +69,7 @@ namespace boardgame
             fromCell.piece_enum = Piece::Count;
             toCell.piece_enum = pieceMoving.piece();
 
-            pieceMoving.m_boardPos = targetPos;
-            pieceMoving.m_isDoneMovingThisTurn = false;
+            pieceMoving.setBoardPos(context, targetPos);
         }
     }; // namespace boardgame
 } // namespace boardgame

@@ -14,7 +14,7 @@ namespace boardgame
 {
     GameCoordinator::GameCoordinator(const std::string & mediaDirPath)
         : m_enableSpecialEffects(false)
-        , m_resources(mediaDirPath)
+        , m_images(mediaDirPath)
         , m_simTimeMult(1.0f)
         , m_frameClock()
         , m_videoMode(2880u, 1800u, sf::VideoMode::getDesktopMode().bitsPerPixel)
@@ -23,11 +23,17 @@ namespace boardgame
         , m_random()
         , m_soundPlayer(m_random, (mediaDirPath + "/sfx"))
         , m_animationPlayer(m_random, (mediaDirPath + "/animation"))
-        , m_board(m_window.getSize())
+        , m_board(m_images, m_random, m_window.getSize())
         , m_collider()
-        , m_context(m_resources, m_board, m_random, m_soundPlayer, m_animationPlayer)
+        , m_context(m_images, m_board, m_random, m_soundPlayer, m_animationPlayer)
         , m_boardBaseSprite()
         , m_boardBaseTexture()
+        , m_isPickupSpawnEffectRunning(false)
+        , m_victimSpawnWaitDurSec(0.0f)
+        , m_victimSpawnWaitSoFarSec(0.0f)
+        , m_victimSpawnScaler(0.0f)
+        , m_victimSpawnBoardPos(0, 0)
+        , m_victimSpawnSprite(m_images.tile_texture, Image::coords(Image::Pickup))
     {
         m_window.setFramerateLimit(60);
 
@@ -60,35 +66,30 @@ namespace boardgame
         m_boardBaseTexture.clear();
 
         // draw wood floor
-        sf::Sprite sprite(m_resources.tile_texture);
-        for (const auto & [boardPos, cell] : m_board.cells)
+        for (const IPieceUPtr_t & pieceUPtr : m_board.pieces)
         {
-            const Image::Enum imageEnum{ m_random.from({ Image::WoodFloor1,
-                                                         Image::WoodFloor2,
-                                                         Image::WoodFloor3,
-                                                         Image::WoodFloor4,
-                                                         Image::WoodFloor5,
-                                                         Image::WoodFloor6 }) };
+            const Image imageEnum{ m_random.from({ Image::WoodFloor1,
+                                                   Image::WoodFloor2,
+                                                   Image::WoodFloor3,
+                                                   Image::WoodFloor4,
+                                                   Image::WoodFloor5,
+                                                   Image::WoodFloor6 }) };
 
-            sprite.setTextureRect(Image::coords(imageEnum));
-
-            util::scale(sprite, m_board.cell_size);
-            util::setOriginToCenter(sprite);
-            sprite.setPosition(cell.window_rect_center);
-            m_boardBaseTexture.draw(sprite);
+            m_board.m_boardBaseTexture.draw(
+                m_images.makeSprite(imageEnum, util::center(pieceUPtr->)));
         }
 
         // draw the walls and the shadows on top of them
         for (const auto & [boardPos, cell] : m_board.cells)
         {
-            if (cell.piece_enum != Piece::Wall)
+            if (cell.piece_enum != Piece::Obstacle)
             {
                 continue;
             }
 
             const sf::Vector2s boardPosS(boardPos);
             const char mapChar{ m_board.map_strings.at(boardPosS.y).at(boardPosS.x) };
-            const Image::Enum imageEnum{ Image::charToEnum(mapChar) };
+            const Image imageEnum{ Image::charToEnum(mapChar) };
 
             sprite.setTextureRect(Image::coords(imageEnum));
 
@@ -103,7 +104,13 @@ namespace boardgame
                     m_board.map_strings.at(boardPosS.y).at(boardPosS.x - 1)
                 };
 
-                const Image::Enum imageEnumToTheLeft{ Image::charToEnum(mapCharToTheLeft) };
+                static bool isBlock(const Enum image)
+                {
+                    return (
+                        (image == BlockCorner) || (image == BlockTop) || (image == BlockBottom));
+                }
+
+                const Image imageEnumToTheLeft{ Image::charToEnum(mapCharToTheLeft) };
 
                 if (Image::isBlock(imageEnumToTheLeft))
                 {
@@ -121,7 +128,6 @@ namespace boardgame
         }
 
         m_boardBaseTexture.display();
-
         m_boardBaseSprite.setTexture(m_boardBaseTexture.getTexture());
     }
 
@@ -138,6 +144,9 @@ namespace boardgame
 
         m_board.reset();
 
+        m_victimSpawnWaitDurSec = randomPickupSpawnDelaySec();
+        m_victimSpawnWaitSoFarSec = 0.0f;
+
         loadMap();
     }
 
@@ -146,14 +155,14 @@ namespace boardgame
         // setup the walls
         for (auto & [boardPos, cell] : m_board.cells)
         {
-            if (cell.piece_enum != Piece::Wall)
+            if (cell.piece_enum != Piece::Obstacle)
             {
                 continue;
             }
 
             const sf::Vector2s boardPosS(boardPos);
             const char mapChar{ m_board.map_strings.at(boardPosS.y).at(boardPosS.x) };
-            const Image::Enum mapImageEnum{ Image::charToEnum(mapChar) };
+            const Image mapImageEnum{ Image::charToEnum(mapChar) };
 
             m_board.pieces.push_back(
                 std::make_unique<WallPiece>(m_context, cell.board_pos, mapImageEnum));
@@ -161,16 +170,12 @@ namespace boardgame
             cell.piece_index = m_board.pieces.size();
         }
 
-        m_board.pieces.push_back(std::make_unique<VictimPiece>(m_context, BoardPos_t(10, 5)));
-        m_board.cellAt(BoardPos_t(10, 5)).piece_enum = Piece::Wall;
-        m_board.cellAt(BoardPos_t(10, 5)).piece_index = m_board.pieces.size();
-
         m_board.pieces.push_back(std::make_unique<PlayerPiece>(m_context, BoardPos_t(23, 1)));
-        m_board.cellAt(BoardPos_t(23, 0)).piece_enum = Piece::Wall;
+        m_board.cellAt(BoardPos_t(23, 0)).piece_enum = Piece::Obstacle;
         m_board.cellAt(BoardPos_t(23, 0)).piece_index = m_board.pieces.size();
 
-        m_board.pieces.push_back(std::make_unique<DemonPiece>(m_context, BoardPos_t(13, 7)));
-        m_board.cellAt(BoardPos_t(13, 7)).piece_enum = Piece::Wall;
+        m_board.pieces.push_back(std::make_unique<VillanPiece>(m_context, BoardPos_t(13, 7)));
+        m_board.cellAt(BoardPos_t(13, 7)).piece_enum = Piece::Obstacle;
         m_board.cellAt(BoardPos_t(13, 7)).piece_index = m_board.pieces.size();
     }
 
@@ -248,30 +253,6 @@ namespace boardgame
             m_bloomWindow.isEnabled(!m_bloomWindow.isEnabled());
         }
 
-        BoardPos_t posAdj{ 0, 0 };
-
-        if (sf::Keyboard::Right == event.key.code)
-        {
-            posAdj.x = 1;
-        }
-        else if (sf::Keyboard::Left == event.key.code)
-        {
-            posAdj.x = -1;
-        }
-        else if (sf::Keyboard::Up == event.key.code)
-        {
-            posAdj.y = -1;
-        }
-        else if (sf::Keyboard::Down == event.key.code)
-        {
-            posAdj.y = 1;
-        }
-
-        if (posAdj == BoardPos_t(0, 0))
-        {
-            return;
-        }
-
         for (IPieceUPtr_t & piece : m_context.board.pieces)
         {
             if (piece->piece() == Piece::Player)
@@ -298,6 +279,70 @@ namespace boardgame
         {
             m_animationPlayer.update(elapsedTimeSec);
         }
+
+        updatePickupSpawn(elapsedTimeSec);
+    }
+
+    void GameCoordinator::updatePickupSpawn(const float elapsedTimeSec)
+    {
+        // TODO REMOVE
+        // m_victimSpawnWaitSoFarSec = 100.0f;
+
+        if (m_isPickupSpawnEffectRunning)
+        {
+            m_victimSpawnSprite.setColor(m_victimSpawnSprite.getColor() + sf::Color(0, 0, 0, 1));
+
+            m_victimSpawnSprite.rotate(elapsedTimeSec * 100.0f);
+
+            const float shrinkScale{ 1.0f - elapsedTimeSec };
+            m_victimSpawnSprite.scale(shrinkScale, shrinkScale);
+
+            const sf::Vector2f size{ util::size(m_victimSpawnSprite) };
+            if ((size.x > m_board.cell_size.x) && (size.y > m_board.cell_size.y))
+            {
+                return;
+            }
+
+            Cell & cell{ m_board.cellAt(m_victimSpawnBoardPos) };
+            cell.piece_enum = Piece::Pickup;
+            m_board.pieces.push_back(std::make_unique<PickupPiece>(m_context, cell.board_pos));
+            cell.piece_index = m_board.pieces.size();
+
+            m_isPickupSpawnEffectRunning = false;
+        }
+        else
+        {
+            m_victimSpawnWaitSoFarSec += elapsedTimeSec;
+
+            if (m_victimSpawnWaitSoFarSec < m_victimSpawnWaitDurSec)
+            {
+                return;
+            }
+
+            m_victimSpawnWaitDurSec = randomPickupSpawnDelaySec();
+            m_victimSpawnWaitSoFarSec = 0.0f;
+
+            const auto boardPosOpt{ m_board.findRandomEmptyPos(m_context) };
+            if (!boardPosOpt)
+            {
+                m_victimSpawnWaitDurSec = 1.0f;
+                return;
+            }
+
+            m_victimSpawnBoardPos = *boardPosOpt;
+
+            m_isPickupSpawnEffectRunning = true;
+
+            // make the spawn pos a wall only temporarily to prevent other pieces from moving
+            // there while spawn anim runs
+            Cell & cell{ m_board.cellAt(m_victimSpawnBoardPos) };
+            cell.piece_enum = Piece::Obstacle;
+
+            util::setOriginToCenter(m_victimSpawnSprite);
+            util::scaleAndCenterInside(m_victimSpawnSprite, m_board.window_rect);
+            m_victimSpawnSprite.setPosition(cell.window_rect_center);
+            m_victimSpawnSprite.setColor(sf::Color::Magenta - sf::Color(0, 0, 0, 255));
+        }
     }
 
     void GameCoordinator::draw()
@@ -309,6 +354,11 @@ namespace boardgame
         for (IPieceUPtr_t & piece : m_context.board.pieces)
         {
             m_bloomWindow.draw(*piece);
+        }
+
+        if (m_isPickupSpawnEffectRunning)
+        {
+            m_bloomWindow.draw(m_victimSpawnSprite);
         }
 
         // if (m_enableSpecialEffects)

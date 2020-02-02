@@ -23,95 +23,20 @@ namespace boardgame
     struct Context;
 
     struct IPiece;
+
     using IPieceUPtr_t = std::unique_ptr<IPiece>;
     using IPieceUVec_t = std::vector<IPieceUPtr_t>;
-    using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
-    using IPieceCOpt_t = std::optional<std::reference_wrapper<const IPiece>>;
-
-    //
-
-    struct Cell
-    {
-        Cell(
-            const BoardPos_t & boardPos,
-            const sf::Vector2f & pixelPos,
-            const sf::Vector2f & pixelSize)
-            : piece_enum(Piece::Count)
-            , piece_index(0) // this value is only correct if piece_enum != Count
-            , board_pos(boardPos)
-            , window_pos(pixelPos)
-            , window_size(pixelSize)
-            , window_rect(pixelPos, pixelSize)
-            , window_rect_center(util::center(window_rect))
-        {}
-
-        Piece::Enum piece_enum;
-        std::size_t piece_index;
-        BoardPos_t board_pos;
-        sf::Vector2f window_pos;
-        sf::Vector2f window_size;
-        sf::FloatRect window_rect;
-        sf::Vector2f window_rect_center;
-    };
+    using IndexVecs_t = std::vector<std::vector<std::size_t>>;
 
     //
 
     struct Board
     {
-        explicit Board(const sf::Vector2u & windowSize);
+        Board(const ImageHandler & images, const sf::Vector2u & windowSize, const Map & level);
 
-        // std::size_t cellIndex(const BoardPos_t & pos) const
-        //{
-        //    assert(isPosValid(pos) == true);
-        //
-        //    return (
-        //        (static_cast<std::size_t>(pos.y) * (cell_counts.x)) +
-        //        static_cast<std::size_t>(pos.x));
-        //}
+        void reset(const ImageHandler & images);
 
-        bool isPosValid(const BoardPos_t & pos) const
-        {
-            return (
-                (pos.x >= 0) && (pos.x < cell_countsI.x) && (pos.y >= 0) &&
-                (pos.y < cell_countsI.y));
-        }
-
-        const Cell & cellAt(const BoardPos_t & pos) const { return cells.find(pos)->second; }
-        Cell & cellAt(const BoardPos_t & pos) { return cells.find(pos)->second; }
-
-        const IPieceCOpt_t pieceAt(const BoardPos_t & pos) const
-        {
-            const Cell & cell{ cellAt(pos) };
-            if (cell.piece_enum == Piece::Count)
-            {
-                return std::nullopt;
-            }
-
-            const std::size_t pieceIndex{ cell.piece_index };
-            if (pieceIndex >= pieces.size())
-            {
-                return std::nullopt;
-            }
-
-            return { *pieces.at(pieceIndex) };
-        }
-
-        IPieceOpt_t pieceAt(const BoardPos_t & pos)
-        {
-            const Cell & cell{ cellAt(pos) };
-            if (cell.piece_enum == Piece::Count)
-            {
-                return std::nullopt;
-            }
-
-            const std::size_t pieceIndex{ cell.piece_index };
-            if (pieceIndex >= pieces.size())
-            {
-                return std::nullopt;
-            }
-
-            return { *pieces.at(pieceIndex) };
-        }
+        bool isPosValid(const BoardPos_t & pos) const { return map.isPosValid(pos); }
 
         static int walkDistance(const BoardPos_t & from, const BoardPos_t & to)
         {
@@ -120,44 +45,61 @@ namespace boardgame
 
         static int walkDistance(const IPiece & from, const IPiece & to);
 
-        void reset();
-
         std::optional<BoardPos_t> findRandomEmptyPos(const Context & context);
 
-        // clang-format off
-        const std::vector<std::string> map_strings = {
-            "CHHHHHHHTHHHHHHHHHHHHHCHCHHHHT",
-            "VFFFFFFFVFFFFFFFFFFFFFVFVFFFFV",
-            "VFFFTFBHBFFBHTHBFTFFFFBFBFFFFV",
-            "VFFFVFFFFFFFFVFFFVFFFFFFFFFFFV",
-            "VFCHBFFBHTFFFBFFFBHTHBFFCHHBFV",
-            "VFVFFFFFFVFFFFFFFFFVFFFFVFFFFV",
-            "VFBFFFFFFVFTFFFFTFFBFFFFBFFBHB",
-            "VFFFFFFFFBFVFFFFVFFFFFCFFFFFFV",
-            "VFBHTHHBFFFVFCHHBFFFFFVFFFFBHT",
-            "VFFFVFFFFBHBFVFFFFFFFFBHHTFFFV",
-            "VFFFVFTFFFFFFBFFFTFFFFFFFVFFFV",
-            "VFFFBFVFFFFFFFFFFVFFFFFFFVFFFV",
-            "BHBFFFBHBFTHBFBHHBHBFTFTFBFFFV",
-            "VFFFFFFFFFVFFFFFFFFFFVFVFFFFFV",
-            "BHHHHHHHHHBHHHHHHHHHHBHBHHHHHB" };
-        // clang-format on
+        BoardPos_t indexToPos(const std::size_t index) const
+        {
+            assert(index < map.cell_count_total);
 
+            const sf::Vector2s posSt(
+                (index % map.cell_count_horiz), (index / map.cell_count_horiz));
+
+            const BoardPos_t pos(posSt);
+            assert(isPosValid(pos));
+
+            return pos;
+        }
+
+        std::size_t posToIndex(const BoardPos_t & pos) const
+        {
+            assert(isPosValid(pos));
+
+            const std::size_t index{ static_cast<std::size_t>(
+                (pos.y * map.cell_count_vert) + pos.x) };
+
+            return index;
+        }
+
+        const IPiece & posToPiece(const BoardPos_t & pos) const
+        {
+            const IPieceUPtr_t & pieceUPtr{ pieces.at(posToIndex(pos)) };
+            assert(pieceUPtr.get() != nullptr);
+            return *pieceUPtr;
+        }
+
+        const Map map;
         const sf::Vector2f window_size;
         const sf::FloatRect window_rect;
+        const float region_pad_ratio;
         const float board_region_vert_size_ratio;
         const float between_region_vert_scale;
 
         sf::FloatRect board_region;
         sf::FloatRect status_region;
-        sf::Vector2s cell_counts;
-        std::size_t cell_count_total;
-        sf::Vector2i cell_countsI;
         sf::Vector2f cell_size;
         sf::FloatRect board_rect;
 
-        std::map<BoardPos_t, Cell> cells;
-        std::vector<IPieceUPtr_t> pieces;
+        // the size of this must NEVER change, because:
+        //  (1) BoardPos_t are converted to indexes into this vector
+        //  (2) removed pieces are replace by EmptyPieces
+        IPieceUVec_t pieces;
+
+      private:
+        IPieceUPtr_t makePiece(
+            const ImageHandler & images,
+            const Piece piece,
+            const BoardPos_t & boardPos,
+            const sf::FloatRect & bounds) const;
     };
 } // namespace boardgame
 
