@@ -8,6 +8,7 @@
 #include "sound-player.hpp"
 #include "steady-mover.hpp"
 #include "util.hpp"
+#include "wall-bouncer.hpp"
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
@@ -50,13 +51,13 @@ class Game
 
     Context m_context;
     sf::Sprite m_bgSprite;
-    sf::VertexArray m_quadVerts;
-    sf::RenderTexture m_offScreenTexture;
-    sf::Image m_image;
-    sf::Sprite m_sprite;
-    entity::Velocity m_velocity;
-    entity::Acceleration m_gravity;
-    entity::Fence m_fence;
+
+    entity::WallBouncerEffect m_wallBouncer;
+
+    // Color Gradient
+    // sf::VertexArray m_quadVerts;
+    // sf::RenderTexture m_offScreenTexture;
+    // sf::Image m_image;
 };
 
 #endif // SIMPLE_EFFECTS_GAME_HPP_INCLUDED

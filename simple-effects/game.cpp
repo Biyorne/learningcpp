@@ -1,4 +1,5 @@
-
+// This is an open source non-commercial project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "game.hpp"
 
 #include <iostream>
@@ -14,37 +15,30 @@ Game::Game()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
     , m_context(m_window, m_random, m_audio)
     , m_bgSprite(m_resources.bg_texture)
-    , m_quadVerts(sf::Quads)
-    , m_offScreenTexture()
-    , m_image()
-    , m_sprite(m_resources.carrot_texture)
-    , m_velocity(sf::Vector2f(55.0f, 55.0f))
-    , m_gravity(sf::Vector2f(0.0f, 1000.0f))
-    , m_fence({ sf::Vector2f(0.0f, 0.0f), m_windowSize })
+    //, m_quadVerts(sf::Quads)// Color Gradient
+    //, m_offScreenTexture()
+    //, m_image()
+    , m_wallBouncer(m_context, m_resources.warn_texture, sf::Vector2f(500.0f, 500.0f), m_window)
 {
-    m_window.setFramerateLimit(60);
+    m_window.setVerticalSyncEnabled(true);
 
     // m_audio.loadAll();
     m_resources.bg_texture.setRepeated(true);
     m_bgSprite.setTextureRect({ { 0, 0 }, sf::Vector2i(m_context.window_size) });
 
+    // Color Gradient: Colored vertexes that make a rect/quad
+    // m_quadVerts.append(sf::Vertex({ 0.0f, 0.0f }, sf::Color::Red));
+    // m_quadVerts.append(sf::Vertex({ m_context.window_size.x, 0.0f }, sf::Color::Blue));
+    // m_quadVerts.append(sf::Vertex(m_context.window_size, sf::Color::Green));
+    // m_quadVerts.append(sf::Vertex({ 0.0f, m_context.window_size.y }, sf::Color::White));
     //
-    m_quadVerts.append(sf::Vertex({ 0.0f, 0.0f }, sf::Color::Red));
-    m_quadVerts.append(sf::Vertex({ m_context.window_size.x, 0.0f }, sf::Color::Blue));
-    m_quadVerts.append(sf::Vertex(m_context.window_size, sf::Color::Green));
-    m_quadVerts.append(sf::Vertex({ 0.0f, m_context.window_size.y }, sf::Color::White));
-
+    // const sf::Vector2u sizeU(m_context.window_size);
+    // m_offScreenTexture.create(sizeU.x, sizeU.y);
+    // m_offScreenTexture.clear();
+    // m_offScreenTexture.draw(m_quadVerts);
+    // m_offScreenTexture.display();
     //
-    const sf::Vector2u sizeU(m_context.window_size);
-    m_offScreenTexture.create(sizeU.x, sizeU.y);
-    m_offScreenTexture.clear();
-    m_offScreenTexture.draw(m_quadVerts);
-    m_offScreenTexture.display();
-
-    //
-    m_image = m_offScreenTexture.getTexture().copyToImage();
-
-    util::setOrigin2Center(m_sprite);
+    // m_image = m_offScreenTexture.getTexture().copyToImage();
 
     reset();
 }
@@ -113,17 +107,7 @@ void Game::processEvents()
 
 void Game::update(const float elapsedTimeSec)
 {
-    m_velocity.vector += m_gravity.updateDelta(elapsedTimeSec);
-
-    const sf::Vector2f posMoved(m_velocity.updateAbsolute(elapsedTimeSec, m_sprite.getPosition()));
-
-    m_sprite.setPosition(posMoved);
-
-    const entity::BounceResult bounceResult(
-        m_fence.updateDeltaBounce(m_sprite.getGlobalBounds(), m_velocity.vector));
-
-    m_velocity.vector = bounceResult.velocity;
-    m_sprite.move(bounceResult.pos_delta);
+    m_wallBouncer.update(m_context, elapsedTimeSec);
 }
 
 void Game::render()
@@ -132,13 +116,14 @@ void Game::render()
     {
         m_window.clear();
     }
+
     m_window.draw(m_bgSprite);
 
     // sf::Vector2u spritePos(m_effect.sprite.getPosition());
     // m_effect.sprite.setColor(m_image.getPixel(spritePos.x, spritePos.y));
     // m_window.draw(m_effect, m_states);
 
-    m_window.draw(m_sprite);
+    m_window.draw(m_wallBouncer);
 
     m_window.display();
 }

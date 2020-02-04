@@ -10,11 +10,9 @@ namespace entity
 {
     struct EffectBase : public sf::Drawable
     {
-        explicit EffectBase(const sf::Sprite & spr)
-            : sprite(spr)
-        {
-            util::setOrigin2Center(sprite);
-        }
+        EffectBase()
+            : sprite()
+        {}
 
         virtual ~EffectBase() = default;
 
@@ -25,6 +23,7 @@ namespace entity
 
         virtual void update(const Context & context, const float elapsedTimeSec) = 0;
 
+      protected:
         sf::Sprite sprite;
     };
 } // namespace entity

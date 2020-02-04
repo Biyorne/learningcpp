@@ -1,10 +1,21 @@
 #ifndef SIMPLE_EFFECTS_UTIL_HPP_INCLUDED
 #define SIMPLE_EFFECTS_UTIL_HPP_INCLUDED
 
+#include <ostream>
+
 #include <SFML/Graphics.hpp>
 
 namespace util
 {
+
+    inline std::ostream & operator<<(std::ostream & os, const sf::Vector2f & vec)
+    {
+        os << '(' << vec.x << ',' << vec.y << ')';
+        return os;
+    }
+
+    //
+
     template <typename T>
     inline float right(const T & thing)
     {
@@ -73,6 +84,20 @@ namespace util
         {
             return onError;
         }
+    }
+
+    // Size/scale
+
+    void scaleToWidth(const sf::RenderTarget & target, const float sizeRatio, sf::Sprite & sprite)
+    {
+        const float maxWidth(target.getSize().x * sizeRatio);
+
+        // TODO Catch divide by zero
+        // TODO scale by height if it's greater
+
+        float finalScale(maxWidth / sprite.getLocalBounds().width);
+
+        sprite.setScale(finalScale, finalScale);
     }
 
 } // namespace util
