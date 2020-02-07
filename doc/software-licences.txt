@@ -1,0 +1,16 @@
+Go to https://choosealicense.com
+
+Public Domain
+	Public domain is a license that says everyone owns it.
+	Examples include: CC0, The Unlicense, WTFPL
+	
+Open Source Permissive
+	A license that specifies one entity that owns it.
+	Anyone who gets their hands on it can do anything they want except for a handfull of restrictions.
+	Permissive means you are allowed to make and distribute closed source versions.
+	Examples include: MIT, BSD, Apache, CC-BY, zlib/libpng, beerware
+	
+Open Source Restricive / Copyleft
+	There is a copyright license that says it's owned by the free software foundation.
+	Anyone can do anything with it as long as the license stays on it and they always distribute changes.
+	Examples include: GPL, CC-BY-SA, LGPL

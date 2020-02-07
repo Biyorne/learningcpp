@@ -1,0 +1,37 @@
+Vector vs Map usage
+
+bool isLootAtPosOverTen(
+    const sf::Vector2i & posToFind, const std::vector<CellContent> & cellContents)
+{
+    for (const CellContent & cellContent : cellContents)
+    {
+        if (posToFind == cellContent.pos)
+        {
+            return (cellContent.loot > 10);
+        }
+    }
+
+    return false;
+}
+
+bool isLootAtPosOverTen(
+    const sf::Vector2i & posToFind, const std::map<sf::Vector2i, CellContent> & cellPosToContents)
+{
+    const auto cellContentIter(cellPosToContents.find(posToFind));
+    if (cellContentIter != std::end(cellPosToContents))
+    {
+        return (cellContentIter->second.loot > 10);
+    }
+
+    return false;
+}
+
+
+
+// RAII - (Resource Acquisition (new) is instantiation (during construction))
+//
+// The acronym should be:
+//  CNDD - Constructors call new, destrucors call delete
+//
+//  You never write new or delete again!
+//
