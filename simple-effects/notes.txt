@@ -2,6 +2,11 @@
 The point of this project is to have fun and see how easy 
 it is to make simple special effects.
 
+	-All the special effects code must be complete and easy to use
+	as a reference.
+
+	-All the special effects must be easy to demo.
+
 Most of the special effects we're making have to do with movement,
 so we developed a mover class to handle all of our movement needs.
 

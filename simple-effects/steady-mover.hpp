@@ -172,23 +172,13 @@ namespace entity
         sf::FloatRect bounds;
     };
 
-    // void handleFencing(const Context & context)
-    //{
-    //    const sf::Vector2f posCorr{ calcFencePosCorrection(
-    //        sprite.getGlobalBounds(), context.window_rect) };
     //
-    //    sprite.move(posCorr);
+
+    // struct SpeedLimit
+    // {
     //
-    //    if ((posCorr.x > 0.0f) || (posCorr.x < 0.0f))
-    //    {
-    //        mover.velocity.x *= -1.0f;
-    //    }
-    //
-    //    if ((posCorr.y > 0.0f) || (posCorr.y < 0.0f))
-    //    {
-    //        mover.velocity.y *= -1.0f;
-    //    }
-    //}
+    //     float speed_limit;
+    // };
 
 } // namespace entity
 

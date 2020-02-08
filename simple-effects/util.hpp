@@ -86,9 +86,15 @@ namespace util
         }
     }
 
+    inline sf::Vector2f vecScale(const sf::Vector2f & vec, const float magnitude)
+    {
+        return (vecNormal(vec) * magnitude);
+    }
+
     // Size/scale
 
-    void scaleToWidth(const sf::RenderTarget & target, const float sizeRatio, sf::Sprite & sprite)
+    inline void
+        scaleToWidth(const sf::RenderTarget & target, const float sizeRatio, sf::Sprite & sprite)
     {
         const float maxWidth(target.getSize().x * sizeRatio);
 
@@ -98,6 +104,20 @@ namespace util
         float finalScale(maxWidth / sprite.getLocalBounds().width);
 
         sprite.setScale(finalScale, finalScale);
+    }
+
+    // SFML Random
+    template <typename T>
+    inline sf::Vector2<T> sfRandom(const Random & random, const sf::Vector2<T> & ranges)
+    {
+        return { random.zeroTo(ranges.x), random.zeroTo(ranges.y) };
+    }
+
+    template <typename T>
+    inline sf::Vector2<T> sfRandom(const Random & random, const sf::Rect<T> & bounds)
+    {
+        return { random.fromTo(bounds.left, right(bounds)),
+                 random.fromTo(bounds.top, bottom(bounds)) };
     }
 
 } // namespace util
