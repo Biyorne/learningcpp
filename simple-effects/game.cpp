@@ -18,11 +18,10 @@ Game::Game()
     //, m_quadVerts(sf::Quads)// Color Gradient
     //, m_offScreenTexture()
     //, m_image()
-    , m_follower(
-          m_resources.rabbit_texture,
-          sf::Vector2f(0.0f, 0.0f),
-          1000.0f,
-          sf::Vector2f(500.0f, 500.0f))
+    , m_effect(
+          m_resources.particle_texture,
+          sf::Vector2f((m_context.window_size.x * 0.5f), 0.0f),
+          100.0f)
 {
     m_window.setVerticalSyncEnabled(true);
 
@@ -111,7 +110,7 @@ void Game::processEvents()
 
 void Game::update(const float elapsedTimeSec)
 {
-    m_follower.update(m_context, elapsedTimeSec);
+    m_effect.update(m_context, elapsedTimeSec);
 }
 
 void Game::render()
@@ -127,7 +126,7 @@ void Game::render()
     // m_effect.sprite.setColor(m_image.getPixel(spritePos.x, spritePos.y));
     // m_window.draw(m_effect, m_states);
 
-    m_window.draw(m_follower);
+    m_window.draw(m_effect);
 
     m_window.display();
 }

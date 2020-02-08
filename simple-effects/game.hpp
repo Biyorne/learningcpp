@@ -52,7 +52,7 @@ class Game
     Context m_context;
     sf::Sprite m_bgSprite;
 
-    entity::FollowerEffect m_follower;
+    entity::GravityBouncerEffect m_effect;
 
     // Color Gradient
     // sf::VertexArray m_quadVerts;

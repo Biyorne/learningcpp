@@ -42,6 +42,27 @@ namespace entity
         entity::Velocity m_velocity;
         entity::Fence m_fence;
     };
+
+    class GravityBouncerEffect : public EffectBase
+    {
+      public:
+        GravityBouncerEffect(
+            const sf::Texture & texture, const sf::Vector2f & spawnPos, const float gravityMag)
+            : EffectBase(makeSprite(texture, spawnPos))
+            , m_velocity({ 0.0f, 0.0f })
+            , m_acceleration({ 0.0f, gravityMag })
+        {}
+
+        void update(const Context &, const float elapsedTimeSec) override
+        {
+            m_velocity.vector += m_acceleration.updateDelta(elapsedTimeSec);
+            m_sprite.move(m_velocity.updateDelta(elapsedTimeSec));
+        }
+
+      private:
+        Velocity m_velocity;
+        Acceleration m_acceleration;
+    };
 } // namespace entity
 
 #endif // SIMPLE_EFFECTS_WALL_BOUNCER_HPP_INCLUDED
