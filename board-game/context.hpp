@@ -16,31 +16,39 @@ namespace util
 
 namespace boardgame
 {
-    struct Board;
-    struct ImageHandler;
+    struct IMap;
+    struct IBoard;
+    struct IResources;
 
     //
 
     struct Context
     {
         Context(
-            const ImageHandler & imagesParam,
-            Board & boardParam,
-            util::Random & randonParam,
-            util::SoundPlayer & audioParam,
-            util::AnimationPlayer & animParam)
-            : images(imagesParam)
-            , board(boardParam)
-            , random(randonParam)
-            , audio(audioParam)
-            , anim(animParam)
+            const IResources & res,
+            const IMap & mp,
+            IBoard & bor,
+            util::Random & ran,
+            util::SoundPlayer & aud,
+            util::AnimationPlayer & ani)
+            : resources(res)
+            , map(mp)
+            , board(bor)
+            , random(ran)
+            , audio(aud)
+            , anim(ani)
+            , is_game_over(false)
+            , is_testing_enabled(true)
         {}
 
-        const ImageHandler & images;
-        Board & board;
+        const IResources & resources;
+        const IMap & map;
+        IBoard & board;
         util::Random & random;
         util::SoundPlayer & audio;
         util::AnimationPlayer & anim;
+        bool is_game_over;
+        bool is_testing_enabled;
     };
 } // namespace boardgame
 

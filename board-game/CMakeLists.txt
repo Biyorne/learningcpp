@@ -19,6 +19,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         ${PROJECT_NAME}
         PUBLIC
         /std:c++17
+        /permissive-
+        /fp:fast
         -DWIN32_LEAN_AND_MEAN
         /MP
         /W4

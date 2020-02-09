@@ -6,25 +6,89 @@
 #include "pieces.hpp"
 #include "random.hpp"
 
-#include <cassert>
-#include <cmath>
-#include <iostream>
 #include <set>
 
 namespace boardgame
 {
-    Board::Board(const ImageHandler & images, const sf::Vector2u & windowSize, const Map & level)
-        : map(level)
-        , window_size(windowSize)
+    int walkDistance(const BoardPos_t & from, const BoardPos_t & to)
+    {
+        const float dist = util::distance(sf::Vector2f(from), sf::Vector2f(to));
+        return static_cast<int>(dist * 10'000.0f);
+    }
+
+    int walkDistance(const IPiece & from, const IPiece & to)
+    {
+        return walkDistance(from.boardPos(), to.boardPos());
+    }
+
+    MapBase::MapBase(const MapLayout_t & rowStrings)
+        : m_layout(rowStrings)
+        , m_cellCounts(0, 0)
+        , m_allValidPositions()
+    {
+        if (rowStrings.empty() || rowStrings.front().empty())
+        {
+            const std::string errorMessage("Error:  The std::vector<std::string> map is invalid.");
+
+            std::cout << errorMessage << std::endl;
+
+            for (const std::string & row : m_layout)
+            {
+                std::cout << "\"" << row << "\"" << std::endl;
+            }
+
+            throw std::runtime_error(errorMessage);
+        }
+
+        m_cellCounts.x = rowStrings.front().size();
+        m_cellCounts.y = rowStrings.size();
+
+        for (std::size_t vert(0); vert < rowStrings.size(); ++vert)
+        {
+            const std::string & row = rowStrings.at(vert);
+
+            M_ASSERT_OR_THROW(row.length() == m_cellCounts.x);
+
+            for (std::size_t horiz(0); horiz < row.length(); ++horiz)
+            {
+                const BoardPos_t boardPos{ sf::Vector2s(horiz, vert) };
+                m_allValidPositions.push_back(boardPos);
+            }
+        }
+
+        M_ASSERT_OR_THROW((m_cellCounts.x * m_cellCounts.y) == m_allValidPositions.size());
+    }
+
+    //
+
+    bool MapBase::isPosValid(const BoardPos_t & boardPos) const
+    {
+        if ((boardPos.x < 0) || (boardPos.y < 0))
+        {
+            return false;
+        }
+
+        const sf::Vector2s indexes{ boardPos };
+
+        return ((indexes.y < m_layout.size()) && (indexes.x < m_layout.at(indexes.y).length()));
+    }
+
+    char MapBase::charAt(const BoardPos_t & boardPos) const
+    {
+        if (!isPosValid(boardPos))
+        {
+            return '\0';
+        }
+
+        const sf::Vector2s indexes{ boardPos };
+        return m_layout.at(indexes.y).at(indexes.x);
+    }
+
+    //
+
+    BoardView::BoardView(const sf::Vector2u & windowSize, const sf::Vector2s & cellCounts)
+        : window_size(windowSize)
         , window_rect({}, window_size)
-        , region_pad_ratio(0.95f)
-        , board_region_vert_size_ratio(0.875f)
-        , between_region_vert_scale(region_pad_ratio / 2.0f)
-        , board_region()
-        , status_region()
-        , cell_size()
-        , board_rect()
-        , pieces()
     {
         board_region = window_rect;
         board_region.height *= board_region_vert_size_ratio;
@@ -35,7 +99,6 @@ namespace boardgame
         status_region.top = (window_size.y - status_region.height);
         util::scaleRectInPlace(status_region, region_pad_ratio);
 
-        const sf::Vector2s cellCounts(map.cell_count_horiz, map.cell_count_vert);
         const sf::Vector2f cellRegionSize{ util::size(board_region) / sf::Vector2f(cellCounts) };
 
         const float cellSize{ std::min(cellRegionSize.x, cellRegionSize.y) };
@@ -45,85 +108,85 @@ namespace boardgame
         const sf::Vector2f boardRectSize{ sf::Vector2f(cellCounts) * cell_size };
         const sf::Vector2f boardRectPos{ util::center(board_region) - (boardRectSize * 0.5f) };
         board_rect = sf::FloatRect(boardRectPos, boardRectSize);
-
-        reset(images, random);
     }
 
-    int Board::walkDistance(const IPiece & from, const IPiece & to)
+    //
+
+    BoardBase::BoardBase(const sf::Vector2u & windowSize, const IMap & map)
+        : m_view(windowSize, map.cellCounts())
+        , m_pieces()
     {
-        return walkDistance(from.boardPos(), to.boardPos());
+        reset();
     }
 
-    void Board::reset(const ImageHandler & images)
+    sf::FloatRect BoardBase::calcCellBounds(const BoardPos_t & boardPos) const
     {
-        pieces.clear();
+        const sf::Vector2f windowPos{ util::position(m_view.board_rect) +
+                                      (sf::Vector2f(boardPos) * m_view.cell_size) };
 
-        for (std::size_t i(0); i < map.cell_count_total; ++i)
-        {
-            const BoardPos_t boardPos{ indexToPos(i) };
-
-            const sf::Vector2f windowPos{ util::position(board_rect) +
-                                          (sf::Vector2f(boardPos) * cell_size) };
-
-            const sf::FloatRect bounds{ windowPos, cell_size };
-
-            const Piece piece{ map.posToPiece(boardPos) };
-
-            pieces.push_back(makePiece(piece, boardPos, bounds));
-        }
+        return { windowPos, m_view.cell_size };
     }
 
-    IPieceUPtr_t Board::makePiece(
-        const ImageHandler & images,
-        const Piece piece,
-        const BoardPos_t & boardPos,
-        const sf::FloatRect & bounds) const
+    IPieceOpt_t BoardBase::pieceAt(const BoardPos_t & pos) const
     {
-        switch (piece)
-        {
-            case Piece::Player: {
-                const sf::Sprite sprite{ images.makeSprite(
-                    Image::Player, bounds, sf::Color::Green) };
+        const auto foundIter = std::find_if(
+            std::begin(m_pieces), std::end(m_pieces), [pos](const IPieceUPtr_t & piece) {
+                return (piece->isAlive() && (piece->boardPos() == pos));
+            });
 
-                return std::make_unique<PlayerPiece>(boardPos, sprite);
-            }
-
-            case Piece::Villan: {
-                const sf::Sprite sprite{ images.makeSprite(Image::Demon, bounds) };
-                return std::make_unique<VillanPiece>(boardPos, sprite);
-            }
-
-            case Piece::Obstacle: {
-                return std::make_unique<WallPiece>(boardPos, bounds);
-            }
-
-            case Piece::Pickup:
-            case Piece::Empty:
-            default: {
-                return std::make_unique<EmptyPiece>(boardPos, bounds);
-            }
-        }
-    }
-
-    // TODO optimize this crap
-    std::optional<BoardPos_t> Board::findRandomEmptyPos(const Context & context)
-    {
-        std::vector<BoardPos_t> emptyPositions;
-        emptyPositions.reserve(map.cell_count_total);
-
-        for (const IPieceUPtr_t & uptr : pieces)
-        {
-            if (uptr->piece() == Piece::Empty)
-            {
-                emptyPositions.push_back(uptr->boardPos());
-            }
-        }
-
-        if (emptyPositions.empty())
+        if (foundIter == std::end(m_pieces))
         {
             return std::nullopt;
         }
 
-        return context.random.from(emptyPositions);
+        return { *foundIter->get() };
+    }
+
+    Piece::Enum BoardBase::pieceEnumAt(const BoardPos_t & pos) const
+    {
+        const auto opt = pieceAt(pos);
+
+        if (!opt)
+        {
+            return Piece::Count;
+        }
+
+        return opt.value().get().piece();
+    }
+
+    bool BoardBase::isAnyPieceAt(const BoardPos_t & pos) const
+    {
+        return (pieceEnumAt(pos) != Piece::Count);
+    }
+
+    BoardPosOpt_t BoardBase::findRandomEmptyPos(const Context & context) const
+    {
+        // start with all valid/on-board positions
+        BoardPosVec_t positions = context.map.allValidPositions();
+
+        // remove any that are alraedy occupied
+        for (const IPieceUPtr_t & pieceUPtr : m_pieces)
+        {
+            if (!pieceUPtr->isAlive())
+            {
+                continue;
+            }
+
+            const BoardPos_t occupiedPos = pieceUPtr->boardPos();
+
+            positions.erase(
+                std::remove_if(
+                    std::begin(positions),
+                    std::end(positions),
+                    [&](const BoardPos_t & pos) { return (pos == occupiedPos); }),
+                std::end(positions));
+        }
+
+        if (positions.empty())
+        {
+            return std::nullopt;
+        }
+
+        return context.random.from(positions);
     }
 } // namespace boardgame

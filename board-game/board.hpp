@@ -3,104 +3,184 @@
 //
 // board.hpp
 //
-#include "resources.hpp"
 #include "types.hpp"
 #include "util.hpp"
 
-#include <algorithm>
-#include <array>
-#include <cassert>
 #include <functional>
-#include <map>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
 
+//
+
+namespace sf
+{
+    using Vector2s = sf::Vector2<std::size_t>;
+}
+
+//
+
 namespace boardgame
 {
     struct Context;
+    struct IResources;
 
     struct IPiece;
-
     using IPieceUPtr_t = std::unique_ptr<IPiece>;
     using IPieceUVec_t = std::vector<IPieceUPtr_t>;
-    using IndexVecs_t = std::vector<std::vector<std::size_t>>;
+    using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
 
     //
 
-    struct Board
+    using BoardPos_t = sf::Vector2i;
+    using BoardPosVec_t = std::vector<BoardPos_t>;
+    using BoardPosOpt_t = std::optional<BoardPos_t>;
+
+    // not an accurate count of steps
+    int walkDistance(const BoardPos_t & from, const BoardPos_t & to);
+    int walkDistance(const IPiece & from, const IPiece & to);
+
+    //
+
+    using MapLayout_t = std::vector<std::string>;
+
+    //
+
+    struct IMap
     {
-        Board(const ImageHandler & images, const sf::Vector2u & windowSize, const Map & level);
+        virtual ~IMap() = default;
 
-        void reset(const ImageHandler & images);
+        virtual sf::Vector2s cellCounts() const = 0;
+        virtual char charAt(const BoardPos_t & boardPos) const = 0;
+        virtual bool isPosValid(const BoardPos_t & boardPos) const = 0;
+        virtual const MapLayout_t & layout() const = 0;
+        virtual std::size_t cellCountTotal() const = 0;
+        virtual const BoardPosVec_t allValidPositions() const = 0;
 
-        bool isPosValid(const BoardPos_t & pos) const { return map.isPosValid(pos); }
-
-        static int walkDistance(const BoardPos_t & from, const BoardPos_t & to)
+        template <typename T = std::size_t>
+        sf::Vector2<T> cellCountsAs() const
         {
-            return (std::abs(to.x - from.x) + std::abs(to.y - from.y));
+            return sf::Vector2<T>(cellCounts());
         }
+    };
 
-        static int walkDistance(const IPiece & from, const IPiece & to);
+    //
 
-        std::optional<BoardPos_t> findRandomEmptyPos(const Context & context);
+    class MapBase : public IMap
+    {
+      public:
+        explicit MapBase(const MapLayout_t & rowStrings);
+        virtual ~MapBase() = default;
 
-        BoardPos_t indexToPos(const std::size_t index) const
-        {
-            assert(index < map.cell_count_total);
+        sf::Vector2s cellCounts() const override { return m_cellCounts; }
+        char charAt(const BoardPos_t & boardPos) const override;
+        bool isPosValid(const BoardPos_t & boardPos) const override;
+        const MapLayout_t & layout() const override { return m_layout; }
+        std::size_t cellCountTotal() const override { return (m_cellCounts.x * m_cellCounts.y); }
+        const BoardPosVec_t allValidPositions() const override { return m_allValidPositions; }
 
-            const sf::Vector2s posSt(
-                (index % map.cell_count_horiz), (index / map.cell_count_horiz));
+      private:
+        MapLayout_t m_layout;
+        sf::Vector2s m_cellCounts;
+        BoardPosVec_t m_allValidPositions;
+    };
 
-            const BoardPos_t pos(posSt);
-            assert(isPosValid(pos));
+    //
 
-            return pos;
-        }
+    struct BoardView
+    {
+        BoardView(const sf::Vector2u & windowSize, const sf::Vector2s & cellCounts);
 
-        std::size_t posToIndex(const BoardPos_t & pos) const
-        {
-            assert(isPosValid(pos));
-
-            const std::size_t index{ static_cast<std::size_t>(
-                (pos.y * map.cell_count_vert) + pos.x) };
-
-            return index;
-        }
-
-        const IPiece & posToPiece(const BoardPos_t & pos) const
-        {
-            const IPieceUPtr_t & pieceUPtr{ pieces.at(posToIndex(pos)) };
-            assert(pieceUPtr.get() != nullptr);
-            return *pieceUPtr;
-        }
-
-        const Map map;
-        const sf::Vector2f window_size;
-        const sf::FloatRect window_rect;
-        const float region_pad_ratio;
-        const float board_region_vert_size_ratio;
-        const float between_region_vert_scale;
-
+        sf::Vector2f window_size;
+        sf::FloatRect window_rect;
         sf::FloatRect board_region;
         sf::FloatRect status_region;
         sf::Vector2f cell_size;
         sf::FloatRect board_rect;
 
-        // the size of this must NEVER change, because:
-        //  (1) BoardPos_t are converted to indexes into this vector
-        //  (2) removed pieces are replace by EmptyPieces
-        IPieceUVec_t pieces;
+      private:
+        static inline const float region_pad_ratio{ 0.95f };
+        static inline const float board_region_vert_size_ratio{ 0.875f };
+        static inline const float between_region_vert_scale{ region_pad_ratio / 2.0f };
+    };
+
+    //
+
+    struct IBoard
+    {
+        virtual ~IBoard() = default;
+
+        virtual void reset() = 0;
+
+        virtual const BoardView & view() const = 0;
+
+        virtual sf::FloatRect calcCellBounds(const BoardPos_t & pos) const = 0;
+
+        virtual IPieceUVec_t & pieces() = 0;
+        virtual const IPieceUVec_t & pieces() const = 0;
+
+        virtual bool isAnyPieceAt(const BoardPos_t & pos) const = 0;
+        virtual IPieceOpt_t pieceAt(const BoardPos_t & pos) const = 0;
+        virtual Piece::Enum pieceEnumAt(const BoardPos_t & pos) const = 0;
+
+        virtual BoardPosOpt_t findRandomEmptyPos(const Context & context) const = 0;
+    };
+
+    //
+
+    class BoardBase : public IBoard
+    {
+      public:
+        BoardBase(const sf::Vector2u & windowSize, const IMap & map);
+        virtual ~BoardBase() = default;
+
+        void reset() override { m_pieces.clear(); }
+
+        const BoardView & view() const override { return m_view; }
+
+        sf::FloatRect calcCellBounds(const BoardPos_t & pos) const override;
+
+        IPieceUVec_t & pieces() override { return m_pieces; }
+        const IPieceUVec_t & pieces() const override { return m_pieces; }
+
+        IPieceOpt_t pieceAt(const BoardPos_t & pos) const override;
+        Piece::Enum pieceEnumAt(const BoardPos_t & pos) const override;
+        bool isAnyPieceAt(const BoardPos_t & pos) const override;
+
+        BoardPosOpt_t findRandomEmptyPos(const Context & context) const override;
 
       private:
-        IPieceUPtr_t makePiece(
-            const ImageHandler & images,
-            const Piece piece,
-            const BoardPos_t & boardPos,
-            const sf::FloatRect & bounds) const;
+        BoardView m_view;
+        IPieceUVec_t m_pieces;
     };
 } // namespace boardgame
 
 #endif // BOARDGAME_BOARD_HPP_INCLUDED
+
+//
+
+// BoardPos_t indexToPos(const std::size_t index) const
+//{
+//    assert(index < map.cell_count_total);
+//
+//    const sf::Vector2s posSt(
+//        (index % map.cell_count_horiz), (index / map.cell_count_horiz));
+//
+//    const BoardPos_t pos(posSt);
+//    assert(isPosValid(pos));
+//
+//    return pos;
+//}
+//
+// std::size_t posToIndex(const BoardPos_t & pos) const
+//{
+//    assert(isPosValid(pos));
+//
+//    const std::size_t index{ static_cast<std::size_t>(
+//        (pos.y * map.cell_count_vert) + pos.x) };
+//
+//    return index;
+//}

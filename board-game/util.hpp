@@ -13,6 +13,39 @@
 
 //
 
+#include <cassert>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+#ifdef NDEBUG
+#define M_THROW(message) throw std::runtime_error(message);
+#define M_ASSERT(exp) ;
+#else
+#define M_THROW(message) ;
+#define M_ASSERT(exp) assert((exp));
+#endif
+
+//
+
+#define M_ASSERT_OR_THROW(exp)                                                           \
+    {                                                                                    \
+        if (!(exp))                                                                      \
+        {                                                                                \
+            std::ostringstream _m_ss;                                                    \
+                                                                                         \
+            _m_ss << "M_ASSERT_OR_THROW(" << #exp << ") failed at \"" << __FILE__ << ':' \
+                  << __func__ << "():" << __LINE__;                                      \
+                                                                                         \
+            std::cout << _m_ss.str() << std::endl;                                       \
+                                                                                         \
+            M_THROW(_m_ss.str())                                                         \
+            M_ASSERT(exp)                                                                \
+        }                                                                                \
+    }
+
+//
+
 constexpr std::size_t operator"" _st(unsigned long long number)
 {
     return static_cast<std::size_t>(number);
@@ -415,7 +448,7 @@ namespace util
     template <typename T>
     void centerInside(T & thing, const sf::FloatRect & rect)
     {
-        thing.setPosition(center(rect) - (size(thing) * 0.5f));
+        thing.setPosition((center(rect) - (size(thing) * 0.5f)) + thing.getOrigin());
     }
 
     template <typename T>
@@ -724,49 +757,6 @@ namespace util
         std::filesystem::path path;
         std::string error_message;
     };
-
-    inline std::string mediaPathFind(const int argc, const char * const argv[])
-    {
-        const MediaPath localPath(std::filesystem::current_path() / "media");
-
-        const std::vector<std::string> argStrings(
-            (argv + 1), (argv + static_cast<std::size_t>(argc)));
-
-        if (argStrings.empty())
-        {
-            if (localPath.isValid())
-            {
-                return localPath.path.string();
-            }
-            else
-            {
-                throw std::runtime_error(
-                    "No media directory provided on the command line, and none found nearby.");
-            }
-        }
-
-        const MediaPath argPath(std::filesystem::path(argStrings.front()));
-
-        if (argPath.isValid())
-        {
-            return argPath.path.string();
-        }
-
-        if (localPath.isValid())
-        {
-            return localPath.path.string();
-        }
-
-        std::cout << "No media directory found:" << std::endl;
-
-        std::cout << "\t Local Directory: (" << localPath.path.string() << ")  Error=\""
-                  << localPath.error_message << "\"" << std::endl;
-
-        std::cout << "\t Cmd Line Arg Directory: (" << argPath.path.string() << ")  Error=\""
-                  << argPath.error_message << "\"" << std::endl;
-
-        throw std::runtime_error("No media directory found.");
-    }
 } // namespace util
 
 #endif // BOARDGAME_UTIL_HPP_INCLUDED
