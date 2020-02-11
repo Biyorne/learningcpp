@@ -24,17 +24,19 @@ namespace entity
             , m_accelerationMag(accMagnitude)
         {}
 
+        virtual ~FollowerEffect() = default;
+
         void setTargetPos(const sf::Vector2f & pos) { m_targetPos = pos; }
 
-        void update(const Context & context, const float elapsedTimeSec) override
+        void update(const Context & context, const float frameTimeSec) override
         {
             m_targetPos = context.mouse_pos;
 
             m_acceleration.vector =
                 (util::vecNormal(m_targetPos - m_sprite.getPosition()) * m_accelerationMag);
 
-            m_velocity.vector += m_acceleration.updateDelta(elapsedTimeSec);
-            m_sprite.move(m_velocity.updateDelta(elapsedTimeSec));
+            m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
+            m_sprite.move(m_velocity.updateDelta(frameTimeSec));
         }
 
       private:

@@ -14,7 +14,7 @@ struct Context
         , audio(aud)
         , window_size(window.getSize())
         , window_rect({}, window_size)
-        , mouse_pos(0.0f, 0.0f)
+        , mouse_pos(sf::Mouse::getPosition(window))
     {}
 
     util::Random & random;

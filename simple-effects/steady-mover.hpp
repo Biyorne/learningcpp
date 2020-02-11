@@ -20,10 +20,10 @@ struct Mover
         , speed_limit(spdLimit)
     {}
 
-    void update(const float elapsedTimeSec)
+    void update(const float frameTimeSec)
     {
         velocity += acceleration;
-        velocity *= (elapsedTimeSec * speed);
+        velocity *= (frameTimeSec * speed);
 
         if (velocity.x > speed_limit)
         {
@@ -57,14 +57,11 @@ namespace entity
             : vector(vel)
         {}
 
-        sf::Vector2f updateDelta(const float elapsedTimeSec) const
-        {
-            return (vector * elapsedTimeSec);
-        }
+        sf::Vector2f updateDelta(const float frameTimeSec) const { return (vector * frameTimeSec); }
 
-        sf::Vector2f updateAbsolute(const float elapsedTimeSec, const sf::Vector2f & pos) const
+        sf::Vector2f updateAbsolute(const float frameTimeSec, const sf::Vector2f & pos) const
         {
-            return (pos + updateDelta(elapsedTimeSec));
+            return (pos + updateDelta(frameTimeSec));
         }
 
         sf::Vector2f vector;
@@ -78,14 +75,11 @@ namespace entity
             : vector(acc)
         {}
 
-        sf::Vector2f updateDelta(const float elapsedTimeSec) const
-        {
-            return (vector * elapsedTimeSec);
-        }
+        sf::Vector2f updateDelta(const float frameTimeSec) const { return (vector * frameTimeSec); }
 
-        sf::Vector2f updateAbsolute(const float elapsedTimeSec, const sf::Vector2f & vel) const
+        sf::Vector2f updateAbsolute(const float frameTimeSec, const sf::Vector2f & vel) const
         {
-            return (vel + updateDelta(elapsedTimeSec));
+            return (vel + updateDelta(frameTimeSec));
         }
 
         sf::Vector2f vector;
