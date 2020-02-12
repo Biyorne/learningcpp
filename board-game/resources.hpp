@@ -20,13 +20,8 @@ namespace boardgame
     {
         virtual ~IResources() = default;
 
-        virtual const sf::Font & font() const = 0;
-        virtual sf::Color color(const Piece::Enum) const = 0;
-        virtual const sf::Texture & texture(const Piece::Enum piece) const = 0;
-
-      protected:
-        virtual void preLoad() = 0;
-        virtual std::filesystem::path imagePath(const Piece::Enum piece) const = 0;
+        virtual const sf::Font & font(const Piece::Enum) const = 0;
+        virtual const sf::Texture & texture(const Piece::Enum) const = 0;
     };
 
     //
@@ -35,19 +30,14 @@ namespace boardgame
     {
       public:
         explicit ResourcesBase(const std::filesystem::path & mediaDirPath)
-            : m_mediaDirPath(mediaDirPath)
+            : m_mediaPath(mediaDirPath)
             , m_textures()
             , m_font()
-        {
-            // m_textures.reserve(static_cast<std::size_t>(Piece::Count));
-            preLoad();
-        }
+        {}
 
         virtual ~ResourcesBase() = default;
 
-        const sf::Font & font() const override { return m_font; }
-
-        sf::Color color(const Piece::Enum) const override { return sf::Color::White; }
+        const sf::Font & font(const Piece::Enum) const override { return m_font; }
 
         const sf::Texture & texture(const Piece::Enum piece) const override
         {
@@ -62,17 +52,20 @@ namespace boardgame
         }
 
       protected:
-        void preLoad() override
-        {
-            for (std::size_t i(0); i < Piece::Count; ++i)
-            {
-                const Piece::Enum piece = static_cast<Piece::Enum>(i);
-                m_textures.push_back(std::make_unique<sf::Texture>());
-                load(imagePath(piece), *m_textures.back());
-            }
+        // void loadImages() override
+        // {
+        //     for (std::size_t i(0); i < Piece::Count; ++i)
+        //     {
+        //         const Piece::Enum piece = static_cast<Piece::Enum>(i);
+        //         m_textures.push_back(std::make_unique<sf::Texture>());
+        //         load(imagePath(piece), *m_textures.back());
+        //     }
+        // }
 
-            load((m_mediaDirPath / "font/gentium-plus/gentium-plus.ttf"), m_font);
-        }
+        // void loadFonts() override
+        //{
+        //    load((m_mediaPath / "font/gentium-plus/gentium-plus.ttf"), m_font);
+        //}
 
         template <typename T>
         void load(const std::filesystem::path & path, T & loadable)
@@ -94,30 +87,35 @@ namespace boardgame
             }
         }
 
-        std::filesystem::path imagePath(const Piece::Enum piece) const override
-        {
-            return (m_mediaDirPath / Piece::imageRelativePath(piece));
-        }
+        // default is kinda useless
+        // virtual std::filesystem::path imagePath(const Piece::Enum) const { return m_mediaPath;
+        // }
 
       protected:
-        std::filesystem::path m_mediaDirPath;
+        std::filesystem::path m_mediaPath;
         std::vector<std::unique_ptr<sf::Texture>> m_textures;
         sf::Font m_font;
 
-      private:
         static inline sf::Texture m_defaultTexture{};
     };
 
     //
 
-    class Resources : public ResourcesBase
+    class SnakeResources : public ResourcesBase
     {
       public:
-        Resources(const std::filesystem::path & mediaDirPath)
+        SnakeResources(const std::filesystem::path & mediaDirPath)
             : ResourcesBase(mediaDirPath)
-        {}
+        {
+            load((m_mediaPath / "font/gentium-plus/gentium-plus.ttf"), m_font);
 
-        virtual ~Resources() = default;
+            // make the default texture a solid white cell-sozed square
+            sf::Image image;
+            image.create(256, 256, sf::Color::White);
+            m_defaultTexture.loadFromImage(image);
+        }
+
+        virtual ~SnakeResources() = default;
     };
 } // namespace boardgame
 

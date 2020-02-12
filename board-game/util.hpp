@@ -86,7 +86,7 @@ namespace sf
     [[nodiscard]] sf::Vector2<T>
         operator/(const sf::Vector2<T> & numerator, const sf::Vector2<T> & denominator)
     {
-        return { (numerator.x / denominator.x), (numerator.y * denominator.y) };
+        return { (numerator.x / denominator.x), (numerator.y / denominator.y) };
     }
 
     template <typename T>
@@ -166,6 +166,23 @@ namespace util
     [[nodiscard]] inline bool isAbsTiny(const float value) noexcept
     {
         return (std::abs(value) < tiny);
+    }
+
+    //
+
+    template <typename T>
+    [[nodiscard]] sf::Rect<T> floor(const sf::Rect<T> & rect)
+    {
+        return { std::floor(rect.left),
+                 std::floor(rect.top),
+                 std::floor(rect.width),
+                 std::floor(rect.height) };
+    }
+
+    template <typename T>
+    [[nodiscard]] sf::Vector2<T> floor(const sf::Vector2<T> & vec)
+    {
+        return { std::floor(vec.x), std::floor(vec.y) };
     }
 
     // position, size, and center

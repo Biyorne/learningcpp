@@ -3,9 +3,12 @@
 //
 // context.hpp
 //
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include <SFML/Graphics.hpp>
 
 namespace util
 {
@@ -16,7 +19,6 @@ namespace util
 
 namespace boardgame
 {
-    struct IMap;
     struct IBoard;
     struct IResources;
 
@@ -25,30 +27,33 @@ namespace boardgame
     struct Context
     {
         Context(
+            const std::filesystem::path & mediaPath,
+            const sf::RenderWindow & window,
             const IResources & res,
-            const IMap & mp,
             IBoard & bor,
             util::Random & ran,
             util::SoundPlayer & aud,
             util::AnimationPlayer & ani)
-            : resources(res)
-            , map(mp)
+            : media_path(mediaPath)
+            , window_size(window.getSize())
+            , window_bounds({ 0.0f, 0.0f }, window_size)
+            , resources(res)
             , board(bor)
             , random(ran)
             , audio(aud)
             , anim(ani)
-            , is_game_over(false)
-            , is_testing_enabled(true)
+            , is_self_testing(false)
         {}
 
+        const std::filesystem::path media_path;
+        const sf::Vector2f window_size;
+        const sf::FloatRect window_bounds;
         const IResources & resources;
-        const IMap & map;
         IBoard & board;
         util::Random & random;
         util::SoundPlayer & audio;
         util::AnimationPlayer & anim;
-        bool is_game_over;
-        bool is_testing_enabled;
+        bool is_self_testing;
     };
 } // namespace boardgame
 
