@@ -4,11 +4,29 @@
 #include "context.hpp"
 #include "steady-mover.hpp"
 
+#include <memory>
+
 #include <SFML/Graphics.hpp>
 
 namespace entity
 {
-    class EffectBase : public sf::Drawable
+
+    struct IEffect : public sf::Drawable
+    {
+        virtual ~IEffect() = default;
+
+        virtual bool isFinished() const = 0;
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
+        virtual void update(const Context & context, const float frameTimeSec) = 0;
+        virtual void handleEvent(const Context & context, const sf::Event & event) = 0;
+    };
+
+    using IEffectUPtr_t = std::unique_ptr<IEffect>;
+    using IEffectUVec_t = std::vector<IEffectUPtr_t>;
+
+    //
+
+    class EffectBase : public IEffect
     {
       public:
         explicit EffectBase(const sf::Sprite & sprite = sf::Sprite())
@@ -17,12 +35,16 @@ namespace entity
 
         virtual ~EffectBase() = default;
 
+        bool isFinished() const override { return (m_sprite.getColor().a == 0); }
+
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override
         {
             target.draw(m_sprite, states);
         }
 
-        virtual void update(const Context & context, const float elapsedTimeSec) = 0;
+        void update(const Context & context, const float frameTimeSec) override = 0;
+
+        void handleEvent(const Context &, const sf::Event &) override {}
 
       protected:
         static sf::Sprite

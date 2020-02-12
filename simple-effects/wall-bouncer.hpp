@@ -24,10 +24,10 @@ namespace entity
 
         virtual ~WallBouncerEffect() = default;
 
-        void update(const Context &, const float elapsedTimeSec) override
+        void update(const Context &, const float frameTimeSec) override
         {
             const sf::Vector2f posMoved(
-                m_velocity.updateAbsolute(elapsedTimeSec, m_sprite.getPosition()));
+                m_velocity.updateAbsolute(frameTimeSec, m_sprite.getPosition()));
 
             m_sprite.setPosition(posMoved);
 
@@ -53,10 +53,12 @@ namespace entity
             , m_acceleration({ 0.0f, gravityMag })
         {}
 
-        void update(const Context &, const float elapsedTimeSec) override
+        virtual ~GravityBouncerEffect() = default;
+
+        void update(const Context &, const float frameTimeSec) override
         {
-            m_velocity.vector += m_acceleration.updateDelta(elapsedTimeSec);
-            m_sprite.move(m_velocity.updateDelta(elapsedTimeSec));
+            m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
+            m_sprite.move(m_velocity.updateDelta(frameTimeSec));
         }
 
       private:

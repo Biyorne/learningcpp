@@ -5,6 +5,7 @@
 #include "effect-base.hpp"
 #include "follower.hpp"
 #include "resources.hpp"
+#include "rising-fade.hpp"
 #include "sound-player.hpp"
 #include "steady-mover.hpp"
 #include "util.hpp"
@@ -33,26 +34,20 @@ class Game
     void update(const float frameTimeSec);
     void render();
 
-    void handleKeyPress(const sf::Keyboard::Key key);
-
-    // void scrollValue(float amount);
-
     void reset();
 
   private:
-    Resources m_resources;
     sf::RenderWindow m_window;
-    sf::RenderStates m_states;
-    bool m_willClear;
-    sf::Vector2f m_windowSize;
 
+    Resources m_resources;
     util::Random m_random;
     util::SoundPlayer m_audio;
-
     Context m_context;
+
+    bool m_willClear;
     sf::Sprite m_bgSprite;
 
-    entity::GravityBouncerEffect m_effect;
+    entity::IEffectUVec_t m_effects;
 
     // Color Gradient
     // sf::VertexArray m_quadVerts;

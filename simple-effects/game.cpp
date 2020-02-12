@@ -5,25 +5,20 @@
 #include <iostream>
 
 Game::Game()
-    : m_resources()
-    , m_window(
+    : m_window(
           sf::VideoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel), "Simple Effect")
-    , m_states()
-    , m_willClear(false)
-    , m_windowSize(m_window.getSize())
+    , m_resources()
     , m_random()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
     , m_context(m_window, m_random, m_audio)
+    , m_willClear(false)
     , m_bgSprite(m_resources.bg_texture)
-    //, m_quadVerts(sf::Quads)// Color Gradient
-    //, m_offScreenTexture()
-    //, m_image()
-    , m_effect(
-          m_resources.particle_texture,
-          sf::Vector2f((m_context.window_size.x * 0.5f), 0.0f),
-          100.0f)
+    , m_effects()
+//, m_quadVerts(sf::Quads)// Color Gradient
+//, m_offScreenTexture()
+//, m_image()
 {
-    m_window.setVerticalSyncEnabled(true);
+    // m_window.setFramerateLimit(60);
 
     // m_audio.loadAll();
     m_resources.bg_texture.setRepeated(true);
@@ -48,8 +43,9 @@ Game::Game()
 
 void Game::reset()
 {
-    m_states = sf::RenderStates();
+    m_audio.stopAll();
     m_willClear = true;
+    m_effects.clear();
 }
 
 void Game::run()
@@ -58,8 +54,7 @@ void Game::run()
 
     while (m_window.isOpen())
     {
-        const sf::Vector2f mousePos(sf::Mouse::getPosition(m_window));
-        m_context.mouse_pos = mousePos;
+        m_context.mouse_pos = sf::Vector2f(sf::Mouse::getPosition(m_window));
 
         processEvents();
         update(clock.restart().asSeconds());
@@ -69,6 +64,12 @@ void Game::run()
 
 void Game::processEvents()
 {
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
+    {
+        m_effects.push_back(
+            std::make_unique<entity::RisingFadeEffect>(m_context, m_resources.particle_texture));
+    }
+
     sf::Event event;
     while (m_window.pollEvent(event))
     {
@@ -76,7 +77,21 @@ void Game::processEvents()
         {
             case sf::Event::KeyPressed:
             {
-                handleKeyPress(event.key.code);
+                m_audio.play("tap");
+
+                if (sf::Keyboard::Escape == event.key.code)
+                {
+                    m_window.close();
+                }
+                else if (sf::Keyboard::R == event.key.code)
+                {
+                    reset();
+                }
+                else if (sf::Keyboard::C == event.key.code)
+                {
+                    m_willClear = !m_willClear;
+                }
+
                 break;
             }
 
@@ -89,12 +104,7 @@ void Game::processEvents()
                 break;
             }
 
-            case sf::Event::MouseButtonPressed:
-            {
-                m_audio.play("pretty.ogg", 0.5f);
-                const sf::Vector2f mousePos(sf::Mouse::getPosition(m_window));
-
-                break;
+            case sf::Event::MouseButtonPressed: { break;
             }
 
             case sf::Event::Closed:
@@ -108,9 +118,12 @@ void Game::processEvents()
     }
 }
 
-void Game::update(const float elapsedTimeSec)
+void Game::update(const float frameTimeSec)
 {
-    m_effect.update(m_context, elapsedTimeSec);
+    for (entity::IEffectUPtr_t & effect : m_effects)
+    {
+        effect->update(m_context, frameTimeSec);
+    }
 }
 
 void Game::render()
@@ -126,27 +139,12 @@ void Game::render()
     // m_effect.sprite.setColor(m_image.getPixel(spritePos.x, spritePos.y));
     // m_window.draw(m_effect, m_states);
 
-    m_window.draw(m_effect);
+    for (entity::IEffectUPtr_t & effect : m_effects)
+    {
+        m_window.draw(*effect);
+    }
 
     m_window.display();
-}
-
-void Game::handleKeyPress(const sf::Keyboard::Key key)
-{
-    m_audio.play("tap");
-
-    if (key == sf::Keyboard::Escape)
-    {
-        m_window.close();
-    }
-    else if (key == sf::Keyboard::R)
-    {
-        reset();
-    }
-    else if (key == sf::Keyboard::C)
-    {
-        m_willClear = !m_willClear;
-    }
 }
 
 // void Game::scrollValue(float amount)
