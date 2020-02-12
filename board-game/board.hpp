@@ -7,6 +7,7 @@
 #include "util.hpp"
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,79 +34,11 @@ namespace boardgame
     using IPieceUVec_t = std::vector<IPieceUPtr_t>;
     using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
 
-    //
-
     using BoardPos_t = sf::Vector2i;
     using BoardPosVec_t = std::vector<BoardPos_t>;
     using BoardPosOpt_t = std::optional<BoardPos_t>;
 
-    // not an accurate count of steps
-    int walkDistance(const BoardPos_t & from, const BoardPos_t & to);
-    int walkDistance(const IPiece & from, const IPiece & to);
-
-    //
-
-    using MapLayout_t = std::vector<std::string>;
-
-    //
-
-    struct IMap
-    {
-        virtual ~IMap() = default;
-
-        virtual sf::Vector2s cellCounts() const = 0;
-        virtual char charAt(const BoardPos_t & boardPos) const = 0;
-        virtual bool isPosValid(const BoardPos_t & boardPos) const = 0;
-        virtual const MapLayout_t & layout() const = 0;
-        virtual std::size_t cellCountTotal() const = 0;
-        virtual const BoardPosVec_t allValidPositions() const = 0;
-
-        template <typename T = std::size_t>
-        sf::Vector2<T> cellCountsAs() const
-        {
-            return sf::Vector2<T>(cellCounts());
-        }
-    };
-
-    //
-
-    class MapBase : public IMap
-    {
-      public:
-        explicit MapBase(const MapLayout_t & rowStrings);
-        virtual ~MapBase() = default;
-
-        sf::Vector2s cellCounts() const override { return m_cellCounts; }
-        char charAt(const BoardPos_t & boardPos) const override;
-        bool isPosValid(const BoardPos_t & boardPos) const override;
-        const MapLayout_t & layout() const override { return m_layout; }
-        std::size_t cellCountTotal() const override { return (m_cellCounts.x * m_cellCounts.y); }
-        const BoardPosVec_t allValidPositions() const override { return m_allValidPositions; }
-
-      private:
-        MapLayout_t m_layout;
-        sf::Vector2s m_cellCounts;
-        BoardPosVec_t m_allValidPositions;
-    };
-
-    //
-
-    struct BoardView
-    {
-        BoardView(const sf::Vector2u & windowSize, const sf::Vector2s & cellCounts);
-
-        sf::Vector2f window_size;
-        sf::FloatRect window_rect;
-        sf::FloatRect board_region;
-        sf::FloatRect status_region;
-        sf::Vector2f cell_size;
-        sf::FloatRect board_rect;
-
-      private:
-        static inline const float region_pad_ratio{ 0.95f };
-        static inline const float board_region_vert_size_ratio{ 0.875f };
-        static inline const float between_region_vert_scale{ region_pad_ratio / 2.0f };
-    };
+    using PositionPieceMap_t = std::map<BoardPos_t, Piece::Enum>;
 
     //
 
@@ -114,10 +47,19 @@ namespace boardgame
         virtual ~IBoard() = default;
 
         virtual void reset() = 0;
+        virtual void setupMap(const Context & context) = 0;
 
-        virtual const BoardView & view() const = 0;
+        virtual sf::Vector2f cellSize() const = 0;
+        virtual sf::FloatRect cellBounds(const BoardPos_t & pos) const = 0;
 
-        virtual sf::FloatRect calcCellBounds(const BoardPos_t & pos) const = 0;
+        virtual sf::Vector2s cellCounts() const = 0;
+        virtual std::size_t cellCountTotal() const = 0;
+
+        template <typename T = std::size_t>
+        sf::Vector2<T> cellCountsAs() const
+        {
+            return sf::Vector2<T>(cellCounts());
+        }
 
         virtual IPieceUVec_t & pieces() = 0;
         virtual const IPieceUVec_t & pieces() const = 0;
@@ -126,7 +68,13 @@ namespace boardgame
         virtual IPieceOpt_t pieceAt(const BoardPos_t & pos) const = 0;
         virtual Piece::Enum pieceEnumAt(const BoardPos_t & pos) const = 0;
 
-        virtual BoardPosOpt_t findRandomEmptyPos(const Context & context) const = 0;
+        // virtual BoardPosOpt_t findRandomEmptyPos(const Context & context) const = 0;
+
+      protected:
+        virtual void setupCellSizeAndCounts(
+            const sf::Vector2f & windowSize, const float cellSizeAswindowRatio) = 0;
+
+        virtual void setupStartingMapPieces() = 0;
     };
 
     //
@@ -134,14 +82,17 @@ namespace boardgame
     class BoardBase : public IBoard
     {
       public:
-        BoardBase(const sf::Vector2u & windowSize, const IMap & map);
+        BoardBase() { reset(); }
         virtual ~BoardBase() = default;
 
-        void reset() override { m_pieces.clear(); }
+        void reset() override;
 
-        const BoardView & view() const override { return m_view; }
+        sf::Vector2f cellSize() const override { return m_cellSize; }
 
-        sf::FloatRect calcCellBounds(const BoardPos_t & pos) const override;
+        sf::FloatRect cellBounds(const BoardPos_t & boardPos) const override;
+
+        sf::Vector2s cellCounts() const override { return m_cellCounts; }
+        std::size_t cellCountTotal() const override { return (m_cellCounts.x * m_cellCounts.y); }
 
         IPieceUVec_t & pieces() override { return m_pieces; }
         const IPieceUVec_t & pieces() const override { return m_pieces; }
@@ -150,11 +101,33 @@ namespace boardgame
         Piece::Enum pieceEnumAt(const BoardPos_t & pos) const override;
         bool isAnyPieceAt(const BoardPos_t & pos) const override;
 
-        BoardPosOpt_t findRandomEmptyPos(const Context & context) const override;
+        // BoardPosOpt_t findRandomEmptyPos(const Context & context) const override;
 
-      private:
-        BoardView m_view;
+      protected:
+        void setupCellSizeAndCounts(
+            const sf::Vector2f & windowSize, const float cellSizeAswindowRatio) override;
+
+        // default does nothing so more complex boards can do it another way
+        void setupStartingMapPieces() override {}
+
+      protected:
+        sf::Vector2f m_cellSize;
+        sf::Vector2s m_cellCounts;
+        sf::Vector2f m_topLeftCellPos;
         IPieceUVec_t m_pieces;
+    };
+
+    //
+
+    struct SnakeBoard : public BoardBase
+    {
+        SnakeBoard() = default;
+        virtual ~SnakeBoard() = default;
+
+        void setupMap(const Context & context) override;
+
+        IPieceUPtr_t makePiece(
+            const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) const;
     };
 } // namespace boardgame
 

@@ -9,6 +9,7 @@
 #include "resources.hpp"
 #include "types.hpp"
 
+#include <array>
 #include <memory>
 #include <optional>
 
@@ -16,24 +17,6 @@
 
 namespace boardgame
 {
-    // Responsible for wrapping as much info about a board position as possible,
-    // so that non-player pieces can more easily and consistently decide where to move.
-    struct MaybeMove
-    {
-        MaybeMove(
-            const Context & context, const BoardPos_t & maybePos, const BoardPos_t & targetPos)
-            : piece(context.board.pieceEnumAt(maybePos))
-            , position(maybePos)
-            , distance_to_target(walkDistance(maybePos, targetPos))
-        {}
-
-        Piece::Enum piece;
-        BoardPos_t position;
-        int distance_to_target; // not an accurate count of steps
-    };
-
-    using MaybeMoves_t = std::vector<MaybeMove>;
-
     //
 
     struct IPiece : public sf::Drawable
@@ -48,10 +31,10 @@ namespace boardgame
         virtual sf::FloatRect bounds() const = 0;
 
         // returns true if turn is finished and the next piece can take their turn
-        virtual bool takeTurn(Context &, const sf::Event & event = {}) = 0;
+        virtual bool takeTurn(Context &) = 0;
 
+        virtual void handleEvent(Context &, const sf::Event &) = 0;
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
-
         virtual void update(Context & context, const float elapsedTimeSec) = 0;
     };
 
@@ -76,8 +59,12 @@ namespace boardgame
             , m_sprite(sprite)
         {}
 
-        PieceBase(const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos)
-            : PieceBase(context, piece, boardPos, makeSprite(context, piece, boardPos))
+        PieceBase(
+            const Context & context,
+            const Piece::Enum piece,
+            const BoardPos_t & boardPos,
+            const sf::Color & color = sf::Color::White)
+            : PieceBase(context, piece, boardPos, makeSprite(context, piece, boardPos, color))
         {}
 
         virtual ~PieceBase() = default;
@@ -89,8 +76,10 @@ namespace boardgame
         BoardPos_t boardPos() const override { return m_boardPos; }
         sf::FloatRect bounds() const override { return m_sprite.getGlobalBounds(); }
 
-        // default is to do nothing and let the next piece take its turn
-        bool takeTurn(Context &, const sf::Event &) override { return true; }
+        // default is to do nothing and let the next piece take its turn, even if dead
+        bool takeTurn(Context &) override { return true; }
+
+        void handleEvent(Context &, const sf::Event &) override {}
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override
         {
@@ -102,17 +91,22 @@ namespace boardgame
             target.draw(m_sprite, states);
         }
 
-        // default is to do nothing
         void update(Context &, const float) override {}
 
       protected:
         virtual sf::Sprite makeSprite(
-            const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) const;
+            const Context & context,
+            const Piece::Enum piece,
+            const BoardPos_t & boardPos,
+            const sf::Color & color) const;
 
-        virtual void move(const Context & context, const BoardPos_t & targetPos);
-
-        virtual MaybeMoves_t makeAllFourAdjacentMaybeMoves(
-            const Context & context, const BoardPos_t & targetPos) const;
+        // virtual void move(const Context & context, const BoardPos_t & targetPos);
+        //
+        // static FourMovesArray_t
+        //    movesVec_ResetToAllFourDirections(const Context & context, const BoardPos_t &
+        //    fromPos);
+        //
+        // static Moves_t makeAllValidMoves(const Context & context, const BoardPos_t & targetPos);
 
       protected:
         bool m_isAlive;
@@ -126,7 +120,7 @@ namespace boardgame
     struct WallPiece : public PieceBase
     {
         WallPiece(const Context & context, const BoardPos_t & boardPos)
-            : PieceBase(context, Piece::Wall, boardPos)
+            : PieceBase(context, Piece::Wall, boardPos, sf::Color(100, 60, 5))
         {}
 
         virtual ~WallPiece() = default;
@@ -134,48 +128,71 @@ namespace boardgame
 
     //
 
-    struct DoorPiece : public PieceBase
+    struct FoodPiece : public PieceBase
     {
-        DoorPiece(const Context & context, const BoardPos_t & boardPos)
-            : PieceBase(context, Piece::Door, boardPos)
+        FoodPiece(const Context & context, const BoardPos_t & boardPos)
+            : PieceBase(context, Piece::Food, boardPos, sf::Color::Yellow)
         {}
 
-        virtual ~DoorPiece() = default;
+        virtual ~FoodPiece() = default;
     };
 
     //
 
-    struct PlayerPiece : public PieceBase
+    struct HeadPiece : public PieceBase
     {
-        PlayerPiece(const Context & context, const BoardPos_t & boardPos)
-            : PieceBase(context, Piece::Player, boardPos)
+        HeadPiece(const Context & context, const BoardPos_t & boardPos)
+            : PieceBase(context, Piece::SnakeHead, boardPos, sf::Color(0, 255, 0))
         {}
 
-        virtual ~PlayerPiece() = default;
-
-        bool takeTurn(Context & context, const sf::Event & event) override;
-
-      private:
-        bool attemptMove(Context & context, const BoardPos_t & targetPos);
+        virtual ~HeadPiece() = default;
     };
+
+    //
+
+    struct BodyPiece : public PieceBase
+    {
+        BodyPiece(const Context & context, const BoardPos_t & boardPos)
+            : PieceBase(context, Piece::SnakeBody, boardPos, sf::Color(32, 192, 0))
+        {}
+
+        virtual ~BodyPiece() = default;
+    };
+
+    // struct PlayerPiece : public PieceBase
+    //{
+    //    PlayerPiece(const Context & context, const BoardPos_t & boardPos)
+    //        : PieceBase(context, Piece::Player, boardPos)
+    //    {}
+    //
+    //    virtual ~PlayerPiece() = default;
+    //
+    //    bool takeTurn(Context & context, const sf::Event & event) override;
+    //
+    //  private:
+    //    bool attemptMove(Context & context, const BoardPos_t & targetPos);
+    //    BoardPos_t walkPosFromArrowKeypress_Normal(Context & context, const sf::Event &
+    //    eventOrig); BoardPos_t walkPosFromArrowKeypress_Random(Context & context, const sf::Event
+    //    & eventOrig);
+    //};
 
     //
 
     // these are pieces that take turns, either the player or np/ai
-    struct VillanPiece : public PieceBase
-    {
-        VillanPiece(const Context & context, const BoardPos_t & boardPos)
-            : PieceBase(context, Piece::Villan, boardPos)
-        {}
-
-        virtual ~VillanPiece() = default;
-
-        bool takeTurn(Context & context, const sf::Event & event) override;
-
-      protected:
-        BoardPosOpt_t findTargetPos(const Context &);
-        BoardPosOpt_t selectWhereToMove(const Context &, const BoardPos_t & targetPos);
-    };
+    // struct VillanPiece : public PieceBase
+    //{
+    //    VillanPiece(const Context & context, const BoardPos_t & boardPos)
+    //        : PieceBase(context, Piece::Villan, boardPos)
+    //    {}
+    //
+    //    virtual ~VillanPiece() = default;
+    //
+    //    bool takeTurn(Context & context, const sf::Event & event) override;
+    //
+    //  protected:
+    //    BoardPosOpt_t findTargetPos(const Context &);
+    //    BoardPosOpt_t selectWhereToMove(const Context &, const BoardPos_t & targetPos);
+    //};
 } // namespace boardgame
 
 #endif // BOARDGAME_PIECES_HPP_INCLUDED
