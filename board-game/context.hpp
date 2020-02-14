@@ -21,39 +21,33 @@ namespace boardgame
 {
     struct IBoard;
     struct IResources;
+    class SnakeGameSettings;
 
     //
 
     struct Context
     {
         Context(
-            const std::filesystem::path & mediaPath,
-            const sf::RenderWindow & window,
+            SnakeGameSettings & set,
             const IResources & res,
             IBoard & bor,
             util::Random & ran,
             util::SoundPlayer & aud,
             util::AnimationPlayer & ani)
-            : media_path(mediaPath)
-            , window_size(window.getSize())
-            , window_bounds({ 0.0f, 0.0f }, window_size)
+            : settings(set)
             , resources(res)
             , board(bor)
             , random(ran)
             , audio(aud)
             , anim(ani)
-            , is_self_testing(false)
         {}
 
-        const std::filesystem::path media_path;
-        const sf::Vector2f window_size;
-        const sf::FloatRect window_bounds;
+        SnakeGameSettings & settings;
         const IResources & resources;
         IBoard & board;
-        util::Random & random;
+        const util::Random & random;
         util::SoundPlayer & audio;
         util::AnimationPlayer & anim;
-        bool is_self_testing;
     };
 } // namespace boardgame
 

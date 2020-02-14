@@ -7,6 +7,7 @@
 #include "context.hpp"
 #include "random.hpp"
 #include "resources.hpp"
+#include "settings.hpp"
 #include "types.hpp"
 
 #include <array>
@@ -23,16 +24,16 @@ namespace boardgame
     {
         virtual ~IPiece() = default;
 
-        virtual bool isAlive() const = 0;
-        virtual void kill() = 0;
+        virtual bool isInPlay() const = 0;
+        virtual void removeFromPlay() = 0;
 
         virtual Piece::Enum piece() const = 0;
         virtual BoardPos_t boardPos() const = 0;
         virtual sf::FloatRect bounds() const = 0;
 
-        // returns true if turn is finished and the next piece can take their turn
-        virtual bool takeTurn(Context &) = 0;
+        virtual void move(const Context & context, const BoardPos_t & posNew) = 0;
 
+        virtual void takeTurn(Context &) = 0;
         virtual void handleEvent(Context &, const sf::Event &) = 0;
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
         virtual void update(Context & context, const float elapsedTimeSec) = 0;
@@ -53,7 +54,7 @@ namespace boardgame
             const Piece::Enum piece,
             const BoardPos_t & boardPos,
             const sf::Sprite & sprite)
-            : m_isAlive(true)
+            : m_isInPlay(true)
             , m_piece(piece)
             , m_boardPos(boardPos)
             , m_sprite(sprite)
@@ -69,29 +70,19 @@ namespace boardgame
 
         virtual ~PieceBase() = default;
 
-        bool isAlive() const override { return m_isAlive; }
-        void kill() override { m_isAlive = false; }
+        bool isInPlay() const override { return m_isInPlay; }
+        void removeFromPlay() override { m_isInPlay = false; }
 
         Piece::Enum piece() const override { return m_piece; }
         BoardPos_t boardPos() const override { return m_boardPos; }
         sf::FloatRect bounds() const override { return m_sprite.getGlobalBounds(); }
 
-        // default is to do nothing and let the next piece take its turn, even if dead
-        bool takeTurn(Context &) override { return true; }
-
+        void takeTurn(Context &) override {}
+        void update(Context &, const float) override {}
         void handleEvent(Context &, const sf::Event &) override {}
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
-        {
-            if (!isAlive())
-            {
-                return;
-            }
-
-            target.draw(m_sprite, states);
-        }
-
-        void update(Context &, const float) override {}
+        void move(const Context & context, const BoardPos_t & posNew) override;
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
       protected:
         virtual sf::Sprite makeSprite(
@@ -109,7 +100,7 @@ namespace boardgame
         // static Moves_t makeAllValidMoves(const Context & context, const BoardPos_t & targetPos);
 
       protected:
-        bool m_isAlive;
+        bool m_isInPlay;
         Piece::Enum m_piece;
         BoardPos_t m_boardPos;
         sf::Sprite m_sprite;
@@ -139,60 +130,43 @@ namespace boardgame
 
     //
 
-    struct HeadPiece : public PieceBase
+    class TailPiece : public PieceBase
     {
+      public:
+        TailPiece(const Context & context, const BoardPos_t & boardPos)
+            : PieceBase(context, Piece::Tail, boardPos, sf::Color(32, 192, 0))
+            , m_id(context.settings.consumeNextTailId())
+        {}
+
+        virtual ~TailPiece() = default;
+
+        void takeTurn(Context & context) override;
+
+      protected:
+        std::size_t m_id;
+    };
+
+    //
+
+    class HeadPiece : public PieceBase
+    {
+        friend TailPiece;
+
+      public:
         HeadPiece(const Context & context, const BoardPos_t & boardPos)
-            : PieceBase(context, Piece::SnakeHead, boardPos, sf::Color(0, 255, 0))
+            : PieceBase(context, Piece::Head, boardPos, sf::Color(0, 255, 0))
+            , m_directionKeyNext(sf::Keyboard::Up) // games always start with snake moving up
         {}
 
         virtual ~HeadPiece() = default;
+
+        void takeTurn(Context & context) override;
+        void update(Context & context, const float) override;
+        void move(const Context & context, const BoardPos_t & posNew) override;
+
+      protected:
+        sf::Keyboard::Key m_directionKeyNext;
     };
-
-    //
-
-    struct BodyPiece : public PieceBase
-    {
-        BodyPiece(const Context & context, const BoardPos_t & boardPos)
-            : PieceBase(context, Piece::SnakeBody, boardPos, sf::Color(32, 192, 0))
-        {}
-
-        virtual ~BodyPiece() = default;
-    };
-
-    // struct PlayerPiece : public PieceBase
-    //{
-    //    PlayerPiece(const Context & context, const BoardPos_t & boardPos)
-    //        : PieceBase(context, Piece::Player, boardPos)
-    //    {}
-    //
-    //    virtual ~PlayerPiece() = default;
-    //
-    //    bool takeTurn(Context & context, const sf::Event & event) override;
-    //
-    //  private:
-    //    bool attemptMove(Context & context, const BoardPos_t & targetPos);
-    //    BoardPos_t walkPosFromArrowKeypress_Normal(Context & context, const sf::Event &
-    //    eventOrig); BoardPos_t walkPosFromArrowKeypress_Random(Context & context, const sf::Event
-    //    & eventOrig);
-    //};
-
-    //
-
-    // these are pieces that take turns, either the player or np/ai
-    // struct VillanPiece : public PieceBase
-    //{
-    //    VillanPiece(const Context & context, const BoardPos_t & boardPos)
-    //        : PieceBase(context, Piece::Villan, boardPos)
-    //    {}
-    //
-    //    virtual ~VillanPiece() = default;
-    //
-    //    bool takeTurn(Context & context, const sf::Event & event) override;
-    //
-    //  protected:
-    //    BoardPosOpt_t findTargetPos(const Context &);
-    //    BoardPosOpt_t selectWhereToMove(const Context &, const BoardPos_t & targetPos);
-    //};
 } // namespace boardgame
 
 #endif // BOARDGAME_PIECES_HPP_INCLUDED

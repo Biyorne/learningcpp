@@ -40,7 +40,7 @@
             std::cout << _m_ss.str() << std::endl;                                       \
                                                                                          \
             M_THROW(_m_ss.str())                                                         \
-            M_ASSERT(exp)                                                                \
+            M_ASSERT((exp))                                                              \
         }                                                                                \
     }
 
@@ -663,6 +663,63 @@ namespace util
         const sf::Color & color = sf::Color::White)
     {
         target.draw(makeLines(points, color));
+    }
+
+    // more misc sfml
+
+    template <typename T = int>
+    inline sf::Vector2<T>
+        arrowKeyToPositionAdj(const sf::Keyboard::Key arrowKey, const bool willReverse = false)
+    {
+        sf::Vector2<T> posAdj{ 0, 0 };
+
+        if (sf::Keyboard::Up == arrowKey)
+        {
+            --posAdj.y;
+        }
+        else if (sf::Keyboard::Down == arrowKey)
+        {
+            ++posAdj.y;
+        }
+        else if (sf::Keyboard::Left == arrowKey)
+        {
+            --posAdj.x;
+        }
+        else if (sf::Keyboard::Right == arrowKey)
+        {
+            ++posAdj.x;
+        }
+
+        if (willReverse)
+        {
+            posAdj *= -1;
+        }
+
+        return posAdj;
+    }
+
+    inline sf::Keyboard::Key oppositeDirection(const sf::Keyboard::Key dir)
+    {
+        if (dir == sf::Keyboard::Up)
+        {
+            return sf::Keyboard::Down;
+        }
+        else if (dir == sf::Keyboard::Down)
+        {
+            return sf::Keyboard::Up;
+        }
+        else if (dir == sf::Keyboard::Left)
+        {
+            return sf::Keyboard::Right;
+        }
+        else if (dir == sf::Keyboard::Right)
+        {
+            return sf::Keyboard::Left;
+        }
+        else
+        {
+            return dir;
+        }
     }
 
     // statistics

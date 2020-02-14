@@ -7,6 +7,7 @@
 #include "pieces.hpp"
 #include "random.hpp"
 #include "resources.hpp"
+#include "settings.hpp"
 #include "sound-player.hpp"
 #include "types.hpp"
 #include "util.hpp"
@@ -22,32 +23,35 @@ namespace boardgame
     class GameCoordinator
     {
       public:
-        explicit GameCoordinator(const std::filesystem::path & mediaDirPath);
+        explicit GameCoordinator(const SnakeGameSettings & settings);
+        virtual ~GameCoordinator();
 
         void run();
 
       private:
         void reset();
-
         void handleEvents();
         void handleEvent(const sf::Event & event);
-        void update(const float elapsedTimeSec);
+        void updatePerFrame();
+        void updatePerTurn();
         void draw();
 
       private:
-        sf::VideoMode m_videoMode;
+        SnakeGameSettings m_settings;
         sf::RenderWindow m_window;
-
         SnakeBoard m_board;
         util::Random m_random;
         SnakeResources m_resources;
         util::SoundPlayer m_soundPlayer;
         util::AnimationPlayer m_animationPlayer;
-
         Context m_context;
 
         sf::Clock m_frameClock;
-        float m_timeBetweenMovesSec;
+        float m_frameTimeElapsedSec;
+        float m_frameTimeElapsedMinSec;
+
+        sf::Clock m_turnClock;
+        float m_turnTimeElapsedSec;
     };
 } // namespace boardgame
 

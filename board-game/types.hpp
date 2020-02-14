@@ -10,10 +10,10 @@ namespace boardgame
     {
         enum Enum
         {
-            Wall = 0,
-            SnakeHead,
-            SnakeBody,
+            Head = 0,
+            Tail,
             Food,
+            Wall,
             Count
         };
     };

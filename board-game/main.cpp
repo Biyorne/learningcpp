@@ -7,26 +7,35 @@
 
 int main(const int argc, const char * const argv[])
 {
-    std::filesystem::path mediaPath;
+    // setup misc game details
+    boardgame::SnakeGameSettings settings;
+    settings.game_name = "Snake";
+    settings.sf_window_style = sf::Style::Default;
+    settings.video_mode.width = 2880;
+    settings.video_mode.height = 1800;
+
+    // find the media directory
     if (argc > 1)
     {
-        mediaPath = argv[1];
+        settings.media_path = argv[1];
     }
     else
     {
-        mediaPath = (std::filesystem::current_path() / "media");
+        settings.media_path = (std::filesystem::current_path() / "media");
     }
 
-    if (!std::filesystem::exists(mediaPath) || !std::filesystem::is_directory(mediaPath))
+    if (!std::filesystem::exists(settings.media_path) ||
+        !std::filesystem::is_directory(settings.media_path))
     {
         std::cout << "Error:  media directory path provided was either empty, not a directory, or "
                      "was simply not there: \""
-                  << mediaPath << "\"." << std::endl;
+                  << settings.media_path << "\"." << std::endl;
 
         return EXIT_FAILURE;
     }
 
-    boardgame::GameCoordinator game(mediaPath);
+    //
+    boardgame::GameCoordinator game(settings);
     game.run();
 
     return EXIT_SUCCESS;

@@ -46,8 +46,7 @@ namespace boardgame
     {
         virtual ~IBoard() = default;
 
-        virtual void reset() = 0;
-        virtual void setupMap(const Context & context) = 0;
+        virtual void reset(Context & context) = 0;
 
         virtual sf::Vector2f cellSize() const = 0;
         virtual sf::FloatRect cellBounds(const BoardPos_t & pos) const = 0;
@@ -68,12 +67,20 @@ namespace boardgame
         virtual IPieceOpt_t pieceAt(const BoardPos_t & pos) const = 0;
         virtual Piece::Enum pieceEnumAt(const BoardPos_t & pos) const = 0;
 
-        // virtual BoardPosOpt_t findRandomEmptyPos(const Context & context) const = 0;
+        virtual BoardPosOpt_t findRandomEmptyPos(const Context & context) const = 0;
+
+        [[nodiscard]] virtual IPieceUPtr_t makePiece(
+            const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) = 0;
+
+        virtual void placePiece(
+            const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) = 0;
+
+        virtual void printStatus() const = 0;
+
+        virtual void removePiecesThatAreNoLongerInPlay() = 0;
 
       protected:
-        virtual void setupCellSizeAndCounts(
-            const sf::Vector2f & windowSize, const float cellSizeAswindowRatio) = 0;
-
+        virtual void setupCellSizeAndCounts(Context & context) = 0;
         virtual void setupStartingMapPieces() = 0;
     };
 
@@ -82,10 +89,10 @@ namespace boardgame
     class BoardBase : public IBoard
     {
       public:
-        BoardBase() { reset(); }
+        BoardBase() = default;
         virtual ~BoardBase() = default;
 
-        void reset() override;
+        void printStatus() const override;
 
         sf::Vector2f cellSize() const override { return m_cellSize; }
 
@@ -101,11 +108,18 @@ namespace boardgame
         Piece::Enum pieceEnumAt(const BoardPos_t & pos) const override;
         bool isAnyPieceAt(const BoardPos_t & pos) const override;
 
-        // BoardPosOpt_t findRandomEmptyPos(const Context & context) const override;
+        BoardPosOpt_t findRandomEmptyPos(const Context & context) const override;
+
+        void placePiece(
+            const Context & context, const Piece::Enum which, const BoardPos_t & boardPos) override
+        {
+            m_pieces.push_back(makePiece(context, which, boardPos));
+        }
+
+        void removePiecesThatAreNoLongerInPlay() override;
 
       protected:
-        void setupCellSizeAndCounts(
-            const sf::Vector2f & windowSize, const float cellSizeAswindowRatio) override;
+        void setupCellSizeAndCounts(Context & context) override;
 
         // default does nothing so more complex boards can do it another way
         void setupStartingMapPieces() override {}
@@ -124,10 +138,10 @@ namespace boardgame
         SnakeBoard() = default;
         virtual ~SnakeBoard() = default;
 
-        void setupMap(const Context & context) override;
+        void reset(Context & context) override;
 
-        IPieceUPtr_t makePiece(
-            const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) const;
+        [[nodiscard]] IPieceUPtr_t makePiece(
+            const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) override;
     };
 } // namespace boardgame
 

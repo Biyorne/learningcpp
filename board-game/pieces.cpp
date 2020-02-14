@@ -29,11 +29,153 @@ namespace boardgame
         return sprite;
     }
 
+    void PieceBase::move(const Context & context, const BoardPos_t & posNew)
+    {
+        if (!isInPlay())
+        {
+            return;
+        }
+
+        M_ASSERT_OR_THROW(posNew != m_boardPos);
+        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posNew) == Piece::Count);
+
+        m_boardPos = posNew;
+        util::centerInside(m_sprite, context.board.cellBounds(m_boardPos));
+
+        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posNew) == m_piece);
+    }
+
+    void PieceBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
+    {
+        if (!isInPlay())
+        {
+            return;
+        }
+
+        target.draw(m_sprite, states);
+    }
+
+    void TailPiece::takeTurn(Context & context)
+    {
+        if (!isInPlay())
+        {
+            return;
+        }
+
+        if (context.settings.willRemoveTailPiece(m_id))
+        {
+            removeFromPlay();
+        }
+    }
+
+    void HeadPiece::move(const Context & context, const BoardPos_t & posNew)
+    {
+        if (!isInPlay())
+        {
+            return;
+        }
+
+        const BoardPos_t posOld{ m_boardPos };
+        PieceBase::move(context, posNew);
+        context.board.placePiece(context, Piece::Tail, posOld);
+        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posOld) == Piece::Tail);
+    }
+
+    void HeadPiece::update(Context &, const float)
+    {
+        if (!isInPlay())
+        {
+            return;
+        }
+
+        const auto directionNextBeforeChanges{ m_directionKeyNext };
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+        {
+            m_directionKeyNext = sf::Keyboard::Up;
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+        {
+            m_directionKeyNext = sf::Keyboard::Down;
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+        {
+            m_directionKeyNext = sf::Keyboard::Left;
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+        {
+            m_directionKeyNext = sf::Keyboard::Right;
+        }
+
+        // prevent from reversing direction (instant death)
+        if (util::oppositeDirection(m_directionKeyNext) == directionNextBeforeChanges)
+        {
+            m_directionKeyNext = directionNextBeforeChanges;
+        }
+    }
+
+    void HeadPiece::takeTurn(Context & context)
+    {
+        if (!isInPlay())
+        {
+            return;
+        }
+
+        context.settings.handleSnakeHeadTurnStart();
+
+        const BoardPos_t posOld{ m_boardPos };
+        const BoardPos_t posNew{ m_boardPos +
+                                 util::arrowKeyToPositionAdj(m_directionKeyNext, false) };
+
+        IPieceOpt_t bitePieceOpt{ context.board.pieceAt(posNew) };
+
+        const Piece::Enum bitePieceEnum{ (bitePieceOpt) ? bitePieceOpt->get().piece()
+                                                        : Piece::Count };
+
+        if (bitePieceEnum == Piece::Count)
+        {
+            move(context, posNew);
+            return;
+        }
+
+        if (bitePieceEnum == Piece::Food)
+        {
+            context.settings.handleSnakeHeadEat();
+
+            const BoardPosOpt_t foodPosOpt{ context.board.findRandomEmptyPos(context) };
+            if (foodPosOpt)
+            {
+                context.board.placePiece(context, Piece::Food, foodPosOpt.value());
+            }
+            else
+            {
+                std::cout << "YOU WIN by filling the entire screen!" << std::endl;
+                context.settings.is_game_over = true;
+            }
+        }
+        else
+        {
+            m_sprite.setColor(sf::Color::Red);
+
+            std::cout << "You bit into "
+                      << ((bitePieceEnum == Piece::Wall) ? "the wall" : "yourself") << "! YOU LOSE!"
+                      << std::endl;
+
+            context.settings.is_game_over = true;
+        }
+
+        IPiece & bitePiece{ bitePieceOpt.value().get() };
+        bitePiece.removeFromPlay();
+
+        move(context, posNew);
+        context.board.placePiece(context, Piece::Tail, posOld);
+    }
+
     /*
 
     // void PieceBase::move(const Context & context, const BoardPos_t & targetPos)
     //{
-    //    M_ASSERT_OR_THROW(isAlive());
+    //    M_ASSERT_OR_THROW(isInPlay());
     //    M_ASSERT_OR_THROW(context.map.isPosValid(targetPos));
     //    M_ASSERT_OR_THROW(targetPos != m_boardPos);
     //
@@ -120,7 +262,7 @@ namespace boardgame
     //
     // bool PlayerPiece::attemptMove(Context & context, const BoardPos_t & targetPos)
     //{
-    //    M_ASSERT_OR_THROW(isAlive());
+    //    M_ASSERT_OR_THROW(isInPlay());
     //    M_ASSERT_OR_THROW(context.map.isPosValid(targetPos));
     //    M_ASSERT_OR_THROW(targetPos != m_boardPos);
     //
@@ -141,7 +283,7 @@ namespace boardgame
     //
     //    if (Piece::Door == targetEnum)
     //    {
-    //        kill();
+    //        removeFromPlay();
     //        // std::cout << "You are free!  You WIN!" << std::endl;
     //        // context.is_game_over = true;
     //    }
@@ -149,7 +291,7 @@ namespace boardgame
     //    //{
     //    //    // std::cout << "You walked into a monster and lost like an idiot." << std::endl;
     //    //    context.is_game_over = true;
-    //    //    kill();
+    //    //    removeFromPlay();
     //    //}
     //
     //    return true;
@@ -159,11 +301,11 @@ namespace boardgame
     //
     // BoardPosOpt_t VillanPiece::findTargetPos(const Context & context)
     //{
-    //    M_ASSERT_OR_THROW(isAlive());
+    //    M_ASSERT_OR_THROW(isInPlay());
     //
     //    for (const IPieceUPtr_t & piece : context.board.pieces())
     //    {
-    //        if (piece->isAlive() && (piece->piece() == Piece::Player))
+    //        if (piece->isInPlay() && (piece->piece() == Piece::Player))
     //        {
     //            return piece->boardPos();
     //        }
@@ -175,7 +317,7 @@ namespace boardgame
     //// always returns true because AI or Villans or Non-Players only get one chance to move
     // bool VillanPiece::takeTurn(Context & context, const sf::Event &)
     //{
-    //    M_ASSERT_OR_THROW(isAlive());
+    //    M_ASSERT_OR_THROW(isInPlay());
     //
     //    const BoardPosOpt_t targetPosOpt = findTargetPos(context);
     //    if (!targetPosOpt)
@@ -183,13 +325,13 @@ namespace boardgame
     //        return true;
     //    }
     //
-    //    const BoardPosOpt_t newPosOpt = selectWhereToMove(context, targetPosOpt.value());
-    //    if (!newPosOpt)
+    //    const BoardPosOpt_t posNewOpt = selectWhereToMove(context, targetPosOpt.value());
+    //    if (!posNewOpt)
     //    {
     //        return true;
     //    }
     //
-    //    const BoardPos_t targetPos = newPosOpt.value();
+    //    const BoardPos_t targetPos = posNewOpt.value();
     //
     //    const auto targetPieceOpt = context.board.pieceAt(targetPos);
     //    if (targetPieceOpt)
@@ -201,7 +343,7 @@ namespace boardgame
     //        {
     //            // std::cout << "The monster caught you!  You lose." << std::endl;
     //            // context.is_game_over = true;
-    //            targetPiece.kill();
+    //            targetPiece.removeFromPlay();
     //        }
     //    }
     //
@@ -213,7 +355,7 @@ namespace boardgame
     // BoardPosOpt_t
     //    VillanPiece::selectWhereToMove(const Context & context, const BoardPos_t & targetPos)
     //{
-    //    M_ASSERT_OR_THROW(isAlive());
+    //    M_ASSERT_OR_THROW(isInPlay());
     //    M_ASSERT_OR_THROW(context.map.isPosValid(targetPos));
     //    M_ASSERT_OR_THROW(targetPos != m_boardPos);
     //
