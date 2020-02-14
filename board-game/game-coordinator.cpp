@@ -24,8 +24,7 @@ namespace boardgame
         , m_frameClock()
         , m_frameTimeElapsedSec(0.0f)
         , m_frameTimeElapsedMinSec(0.001f)
-        , m_turnClock()
-        , m_turnTimeElapsedSec(0.0f)
+        , m_periodClock()
     {
         m_window.setFramerateLimit(m_settings.frame_rate_limit);
 
@@ -56,8 +55,7 @@ namespace boardgame
         m_frameClock.restart();
         m_frameTimeElapsedSec = 0.0f;
 
-        m_turnClock.restart();
-        m_turnTimeElapsedSec = 0.0f;
+        m_periodClock.restart();
     }
 
     void GameCoordinator::run()
@@ -71,11 +69,13 @@ namespace boardgame
                 if (!m_settings.is_game_paused && !m_settings.is_game_over)
                 {
                     updatePerFrame();
-                    updatePerTurn();
+                    updatePerPeriod();
                 }
 
                 draw();
             }
+
+            std::cout << "Final Score: " << m_settings.food_eaten_count << std::endl;
         }
         catch (const std::exception & ex)
         {
@@ -137,34 +137,29 @@ namespace boardgame
             return;
         }
 
-        m_turnTimeElapsedSec += m_turnClock.getElapsedTime().asSeconds();
-        const bool willTakeTurns{ !(m_turnTimeElapsedSec < m_settings.timeBetweenTurnsSec()) };
+        m_frameClock.restart();
 
         m_animationPlayer.update(m_frameTimeElapsedSec);
 
         for (IPieceUPtr_t & piece : m_context.board.pieces())
         {
             piece->update(m_context, m_frameTimeElapsedSec);
-
-            if (willTakeTurns)
-            {
-                piece->takeTurn(m_context);
-            }
         }
 
-        if (willTakeTurns)
-        {
-            m_board.removePiecesThatAreNoLongerInPlay();
-
-            m_turnClock.restart();
-            m_turnTimeElapsedSec = 0.0f;
-        }
-
-        m_frameClock.restart();
         m_frameTimeElapsedSec = 0.0f;
     }
 
-    void GameCoordinator::updatePerTurn() {}
+    void GameCoordinator::updatePerPeriod()
+    {
+        if (m_periodClock.getElapsedTime().asSeconds() < m_settings.period_duration_sec)
+        {
+            return;
+        }
+
+        m_periodClock.restart();
+
+        m_board.removePiecesThatAreNoLongerInPlay();
+    }
 
     void GameCoordinator::draw()
     {

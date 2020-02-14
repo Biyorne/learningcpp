@@ -18,21 +18,17 @@ namespace boardgame
     void GameSettings::printStatus() const
     {
         std::cout << "\nGAME SETTINGS: \"" << game_name << "\"";
-        std::cout << "\n\tmedia_path        =" << media_path;
-        std::cout << "\n\twindow_size       =" << video_mode.width << "x" << video_mode.height;
-        std::cout << "\n\tframe_rate_limit  =" << frame_rate_limit;
-        std::cout << "\n\tis_self_test      =" << std::boolalpha << is_self_test;
+        std::cout << "\n\t media_path        = " << media_path;
+        std::cout << "\n\t window_size       = " << video_mode.width << "x" << video_mode.height;
+        std::cout << "\n\t frame_rate_limit  = " << frame_rate_limit;
+        std::cout << "\n\t is_self_test      = " << std::boolalpha << is_self_test;
+        std::cout << "\n\t is_game_over      = " << std::boolalpha << is_game_over;
     }
 
     void SnakeGameSettings::reset()
     {
         GameSettings::reset();
-
-        turn_duration_sec = max_turn_duration_sec;
         food_eaten_count = 0;
-        tail_id_to_assign_next = 0;
-        tail_id_to_remove_next = 0;
-        tail_pieces_to_add_remaining = 0;
     };
 
     void SnakeGameSettings::printStatus() const
@@ -40,23 +36,11 @@ namespace boardgame
         GameSettings::printStatus();
 
         std::cout << "\n\t-";
-
-        std::cout << "\n\tcell_size_window_ratio      =" << cell_size_window_ratio;
-
-        std::cout << "\n\tturn_duration               =" << turn_duration_sec << " ["
-                  << min_turn_duration_sec << ',' << max_turn_duration_sec << "]";
-
-        std::cout << "\n\tturn_duration_mult_after_eat=" << turn_duration_mult_after_eat;
-        std::cout << "\n\tfood_eaten_count            =" << food_eaten_count;
-        std::cout << "\n\tmin_turn_duration_sec       =" << min_turn_duration_sec;
-        std::cout << "\n\tmax_turn_duration_sec       =" << max_turn_duration_sec;
-        std::cout << "\n\tturn_duration_sec           =" << turn_duration_sec;
-        std::cout << "\n\tturn_duration_mult_after_eat=" << turn_duration_mult_after_eat;
-        std::cout << "\n\t-";
-        std::cout << "\n\tfood_eaten_count            =" << food_eaten_count;
-        std::cout << "\n\ttail_growth_per_eat_count   =" << tail_growth_per_eat_count;
-        std::cout << "\n\ttail_id_to_assign_next      =" << tail_id_to_assign_next;
-        std::cout << "\n\ttail_id_to_remove_next      =" << tail_id_to_remove_next;
-        std::cout << "\n\ttail_pieces_to_add_remaining=" << tail_pieces_to_add_remaining;
+        std::cout << "\n\t cell_size_window_ratio       = " << cell_size_window_ratio;
+        std::cout << "\n\t turn_duration_min            = " << turn_duration_min_sec;
+        std::cout << "\n\t turn_duration_max            = " << turn_duration_max_sec;
+        std::cout << "\n\t urn_duration_ratio_after_eat = " << turn_duration_ratio_after_eat;
+        std::cout << "\n\t food_eaten_count             = " << food_eaten_count;
+        std::cout << "\n\t period_duration_sec          = " << period_duration_sec;
     }
 } // namespace boardgame

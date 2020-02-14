@@ -14,7 +14,7 @@
 
 namespace boardgame
 {
-    void PieceBase::move(const Context & context, const BoardPos_t & posNew)
+    void PieceBase::move(Context & context, const BoardPos_t & posNew)
     {
         if (!isInPlay())
         {
@@ -40,33 +40,54 @@ namespace boardgame
         target.draw(m_sprite, states);
     }
 
-    void TailPiece::takeTurn(Context & context)
+    void TailPiece::takeTurn(Context &)
     {
         if (!isInPlay())
         {
             return;
         }
 
-        if (context.settings.willRemoveTailPiece(m_id))
+        if (m_id == m_idToNextRemove)
         {
             removeFromPlay();
         }
     }
 
-    void HeadPiece::move(const Context & context, const BoardPos_t & posNew)
+    void HeadPiece::move(Context & context, const BoardPos_t & posNew)
     {
         if (!isInPlay())
         {
             return;
         }
 
+        // move head
         const BoardPos_t posOld{ m_boardPos };
         PieceBase::move(context, posNew);
+
+        // place a new tail piece behind the head
         context.board.placePiece(context, Piece::Tail, posOld);
         M_ASSERT_OR_THROW(context.board.pieceEnumAt(posOld) == Piece::Tail);
+
+        // handle removing the last tail piece, if needed
+        if (0 == m_tailPiecesToGrowRemaining)
+        {
+            TailPiece::incrementNextToRemoveId();
+
+            for (IPieceUPtr_t & piece : context.board.pieces())
+            {
+                if (piece->piece() == Piece::Tail)
+                {
+                    piece->takeTurn(context);
+                }
+            }
+        }
+        else
+        {
+            --m_tailPiecesToGrowRemaining;
+        }
     }
 
-    void HeadPiece::update(Context &, const float)
+    void HeadPiece::update(Context & context, const float)
     {
         if (!isInPlay())
         {
@@ -97,6 +118,19 @@ namespace boardgame
         {
             m_directionKeyNext = directionNextBeforeChanges;
         }
+
+        if (m_turnClock.getElapsedTime().asSeconds() > m_turnTimeDurationSec)
+        {
+            m_turnClock.restart();
+
+            m_turnTimeDurationSec *= context.settings.turn_duration_ratio_after_eat;
+            if (m_turnTimeDurationSec < context.settings.turn_duration_min_sec)
+            {
+                m_turnTimeDurationSec = context.settings.turn_duration_min_sec;
+            }
+
+            takeTurn(context);
+        }
     }
 
     void HeadPiece::takeTurn(Context & context)
@@ -106,26 +140,22 @@ namespace boardgame
             return;
         }
 
-        context.settings.handleSnakeHeadTurnStart();
-
-        const BoardPos_t posOld{ m_boardPos };
         const BoardPos_t posNew{ m_boardPos +
                                  util::arrowKeyToPositionAdj(m_directionKeyNext, false) };
 
-        IPieceOpt_t bitePieceOpt{ context.board.pieceAt(posNew) };
+        const Piece::Enum bitePieceEnum{ context.board.pieceEnumAt(posNew) };
 
-        const Piece::Enum bitePieceEnum{ (bitePieceOpt) ? bitePieceOpt->get().piece()
-                                                        : Piece::Count };
-
-        if (bitePieceEnum == Piece::Count)
+        if (bitePieceEnum != Piece::Count)
         {
-            move(context, posNew);
-            return;
+            context.board.removePieceFromPlay(posNew);
         }
+
+        move(context, posNew);
 
         if (bitePieceEnum == Piece::Food)
         {
-            context.settings.handleSnakeHeadEat();
+            ++context.settings.food_eaten_count;
+            m_tailPiecesToGrowRemaining += context.settings.tail_growth_per_eat_count;
 
             const BoardPosOpt_t foodPosOpt{ context.board.findRandomEmptyPos(context) };
             if (foodPosOpt)
@@ -138,7 +168,7 @@ namespace boardgame
                 context.settings.is_game_over = true;
             }
         }
-        else
+        else if (bitePieceEnum != Piece::Count)
         {
             m_sprite.setColor(sf::Color::Red);
 
@@ -148,12 +178,6 @@ namespace boardgame
 
             context.settings.is_game_over = true;
         }
-
-        IPiece & bitePiece{ bitePieceOpt.value().get() };
-        bitePiece.removeFromPlay();
-
-        move(context, posNew);
-        context.board.placePiece(context, Piece::Tail, posOld);
     }
 
     /*

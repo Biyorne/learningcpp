@@ -31,7 +31,7 @@ namespace boardgame
         virtual BoardPos_t boardPos() const = 0;
         virtual sf::FloatRect bounds() const = 0;
 
-        virtual void move(const Context & context, const BoardPos_t & posNew) = 0;
+        virtual void move(Context & context, const BoardPos_t & posNew) = 0;
 
         virtual void takeTurn(Context &) = 0;
         virtual void handleEvent(Context &, const sf::Event &) = 0;
@@ -85,7 +85,7 @@ namespace boardgame
         void update(Context &, const float) override {}
         void handleEvent(Context &, const sf::Event &) override {}
 
-        void move(const Context & context, const BoardPos_t & posNew) override;
+        void move(Context & context, const BoardPos_t & posNew) override;
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
         // virtual void move(const Context & context, const BoardPos_t & targetPos);
@@ -132,15 +132,19 @@ namespace boardgame
       public:
         TailPiece(const Context & context, const BoardPos_t & boardPos)
             : PieceBase(context, Piece::Tail, boardPos, sf::Color(32, 192, 0))
-            , m_id(context.settings.consumeNextTailId())
+            , m_id(++m_idToNextAssign) // start at one
         {}
 
         virtual ~TailPiece() = default;
 
         void takeTurn(Context & context) override;
 
-      protected:
+        static void incrementNextToRemoveId() { ++m_idToNextRemove; }
+
+      private:
         std::size_t m_id;
+        static inline std::size_t m_idToNextAssign{ 0 };
+        static inline std::size_t m_idToNextRemove{ 0 };
     };
 
     //
@@ -150,6 +154,8 @@ namespace boardgame
       public:
         HeadPiece(const Context & context, const BoardPos_t & boardPos)
             : PieceBase(context, Piece::Head, boardPos, sf::Color(0, 255, 0))
+            , m_turnClock()
+            , m_turnTimeDurationSec(context.settings.turn_duration_max_sec)
             , m_directionKeyNext(sf::Keyboard::Up) // games always start with snake moving up
         {}
 
@@ -157,10 +163,13 @@ namespace boardgame
 
         void takeTurn(Context & context) override;
         void update(Context & context, const float) override;
-        void move(const Context & context, const BoardPos_t & posNew) override;
+        void move(Context & context, const BoardPos_t & posNew) override;
 
       protected:
+        sf::Clock m_turnClock;
+        float m_turnTimeDurationSec;
         sf::Keyboard::Key m_directionKeyNext;
+        static inline std::size_t m_tailPiecesToGrowRemaining{ 0 };
     };
 } // namespace boardgame
 

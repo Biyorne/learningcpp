@@ -33,7 +33,7 @@ namespace boardgame
         void handleEvents();
         void handleEvent(const sf::Event & event);
         void updatePerFrame();
-        void updatePerTurn();
+        void updatePerPeriod();
         void draw();
 
       private:
@@ -50,8 +50,7 @@ namespace boardgame
         float m_frameTimeElapsedSec;
         float m_frameTimeElapsedMinSec;
 
-        sf::Clock m_turnClock;
-        float m_turnTimeElapsedSec;
+        sf::Clock m_periodClock;
     };
 } // namespace boardgame
 

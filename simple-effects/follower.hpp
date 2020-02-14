@@ -36,6 +36,14 @@ namespace entity
                 (util::vecNormal(m_targetPos - m_sprite.getPosition()) * m_accelerationMag);
 
             m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
+
+            const float speedLimit{ 500.0f };
+            const float speed{ util::vecMagnitude(m_velocity.vector) };
+            if (speed > speedLimit)
+            {
+                m_velocity.vector *= (speedLimit / speed);
+            }
+
             m_sprite.move(m_velocity.updateDelta(frameTimeSec));
         }
 
@@ -45,7 +53,6 @@ namespace entity
         sf::Vector2f m_targetPos;
         float m_accelerationMag;
     };
-
 } // namespace entity
 
 #endif // SIMPLE_EFFECTS_FOLLOWER_HPP_INCLUDED

@@ -180,6 +180,21 @@ namespace boardgame
         m_pieces.reserve((m_cellCounts.x * m_cellCounts.y) * 2);
     }
 
+    void BoardBase::placePiece(
+        const Context & context, const Piece::Enum which, const BoardPos_t & boardPos)
+    {
+        m_pieces.push_back(makePiece(context, which, boardPos));
+    }
+
+    void BoardBase::removePieceFromPlay(const BoardPos_t & boardPos)
+    {
+        IPieceOpt_t pieceToRemoveOpt{ pieceAt(boardPos) };
+        if (pieceToRemoveOpt)
+        {
+            pieceToRemoveOpt->get().removeFromPlay();
+        }
+    }
+
     //
 
     void SnakeBoard::reset(Context & context)

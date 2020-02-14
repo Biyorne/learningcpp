@@ -75,6 +75,8 @@ namespace boardgame
         virtual void placePiece(
             const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) = 0;
 
+        virtual void removePieceFromPlay(const BoardPos_t & boardPos) = 0;
+
         virtual void printStatus() const = 0;
 
         virtual void removePiecesThatAreNoLongerInPlay() = 0;
@@ -118,10 +120,9 @@ namespace boardgame
             const BoardPos_t & boardPos) override = 0;
 
         void placePiece(
-            const Context & context, const Piece::Enum which, const BoardPos_t & boardPos) override
-        {
-            m_pieces.push_back(makePiece(context, which, boardPos));
-        }
+            const Context & context, const Piece::Enum which, const BoardPos_t & boardPos) override;
+
+        void removePieceFromPlay(const BoardPos_t & boardPos) override;
 
         void removePiecesThatAreNoLongerInPlay() override;
 
