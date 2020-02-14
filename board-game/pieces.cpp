@@ -14,21 +14,6 @@
 
 namespace boardgame
 {
-    sf::Sprite PieceBase::makeSprite(
-        const Context & context,
-        const Piece::Enum piece,
-        const BoardPos_t & boardPos,
-        const sf::Color & color) const
-    {
-        M_ASSERT_OR_THROW(Piece::Count != piece);
-
-        sf::Sprite sprite(context.resources.texture(piece));
-        // util::setOriginToCenter(sprite);
-        util::scaleAndCenterInside(sprite, context.board.cellBounds(boardPos));
-        sprite.setColor(color);
-        return sprite;
-    }
-
     void PieceBase::move(const Context & context, const BoardPos_t & posNew)
     {
         if (!isInPlay())

@@ -30,7 +30,6 @@ namespace boardgame
         m_window.setFramerateLimit(m_settings.frame_rate_limit);
 
         reset();
-
         if (m_settings.is_self_test)
         {
             m_settings.printStatus();

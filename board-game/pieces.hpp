@@ -64,8 +64,12 @@ namespace boardgame
             const Context & context,
             const Piece::Enum piece,
             const BoardPos_t & boardPos,
-            const sf::Color & color = sf::Color::White)
-            : PieceBase(context, piece, boardPos, makeSprite(context, piece, boardPos, color))
+            const sf::Color & color)
+            : PieceBase(
+                  context,
+                  piece,
+                  boardPos,
+                  context.resources.sprite(context, piece, boardPos, color))
         {}
 
         virtual ~PieceBase() = default;
@@ -83,13 +87,6 @@ namespace boardgame
 
         void move(const Context & context, const BoardPos_t & posNew) override;
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
-
-      protected:
-        virtual sf::Sprite makeSprite(
-            const Context & context,
-            const Piece::Enum piece,
-            const BoardPos_t & boardPos,
-            const sf::Color & color) const;
 
         // virtual void move(const Context & context, const BoardPos_t & targetPos);
         //
@@ -150,8 +147,6 @@ namespace boardgame
 
     class HeadPiece : public PieceBase
     {
-        friend TailPiece;
-
       public:
         HeadPiece(const Context & context, const BoardPos_t & boardPos)
             : PieceBase(context, Piece::Head, boardPos, sf::Color(0, 255, 0))

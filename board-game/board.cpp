@@ -173,30 +173,31 @@ namespace boardgame
             std::end(m_pieces));
     }
 
+    void BoardBase::reset(Context & context)
+    {
+        setupCellSizeAndCounts(context);
+        m_pieces.clear();
+        m_pieces.reserve((m_cellCounts.x * m_cellCounts.y) * 2);
+    }
+
     //
 
     void SnakeBoard::reset(Context & context)
     {
-        m_pieces.clear();
-
-        setupCellSizeAndCounts(context);
-
-        m_pieces.reserve(m_cellCounts.x * m_cellCounts.y * 2);
+        BoardBase::reset(context);
 
         const sf::Vector2i cellCountsI{ cellCountsAs<int>() };
 
         const BoardPos_t centerPos{ cellCountsI / 2 };
-        const BoardPos_t lowerThanCenterPos{ centerPos.x, (centerPos.y + 4) };
-
-        placePiece(context, Piece::Head, lowerThanCenterPos);
-        placePiece(context, Piece::Food, centerPos);
+        placePiece(context, Piece::Head, centerPos);
+        placePiece(context, Piece::Tail, (centerPos + sf::Vector2i(0, 1)));
+        placePiece(context, Piece::Food, (centerPos + sf::Vector2i(0, -4)));
 
         for (int horiz(0); horiz < cellCountsI.x; ++horiz)
         {
             placePiece(context, Piece::Wall, BoardPos_t(horiz, 0));
             placePiece(context, Piece::Wall, BoardPos_t(horiz, (cellCountsI.y - 1)));
         }
-
         for (int vert(0); vert < cellCountsI.y; ++vert)
         {
             placePiece(context, Piece::Wall, BoardPos_t(0, vert));
@@ -208,7 +209,6 @@ namespace boardgame
         const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos)
     {
         M_ASSERT_OR_THROW((piece >= 0) && (piece < Piece::Count));
-
         switch (piece)
         {
             case Piece::Food: return std::make_unique<FoodPiece>(context, boardPos);

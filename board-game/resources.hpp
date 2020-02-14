@@ -3,6 +3,8 @@
 //
 // resources.hpp
 //
+#include "board.hpp"
+#include "context.hpp"
 #include "types.hpp"
 
 #include <cassert>
@@ -16,12 +18,23 @@
 
 namespace boardgame
 {
+    struct Context;
+
+    //
+
     struct IResources
     {
         virtual ~IResources() = default;
 
         virtual const sf::Font & font(const Piece::Enum) const = 0;
+
         virtual const sf::Texture & texture(const Piece::Enum) const = 0;
+
+        virtual sf::Sprite sprite(
+            const Context & context,
+            const Piece::Enum piece,
+            const BoardPos_t & boardPos,
+            const sf::Color & color) const = 0;
     };
 
     //
@@ -33,7 +46,9 @@ namespace boardgame
             : m_mediaPath(mediaDirPath)
             , m_textures()
             , m_font()
-        {}
+        {
+            m_textures.reserve(static_cast<std::size_t>(Piece::Count) * 2);
+        }
 
         virtual ~ResourcesBase() = default;
 
@@ -42,13 +57,27 @@ namespace boardgame
         const sf::Texture & texture(const Piece::Enum piece) const override
         {
             const std::size_t index = static_cast<std::size_t>(piece);
-
             if (index < m_textures.size())
             {
                 return *m_textures.at(index);
             }
+            else
+            {
+                return m_defaultTexture;
+            }
+        }
 
-            return m_defaultTexture;
+        sf::Sprite sprite(
+            const Context & context,
+            const Piece::Enum piece,
+            const BoardPos_t & boardPos,
+            const sf::Color & color) const override
+        {
+            M_ASSERT_OR_THROW(Piece::Count != piece);
+            sf::Sprite sprite(texture(piece));
+            util::scaleAndCenterInside(sprite, context.board.cellBounds(boardPos));
+            sprite.setColor(color);
+            return sprite;
         }
 
       protected:

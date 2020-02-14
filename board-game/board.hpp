@@ -92,6 +92,8 @@ namespace boardgame
         BoardBase() = default;
         virtual ~BoardBase() = default;
 
+        void reset(Context & context) override;
+
         void printStatus() const override;
 
         sf::Vector2f cellSize() const override { return m_cellSize; }
@@ -109,6 +111,11 @@ namespace boardgame
         bool isAnyPieceAt(const BoardPos_t & pos) const override;
 
         BoardPosOpt_t findRandomEmptyPos(const Context & context) const override;
+
+        [[nodiscard]] IPieceUPtr_t makePiece(
+            const Context & context,
+            const Piece::Enum piece,
+            const BoardPos_t & boardPos) override = 0;
 
         void placePiece(
             const Context & context, const Piece::Enum which, const BoardPos_t & boardPos) override
