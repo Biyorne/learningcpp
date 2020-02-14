@@ -22,6 +22,7 @@ Classes
 	- Speed limits
 	- Velocity
 	- Enforced bounds
+	- Shaking
 
 
 Movement classes will NOT keep their own position,

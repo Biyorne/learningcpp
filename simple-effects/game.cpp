@@ -14,6 +14,7 @@ Game::Game()
     , m_willClear(false)
     , m_bgSprite(m_resources.bg_texture)
     , m_effects()
+    , m_simTimeMult(1.0f)
 //, m_quadVerts(sf::Quads)// Color Gradient
 //, m_offScreenTexture()
 //, m_image()
@@ -61,7 +62,7 @@ void Game::run()
         m_context.mouse_pos = sf::Vector2f(sf::Mouse::getPosition(m_window));
 
         processEvents();
-        update(clock.restart().asSeconds());
+        update(clock.restart().asSeconds() * m_simTimeMult);
         render();
     }
 }
@@ -94,7 +95,17 @@ void Game::processEvents()
                 // On Nel's laptop, values are whole numbers from[-5,5] but usually just [-1,1] //
                 // On Til's laptop, values are reals around [0.0083, 5.0f]
                 const float scrollAmount(event.mouseWheelScroll.delta);
-                std::cout << scrollAmount << std::endl;
+
+                if (scrollAmount > 0.0f)
+                {
+                    m_simTimeMult *= 1.1f;
+                }
+                else
+                {
+                    m_simTimeMult *= 0.9f;
+                }
+
+                std::cout << scrollAmount << "->" << m_simTimeMult << std::endl;
                 break;
             }
 
