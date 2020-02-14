@@ -18,7 +18,7 @@ Game::Game()
 //, m_offScreenTexture()
 //, m_image()
 {
-    // m_window.setFramerateLimit(60);
+    m_window.setFramerateLimit(60);
 
     // m_audio.loadAll();
     m_resources.bg_texture.setRepeated(true);
@@ -39,6 +39,10 @@ Game::Game()
     // m_image = m_offScreenTexture.getTexture().copyToImage();
 
     reset();
+
+    std::cout << "1: Rising Fade\n";
+    std::cout << "2: Follower\n";
+    std::cout << "3: Wall Bouncer\n";
 }
 
 void Game::reset()
@@ -64,11 +68,6 @@ void Game::run()
 
 void Game::processEvents()
 {
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
-    {
-        m_effects.push_back(
-            std::make_unique<entity::RisingFadeEffect>(m_context, m_resources.particle_texture));
-    }
 
     sf::Event event;
     while (m_window.pollEvent(event))
@@ -77,8 +76,6 @@ void Game::processEvents()
         {
             case sf::Event::KeyPressed:
             {
-                m_audio.play("tap");
-
                 if (sf::Keyboard::Escape == event.key.code)
                 {
                     m_window.close();
@@ -104,7 +101,30 @@ void Game::processEvents()
                 break;
             }
 
-            case sf::Event::MouseButtonPressed: { break;
+            case sf::Event::MouseButtonPressed: //
+            {
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
+                {
+                    m_effects.push_back(std::make_unique<entity::RisingFadeEffect>(
+                        m_context, m_resources.particle_texture));
+                }
+                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
+                {
+                    m_effects.push_back(std::make_unique<entity::FollowerEffect>(
+                        m_resources.rabbit_texture,
+                        sf::Vector2f{ 0, 0 },
+                        100.0f,
+                        m_context.mouse_pos));
+                }
+                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
+                {
+                    m_effects.push_back(std::make_unique<entity::WallBouncerEffect>(
+                        m_context,
+                        m_resources.warn_texture,
+                        sf::Vector2f(200.0f, -200.0f),
+                        m_window));
+                }
+                break;
             }
 
             case sf::Event::Closed:

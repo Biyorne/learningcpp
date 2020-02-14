@@ -91,6 +91,12 @@ namespace util
         return (vecNormal(vec) * magnitude);
     }
 
+    inline sf::Vector2f vecSetDirection(
+        const sf::Vector2f & vec, const sf::Vector2f & from, const sf::Vector2f & to)
+    {
+        return (util::vecNormal(to - from) * vecMagnitude(vec));
+    }
+
     // Size/scale
 
     inline void

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project("simple-effects" VERSION 0.5.0 LANGUAGES CXX)
+project("simple-effects" VERSION 1.0.0 LANGUAGES CXX)
 
 
 file(GLOB source_files *.?pp)
@@ -17,6 +17,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         ${PROJECT_NAME}
         PUBLIC
         /std:c++17
+        /permissive-
         -DWIN32_LEAN_AND_MEAN
         /MP
         /W4
