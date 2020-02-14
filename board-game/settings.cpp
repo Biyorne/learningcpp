@@ -17,12 +17,13 @@ namespace boardgame
 
     void GameSettings::printStatus() const
     {
-        std::cout << "\nGAME SETTINGS: \"" << game_name << "\"";
+        std::cout << "GAME SETTINGS: \"" << game_name << "\"";
         std::cout << "\n\t media_path        = " << media_path;
         std::cout << "\n\t window_size       = " << video_mode.width << "x" << video_mode.height;
         std::cout << "\n\t frame_rate_limit  = " << frame_rate_limit;
         std::cout << "\n\t is_self_test      = " << std::boolalpha << is_self_test;
         std::cout << "\n\t is_game_over      = " << std::boolalpha << is_game_over;
+        std::cout << std::endl;
     }
 
     void SnakeGameSettings::reset()
@@ -35,12 +36,13 @@ namespace boardgame
     {
         GameSettings::printStatus();
 
-        std::cout << "\n\t-";
+        std::cout << "SNAKE SETTINGS:";
         std::cout << "\n\t cell_size_window_ratio       = " << cell_size_window_ratio;
         std::cout << "\n\t turn_duration_min            = " << turn_duration_min_sec;
         std::cout << "\n\t turn_duration_max            = " << turn_duration_max_sec;
-        std::cout << "\n\t urn_duration_ratio_after_eat = " << turn_duration_ratio_after_eat;
+        std::cout << "\n\t turn_duration_ratio_after_eat= " << turn_duration_ratio_after_eat;
         std::cout << "\n\t food_eaten_count             = " << food_eaten_count;
         std::cout << "\n\t period_duration_sec          = " << period_duration_sec;
+        std::cout << std::endl;
     }
 } // namespace boardgame

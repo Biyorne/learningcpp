@@ -139,6 +139,12 @@ namespace boardgame
 
         void takeTurn(Context & context) override;
 
+        static void reset()
+        {
+            m_idToNextAssign = 0;
+            m_idToNextRemove = 0;
+        }
+
         static void incrementNextToRemoveId() { ++m_idToNextRemove; }
 
       private:
@@ -164,6 +170,8 @@ namespace boardgame
         void takeTurn(Context & context) override;
         void update(Context & context, const float) override;
         void move(Context & context, const BoardPos_t & posNew) override;
+
+        static void reset() { m_tailPiecesToGrowRemaining = 0; }
 
       protected:
         sf::Clock m_turnClock;

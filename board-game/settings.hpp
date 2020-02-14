@@ -57,14 +57,14 @@ namespace boardgame
         void reset() override;
         void printStatus() const override;
 
-        float cell_size_window_ratio{ 0.01f };
+        float cell_size_window_ratio{ 0.025f };
 
         std::size_t food_eaten_count{ 0 };
         std::size_t tail_growth_per_eat_count{ 5 };
 
         float turn_duration_min_sec{ 0.05f };
-        float turn_duration_max_sec{ 0.05f };
-        float turn_duration_ratio_after_eat{ 0.975f };
+        float turn_duration_max_sec{ 0.25f };
+        float turn_duration_ratio_after_eat{ 0.9f };
 
         float period_duration_sec{ 1.0f };
     };

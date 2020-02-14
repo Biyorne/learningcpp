@@ -47,6 +47,9 @@ namespace boardgame
 
     void GameCoordinator::reset()
     {
+        HeadPiece::reset();
+        TailPiece::reset();
+
         m_settings.reset();
         m_board.reset(m_context);
         m_soundPlayer.stopAll();
