@@ -5,45 +5,45 @@
 
 #include <SFML/Graphics.hpp>
 
-struct Mover
-{
-    explicit Mover(
-        const float spd = 1.0f,
-        const sf::Vector2f & pos = sf::Vector2f(0.0f, 0.0f),
-        const sf::Vector2f & vel = sf::Vector2f(0.0f, 0.0f),
-        const sf::Vector2f & acc = sf::Vector2f(0.0f, 0.0f),
-        const float spdLimit = 0.0f)
-        : speed(spd)
-        , position(pos)
-        , velocity(vel)
-        , acceleration(acc)
-        , speed_limit(spdLimit)
-    {}
-
-    void update(const float frameTimeSec)
-    {
-        velocity += acceleration;
-        velocity *= (frameTimeSec * speed);
-
-        if (velocity.x > speed_limit)
-        {
-            velocity.x = speed_limit;
-        }
-
-        if (velocity.y > speed_limit)
-        {
-            velocity.y = speed_limit;
-        }
-
-        position += velocity;
-    }
-
-    float speed;
-    sf::Vector2f position;     // the result we wanted in the first place
-    sf::Vector2f velocity;     // change to position
-    sf::Vector2f acceleration; // changes to velocity
-    float speed_limit;
-};
+// struct Mover
+//{
+//    explicit Mover(
+//        const float spd = 1.0f,
+//        const sf::Vector2f & pos = sf::Vector2f(0.0f, 0.0f),
+//        const sf::Vector2f & vel = sf::Vector2f(0.0f, 0.0f),
+//        const sf::Vector2f & acc = sf::Vector2f(0.0f, 0.0f),
+//        const float spdLimit = 0.0f)
+//        : speed(spd)
+//        , position(pos)
+//        , velocity(vel)
+//        , acceleration(acc)
+//        , speed_limit(spdLimit)
+//    {}
+//
+//    void update(const float frameTimeSec)
+//    {
+//        velocity += acceleration;
+//        velocity *= (frameTimeSec * speed);
+//
+//        if (velocity.x > speed_limit)
+//        {
+//            velocity.x = speed_limit;
+//        }
+//
+//        if (velocity.y > speed_limit)
+//        {
+//            velocity.y = speed_limit;
+//        }
+//
+//        position += velocity;
+//    }
+//
+//    float speed;
+//    sf::Vector2f position;     // the result we wanted in the first place
+//    sf::Vector2f velocity;     // change to position
+//    sf::Vector2f acceleration; // changes to velocity
+//    float speed_limit;
+//};
 
 //
 
@@ -85,6 +85,28 @@ namespace entity
         sf::Vector2f vector;
     };
 
+    //
+
+    struct MagnitudeClamp
+    {
+        explicit MagnitudeClamp(const float maximum)
+            : max(std::max(0.0f, maximum))
+        {}
+
+        // requires max >= 0.0f (see constructor)
+        sf::Vector2f clamp(sf::Vector2f vec)
+        {
+            const float magnitude{ util::vecMagnitude(vec) };
+            if (magnitude > max)
+            {
+                vec *= (max / magnitude);
+            }
+
+            return vec;
+        }
+
+        float max;
+    };
     //
 
     // Fencing hard stop:
