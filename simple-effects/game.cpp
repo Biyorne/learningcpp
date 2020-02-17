@@ -6,7 +6,7 @@
 
 Game::Game()
     : m_window(
-          sf::VideoMode(1600, 1200, sf::VideoMode::getDesktopMode().bitsPerPixel), "Simple Effect")
+          sf::VideoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel), "Simple Effect")
     , m_resources()
     , m_random()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
@@ -14,6 +14,7 @@ Game::Game()
     , m_willClear(false)
     , m_bgSprite(m_resources.bg_texture)
     , m_effects()
+    , m_simTimeMult(1.0f)
 //, m_quadVerts(sf::Quads)// Color Gradient
 //, m_offScreenTexture()
 //, m_image()
@@ -61,7 +62,7 @@ void Game::run()
         m_context.mouse_pos = sf::Vector2f(sf::Mouse::getPosition(m_window));
 
         processEvents();
-        update(clock.restart().asSeconds());
+        update(clock.restart().asSeconds() * m_simTimeMult);
         render();
     }
 }
@@ -73,7 +74,8 @@ void Game::processEvents()
     {
         switch (event.type)
         {
-            case sf::Event::KeyPressed: {
+            case sf::Event::KeyPressed:
+            {
                 if (sf::Keyboard::Escape == event.key.code)
                 {
                     m_window.close();
@@ -90,11 +92,22 @@ void Game::processEvents()
                 break;
             }
 
-            case sf::Event::MouseWheelScrolled: {
+            case sf::Event::MouseWheelScrolled:
+            {
                 // On Nel's laptop, values are whole numbers from[-5,5] but usually just [-1,1] //
                 // On Til's laptop, values are reals around [0.0083, 5.0f]
                 const float scrollAmount(event.mouseWheelScroll.delta);
-                std::cout << scrollAmount << std::endl;
+
+                if (scrollAmount > 0.0f)
+                {
+                    m_simTimeMult *= 1.1f;
+                }
+                else
+                {
+                    m_simTimeMult *= 0.9f;
+                }
+
+                std::cout << scrollAmount << "->" << m_simTimeMult << std::endl;
                 break;
             }
 
@@ -107,11 +120,8 @@ void Game::processEvents()
                 }
                 else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
                 {
-                    m_effects.push_back(std::make_unique<entity::FollowerEffect>(
-                        m_resources.rabbit_texture,
-                        sf::Vector2f{ 0, 0 },
-                        1000.0f,
-                        m_context.mouse_pos));
+                    m_effects.push_back(std::make_unique<entity::MouseFollowerEffect>(
+                        m_context, m_resources.rabbit_texture, 1.0f, 1000.0f, 500.0f));
                 }
                 else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
                 {
@@ -124,7 +134,8 @@ void Game::processEvents()
                 break;
             }
 
-            case sf::Event::Closed: {
+            case sf::Event::Closed:
+            {
                 m_window.close();
                 break;
             }

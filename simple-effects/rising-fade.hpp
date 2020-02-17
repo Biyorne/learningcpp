@@ -18,7 +18,7 @@ namespace entity
 
         virtual ~RisingFadeEffect() = default;
 
-        void update(const Context & context, const float frameTimeSec) override
+        void update(const Context &, const float frameTimeSec) override
         {
             m_sprite.move(m_velocity.updateDelta(frameTimeSec));
             m_sprite.setColor(m_sprite.getColor() - sf::Color(0, 0, 0, 5));

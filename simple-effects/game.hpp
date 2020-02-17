@@ -49,6 +49,8 @@ class Game
 
     entity::IEffectUVec_t m_effects;
 
+    float m_simTimeMult;
+
     // Color Gradient
     // sf::VertexArray m_quadVerts;
     // sf::RenderTexture m_offScreenTexture;

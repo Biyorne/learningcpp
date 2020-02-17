@@ -21,12 +21,12 @@ struct Resources
             music.play();
         }
 
-        loadTexture("z:/src/learningcpp/media/image/warning.png", warn_texture);
-        loadTexture("z:/src/learningcpp/media/image/seamless/brick-wall.jpg", bg_texture);
-        loadTexture("z:/src/learningcpp/media/image/rabbit.png", rabbit_texture);
-        loadTexture("z:/src/learningcpp/media/image/carrot.png", carrot_texture);
+        loadTexture("C:/src/learningcpp/media/image/warning.png", warn_texture);
+        loadTexture("C:/src/learningcpp/media/image/seamless/brick-wall.jpg", bg_texture);
+        loadTexture("C:/src/learningcpp/media/image/rabbit.png", rabbit_texture);
+        loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
         loadTexture(
-            "z:/src/learningcpp/media/image/particle/spirit-recruit-5.png", particle_texture);
+            "C:/src/learningcpp/media/image/particle/spirit-recruit-5.png", particle_texture);
     }
 
     void loadTexture(const std::string & filePath, sf::Texture & texture)

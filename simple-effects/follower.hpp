@@ -9,40 +9,39 @@
 namespace entity
 {
     // accelerate a sprite toward a target
-    class FollowerEffect : public EffectBase
+    class FollowerEffectBase : public EffectBase
     {
       public:
-        FollowerEffect(
+        FollowerEffectBase(
+            const Context & context,
             const sf::Texture & texture,
-            const sf::Vector2f & spawnPos,
-            const float accMagnitude,
-            const sf::Vector2f & targetPos)
-            : EffectBase(makeSprite(texture, spawnPos))
+            const float textureSizeWindowRatio,
+            const float acceleration,
+            const float speedLimit)
+            : EffectBase(makeSprite(texture))
             , m_velocity({ 0.0f, 0.0f })
             , m_acceleration({ 0.0f, 0.0f })
-            , m_targetPos(targetPos)
-            , m_accelerationMag(accMagnitude)
+            , m_speedLimit(speedLimit)
+            , m_targetPos(m_sprite.getPosition())
+            , m_accelerationMag(acceleration)
         {}
 
-        virtual ~FollowerEffect() = default;
+        virtual ~FollowerEffectBase() = default;
 
-        void setTargetPos(const sf::Vector2f & pos) { m_targetPos = pos; }
+        virtual void setTargetPos(const sf::Vector2f & pos) { m_targetPos = pos; }
+
+        virtual sf::Vector2f findTargetPos(const Context &) const { return m_targetPos; }
 
         void update(const Context & context, const float frameTimeSec) override
         {
-            m_targetPos = context.mouse_pos;
+            m_targetPos = findTargetPos(context);
 
             m_acceleration.vector =
                 (util::vecNormal(m_targetPos - m_sprite.getPosition()) * m_accelerationMag);
 
             m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
 
-            const float speedLimit{ 500.0f };
-            const float speed{ util::vecMagnitude(m_velocity.vector) };
-            if (speed > speedLimit)
-            {
-                m_velocity.vector *= (speedLimit / speed);
-            }
+            m_velocity.vector = m_speedLimit.clamp(m_velocity.vector);
 
             m_sprite.move(m_velocity.updateDelta(frameTimeSec));
         }
@@ -50,9 +49,33 @@ namespace entity
       private:
         Velocity m_velocity;
         Acceleration m_acceleration;
+        MagnitudeClamp m_speedLimit;
+
         sf::Vector2f m_targetPos;
         float m_accelerationMag;
     };
+
+    //
+
+    struct MouseFollowerEffect : public FollowerEffectBase
+    {
+        MouseFollowerEffect(
+            const Context & context,
+            const sf::Texture & texture,
+            const float textureSizeWindowRatio,
+            const float acceleration,
+            const float speedLimit)
+            : FollowerEffectBase(context, texture, textureSizeWindowRatio, acceleration, speedLimit)
+        {}
+
+        virtual ~MouseFollowerEffect() = default;
+
+        sf::Vector2f findTargetPos(const Context & context) const override
+        {
+            return context.mouse_pos;
+        }
+    };
+
 } // namespace entity
 
 #endif // SIMPLE_EFFECTS_FOLLOWER_HPP_INCLUDED
