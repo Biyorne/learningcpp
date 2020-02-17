@@ -73,9 +73,9 @@ namespace boardgame
             const BoardPos_t & boardPos,
             const sf::Color & color) const override
         {
-            M_ASSERT_OR_THROW(Piece::Count != piece);
+            M_ASSERT_OR_THROW(Piece::NotInPlay != piece);
             sf::Sprite sprite(texture(piece));
-            util::scaleAndCenterInside(sprite, context.board.cellBounds(boardPos));
+            util::scaleAndCenterInside(sprite, context.board.cells().bounds(boardPos));
             sprite.setColor(color);
             return sprite;
         }

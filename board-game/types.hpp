@@ -3,6 +3,7 @@
 //
 // types.hpp
 //
+#include <string>
 
 namespace boardgame
 {
@@ -14,8 +15,22 @@ namespace boardgame
             Tail,
             Food,
             Wall,
-            Count
+            Count,
+            NotInPlay = Count
         };
+
+        static std::string name(const Enum which)
+        {
+            switch (which)
+            {
+                case Head: return "Head";
+                case Tail: return "Tail";
+                case Food: return "Food";
+                case Wall: return "Wall";
+                case NotInPlay: return "";
+                default: return "";
+            }
+        }
     };
 } // namespace boardgame
 

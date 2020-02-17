@@ -667,35 +667,11 @@ namespace util
 
     // more misc sfml
 
-    template <typename T = int>
-    inline sf::Vector2<T>
-        arrowKeyToPositionAdj(const sf::Keyboard::Key arrowKey, const bool willReverse = false)
+    inline bool isArrowKey(const sf::Keyboard::Key key)
     {
-        sf::Vector2<T> posAdj{ 0, 0 };
-
-        if (sf::Keyboard::Up == arrowKey)
-        {
-            --posAdj.y;
-        }
-        else if (sf::Keyboard::Down == arrowKey)
-        {
-            ++posAdj.y;
-        }
-        else if (sf::Keyboard::Left == arrowKey)
-        {
-            --posAdj.x;
-        }
-        else if (sf::Keyboard::Right == arrowKey)
-        {
-            ++posAdj.x;
-        }
-
-        if (willReverse)
-        {
-            posAdj *= -1;
-        }
-
-        return posAdj;
+        return (
+            (key == sf::Keyboard::Up) || (key == sf::Keyboard::Down) ||
+            (key == sf::Keyboard::Left) || (key == sf::Keyboard::Right));
     }
 
     inline sf::Keyboard::Key oppositeDirection(const sf::Keyboard::Key dir)

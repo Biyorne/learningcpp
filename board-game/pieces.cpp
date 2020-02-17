@@ -7,6 +7,7 @@
 
 #include "board.hpp"
 #include "random.hpp"
+#include "sound-player.hpp"
 #include "util.hpp"
 
 #include <cassert>
@@ -16,85 +17,46 @@ namespace boardgame
 {
     void PieceBase::move(Context & context, const BoardPos_t & posNew)
     {
-        if (!isInPlay())
-        {
-            return;
-        }
+        M_ASSERT_OR_THROW(posNew != position());
 
-        M_ASSERT_OR_THROW(posNew != m_boardPos);
-        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posNew) == Piece::Count);
+        context.board.removeFromPlay(posNew);
 
-        m_boardPos = posNew;
-        util::centerInside(m_sprite, context.board.cellBounds(m_boardPos));
+        m_position = posNew;
+        util::centerInside(m_sprite, context.board.cells().bounds(posNew));
 
-        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posNew) == m_piece);
+        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posNew) == m_enum);
     }
 
-    void PieceBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
+    void HeadPiece::handleEvent(Context & context, const sf::Event & event)
     {
-        if (!isInPlay())
+        if ((sf::Event::KeyPressed != event.type) || !util::isArrowKey(event.key.code))
         {
             return;
         }
 
-        target.draw(m_sprite, states);
-    }
-
-    void TailPiece::takeTurn(Context &)
-    {
-        if (!isInPlay())
+        if (m_directionKeyNext != event.key.code)
         {
-            return;
-        }
-
-        if (m_id == m_idToNextRemove)
-        {
-            removeFromPlay();
+            context.audio.play("tap-1-a.ogg");
+            m_directionKeyNext = event.key.code;
         }
     }
 
-    void HeadPiece::move(Context & context, const BoardPos_t & posNew)
+    void HeadPiece::update(Context & context, const float frameTimeSec)
     {
-        if (!isInPlay())
+        changeDirectionIfArrowKeyIsPressed(context);
+
+        m_timeElapsedSinceLastTurnSec += frameTimeSec;
+        if (m_timeElapsedSinceLastTurnSec > context.settings.timeBetweenTurnsSec())
         {
-            return;
-        }
+            m_timeElapsedSinceLastTurnSec -= context.settings.timeBetweenTurnsSec();
 
-        // move head
-        const BoardPos_t posOld{ m_boardPos };
-        PieceBase::move(context, posNew);
-
-        // place a new tail piece behind the head
-        context.board.placePiece(context, Piece::Tail, posOld);
-        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posOld) == Piece::Tail);
-
-        // handle removing the last tail piece, if needed
-        if (0 == m_tailPiecesToGrowRemaining)
-        {
-            TailPiece::incrementNextToRemoveId();
-
-            for (IPieceUPtr_t & piece : context.board.pieces())
-            {
-                if (piece->piece() == Piece::Tail)
-                {
-                    piece->takeTurn(context);
-                }
-            }
-        }
-        else
-        {
-            --m_tailPiecesToGrowRemaining;
+            takeTurn(context);
         }
     }
 
-    void HeadPiece::update(Context & context, const float)
+    void HeadPiece::changeDirectionIfArrowKeyIsPressed(Context & context)
     {
-        if (!isInPlay())
-        {
-            return;
-        }
-
-        const auto directionNextBeforeChanges{ m_directionKeyNext };
+        const auto before{ m_directionKeyNext };
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
         {
@@ -113,71 +75,119 @@ namespace boardgame
             m_directionKeyNext = sf::Keyboard::Right;
         }
 
-        // prevent from reversing direction (instant death)
-        if (util::oppositeDirection(m_directionKeyNext) == directionNextBeforeChanges)
+        if (m_directionKeyNext != before)
         {
-            m_directionKeyNext = directionNextBeforeChanges;
-        }
-
-        if (m_turnClock.getElapsedTime().asSeconds() > m_turnTimeDurationSec)
-        {
-            m_turnClock.restart();
-
-            m_turnTimeDurationSec *= context.settings.turn_duration_ratio_after_eat;
-            if (m_turnTimeDurationSec < context.settings.turn_duration_min_sec)
-            {
-                m_turnTimeDurationSec = context.settings.turn_duration_min_sec;
-            }
-
-            takeTurn(context);
+            context.audio.play("tap-1-a.ogg");
         }
     }
 
     void HeadPiece::takeTurn(Context & context)
     {
-        if (!isInPlay())
+        ++context.settings.total_turns_played;
+
+        // undo the change in direction if it would reverse direction == instant death
+        if (util::oppositeDirection(m_directionKeyNext) == m_directionKeyPrev)
         {
-            return;
+            context.audio.play("bounce-small-deep");
+            m_directionKeyNext = m_directionKeyPrev;
         }
 
-        const BoardPos_t posNew{ m_boardPos +
-                                 util::arrowKeyToPositionAdj(m_directionKeyNext, false) };
+        m_directionKeyPrev = m_directionKeyNext;
 
-        const Piece::Enum bitePieceEnum{ context.board.pieceEnumAt(posNew) };
+        const BoardPos_t posOld{ m_position };
+        const BoardPos_t posNew{ changePositionWithArrowKey(m_position, m_directionKeyNext) };
+        M_ASSERT_OR_THROW(posOld != posNew);
 
-        if (bitePieceEnum != Piece::Count)
-        {
-            context.board.removePieceFromPlay(posNew);
-        }
+        const bool didMissFood{ isPositionNextToFood(context, posOld) &&
+                                !isPositionNextToFood(context, posNew) };
 
+        const Piece::Enum posNewPieceEnum{ context.board.pieceEnumAt(posNew) };
+
+        // move head
         move(context, posNew);
+        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posNew) == Piece::Head);
+        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posOld) == Piece::NotInPlay);
 
-        if (bitePieceEnum == Piece::Food)
+        // place a new tail piece behind the head
+        context.board.addPiece(context, Piece::Tail, posOld);
+        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posOld) == Piece::Tail);
+
+        // handle whatever we just ate
+        if (posNewPieceEnum == Piece::Food)
         {
-            ++context.settings.food_eaten_count;
-            m_tailPiecesToGrowRemaining += context.settings.tail_growth_per_eat_count;
+            // const float speedDifficultyRatio{ context.settings.speedDifficultyRatio() };
+            static float pitch{ 0.5f };
+            std::cout << "pitch=" << pitch << std::endl;
+            context.audio.play("shine", pitch);
+            pitch += 0.025f;
 
-            const BoardPosOpt_t foodPosOpt{ context.board.findRandomEmptyPos(context) };
-            if (foodPosOpt)
+            context.settings.handleEat();
+            FoodPiece::spawn(context);
+        }
+        else if (posNewPieceEnum == Piece::NotInPlay)
+        {
+            if (didMissFood)
             {
-                context.board.placePiece(context, Piece::Food, foodPosOpt.value());
-            }
-            else
-            {
-                std::cout << "YOU WIN by filling the entire screen!" << std::endl;
-                context.settings.is_game_over = true;
+                context.audio.play("miss");
             }
         }
-        else if (bitePieceEnum != Piece::Count)
+        else
         {
+            context.audio.play("cannon-miss");
+            context.audio.play("rpg-game-over");
             m_sprite.setColor(sf::Color::Red);
 
-            std::cout << "You bit into "
-                      << ((bitePieceEnum == Piece::Wall) ? "the wall" : "yourself") << "! YOU LOSE!"
-                      << std::endl;
-
             context.settings.is_game_over = true;
+
+            std::cout << "You bit into " << Piece::name(posNewPieceEnum) << "!  YOU LOSE!"
+                      << std::endl;
         }
+
+        // remove the last tail if not growing
+        if (!context.settings.is_game_over && !context.settings.isTailGrowing())
+        {
+            TailPiece::removeLastPiece(context);
+        }
+    }
+
+    bool HeadPiece::isPositionNextToFood(Context & context, const BoardPos_t & pos)
+    {
+        const auto abovePos{ changePositionWithArrowKey(pos, sf::Keyboard::Up) };
+        const auto belowPos{ changePositionWithArrowKey(pos, sf::Keyboard::Down) };
+        const auto leftPos{ changePositionWithArrowKey(pos, sf::Keyboard::Left) };
+        const auto rightPos{ changePositionWithArrowKey(pos, sf::Keyboard::Right) };
+
+        const auto isFoodAbove{ context.board.pieceEnumAt(abovePos) == Piece::Food };
+        const auto isFoodBelow{ context.board.pieceEnumAt(belowPos) == Piece::Food };
+        const auto isFoodLeft{ context.board.pieceEnumAt(leftPos) == Piece::Food };
+        const auto isFoodRight{ context.board.pieceEnumAt(rightPos) == Piece::Food };
+
+        return (isFoodAbove || isFoodBelow || isFoodLeft || isFoodRight);
+    }
+
+    BoardPos_t HeadPiece::changePositionWithArrowKey(
+        const BoardPos_t & oldPos, const sf::Keyboard::Key key)
+    {
+        BoardPos_t newPos{ oldPos };
+
+        if (sf::Keyboard::Up == key)
+        {
+            --newPos.y;
+        }
+        else if (sf::Keyboard::Down == key)
+        {
+            ++newPos.y;
+        }
+        else if (sf::Keyboard::Left == key)
+        {
+            --newPos.x;
+        }
+        else if (sf::Keyboard::Right == key)
+        {
+            ++newPos.x;
+        }
+
+        return newPos;
     }
 
     /*
@@ -283,7 +293,7 @@ namespace boardgame
     //    //    return false;
     //    //}
     //
-    //    if ((Piece::Count != targetEnum) && (Piece::Door != targetEnum))
+    //    if ((Piece::NotInPlay != targetEnum) && (Piece::Door != targetEnum))
     //    {
     //        return false;
     //    }
@@ -298,7 +308,8 @@ namespace boardgame
     //    }
     //    // else if (Piece::Villan == targetEnum)
     //    //{
-    //    //    // std::cout << "You walked into a monster and lost like an idiot." << std::endl;
+    //    //    // std::cout << "You walked into a monster and lost like an idiot." <<
+    std::endl;
     //    //    context.is_game_over = true;
     //    //    removeFromPlay();
     //    //}
@@ -314,7 +325,7 @@ namespace boardgame
     //
     //    for (const IPieceUPtr_t & piece : context.board.pieces())
     //    {
-    //        if (piece->isInPlay() && (piece->piece() == Piece::Player))
+    //        if (piece->isInPlay() && (piece->which() == Piece::Player))
     //        {
     //            return piece->boardPos();
     //        }
@@ -346,9 +357,9 @@ namespace boardgame
     //    if (targetPieceOpt)
     //    {
     //        IPiece & targetPiece = targetPieceOpt.value();
-    //        M_ASSERT_OR_THROW(targetPiece.piece() == Piece::Player);
+    //        M_ASSERT_OR_THROW(targetPiece.which() == Piece::Player);
     //
-    //        if (targetPiece.piece() == Piece::Player)
+    //        if (targetPiece.which() == Piece::Player)
     //        {
     //            // std::cout << "The monster caught you!  You lose." << std::endl;
     //            // context.is_game_over = true;
@@ -376,7 +387,8 @@ namespace boardgame
     //        std::remove_if(
     //            std::begin(moves),
     //            std::end(moves),
-    //            [&](const MaybeMove & target) { return !context.map.isPosValid(target.position);
+    //            [&](const MaybeMove & target) { return
+    //!context.map.isPosValid(target.position);
     //            }),
     //        std::end(moves));
     //
@@ -385,7 +397,8 @@ namespace boardgame
     //        std::remove_if(
     //            std::begin(moves),
     //            std::end(moves),
-    //            [&](const MaybeMove & target) { return !Piece::canWalkOn(m_piece, target.piece);
+    //            [&](const MaybeMove & target) { return !Piece::canWalkOn(m_piece,
+    target.piece);
     //            }),
     //        std::end(moves));
     //

@@ -21,64 +21,57 @@ namespace boardgame
         , m_soundPlayer(m_random, (settings.media_path / "sfx").string())
         , m_animationPlayer(m_random, (settings.media_path / "animation").string())
         , m_context(m_settings, m_resources, m_board, m_random, m_soundPlayer, m_animationPlayer)
-        , m_frameClock()
-        , m_frameTimeElapsedSec(0.0f)
-        , m_frameTimeElapsedMinSec(0.001f)
-        , m_periodClock()
     {
         m_window.setFramerateLimit(m_settings.frame_rate_limit);
 
         reset();
+
+        m_soundPlayer.load({ "cannon-miss.ogg",
+                             "rpg-game-over.ogg",
+                             "bounce-small-deep-rising.ogg",
+                             "bounce-small-short.ogg",
+                             "tap-1-a.ogg",
+                             "miss.ogg",
+                             "plop-sparkle.ogg",
+                             "shine.ogg" });
+
         if (m_settings.is_self_test)
         {
-            m_settings.printStatus();
             m_board.printStatus();
+            m_settings.printStatus();
         }
     }
 
     GameCoordinator::~GameCoordinator()
     {
-        if (m_settings.is_self_test)
-        {
-            m_settings.printStatus();
-            m_board.printStatus();
-        }
+        // if (m_settings.is_self_test)
+        //{
+        //    m_board.printStatus();
+        //    m_settings.printStatus();
+        //}
     }
 
     void GameCoordinator::reset()
     {
-        HeadPiece::reset();
-        TailPiece::reset();
-
         m_settings.reset();
         m_board.reset(m_context);
         m_soundPlayer.stopAll();
+        m_soundPlayer.volume(100.0f);
         m_animationPlayer.stopAll();
-
-        m_frameClock.restart();
-        m_frameTimeElapsedSec = 0.0f;
-
-        m_periodClock.restart();
     }
 
     void GameCoordinator::run()
     {
         try
         {
+            sf::Clock frameClock;
+
             while (m_window.isOpen())
             {
                 handleEvents();
-
-                if (!m_settings.is_game_paused && !m_settings.is_game_over)
-                {
-                    updatePerFrame();
-                    updatePerPeriod();
-                }
-
+                update(frameClock.restart().asSeconds());
                 draw();
             }
-
-            std::cout << "Final Score: " << m_settings.food_eaten_count << std::endl;
         }
         catch (const std::exception & ex)
         {
@@ -88,6 +81,9 @@ namespace boardgame
         {
             std::cout << "EXCEPTION ERROR:  \"UNKOWNN\"" << std::endl;
         }
+
+        m_board.printStatus();
+        m_settings.printStatus();
     }
 
     void GameCoordinator::handleEvents()
@@ -105,15 +101,18 @@ namespace boardgame
             ((sf::Event::KeyPressed != event.type) &&
              (sf::Keyboard::Q == event.key.code || sf::Keyboard::Escape == event.key.code)))
         {
-            std::cout << "The game is ending because the player's a wussy." << std::endl;
+            std::cout << "Player quit the game." << std::endl;
             m_settings.is_game_over = true;
             m_window.close();
+            return;
         }
-        else if (sf::Event::KeyPressed != event.type)
+
+        if (sf::Event::KeyPressed != event.type)
         {
             return;
         }
-        else if (sf::Keyboard::R == event.key.code)
+
+        if (sf::Keyboard::R == event.key.code)
         {
             std::cout << "'R' key pressed, so the game is being reset." << std::endl;
             reset();
@@ -130,47 +129,77 @@ namespace boardgame
             std::cout << "'SPACE' key pressed, so the game will "
                       << ((m_settings.is_game_paused) ? "PAUSE" : "UN-PAUSE") << std::endl;
         }
+        else if (util::isArrowKey(event.key.code))
+        {
+            for (IPieceUPtr_t & pieceUPtr : m_board.pieces())
+            {
+                if (pieceUPtr->which() == Piece::Head)
+                {
+                    pieceUPtr->handleEvent(m_context, event);
+                }
+            }
+        }
     }
 
-    void GameCoordinator::updatePerFrame()
+    void GameCoordinator::update(const float frameTimeSec)
     {
-        m_frameTimeElapsedSec += m_frameClock.getElapsedTime().asSeconds();
-        if (m_frameTimeElapsedSec < m_frameTimeElapsedMinSec)
+        if (m_settings.is_game_paused || m_settings.is_game_over)
         {
             return;
         }
 
-        m_frameClock.restart();
+        m_animationPlayer.update(frameTimeSec);
 
-        m_animationPlayer.update(m_frameTimeElapsedSec);
-
-        for (IPieceUPtr_t & piece : m_context.board.pieces())
+        for (IPieceUPtr_t & pieceUPtr : m_board.pieces())
         {
-            piece->update(m_context, m_frameTimeElapsedSec);
+            M_ASSERT_OR_THROW(pieceUPtr);
+
+            if (!pieceUPtr->isInPlay())
+            {
+                continue;
+            }
+
+            {
+                const BoardPos_t pos{ pieceUPtr->position() };
+
+                M_ASSERT_OR_THROW(
+                    (pos.x >= 0) && (pos.x < m_board.cells().counts_int.x) && (pos.y >= 0) &&
+                    (pos.y < m_board.cells().counts_int.x));
+            }
+
+            pieceUPtr->update(m_context, frameTimeSec);
+
+            M_ASSERT_OR_THROW(pieceUPtr);
+
+            {
+                const BoardPos_t pos{ pieceUPtr->position() };
+
+                M_ASSERT_OR_THROW(
+                    (pos.x >= 0) && (pos.x < m_board.cells().counts_int.x) && (pos.y >= 0) &&
+                    (pos.y < m_board.cells().counts_int.x));
+            }
         }
 
-        m_frameTimeElapsedSec = 0.0f;
-    }
-
-    void GameCoordinator::updatePerPeriod()
-    {
-        if (m_periodClock.getElapsedTime().asSeconds() < m_settings.period_duration_sec)
+        // misc periodic tasks
+        if ((m_settings.total_turns_played % 10) == 0)
         {
-            return;
+            m_board.eraseAllPiecesNotInPlay();
+            FoodPiece::spawn(m_context);
         }
-
-        m_periodClock.restart();
-
-        m_board.removePiecesThatAreNoLongerInPlay();
     }
 
     void GameCoordinator::draw()
     {
         m_window.clear();
 
-        for (const IPieceUPtr_t & piece : m_board.pieces())
+        for (const IPieceUPtr_t & pieceUPtr : m_board.pieces())
         {
-            m_window.draw(*piece);
+            if (!pieceUPtr->isInPlay())
+            {
+                continue;
+            }
+
+            m_window.draw(*pieceUPtr);
         }
 
         m_window.draw(m_animationPlayer);

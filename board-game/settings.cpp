@@ -5,6 +5,8 @@
 //
 #include "settings.hpp"
 
+#include "pieces.hpp"
+
 #include <iostream>
 
 namespace boardgame
@@ -30,6 +32,9 @@ namespace boardgame
     {
         GameSettings::reset();
         food_eaten_count = 0;
+        time_between_turns_cur_sec = time_between_turns_max_sec;
+        tail_pieces_to_grow_remaining = 0;
+        total_turns_played = 0;
     };
 
     void SnakeGameSettings::printStatus() const
@@ -37,12 +42,30 @@ namespace boardgame
         GameSettings::printStatus();
 
         std::cout << "SNAKE SETTINGS:";
-        std::cout << "\n\t cell_size_window_ratio       = " << cell_size_window_ratio;
-        std::cout << "\n\t turn_duration_min            = " << turn_duration_min_sec;
-        std::cout << "\n\t turn_duration_max            = " << turn_duration_max_sec;
-        std::cout << "\n\t turn_duration_ratio_after_eat= " << turn_duration_ratio_after_eat;
-        std::cout << "\n\t food_eaten_count             = " << food_eaten_count;
-        std::cout << "\n\t period_duration_sec          = " << period_duration_sec;
+        std::cout << "\n\t turns_per_sec                   = " << time_between_turns_cur_sec;
+        std::cout << "\n\t turns_per_sec_min               = " << time_between_turns_min_sec;
+        std::cout << "\n\t turns_per_sec_max               = " << time_between_turns_max_sec;
+        std::cout << "\n\t time_between_turns_shrink_ratio = " << time_between_turns_shrink_ratio;
+        std::cout << "\n\t total_turns_played              = " << total_turns_played;
+        std::cout << "\n\t food_eaten_count                = " << food_eaten_count;
+        std::cout << "\n\t tail_length                     = " << tailLength();
         std::cout << std::endl;
+    }
+
+    std::size_t SnakeGameSettings::tailLength() const
+    {
+        return (TailPiece::tailLength() + tail_pieces_to_grow_remaining);
+    }
+
+    void SnakeGameSettings::handleEat()
+    {
+        ++food_eaten_count;
+        tail_pieces_to_grow_remaining += tail_growth_per_food_count;
+        increaseMoveSpeed();
+
+        std::cout << "Ate food #" << food_eaten_count << " means tail will grow to " << tailLength()
+                  << ".  (played " << total_turns_played << " turns at "
+                  << (1.0f / time_between_turns_cur_sec) << " turns_per_sec, or "
+                  << (100.0f * speedDifficultyRatio()) << "% speed_difficulty)" << std::endl;
     }
 } // namespace boardgame
