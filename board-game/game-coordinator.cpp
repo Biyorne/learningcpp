@@ -21,6 +21,7 @@ namespace boardgame
         , m_soundPlayer(m_random, (settings.media_path / "sfx").string())
         , m_animationPlayer(m_random, (settings.media_path / "animation").string())
         , m_context(m_settings, m_resources, m_board, m_random, m_soundPlayer, m_animationPlayer)
+        , m_scoreText("", m_resources.font(Piece::Count), 99)
     {
         m_window.setFramerateLimit(m_settings.frame_rate_limit);
 
@@ -28,14 +29,15 @@ namespace boardgame
 
         m_soundPlayer.load({ "cannon-miss.ogg",
                              "rpg-game-over.ogg",
-                             "bounce-small-deep-rising.ogg",
-                             "bounce-small-short.ogg",
+                             "bounce-big.ogg",
                              "tap-1-a.ogg",
                              "miss.ogg",
                              "plop-sparkle.ogg",
-                             "shine.ogg" });
+                             "shine.ogg",
+                             "mario-pause.ogg",
+                             "mario-break-block.ogg" });
 
-        if (m_settings.is_self_test)
+        if (m_settings.is_self_play_test)
         {
             m_board.printStatus();
             m_settings.printStatus();
@@ -44,7 +46,7 @@ namespace boardgame
 
     GameCoordinator::~GameCoordinator()
     {
-        // if (m_settings.is_self_test)
+        // if (m_settings.is_self_play_test)
         //{
         //    m_board.printStatus();
         //    m_settings.printStatus();
@@ -58,6 +60,7 @@ namespace boardgame
         m_soundPlayer.stopAll();
         m_soundPlayer.volume(100.0f);
         m_animationPlayer.stopAll();
+        updateScore();
     }
 
     void GameCoordinator::run()
@@ -107,36 +110,48 @@ namespace boardgame
             return;
         }
 
-        if (sf::Event::KeyPressed != event.type)
+        if (sf::Event::KeyPressed == event.type)
         {
-            return;
-        }
+            // updateScore();
 
-        if (sf::Keyboard::R == event.key.code)
-        {
-            std::cout << "'R' key pressed, so the game is being reset." << std::endl;
-            reset();
-        }
-        else if (sf::Keyboard::S == event.key.code)
-        {
-            m_board.printStatus();
-            m_settings.printStatus();
-        }
-        else if (sf::Keyboard::Space == event.key.code)
-        {
-            m_settings.is_game_paused = !m_settings.is_game_paused;
-
-            std::cout << "'SPACE' key pressed, so the game will "
-                      << ((m_settings.is_game_paused) ? "PAUSE" : "UN-PAUSE") << std::endl;
-        }
-        else if (util::isArrowKey(event.key.code))
-        {
-            for (IPieceUPtr_t & pieceUPtr : m_board.pieces())
+            if (sf::Keyboard::R == event.key.code)
             {
-                if (pieceUPtr->which() == Piece::Head)
+                if (m_settings.is_game_over)
                 {
-                    pieceUPtr->handleEvent(m_context, event);
+                    std::cout << "'R' key pressed, so the game is being reset." << std::endl;
+                    m_settings.printStatus();
+                    reset();
                 }
+                else
+                {
+                    sf::Event newEvent{ event };
+                    newEvent.key.code = sf::Keyboard::F;
+                    handleEvent(newEvent);
+                }
+            }
+            else if (sf::Keyboard::S == event.key.code)
+            {
+                m_board.printStatus();
+                m_settings.printStatus();
+            }
+            else if (sf::Keyboard::Space == event.key.code)
+            {
+                if (!m_settings.is_game_over)
+                {
+                    m_soundPlayer.play("mario-pause");
+                    m_settings.is_game_paused = !m_settings.is_game_paused;
+
+                    std::cout << "'SPACE' key pressed, so the game will "
+                              << ((m_settings.is_game_paused) ? "PAUSE" : "UN-PAUSE") << std::endl;
+                }
+            }
+        }
+
+        for (IPieceUPtr_t & pieceUPtr : m_board.pieces())
+        {
+            if (pieceUPtr->isInPlay())
+            {
+                pieceUPtr->handleEvent(m_context, event);
             }
         }
     }
@@ -145,39 +160,22 @@ namespace boardgame
     {
         if (m_settings.is_game_paused || m_settings.is_game_over)
         {
+            m_scoreText.setFillColor(m_scoreText.getFillColor() + sf::Color(0, 0, 0, 2));
             return;
         }
+
+        updateScore();
 
         m_animationPlayer.update(frameTimeSec);
 
         for (IPieceUPtr_t & pieceUPtr : m_board.pieces())
         {
-            M_ASSERT_OR_THROW(pieceUPtr);
-
             if (!pieceUPtr->isInPlay())
             {
                 continue;
             }
 
-            {
-                const BoardPos_t pos{ pieceUPtr->position() };
-
-                M_ASSERT_OR_THROW(
-                    (pos.x >= 0) && (pos.x < m_board.cells().counts_int.x) && (pos.y >= 0) &&
-                    (pos.y < m_board.cells().counts_int.x));
-            }
-
             pieceUPtr->update(m_context, frameTimeSec);
-
-            M_ASSERT_OR_THROW(pieceUPtr);
-
-            {
-                const BoardPos_t pos{ pieceUPtr->position() };
-
-                M_ASSERT_OR_THROW(
-                    (pos.x >= 0) && (pos.x < m_board.cells().counts_int.x) && (pos.y >= 0) &&
-                    (pos.y < m_board.cells().counts_int.x));
-            }
         }
 
         // misc periodic tasks
@@ -188,9 +186,53 @@ namespace boardgame
         }
     }
 
+    void GameCoordinator::updateScore()
+    {
+        // color
+        {
+            const int scoreChanging{ m_settings.adjustScore() };
+
+            sf::Color targetColor(255, 255, 255, 32);
+
+            if (scoreChanging < 0)
+            {
+                targetColor = sf::Color(255, 32, 0, 32);
+            }
+            else if (scoreChanging > 0)
+            {
+                targetColor = sf::Color(0, 255, 0, 32);
+            }
+
+            const sf::Color newColor{ util::colorStepToward(
+                10, m_scoreText.getFillColor(), targetColor, true) };
+
+            m_scoreText.setFillColor(newColor);
+        }
+
+        //
+        std::string scoreStr{ std::to_string(m_settings.scoreIncrementAndGet()) };
+
+        //
+        const std::size_t digitCount{ 6 };
+        while (scoreStr.length() < digitCount)
+        {
+            scoreStr.insert(std::begin(scoreStr), '0');
+        }
+
+        m_scoreText.setString(scoreStr);
+
+        auto textRegion{ m_context.settings.windowBounds() };
+        textRegion.top += (textRegion.height / 2.0f);
+        textRegion.height = (textRegion.top * 0.85f);
+        util::scaleRectInPlace(textRegion, 0.7f);
+        util::scaleAndCenterInside(m_scoreText, textRegion, true);
+    }
+
     void GameCoordinator::draw()
     {
         m_window.clear();
+
+        m_window.draw(m_scoreText);
 
         for (const IPieceUPtr_t & pieceUPtr : m_board.pieces())
         {
@@ -203,6 +245,12 @@ namespace boardgame
         }
 
         m_window.draw(m_animationPlayer);
+
+        // re-draw the text on top when game over or paused so the score is easy to see
+        if (m_settings.is_game_paused || m_settings.is_game_over)
+        {
+            m_window.draw(m_scoreText);
+        }
 
         m_window.display();
     }

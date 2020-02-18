@@ -23,7 +23,7 @@ namespace boardgame
         std::cout << "\n\t media_path        = " << media_path;
         std::cout << "\n\t window_size       = " << video_mode.width << "x" << video_mode.height;
         std::cout << "\n\t frame_rate_limit  = " << frame_rate_limit;
-        std::cout << "\n\t is_self_test      = " << std::boolalpha << is_self_test;
+        std::cout << "\n\t is_self_play_test      = " << std::boolalpha << is_self_play_test;
         std::cout << "\n\t is_game_over      = " << std::boolalpha << is_game_over;
         std::cout << std::endl;
     }
@@ -35,6 +35,9 @@ namespace boardgame
         time_between_turns_cur_sec = time_between_turns_max_sec;
         tail_pieces_to_grow_remaining = 0;
         total_turns_played = 0;
+        scoreAdjustmentsRemaining = 0;
+        scoreCurrent = 0;
+        // will_eating_tail_turn_it_into_wall = false;
     };
 
     void SnakeGameSettings::printStatus() const
@@ -49,7 +52,12 @@ namespace boardgame
         std::cout << "\n\t total_turns_played              = " << total_turns_played;
         std::cout << "\n\t food_eaten_count                = " << food_eaten_count;
         std::cout << "\n\t tail_length                     = " << tailLength();
+
+        std::cout << "\n\t score                           = "
+                  << (scoreCurrent + scoreAdjustmentsRemaining);
+
         std::cout << std::endl;
+        // willEatingTailTurnItIntoWall
     }
 
     std::size_t SnakeGameSettings::tailLength() const
@@ -61,11 +69,11 @@ namespace boardgame
     {
         ++food_eaten_count;
         tail_pieces_to_grow_remaining += tail_growth_per_food_count;
+        tail_pieces_to_grow_remaining += static_cast<int>(static_cast<float>(tailLength()) * .2f);
+
         increaseMoveSpeed();
 
-        std::cout << "Ate food #" << food_eaten_count << " means tail will grow to " << tailLength()
-                  << ".  (played " << total_turns_played << " turns at "
-                  << (1.0f / time_between_turns_cur_sec) << " turns_per_sec, or "
-                  << (100.0f * speedDifficultyRatio()) << "% speed_difficulty)" << std::endl;
+        // std::cout << "Ate #" << food_eaten_count << ", tail=" << tailLength()
+        //          << ", %=" << (100.0f * speedDifficultyRatio()) << std::endl;
     }
 } // namespace boardgame

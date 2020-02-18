@@ -35,6 +35,8 @@ namespace boardgame
         void update(const float frameTimeSec);
         void draw();
 
+        void updateScore();
+
       private:
         SnakeGameSettings m_settings;
         sf::RenderWindow m_window;
@@ -44,6 +46,8 @@ namespace boardgame
         util::SoundPlayer m_soundPlayer;
         util::AnimationPlayer m_animationPlayer;
         Context m_context;
+
+        sf::Text m_scoreText;
     };
 } // namespace boardgame
 

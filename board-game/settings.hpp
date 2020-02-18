@@ -48,7 +48,8 @@ namespace boardgame
 
         bool is_game_over{ false };
         bool is_game_paused{ false };
-        bool is_self_test{ false };
+        bool is_self_play_test{ false };
+        bool is_god_mode{ false };
     };
 
     //
@@ -66,6 +67,7 @@ namespace boardgame
 
         // state
         std::size_t total_turns_played{ 0 };
+        bool will_eating_tail_turn_it_into_wall{ true };
 
         float timeBetweenTurnsSec() const { return time_between_turns_cur_sec; }
         bool isTailGrowing() const { return (tail_pieces_to_grow_remaining > 0); }
@@ -90,6 +92,76 @@ namespace boardgame
                 1.0f);
         }
 
+        int scoreIncrementAndGet()
+        {
+            int multiplier{ 0 };
+
+            if (scoreAdjustmentsRemaining > 0)
+            {
+                multiplier = 1;
+            }
+            else if (scoreAdjustmentsRemaining < 0)
+            {
+                if (scoreCurrent <= 0)
+                {
+                    multiplier = 0;
+                }
+                else
+                {
+                    multiplier = -1;
+                }
+            }
+            else
+            {
+                multiplier = 0;
+            }
+
+            int scoreChange{ 0 };
+            const int adjAbs{ std::abs(scoreAdjustmentsRemaining) };
+
+            if (adjAbs > 10)
+            {
+                scoreChange = (multiplier * (adjAbs / 10));
+            }
+            else
+            {
+                scoreChange = multiplier;
+            }
+
+            scoreCurrent += scoreChange;
+            scoreAdjustmentsRemaining -= scoreChange;
+
+            if (scoreCurrent <= 0)
+            {
+                scoreCurrent = 0;
+
+                if (scoreAdjustmentsRemaining < 0)
+                {
+                    scoreAdjustmentsRemaining = 0;
+                }
+            }
+
+            return scoreCurrent;
+        }
+
+        int adjustScore() const { return scoreAdjustmentsRemaining; }
+
+        void adjustScore(const int adj)
+        {
+            if (scoreCurrent <= 0)
+            {
+                scoreCurrent = 0;
+
+                if (scoreAdjustmentsRemaining < 0)
+                {
+                    scoreAdjustmentsRemaining = 0;
+                }
+            }
+            scoreAdjustmentsRemaining += adj;
+        }
+
+        std::size_t foodEatenCount() const { return food_eaten_count; }
+
       private:
         void increaseMoveSpeed()
         {
@@ -100,11 +172,14 @@ namespace boardgame
             }
         }
 
+        int scoreAdjustmentsRemaining{ 0 };
+        int scoreCurrent{ 0 };
+
         std::size_t food_eaten_count{ 0 };
         std::size_t tail_growth_per_food_count{ 5 };
         std::size_t tail_pieces_to_grow_remaining{ 0 };
 
-        float time_between_turns_min_sec{ 0.05f };
+        float time_between_turns_min_sec{ 0.025f };
         float time_between_turns_max_sec{ 0.1f };
         float time_between_turns_cur_sec{ time_between_turns_max_sec };
         float time_between_turns_shrink_ratio{ 0.96f };

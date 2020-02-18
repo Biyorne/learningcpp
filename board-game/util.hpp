@@ -667,6 +667,94 @@ namespace util
 
     // more misc sfml
 
+    inline sf::Color colorBlend(
+        const float ratio,
+        const sf::Color & fromColor,
+        const sf::Color & toColor,
+        const bool willIgnoreAlpha = false)
+    {
+        if (ratio < 0.0f)
+        {
+            return fromColor;
+        }
+
+        if (ratio > 1.0f)
+        {
+            return toColor;
+        }
+
+        auto calcColorValue = [ratio](const sf::Uint8 fromVal, const sf::Uint8 toVal) {
+            const float diff{ static_cast<float>(toVal) - static_cast<float>(fromVal) };
+            const float finalValue{ fromVal + (diff * ratio) };
+            return static_cast<sf::Uint8>(finalValue);
+        };
+
+        sf::Color color{ toColor };
+        color.r = calcColorValue(fromColor.r, toColor.r);
+        color.g = calcColorValue(fromColor.g, toColor.g);
+        color.b = calcColorValue(fromColor.b, toColor.b);
+
+        if (!willIgnoreAlpha)
+        {
+            color.a = calcColorValue(fromColor.a, toColor.a);
+        }
+
+        return color;
+    }
+
+    inline sf::Color colorStepToward(
+        const sf::Uint8 stepSize,
+        const sf::Color & fromColor,
+        const sf::Color & toColor,
+        const bool willIgnoreAlpha = false)
+    {
+        if (0 == stepSize)
+        {
+            return fromColor;
+        }
+
+        if (255 == stepSize)
+        {
+            return toColor;
+        }
+
+        auto calcColorValue = [stepSize](const sf::Uint8 fromVal, const sf::Uint8 toVal) {
+            if (fromVal == toVal)
+            {
+                return fromVal;
+            }
+
+            const int stepInt{ static_cast<int>(stepSize) };
+            const int fromInt{ static_cast<int>(fromVal) };
+            const int toInt{ static_cast<int>(toVal) };
+            const int diff{ std::min(std::abs(toInt - fromInt), stepInt) };
+
+            int finalValue{ fromInt };
+            if (toVal > fromVal)
+            {
+                finalValue += diff;
+            }
+            else
+            {
+                finalValue -= diff;
+            }
+
+            return static_cast<sf::Uint8>(std::clamp(finalValue, 0, 255));
+        };
+
+        sf::Color color{ toColor };
+        color.r = calcColorValue(fromColor.r, toColor.r);
+        color.g = calcColorValue(fromColor.g, toColor.g);
+        color.b = calcColorValue(fromColor.b, toColor.b);
+
+        if (!willIgnoreAlpha)
+        {
+            color.a = calcColorValue(fromColor.a, toColor.a);
+        }
+
+        return color;
+    }
+
     inline bool isArrowKey(const sf::Keyboard::Key key)
     {
         return (
