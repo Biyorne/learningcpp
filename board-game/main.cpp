@@ -23,7 +23,7 @@ int main(const int argc, const char * const argv[])
     // setup misc game details
     boardgame::SnakeGameSettings settings;
     settings.game_name = "Snake";
-    settings.sf_window_style = sf::Style::Default;
+    settings.sf_window_style = sf::Style::Fullscreen;
     settings.video_mode.width = 2880;
     settings.video_mode.height = 1800;
 

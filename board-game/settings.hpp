@@ -41,11 +41,11 @@ namespace boardgame
                                   sf::VideoMode::getDesktopMode().bitsPerPixel }; //(2880u, 1800u,
 
         // i.e.  (sf::Style::Titlebar | sf::Style::Close)
-        unsigned int sf_window_style{ sf::Style::Fullscreen };
+        unsigned int sf_window_style{ sf::Style::Default };
 
         bool is_game_over{ false };
         bool is_game_paused{ false };
-        bool is_self_play_test{ true };
+        bool is_self_play_test{ false };
         bool is_god_mode{ false };
 
         // zero will disable the limit
@@ -63,7 +63,7 @@ namespace boardgame
         void reset() override;
         void printStatus() const override;
 
-        float cell_size_window_ratio{ 0.025f }; // { 0.0175f };
+        float cell_size_window_ratio{ 0.0125f }; // { 0.0175f };
 
         // state
         std::size_t total_turns_played{ 0 };
@@ -179,7 +179,7 @@ namespace boardgame
         std::size_t tail_growth_per_food_count{ (is_self_play_test) ? 1_st : 5_st };
         std::size_t tail_pieces_to_grow_remaining{ 3 };
 
-        float time_between_turns_min_sec{ (is_self_play_test) ? 0.0f : 0.025f };
+        float time_between_turns_min_sec{ (is_self_play_test) ? 0.01f : 0.0125f };
         float time_between_turns_max_sec{ (is_self_play_test) ? time_between_turns_min_sec : 0.1f };
         float time_between_turns_cur_sec{ time_between_turns_max_sec };
         float time_between_turns_shrink_ratio{ 0.96f };

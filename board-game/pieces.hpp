@@ -136,7 +136,28 @@ namespace boardgame
 
         void teardown(Context & context) override
         {
-            context.board.placePieceAtRandomPos(context, Piece::Food);
+            // context.board.placePieceAtRandomPos(context, Piece::Food);
+
+            for (int i(0); i < (context.settings.foodEatenCount() / 3);)
+            {
+                const auto posOpt = context.board.findRandomEmptyPos(context);
+                if (!posOpt)
+                {
+                    break;
+                }
+
+                const auto posDiff{ posOpt.value() - context.board.pieces().front()->position() };
+                const auto distance{ std::abs(posDiff.x) + std::abs(posDiff.y) };
+
+                if (distance < 20)
+                {
+                    continue;
+                }
+
+                context.board.placePiece(context, Piece::Wall, posOpt.value());
+
+                ++i;
+            }
         }
     };
 

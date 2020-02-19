@@ -214,7 +214,7 @@ namespace boardgame
 
         placePiece(context, Piece::Head, centerPos);
         // placePiece(context, Piece::Tail, (centerPos + sf::Vector2i(0, 1)));
-        placePiece(context, Piece::Food, (centerPos + sf::Vector2i(0, -4)));
+        // placePiece(context, Piece::Food, (centerPos + sf::Vector2i(0, -4)));
 
         for (int horiz(0); horiz < counts.x; ++horiz)
         {
@@ -232,10 +232,10 @@ namespace boardgame
             placePieceAtRandomPos(context, Piece::Food);
         }
 
-        for (int i(0); i < 20; ++i)
-        {
-            placePieceAtRandomPos(context, Piece::Wall);
-        }
+        // for (int i(0); i < 20; ++i)
+        //{
+        //    placePieceAtRandomPos(context, Piece::Wall);
+        //}
     }
 
     IPieceUPtr_t

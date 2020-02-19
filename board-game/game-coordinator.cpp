@@ -220,7 +220,14 @@ namespace boardgame
 
     void GameCoordinator::draw()
     {
-        if (!m_settings.is_self_play_test || m_settings.is_game_over)
+        static std::size_t prevTotalTurnsPlayed{ 0 };
+        if (m_settings.total_turns_played == prevTotalTurnsPlayed)
+        {
+            return;
+        }
+        prevTotalTurnsPlayed = m_settings.total_turns_played;
+
+        // if (!m_settings.is_self_play_test || m_settings.is_game_over)
         {
             m_window.clear();
 
@@ -237,9 +244,12 @@ namespace boardgame
             // m_window.draw(m_animationPlayer);
 
             // re-draw the text on top when game over or paused so the score is easy to see
-            if (m_settings.is_game_paused || m_settings.is_game_over)
+            if (!m_settings.is_self_play_test)
             {
-                m_window.draw(m_scoreText);
+                if (m_settings.is_game_paused || m_settings.is_game_over)
+                {
+                    m_window.draw(m_scoreText);
+                }
             }
 
             m_window.display();
