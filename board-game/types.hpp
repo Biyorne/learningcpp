@@ -15,8 +15,7 @@ namespace boardgame
             Tail,
             Food,
             Wall,
-            Count,
-            NotInPlay = Count
+            Count
         };
 
         static std::string name(const Enum which)
@@ -27,7 +26,7 @@ namespace boardgame
                 case Tail: return "Tail";
                 case Food: return "Food";
                 case Wall: return "Wall";
-                case NotInPlay: return "";
+                case Count: return "";
                 default: return "";
             }
         }

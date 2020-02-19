@@ -17,10 +17,14 @@ namespace boardgame
 {
     void PieceBase::move(Context & context, const BoardPos_t & posNew)
     {
+        M_ASSERT_OR_THROW(m_hasSetup);
+        M_ASSERT_OR_THROW(!m_hasTeardown);
+
         M_ASSERT_OR_THROW(posNew != position());
 
-        context.board.removeFromPlay(posNew);
+        context.board.removePiece(context, posNew);
 
+        // we don't use Board::placePiece() because our Setup() has already been called
         m_position = posNew;
         util::centerInside(m_sprite, context.board.cells().bounds(posNew));
 
@@ -135,24 +139,22 @@ namespace boardgame
         // move head
         move(context, posNew);
         M_ASSERT_OR_THROW(context.board.pieceEnumAt(posNew) == Piece::Head);
-        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posOld) == Piece::NotInPlay);
+        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posOld) == Piece::Count);
 
         // place a new tail piece behind the head
-        context.board.addPiece(context, Piece::Tail, posOld);
-        M_ASSERT_OR_THROW(context.board.pieceEnumAt(posOld) == Piece::Tail);
+        context.board.placePiece(context, Piece::Tail, posOld);
 
-        // remove the oldest tail
         if (context.settings.isTailGrowing() || (posNewPieceEnum == Piece::Food))
         {
             context.settings.adjustScore(static_cast<int>(TailPiece::tailLength()) + 1);
         }
         else
         {
-            TailPiece::removeLastPiece(context);
+            TailPiece::removeLastTailPiece(context);
         }
 
         // handle whatever we just ate
-        if (posNewPieceEnum == Piece::NotInPlay)
+        if (posNewPieceEnum == Piece::Count)
         {
             if (didMissFood)
             {
@@ -167,17 +169,15 @@ namespace boardgame
 
             context.settings.adjustScore(50);
             context.settings.handleEat();
-
-            FoodPiece::spawn(context);
         }
         else if (posNewPieceEnum == Piece::Tail)
         {
-            if (context.settings.will_eating_tail_turn_it_into_wall)
-            {
-                context.audio.play("mario-break-block");
-                TailPiece::turnSeveredTailIntoWall(context, posNew);
-            }
-            else
+            // if (context.settings.will_eating_tail_turn_it_into_wall)
+            //{
+            //    context.audio.play("mario-break-block");
+            //    TailPiece::turnSeveredTailIntoWall(context, posNew);
+            //}
+            // else
             {
                 handleDeathFromCollision(context, posNewPieceEnum);
             }

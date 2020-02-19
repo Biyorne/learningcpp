@@ -7,9 +7,10 @@
 #include "util.hpp"
 
 #include <functional>
-#include <map>
+#include <list>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -27,11 +28,8 @@ namespace boardgame
 
     struct IPiece;
     using IPieceUPtr_t = std::unique_ptr<IPiece>;
-    using IPieceUVec_t = std::vector<IPieceUPtr_t>;
+    using IPieceUList_t = std::list<IPieceUPtr_t>;
     using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
-
-    using MapCharToPieceMap_t = std::map<char, Piece::Enum>;
-    using MapOfRowStrings_t = std::vector<std::string>;
 
     //
 
@@ -49,6 +47,11 @@ namespace boardgame
         {
             return { (top_left_pos + (sf::Vector2f(pos) * size)), size };
         }
+
+        std::set<BoardPos_t> allCellPositions() const { return all_cell_positions; }
+
+      private:
+        std::set<BoardPos_t> all_cell_positions;
     };
 
     //
@@ -62,20 +65,20 @@ namespace boardgame
 
         virtual const CellLayout & cells() const = 0;
 
-        virtual IPieceUVec_t & pieces() = 0;
-        virtual const IPieceUVec_t & pieces() const = 0;
+        virtual IPieceUList_t & pieces() = 0;
+        virtual const IPieceUList_t & pieces() const = 0;
 
-        virtual bool isPieceAt(const BoardPos_t & pos) const = 0;
-        virtual IPieceOpt_t pieceAt(const BoardPos_t & pos) const = 0;
-        virtual Piece::Enum pieceEnumAt(const BoardPos_t & pos) const = 0;
+        virtual bool isPieceAt(const BoardPos_t & pos) = 0;
+        virtual IPieceOpt_t pieceAt(const BoardPos_t & pos) = 0;
+        virtual Piece::Enum pieceEnumAt(const BoardPos_t & pos) = 0;
 
         virtual BoardPosOpt_t findRandomEmptyPos(const Context & context) const = 0;
 
-        virtual void removeFromPlay(const BoardPos_t & pos) = 0;
-        virtual void addPiece(Context &, const Piece::Enum, const BoardPos_t & pos) = 0;
-        virtual void addPiece(Context &, IPieceUPtr_t) = 0;
         virtual IPieceUPtr_t makePiece(Context &, const Piece::Enum, const BoardPos_t & pos) = 0;
-        virtual void eraseAllPiecesNotInPlay() = 0;
+        virtual void placePiece(Context &, IPieceUPtr_t) = 0;
+        virtual void placePieceAtRandomPos(Context &, const Piece::Enum) = 0;
+        virtual void placePiece(Context &, const Piece::Enum, const BoardPos_t & pos) = 0;
+        virtual void removePiece(Context &, const BoardPos_t & pos) = 0;
     };
 
     //
@@ -90,24 +93,26 @@ namespace boardgame
 
         const CellLayout & cells() const override { return m_cells; }
 
-        IPieceUVec_t & pieces() override { return m_pieces; }
-        const IPieceUVec_t & pieces() const override { return m_pieces; }
-
-        IPieceOpt_t pieceAt(const BoardPos_t & pos) const override;
-        Piece::Enum pieceEnumAt(const BoardPos_t & pos) const override;
-        bool isPieceAt(const BoardPos_t & pos) const override;
+        IPieceUList_t & pieces() override { return m_pieces; }
+        const IPieceUList_t & pieces() const override { return m_pieces; }
 
         BoardPosOpt_t findRandomEmptyPos(const Context & context) const override;
 
-        void removeFromPlay(const BoardPos_t & pos) override;
-        void addPiece(Context &, const Piece::Enum, const BoardPos_t & pos) override;
-        void addPiece(Context &, IPieceUPtr_t) override;
+        bool isPieceAt(const BoardPos_t & pos) override;
+        IPieceOpt_t pieceAt(const BoardPos_t & pos) override;
+        Piece::Enum pieceEnumAt(const BoardPos_t & pos) override;
+
         IPieceUPtr_t makePiece(Context &, const Piece::Enum, const BoardPos_t & pos) override = 0;
-        void eraseAllPiecesNotInPlay() override;
+        void placePiece(Context &, IPieceUPtr_t) override;
+        void placePieceAtRandomPos(Context &, const Piece::Enum) override;
+        void placePiece(Context &, const Piece::Enum, const BoardPos_t & pos) override;
+        void removePiece(Context &, const BoardPos_t & pos) override;
+
+        IPieceUList_t::iterator findIterToPiece(const BoardPos_t & posToFind);
 
       protected:
-        IPieceUVec_t m_pieces;
         CellLayout m_cells;
+        IPieceUList_t m_pieces;
     };
 
     //
@@ -156,7 +161,7 @@ namespace boardgame
 
     struct MapFactory
     {
-        static IPieceUVec_t makeK
+        static IPieceUList_t makeK
     };
 
     void BoardBase::populateFromMapStrings(Context & context)

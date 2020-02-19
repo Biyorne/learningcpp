@@ -11,6 +11,8 @@
 #include "types.hpp"
 
 #include <array>
+#include <iterator>
+#include <list>
 #include <memory>
 #include <optional>
 #include <set>
@@ -26,8 +28,11 @@ namespace boardgame
     {
         virtual ~IPiece() = default;
 
-        virtual bool isInPlay() const = 0;
-        virtual void removeFromPlay() = 0;
+        // don't call this yourself, let the Board call this after adding it
+        virtual void setup(Context &) = 0;
+
+        // don't call this yourself, let the Board call this just before removing it
+        virtual void teardown(Context &) = 0;
 
         virtual Piece::Enum which() const = 0;
         virtual BoardPos_t position() const = 0;
@@ -38,6 +43,7 @@ namespace boardgame
         virtual void handleEvent(Context &, const sf::Event &) = 0;
         void draw(sf::RenderTarget &, sf::RenderStates) const override = 0;
 
+        // don't change m_position yourself, use this every time
         virtual void move(Context & context, const BoardPos_t & posNew) = 0;
     };
 
@@ -45,7 +51,7 @@ namespace boardgame
 
     using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
     using IPieceUPtr_t = std::unique_ptr<IPiece>;
-    using IPieceUVec_t = std::vector<IPieceUPtr_t>;
+    using IPieceUList_t = std::list<IPieceUPtr_t>;
 
     //
 
@@ -68,11 +74,16 @@ namespace boardgame
 
         virtual ~PieceBase() = default;
 
-        bool isInPlay() const override { return (which() != Piece::NotInPlay); }
-        void removeFromPlay() override
+        void setup(Context &) override
         {
-            M_ASSERT_OR_THROW(isInPlay());
-            m_enum = Piece::NotInPlay;
+            M_ASSERT_OR_THROW(!m_hasTeardown);
+            m_hasSetup = true;
+        }
+        void teardown(Context &) override
+        {
+            M_ASSERT_OR_THROW(m_hasSetup);
+            M_ASSERT_OR_THROW(!m_hasTeardown);
+            m_hasTeardown = true;
         }
 
         Piece::Enum which() const override { return m_enum; }
@@ -85,6 +96,8 @@ namespace boardgame
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override
         {
+            M_ASSERT_OR_THROW(m_hasSetup);
+            M_ASSERT_OR_THROW(!m_hasTeardown);
             target.draw(m_sprite, states);
         }
 
@@ -94,6 +107,10 @@ namespace boardgame
         Piece::Enum m_enum;
         BoardPos_t m_position;
         sf::Sprite m_sprite;
+
+        // remove after testing TODO
+        bool m_hasSetup{ false };
+        bool m_hasTeardown{ false };
     };
 
     //
@@ -113,75 +130,14 @@ namespace boardgame
     {
         FoodPiece(Context & context, const BoardPos_t & pos)
             : PieceBase(context, Piece::Food, pos, sf::Color::Yellow)
+        {}
+
+        virtual ~FoodPiece() = default;
+
+        void teardown(Context & context) override
         {
-            ++m_count;
+            context.board.placePieceAtRandomPos(context, Piece::Food);
         }
-
-        virtual ~FoodPiece() { --m_count; }
-
-        static void spawn(Context & context)
-        {
-            if (m_count > 0)
-            {
-                return;
-            }
-
-            // start with a copy of all valid/on-board positions
-            std::vector<BoardPos_t> positions;
-            positions.reserve(context.board.cells().count_total);
-
-            for (int vert(0); vert < context.board.cells().counts_int.y; ++vert)
-            {
-                for (int horiz(0); horiz < context.board.cells().counts_int.x; ++horiz)
-                {
-                    positions.push_back(BoardPos_t{ horiz, vert });
-                }
-            }
-
-            auto endIter{ std::end(positions) };
-
-            // remove any that are alraedy occupied
-            for (const IPieceUPtr_t & piece : context.board.pieces())
-            {
-                if (!piece->isInPlay())
-                {
-                    continue;
-                }
-
-                endIter =
-                    std::remove_if(std::begin(positions), endIter, [&](const BoardPos_t & pos) {
-                        return (pos == piece->position());
-                    });
-            }
-
-            // remove any too close to the edges
-            const int eatCount{ static_cast<int>(context.settings.foodEatenCount()) / 3 };
-            const sf::Vector2i outerSize{ context.board.cells().counts_int / 4 };
-
-            sf::IntRect allowedRect(
-                outerSize, (context.board.cells().counts_int - (outerSize * 2)));
-
-            allowedRect.left -= eatCount;
-            allowedRect.top -= eatCount;
-            allowedRect.width += (eatCount * 2);
-            allowedRect.height += (eatCount * 2);
-
-            endIter = std::remove_if(std::begin(positions), endIter, [&](const BoardPos_t & pos) {
-                return !allowedRect.contains(pos);
-            });
-
-            positions.erase(endIter, std::end(positions));
-            if (positions.empty())
-            {
-                return;
-            }
-
-            const BoardPos_t spawnPos{ context.random.from(positions) };
-            context.board.addPiece(context, Piece::Food, spawnPos);
-        }
-
-      private:
-        static inline std::size_t m_count{ 0 };
     };
 
     //
@@ -191,23 +147,56 @@ namespace boardgame
       public:
         TailPiece(Context & context, const BoardPos_t & pos)
             : PieceBase(context, Piece::Tail, pos, sf::Color::White)
-            , m_colorLight(sf::Color(64, 255, 0))
-            , m_colorDark((m_colorLight.r / 4), (m_colorLight.g / 4), (m_colorLight.b / 4))
-        {
-            context.settings.handleTailLengthIncrease();
-            m_tailPositions.insert(std::begin(m_tailPositions), pos);
-            updateColor();
-        }
+            , m_timeElapsedSinceLastTurnSec(0.0f)
+        {}
 
         virtual ~TailPiece() = default;
 
         static void reset() { m_tailPositions.clear(); }
 
-        void update(Context &, const float) override { updateColor(); }
+        void setup(Context & context) override
+        {
+            PieceBase::setup(context);
+            context.settings.handleTailLengthIncrease();
+            m_tailPositions.push_front(position());
+            updateColor();
+        }
 
+        void update(Context & context, const float frameTimeSec) override
+        {
+            m_timeElapsedSinceLastTurnSec += frameTimeSec;
+            if (m_timeElapsedSinceLastTurnSec > context.settings.timeBetweenTurnsSec())
+            {
+                m_timeElapsedSinceLastTurnSec -= context.settings.timeBetweenTurnsSec();
+
+                updateColor();
+            }
+        }
+
+        static void removeLastTailPiece(Context & context)
+        {
+            if (m_tailPositions.empty())
+            {
+                return;
+            }
+
+            const BoardPos_t pos{ m_tailPositions.back() };
+            m_tailPositions.pop_back();
+
+            if (context.board.pieceEnumAt(pos) != Piece::Tail)
+            {
+                return;
+            }
+
+            context.board.removePiece(context, pos);
+        }
+
+        static std::size_t tailLength() { return m_tailPositions.size(); }
+
+      private:
         void updateColor()
         {
-            const float count{ static_cast<float>(tailLength() + 1) };
+            const float count{ static_cast<float>(m_tailPositions.size() + 1) };
 
             float index{ 0.0f };
             for (const BoardPos_t & pos : m_tailPositions)
@@ -227,93 +216,16 @@ namespace boardgame
             m_sprite.setColor(util::colorBlend(ratio, m_colorLight, m_colorDark));
         }
 
-        static void removeLastPiece(Context & context)
-        {
-            while (!m_tailPositions.empty())
-            {
-                const BoardPos_t pos{ m_tailPositions.back() };
-                m_tailPositions.pop_back();
-
-                // this check makes good sense, but it prevent some fun features
-                // M_ASSERT_OR_THROW(context.board.pieceEnumAt(pos) == Piece::Tail);
-                if (context.board.pieceEnumAt(pos) == Piece::Tail)
-                {
-                    context.board.removeFromPlay(pos);
-                    break;
-                }
-            }
-        }
-
-        static void turnSeveredTailIntoWall(Context & context, const BoardPos_t & startingPos)
-        {
-            int tailsTurnedIntoWallsCount{ 0 };
-
-            while (!m_tailPositions.empty())
-            {
-                const BoardPos_t pos{ m_tailPositions.back() };
-                m_tailPositions.pop_back();
-
-                if (context.board.pieceEnumAt(pos) == Piece::Tail)
-                {
-                    ++tailsTurnedIntoWallsCount;
-                    context.board.addPiece(context, Piece::Wall, pos);
-                }
-
-                if (pos == startingPos)
-                {
-                    break;
-                }
-            }
-
-            context.settings.adjustScore(-100 * tailsTurnedIntoWallsCount);
-        }
-
-        static std::size_t tailLength() { return m_tailPositions.size(); }
-
-        static sf::Keyboard::Key arrowKeyThatMoves(const BoardPos_t & from, const BoardPos_t & to)
-        {
-            if (from.x < to.x)
-            {
-                return sf::Keyboard::Right;
-            }
-            else if (from.x > to.x)
-            {
-                return sf::Keyboard::Left;
-            }
-            else if (from.y > to.y)
-            {
-                return sf::Keyboard::Up;
-            }
-            else
-            {
-                return sf::Keyboard::Down;
-            }
-        }
-
-        static std::tuple<bool, BoardPos_t, sf::Keyboard::Key> flip(Context & context)
-        {
-            if (m_tailPositions.size() < 2)
-            {
-                return { false, {}, {} };
-            }
-
-            const BoardPos_t lastTailPos{ m_tailPositions.back() };
-            m_tailPositions.pop_back();
-
-            const sf::Keyboard::Key newDirection{ util::oppositeDirection(
-                arrowKeyThatMoves(lastTailPos, m_tailPositions.back())) };
-
-            context.board.removeFromPlay(lastTailPos);
-            std::reverse(std::begin(m_tailPositions), std::end(m_tailPositions));
-
-            return { true, lastTailPos, newDirection };
-        }
-
       private:
-        sf::Color m_colorLight;
-        sf::Color m_colorDark;
+        float m_timeElapsedSinceLastTurnSec;
 
-        static inline std::vector<BoardPos_t> m_tailPositions;
+        static inline sf::Color m_colorLight{ 64, 255, 0 };
+
+        static inline sf::Color m_colorDark{ static_cast<sf::Uint8>(m_colorLight.r / 4),
+                                             static_cast<sf::Uint8>(m_colorLight.g / 4),
+                                             static_cast<sf::Uint8>(m_colorLight.b / 4) };
+
+        static inline std::list<BoardPos_t> m_tailPositions;
     };
 
     //
@@ -358,3 +270,69 @@ namespace boardgame
 } // namespace boardgame
 
 #endif // BOARDGAME_PIECES_HPP_INCLUDED
+
+/*
+static void turnSeveredTailIntoWall(Context & context, const BoardPos_t & startingPos)
+{
+    int tailsTurnedIntoWallsCount{ 0 };
+
+    while (!m_tailPositions.empty())
+    {
+        const BoardPos_t pos{ m_tailPositions.back() };
+        m_tailPositions.pop_back();
+
+        if (context.board.pieceEnumAt(pos) == Piece::Tail)
+        {
+            ++tailsTurnedIntoWallsCount;
+            context.board.placePiece(context, Piece::Wall, pos);
+        }
+
+        if (pos == startingPos)
+        {
+            break;
+        }
+    }
+
+    context.settings.adjustScore(-100 * tailsTurnedIntoWallsCount);
+}
+
+static sf::Keyboard::Key arrowKeyThatMoves(const BoardPos_t & from, const BoardPos_t & to)
+{
+    if (from.x < to.x)
+    {
+        return sf::Keyboard::Right;
+    }
+    else if (from.x > to.x)
+    {
+        return sf::Keyboard::Left;
+    }
+    else if (from.y > to.y)
+    {
+        return sf::Keyboard::Up;
+    }
+    else
+    {
+        return sf::Keyboard::Down;
+    }
+}
+
+static std::tuple<bool, BoardPos_t, sf::Keyboard::Key> flip(Context & context)
+{
+    if (m_tailPositions.size() < 2)
+    {
+        return { false, {}, {} };
+    }
+
+    const BoardPos_t lastTailPos{ m_tailPositions.back() };
+    m_tailPositions.pop_back();
+
+    const sf::Keyboard::Key newDirection{ util::oppositeDirection(
+        arrowKeyThatMoves(lastTailPos, m_tailPositions.back())) };
+
+    context.board.removePiece(lastTailPos);
+    std::reverse(std::begin(m_tailPositions), std::end(m_tailPositions));
+
+    return { true, lastTailPos, newDirection };
+}
+
+*/

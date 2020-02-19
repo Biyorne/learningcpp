@@ -49,7 +49,7 @@ namespace boardgame
         bool is_game_over{ false };
         bool is_game_paused{ false };
         bool is_self_play_test{ false };
-        bool is_god_mode{ false };
+        bool is_god_mode{ true };
     };
 
     //
@@ -177,7 +177,7 @@ namespace boardgame
 
         std::size_t food_eaten_count{ 0 };
         std::size_t tail_growth_per_food_count{ 5 };
-        std::size_t tail_pieces_to_grow_remaining{ 0 };
+        std::size_t tail_pieces_to_grow_remaining{ 3 };
 
         float time_between_turns_min_sec{ 0.025f };
         float time_between_turns_max_sec{ 0.1f };

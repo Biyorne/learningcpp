@@ -31,13 +31,25 @@ namespace boardgame
         top_left_pos = ((windowSize - boardSize) / 2.0f);
         M_ASSERT_OR_THROW(!(top_left_pos.x < 0.0f));
         M_ASSERT_OR_THROW(!(top_left_pos.y < 0.0f));
+
+        // create a set of all valid positions, this is needed all over
+        all_cell_positions.clear();
+        for (int vert(0); vert < counts_int.y; ++vert)
+        {
+            for (int horiz(0); horiz < counts_int.x; ++horiz)
+            {
+                all_cell_positions.insert(BoardPos_t{ horiz, vert });
+            }
+        }
+
+        M_ASSERT_OR_THROW(all_cell_positions.size() == count_total);
     }
 
     //
 
     BoardBase::BoardBase()
-        : m_pieces()
-        , m_cells()
+        : m_cells()
+        , m_pieces()
     {}
 
     void BoardBase::printStatus() const
@@ -47,30 +59,16 @@ namespace boardgame
         std::cout << "\n\t cells_total          = " << m_cells.count_total;
         std::cout << "\n\t cell_size            = " << m_cells.size;
         std::cout << "\n\t pieces_vec_size      = " << m_pieces.size();
-        std::cout << "\n\t pieces_vec_capacity  = " << m_pieces.capacity();
 
-        // std::cout << "\n\t pieces_not_in_play   = "
-        //          << (m_pieces.size() -
-        //              std::distance(std::cbegin(m_piecesInPlay), std::cend(m_piecesInPlay)));
-
-        std::map<Piece::Enum, std::pair<std::size_t, std::size_t>> pieceCountMap;
-
+        std::map<Piece::Enum, std::size_t> pieceCountMap;
         for (const IPieceUPtr_t & piece : m_pieces)
         {
-            if (piece->isInPlay())
-            {
-                ++pieceCountMap[piece->which()].first;
-            }
-            else
-            {
-                ++pieceCountMap[piece->which()].second;
-            }
+            ++pieceCountMap[piece->which()];
         }
 
-        for (const auto & [piece, pair] : pieceCountMap)
+        for (const auto & [piece, count] : pieceCountMap)
         {
-            std::cout << "\n\t\t" << Piece::name(piece) << "\t " << pair.first << '/'
-                      << pair.second;
+            std::cout << "\n\t\t" << Piece::name(piece) << "\t x" << count;
         }
 
         // print the picture of the map on the console
@@ -90,61 +88,46 @@ namespace boardgame
         std::cout << std::endl;
     }
 
-    IPieceOpt_t BoardBase::pieceAt(const BoardPos_t & posToFind) const
+    IPieceOpt_t BoardBase::pieceAt(const BoardPos_t & posToFind)
     {
-        const auto foundIter{ std::find_if(
-            std::begin(m_pieces), std::end(m_pieces), [&](const IPieceUPtr_t & piece) {
-                return (piece->isInPlay() && (piece->position() == posToFind));
-            }) };
-
+        const auto foundIter{ findIterToPiece(posToFind) };
         if (foundIter == std::end(m_pieces))
         {
             return std::nullopt;
         }
-
-        return { **foundIter };
+        else
+        {
+            return { **foundIter };
+        }
     }
 
-    Piece::Enum BoardBase::pieceEnumAt(const BoardPos_t & pos) const
+    Piece::Enum BoardBase::pieceEnumAt(const BoardPos_t & posToFind)
     {
-        const IPieceOpt_t pieceUPtrOpt{ pieceAt(pos) };
-
-        if (pieceUPtrOpt)
+        const auto foundIter{ findIterToPiece(posToFind) };
+        if (foundIter == std::end(m_pieces))
         {
-            return pieceUPtrOpt->get().which();
+            return Piece::Count;
         }
         else
         {
-            return Piece::NotInPlay;
+            return foundIter->get()->which();
         }
     }
 
-    bool BoardBase::isPieceAt(const BoardPos_t & pos) const
+    bool BoardBase::isPieceAt(const BoardPos_t & posToFind)
     {
-        return (pieceEnumAt(pos) != Piece::NotInPlay);
+        return (pieceEnumAt(posToFind) != Piece::Count);
     }
 
     BoardPosOpt_t BoardBase::findRandomEmptyPos(const Context & context) const
     {
         // start with a copy of all valid/on-board positions
-        std::set<BoardPos_t> positions;
-        for (int vert(0); vert < m_cells.counts_int.y; ++vert)
-        {
-            for (int horiz(0); horiz < m_cells.counts_int.x; ++horiz)
-            {
-                positions.insert(BoardPos_t{ horiz, vert });
-            }
-        }
-
-        M_ASSERT_OR_THROW(positions.size() == m_cells.count_total);
+        std::set<BoardPos_t> positions{ m_cells.allCellPositions() };
 
         // remove any that are alraedy occupied
         for (const IPieceUPtr_t & piece : m_pieces)
         {
-            if (piece->isInPlay())
-            {
-                positions.erase(piece->position());
-            }
+            positions.erase(piece->position());
         }
 
         if (positions.empty())
@@ -155,55 +138,63 @@ namespace boardgame
         return context.random.from(positions);
     }
 
-    void BoardBase::addPiece(Context & context, const Piece::Enum piece, const BoardPos_t & pos)
+    void BoardBase::placePieceAtRandomPos(Context & context, const Piece::Enum which)
     {
-        addPiece(context, makePiece(context, piece, pos));
+        const auto posOpt{ findRandomEmptyPos(context) };
+        if (posOpt)
+        {
+            placePiece(context, which, posOpt.value());
+        }
     }
 
-    void BoardBase::addPiece(Context &, IPieceUPtr_t iPieceUPtr)
+    void BoardBase::placePiece(Context & context, const Piece::Enum piece, const BoardPos_t & pos)
+    {
+        placePiece(context, makePiece(context, piece, pos));
+    }
+
+    void BoardBase::placePiece(Context & context, IPieceUPtr_t iPieceUPtr)
     {
         M_ASSERT_OR_THROW(iPieceUPtr);
-        M_ASSERT_OR_THROW(iPieceUPtr->isInPlay());
 
         const BoardPos_t pos{ iPieceUPtr->position() };
         const Piece::Enum newEnum{ iPieceUPtr->which() };
 
-        removeFromPlay(pos);
+        removePiece(context, pos);
 
-        M_ASSERT_OR_THROW(m_pieces.capacity() > m_pieces.size());
-        m_pieces.push_back(std::move(iPieceUPtr));
+        m_pieces.emplace_back(std::move(iPieceUPtr))->setup(context);
+
         M_ASSERT_OR_THROW(pieceEnumAt(pos) == newEnum);
     }
 
-    void BoardBase::removeFromPlay(const BoardPos_t & pos)
+    void BoardBase::removePiece(Context & context, const BoardPos_t & posToFind)
     {
-        IPieceOpt_t pieceUPtrOpt{ pieceAt(pos) };
-        if (pieceUPtrOpt)
+        const auto foundIter{ findIterToPiece(posToFind) };
+        if (foundIter == std::end(m_pieces))
         {
-            pieceUPtrOpt->get().removeFromPlay();
+            return;
         }
 
-        M_ASSERT_OR_THROW(!isPieceAt(pos));
+        foundIter->get()->teardown(context);
+        m_pieces.erase(foundIter);
+
+        M_ASSERT_OR_THROW(!isPieceAt(posToFind));
     }
 
-    void BoardBase::eraseAllPiecesNotInPlay()
+    IPieceUList_t::iterator BoardBase::findIterToPiece(const BoardPos_t & posToFind)
     {
-        m_pieces.erase(
-            std::remove_if(
-                std::begin(m_pieces),
-                std::end(m_pieces),
-                [&](const IPieceUPtr_t & uptr) { return (!uptr || !uptr->isInPlay()); }),
-            std::end(m_pieces));
+        return std::find_if(
+            std::begin(m_pieces), std::end(m_pieces), [&](const IPieceUPtr_t & piece) {
+                return (piece->position() == posToFind);
+            });
     }
 
     //
 
     void SnakeBoard::reset(Context & context)
     {
-        TailPiece::reset();
         m_pieces.clear();
+        TailPiece::reset();
         setupCellSizesAndCounts(context);
-        m_pieces.reserve(m_cells.count_total * 2);
         populateBoardWithMapPieces(context);
     }
 
@@ -221,19 +212,19 @@ namespace boardgame
 
         const BoardPos_t centerPos{ counts / 2 };
 
-        addPiece(context, Piece::Head, centerPos);
-        addPiece(context, Piece::Tail, (centerPos + sf::Vector2i(0, 1)));
-        addPiece(context, Piece::Food, (centerPos + sf::Vector2i(0, -4)));
+        placePiece(context, Piece::Head, centerPos);
+        // placePiece(context, Piece::Tail, (centerPos + sf::Vector2i(0, 1)));
+        placePiece(context, Piece::Food, (centerPos + sf::Vector2i(0, -4)));
 
         for (int horiz(0); horiz < counts.x; ++horiz)
         {
-            addPiece(context, Piece::Wall, BoardPos_t(horiz, 0));
-            addPiece(context, Piece::Wall, BoardPos_t(horiz, (counts.y - 1)));
+            placePiece(context, Piece::Wall, BoardPos_t(horiz, 0));
+            placePiece(context, Piece::Wall, BoardPos_t(horiz, (counts.y - 1)));
         }
         for (int vert(0); vert < counts.y; ++vert)
         {
-            addPiece(context, Piece::Wall, BoardPos_t(0, vert));
-            addPiece(context, Piece::Wall, BoardPos_t((counts.x - 1), vert));
+            placePiece(context, Piece::Wall, BoardPos_t(0, vert));
+            placePiece(context, Piece::Wall, BoardPos_t((counts.x - 1), vert));
         }
     }
 
@@ -249,7 +240,7 @@ namespace boardgame
             case Piece::Tail: return std::make_unique<TailPiece>(context, pos);
 
             case Piece::Wall:
-            case Piece::NotInPlay:
+            case Piece::Count:
             default: return std::make_unique<WallPiece>(context, pos);
         }
     }

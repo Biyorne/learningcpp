@@ -128,13 +128,18 @@ namespace boardgame
                     newEvent.key.code = sf::Keyboard::F;
                     handleEvent(newEvent);
                 }
+
+                return;
             }
-            else if (sf::Keyboard::S == event.key.code)
+
+            if (sf::Keyboard::S == event.key.code)
             {
                 m_board.printStatus();
                 m_settings.printStatus();
+                return;
             }
-            else if (sf::Keyboard::Space == event.key.code)
+
+            if (sf::Keyboard::Space == event.key.code)
             {
                 if (!m_settings.is_game_over)
                 {
@@ -144,15 +149,14 @@ namespace boardgame
                     std::cout << "'SPACE' key pressed, so the game will "
                               << ((m_settings.is_game_paused) ? "PAUSE" : "UN-PAUSE") << std::endl;
                 }
+
+                return;
             }
         }
 
         for (IPieceUPtr_t & pieceUPtr : m_board.pieces())
         {
-            if (pieceUPtr->isInPlay())
-            {
-                pieceUPtr->handleEvent(m_context, event);
-            }
+            pieceUPtr->handleEvent(m_context, event);
         }
     }
 
@@ -160,7 +164,6 @@ namespace boardgame
     {
         if (m_settings.is_game_paused || m_settings.is_game_over)
         {
-            m_scoreText.setFillColor(m_scoreText.getFillColor() + sf::Color(0, 0, 0, 2));
             return;
         }
 
@@ -170,49 +173,14 @@ namespace boardgame
 
         for (IPieceUPtr_t & pieceUPtr : m_board.pieces())
         {
-            if (!pieceUPtr->isInPlay())
-            {
-                continue;
-            }
-
             pieceUPtr->update(m_context, frameTimeSec);
-        }
-
-        // misc periodic tasks
-        if ((m_settings.total_turns_played % 10) == 0)
-        {
-            m_board.eraseAllPiecesNotInPlay();
-            FoodPiece::spawn(m_context);
         }
     }
 
     void GameCoordinator::updateScore()
     {
-        // color
-        {
-            const int scoreChanging{ m_settings.adjustScore() };
-
-            sf::Color targetColor(255, 255, 255, 32);
-
-            if (scoreChanging < 0)
-            {
-                targetColor = sf::Color(255, 32, 0, 32);
-            }
-            else if (scoreChanging > 0)
-            {
-                targetColor = sf::Color(0, 255, 0, 32);
-            }
-
-            const sf::Color newColor{ util::colorStepToward(
-                10, m_scoreText.getFillColor(), targetColor, true) };
-
-            m_scoreText.setFillColor(newColor);
-        }
-
-        //
         std::string scoreStr{ std::to_string(m_settings.scoreIncrementAndGet()) };
 
-        //
         const std::size_t digitCount{ 6 };
         while (scoreStr.length() < digitCount)
         {
@@ -226,6 +194,8 @@ namespace boardgame
         textRegion.height = (textRegion.top * 0.85f);
         util::scaleRectInPlace(textRegion, 0.7f);
         util::scaleAndCenterInside(m_scoreText, textRegion, true);
+
+        m_scoreText.setFillColor(sf::Color(255, 255, 255, 32));
     }
 
     void GameCoordinator::draw()
@@ -236,11 +206,6 @@ namespace boardgame
 
         for (const IPieceUPtr_t & pieceUPtr : m_board.pieces())
         {
-            if (!pieceUPtr->isInPlay())
-            {
-                continue;
-            }
-
             m_window.draw(*pieceUPtr);
         }
 
