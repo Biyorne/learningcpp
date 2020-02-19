@@ -58,9 +58,23 @@ namespace boardgame
         m_settings.reset();
         m_board.reset(m_context);
         m_soundPlayer.stopAll();
-        m_soundPlayer.volume(100.0f);
+
         m_animationPlayer.stopAll();
         updateScore();
+
+        if (m_settings.is_self_play_test)
+        {
+            m_soundPlayer.volume(0.0f);
+
+            if (!m_soundPlayer.isMuted())
+            {
+                m_soundPlayer.muteButton();
+            }
+        }
+        else
+        {
+            m_soundPlayer.volume(100.0f);
+        }
     }
 
     void GameCoordinator::run()
@@ -71,6 +85,11 @@ namespace boardgame
 
             while (m_window.isOpen())
             {
+                if (m_settings.is_self_play_test && m_settings.is_game_over)
+                {
+                    reset();
+                }
+
                 handleEvents();
                 update(frameClock.restart().asSeconds());
                 draw();
@@ -112,8 +131,6 @@ namespace boardgame
 
         if (sf::Event::KeyPressed == event.type)
         {
-            // updateScore();
-
             if (sf::Keyboard::R == event.key.code)
             {
                 if (m_settings.is_game_over)
@@ -167,9 +184,12 @@ namespace boardgame
             return;
         }
 
-        updateScore();
+        if (!m_settings.is_self_play_test)
+        {
+            updateScore();
+        }
 
-        m_animationPlayer.update(frameTimeSec);
+        // m_animationPlayer.update(frameTimeSec);
 
         for (IPieceUPtr_t & pieceUPtr : m_board.pieces())
         {
@@ -200,23 +220,29 @@ namespace boardgame
 
     void GameCoordinator::draw()
     {
-        m_window.clear();
-
-        m_window.draw(m_scoreText);
-
-        for (const IPieceUPtr_t & pieceUPtr : m_board.pieces())
+        if (!m_settings.is_self_play_test || m_settings.is_game_over)
         {
-            m_window.draw(*pieceUPtr);
+            m_window.clear();
+
+            if (!m_settings.is_self_play_test)
+            {
+                m_window.draw(m_scoreText);
+            }
+
+            for (const IPieceUPtr_t & pieceUPtr : m_board.pieces())
+            {
+                m_window.draw(*pieceUPtr);
+            }
+
+            // m_window.draw(m_animationPlayer);
+
+            // re-draw the text on top when game over or paused so the score is easy to see
+            if (m_settings.is_game_paused || m_settings.is_game_over)
+            {
+                m_window.draw(m_scoreText);
+            }
+
+            m_window.display();
         }
-
-        m_window.draw(m_animationPlayer);
-
-        // re-draw the text on top when game over or paused so the score is easy to see
-        if (m_settings.is_game_paused || m_settings.is_game_over)
-        {
-            m_window.draw(m_scoreText);
-        }
-
-        m_window.display();
     }
 } // namespace boardgame

@@ -119,6 +119,17 @@ namespace boardgame
     {
         ++context.settings.total_turns_played;
 
+        if (context.settings.is_self_play_test)
+        {
+            if (++m_selfTestMoveCount > 100)
+            {
+                m_selfTestMoveCount = 0;
+                m_selfTestTargretPos = pickTarget(context);
+            }
+
+            m_directionKeyNext = selfTestDirectionSet(context);
+        }
+
         // undo the change in direction if it would reverse direction == instant death
         if (util::oppositeDirection(m_directionKeyNext) == m_directionKeyPrev)
         {
@@ -169,6 +180,12 @@ namespace boardgame
 
             context.settings.adjustScore(50);
             context.settings.handleEat();
+
+            if (context.settings.is_self_play_test)
+            {
+                m_selfTestMoveCount = 0;
+                m_selfTestTargretPos = pickTarget(context);
+            }
         }
         else if (posNewPieceEnum == Piece::Tail)
         {
@@ -196,18 +213,18 @@ namespace boardgame
     {
         context.audio.play("cannon-miss");
 
-        std::cout << "You bit into " << Piece::name(which);
+        // std::cout << "You bit into " << Piece::name(which);
 
         if (context.settings.is_god_mode)
         {
-            std::cout << " -but god mode saved you." << std::endl;
+            // std::cout << " -but god mode saved you." << std::endl;
             return;
         }
 
         context.audio.play("rpg-game-over");
         m_sprite.setColor(sf::Color::Red);
         context.settings.is_game_over = true;
-        std::cout << "!  YOU LOSE!" << std::endl;
+        // std::cout << "!  YOU LOSE!" << std::endl;
     }
 
     bool HeadPiece::isPositionNextToFood(Context & context, const BoardPos_t & pos)
@@ -249,4 +266,106 @@ namespace boardgame
 
         return newPos;
     }
+
+    BoardPos_t HeadPiece::pickTarget(Context & context)
+    {
+        static std::vector<std::pair<int, BoardPos_t>> targets;
+        targets.reserve(1000);
+        targets.clear();
+
+        const auto posS{ position() };
+
+        for (const IPieceUPtr_t & piece : context.board.pieces())
+        {
+            if (piece->which() == Piece::Food)
+            {
+                const auto posF{ piece->position() };
+                const auto posDiff{ posF - posS };
+                const int distance{ std::abs(posDiff.x) + std::abs(posDiff.y) };
+                targets.push_back({ distance, posF });
+            }
+        }
+
+        if (targets.empty())
+        {
+            for (int i(0); i < 10; ++i)
+            {
+                context.board.placePieceAtRandomPos(context, Piece::Food);
+            }
+
+            pickTarget(context);
+        }
+
+        std::sort(std::begin(targets), std::end(targets));
+
+        if (targets.size() > 3)
+        {
+            targets.resize(3);
+        }
+
+        return context.random.from(targets).second;
+    }
+
+    struct PosInfo
+    {
+        PosInfo(
+            const Context & context,
+            const sf::Keyboard::Key dir,
+            const BoardPos_t selfPos,
+            const BoardPos_t targetPos)
+            : pos(HeadPiece::changePositionWithArrowKey(selfPos, dir))
+            , key(dir)
+            , which(context.board.pieceEnumAt(pos))
+            , dist_to_target()
+        {
+            const auto posDiff{ targetPos - pos };
+            dist_to_target = (std::abs(posDiff.x) + std::abs(posDiff.y));
+        }
+
+        BoardPos_t pos;
+        sf::Keyboard::Key key;
+        Piece::Enum which;
+        int dist_to_target;
+    };
+
+    sf::Keyboard::Key HeadPiece::selfTestDirectionSet(Context & context)
+    {
+        static std::vector<PosInfo> posInfos;
+        posInfos.clear();
+        posInfos.push_back({ context, sf::Keyboard::Up, position(), m_selfTestTargretPos });
+        posInfos.push_back({ context, sf::Keyboard::Down, position(), m_selfTestTargretPos });
+        posInfos.push_back({ context, sf::Keyboard::Left, position(), m_selfTestTargretPos });
+        posInfos.push_back({ context, sf::Keyboard::Right, position(), m_selfTestTargretPos });
+
+        posInfos.erase(
+            std::remove_if(
+                std::begin(posInfos),
+                std::end(posInfos),
+                [&](const PosInfo & info) {
+                    return ((info.which != Piece::Food) && (info.which != Piece::Count));
+                }),
+            std::end(posInfos));
+
+        if (posInfos.empty())
+        {
+            return m_directionKeyNext;
+        }
+
+        std::sort(
+            std::begin(posInfos), std::end(posInfos), [&](const PosInfo & A, const PosInfo & B) {
+                if ((A.which == Piece::Food) && (B.which != Piece::Food))
+                {
+                    return true;
+                }
+
+                if ((A.which != Piece::Food) && (B.which == Piece::Food))
+                {
+                    return false;
+                }
+
+                return (A.dist_to_target < B.dist_to_target);
+            });
+
+        return posInfos.front().key;
+    } // namespace boardgame
 } // namespace boardgame

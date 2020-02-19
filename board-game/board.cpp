@@ -226,6 +226,16 @@ namespace boardgame
             placePiece(context, Piece::Wall, BoardPos_t(0, vert));
             placePiece(context, Piece::Wall, BoardPos_t((counts.x - 1), vert));
         }
+
+        for (int i(0); i < 20; ++i)
+        {
+            placePieceAtRandomPos(context, Piece::Food);
+        }
+
+        for (int i(0); i < 20; ++i)
+        {
+            placePieceAtRandomPos(context, Piece::Wall);
+        }
     }
 
     IPieceUPtr_t

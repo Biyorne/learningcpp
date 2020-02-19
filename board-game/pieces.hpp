@@ -260,12 +260,18 @@ namespace boardgame
 
         bool flip(Context & context);
 
+        sf::Keyboard::Key selfTestDirectionSet(Context & context);
+        BoardPos_t pickTarget(Context & context);
+
       private:
         sf::Keyboard::Key m_directionKeyPrev;
         sf::Keyboard::Key m_directionKeyNext;
         float m_timeElapsedSinceLastTurnSec;
         float m_eatSfxPitch;
         float m_eatSfxPitchAdj;
+
+        BoardPos_t m_selfTestTargretPos{ 2, 2 };
+        std::size_t m_selfTestMoveCount{ 0 };
     };
 } // namespace boardgame
 

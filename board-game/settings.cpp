@@ -68,8 +68,14 @@ namespace boardgame
     void SnakeGameSettings::handleEat()
     {
         ++food_eaten_count;
-        tail_pieces_to_grow_remaining += tail_growth_per_food_count;
-        tail_pieces_to_grow_remaining += static_cast<int>(static_cast<float>(tailLength()) * .2f);
+
+        // if (!is_self_play_test || tailLength() < 10)
+        {
+            tail_pieces_to_grow_remaining += tail_growth_per_food_count;
+
+            tail_pieces_to_grow_remaining +=
+                static_cast<int>(static_cast<float>(tailLength()) * .2f);
+        }
 
         increaseMoveSpeed();
 
