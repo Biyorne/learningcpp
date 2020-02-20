@@ -15,6 +15,7 @@ struct Context
         , window_size(window.getSize())
         , window_rect({}, window_size)
         , mouse_pos(sf::Mouse::getPosition(window))
+        , sprite_size_ratio_default(1.0f / 5.0f)
     {}
 
     util::Random & random;
@@ -22,6 +23,7 @@ struct Context
     sf::Vector2f window_size;
     sf::FloatRect window_rect;
     sf::Vector2f mouse_pos;
+    float sprite_size_ratio_default;
 };
 
 #endif // SIMPLE_EFFECTS_CONTEXT_HPP_INCLUDED

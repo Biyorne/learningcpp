@@ -11,8 +11,11 @@ namespace entity
     class RisingFadeEffect : public EffectBase
     {
       public:
-        RisingFadeEffect(const Context & context, const sf::Texture & texture)
-            : EffectBase(makeSprite(texture, context.mouse_pos))
+        RisingFadeEffect(
+            const Context & context,
+            const sf::Texture & texture,
+            const float textureSizeWindowRatio)
+            : EffectBase(makeSprite(context, texture, textureSizeWindowRatio, context.mouse_pos))
             , m_velocity({ 0.0f, -90.0f })
         {}
 

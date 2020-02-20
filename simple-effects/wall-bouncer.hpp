@@ -17,7 +17,11 @@ namespace entity
             const sf::Texture & texture,
             const sf::Vector2f & velocity,
             const sf::RenderTarget & target)
-            : EffectBase(makeSprite(texture, util::sfRandom(context.random, m_fence.bounds)))
+            : EffectBase(makeSprite(
+                  context,
+                  texture,
+                  context.sprite_size_ratio_default,
+                  util::sfRandom(context.random, m_fence.bounds)))
             , m_velocity(velocity)
             , m_fence({ sf::Vector2f(0.0f, 0.0f), sf::Vector2f(target.getSize()) })
         {}
@@ -47,8 +51,12 @@ namespace entity
     {
       public:
         GravityBouncerEffect(
-            const sf::Texture & texture, const sf::Vector2f & spawnPos, const float gravityMag)
-            : EffectBase(makeSprite(texture, spawnPos))
+            const Context & context,
+            const sf::Texture & texture,
+            const float textureSizeWindowRatio,
+            const sf::Vector2f & spawnPos,
+            const float gravityMag)
+            : EffectBase(makeSprite(context, texture, textureSizeWindowRatio, spawnPos))
             , m_velocity({ 0.0f, 0.0f })
             , m_acceleration({ 0.0f, gravityMag })
         {}

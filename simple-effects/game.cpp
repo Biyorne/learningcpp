@@ -116,12 +116,12 @@ void Game::processEvents()
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
                 {
                     m_effects.push_back(std::make_unique<entity::RisingFadeEffect>(
-                        m_context, m_resources.particle_texture));
+                        m_context, m_resources.particle_texture, 0.1f));
                 }
                 else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
                 {
                     m_effects.push_back(std::make_unique<entity::MouseFollowerEffect>(
-                        m_context, m_resources.rabbit_texture, 1.0f, 1000.0f, 500.0f));
+                        m_context, m_resources.rabbit_texture, 0.333f, 1000.0f, 500.0f));
                 }
                 else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
                 {
@@ -162,10 +162,6 @@ void Game::render()
 
     m_window.draw(m_bgSprite);
 
-    // sf::Vector2u spritePos(m_effect.sprite.getPosition());
-    // m_effect.sprite.setColor(m_image.getPixel(spritePos.x, spritePos.y));
-    // m_window.draw(m_effect, m_states);
-
     for (entity::IEffectUPtr_t & effect : m_effects)
     {
         m_window.draw(*effect);
@@ -173,8 +169,3 @@ void Game::render()
 
     m_window.display();
 }
-
-// void Game::scrollValue(float amount)
-//{
-//
-//}

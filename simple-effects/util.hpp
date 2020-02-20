@@ -51,7 +51,8 @@ namespace util
 
     // Right-triangle
 
-    inline float rightTriHypotenuse(const sf::Vector2f & vec)
+    template <typename T>
+    inline T rightTriHypotenuse(const sf::Vector2<T> & vec)
     {
         return std::sqrt((vec.x * vec.x) + (vec.y * vec.y));
     }
@@ -99,17 +100,40 @@ namespace util
 
     // Size/scale
 
-    inline void
-        scaleToWidth(const sf::RenderTarget & target, const float sizeRatio, sf::Sprite & sprite)
+    inline float windowDiagonalLength(const sf::RenderTarget & window)
     {
-        const float maxWidth(target.getSize().x * sizeRatio);
+        return rightTriHypotenuse(sf::Vector2f(window.getSize()));
+    }
 
-        // TODO Catch divide by zero
-        // TODO scale by height if it's greater
+    template <typename T = float>
+    inline T windowSizeAvg(const sf::RenderTarget & window)
+    {
+        return static_cast<T>((window.getSize().x + window.getSize().y) / 2u);
+    }
 
-        float finalScale(maxWidth / sprite.getLocalBounds().width);
+    inline void scaleTo(const float maxDimension, sf::Sprite & sprite)
+    {
+        if (maxDimension < 0.0f)
+        {
+            return;
+        }
 
-        sprite.setScale(finalScale, finalScale);
+        if ((sprite.getLocalBounds().width < 1.0f) || (sprite.getLocalBounds().height < 1.0f))
+        {
+            return;
+        }
+
+        // Scale by width
+        const float widthRatio(maxDimension / sprite.getLocalBounds().width);
+        sprite.setScale(widthRatio, widthRatio);
+
+        // Check to see if it fits, if not...
+        if (sprite.getGlobalBounds().height > maxDimension)
+        {
+            // Scale by height
+            const float heightRatio(maxDimension / sprite.getLocalBounds().height);
+            sprite.setScale(heightRatio, heightRatio);
+        }
     }
 
     // SFML Random
@@ -124,6 +148,33 @@ namespace util
     {
         return { random.fromTo(bounds.left, right(bounds)),
                  random.fromTo(bounds.top, bottom(bounds)) };
+    }
+
+    // quick & dirty
+
+    inline sf::RectangleShape makeRectangleShape(
+        const sf::FloatRect & bounds,
+        const sf::Color & color = sf::Color::White,
+        const bool willFill = false)
+    {
+        sf::RectangleShape rs;
+
+        if (willFill)
+        {
+            rs.setFillColor(color);
+            rs.setOutlineColor(sf::Color::Transparent);
+        }
+        else
+        {
+            rs.setFillColor(sf::Color::Transparent);
+            rs.setOutlineColor(color);
+        }
+
+        rs.setOutlineThickness(1.0f);
+        rs.setPosition(bounds.left, bounds.top);
+        rs.setSize(sf::Vector2f(bounds.width, bounds.height));
+
+        return rs;
     }
 
 } // namespace util
