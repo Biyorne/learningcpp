@@ -69,13 +69,13 @@ namespace boardgame
 
         sf::Sprite sprite(
             const Context & context,
-            const Piece::Enum piece,
+            const Piece::Enum which,
             const BoardPos_t & boardPos,
             const sf::Color & color) const override
         {
-            M_ASSERT_OR_THROW(Piece::Count != piece);
-            sf::Sprite sprite(texture(piece));
-            util::scaleAndCenterInside(sprite, context.board.cellBounds(boardPos));
+            M_ASSERT_OR_THROW(Piece::Count != which);
+            sf::Sprite sprite(texture(which));
+            util::scaleAndCenterInside(sprite, context.board.cells().bounds(boardPos));
             sprite.setColor(color);
             return sprite;
         }

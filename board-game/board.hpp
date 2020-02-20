@@ -7,20 +7,14 @@
 #include "util.hpp"
 
 #include <functional>
-#include <map>
+#include <list>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
-
-//
-
-namespace sf
-{
-    using Vector2s = sf::Vector2<std::size_t>;
-}
 
 //
 
@@ -29,16 +23,36 @@ namespace boardgame
     struct Context;
     struct IResources;
 
-    struct IPiece;
-    using IPieceUPtr_t = std::unique_ptr<IPiece>;
-    using IPieceUVec_t = std::vector<IPieceUPtr_t>;
-    using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
-
     using BoardPos_t = sf::Vector2i;
-    using BoardPosVec_t = std::vector<BoardPos_t>;
     using BoardPosOpt_t = std::optional<BoardPos_t>;
 
-    using PositionPieceMap_t = std::map<BoardPos_t, Piece::Enum>;
+    struct IPiece;
+    using IPieceUPtr_t = std::unique_ptr<IPiece>;
+    using IPieceUList_t = std::list<IPieceUPtr_t>;
+    using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
+
+    //
+
+    struct CellLayout
+    {
+        sf::Vector2f size;
+        sf::Vector2s counts;
+        sf::Vector2i counts_int;
+        std::size_t count_total{ 0 };
+        sf::Vector2f top_left_pos;
+
+        void reset(const sf::Vector2f & windowSize, const float cellSideLengthOrig);
+
+        sf::FloatRect bounds(const BoardPos_t & pos) const
+        {
+            return { (top_left_pos + (sf::Vector2f(pos) * size)), size };
+        }
+
+        std::set<BoardPos_t> allCellPositions() const { return all_cell_positions; }
+
+      private:
+        std::set<BoardPos_t> all_cell_positions;
+    };
 
     //
 
@@ -46,44 +60,25 @@ namespace boardgame
     {
         virtual ~IBoard() = default;
 
-        virtual void reset(Context & context) = 0;
+        virtual void reset(Context &) = 0;
+        virtual void printStatus() const = 0;
 
-        virtual sf::Vector2f cellSize() const = 0;
-        virtual sf::FloatRect cellBounds(const BoardPos_t & pos) const = 0;
+        virtual const CellLayout & cells() const = 0;
 
-        virtual sf::Vector2s cellCounts() const = 0;
-        virtual std::size_t cellCountTotal() const = 0;
+        virtual IPieceUList_t & pieces() = 0;
+        virtual const IPieceUList_t & pieces() const = 0;
 
-        template <typename T = std::size_t>
-        sf::Vector2<T> cellCountsAs() const
-        {
-            return sf::Vector2<T>(cellCounts());
-        }
-
-        virtual IPieceUVec_t & pieces() = 0;
-        virtual const IPieceUVec_t & pieces() const = 0;
-
-        virtual bool isAnyPieceAt(const BoardPos_t & pos) const = 0;
-        virtual IPieceOpt_t pieceAt(const BoardPos_t & pos) const = 0;
-        virtual Piece::Enum pieceEnumAt(const BoardPos_t & pos) const = 0;
+        virtual bool isPieceAt(const BoardPos_t & pos) = 0;
+        virtual IPieceOpt_t pieceAt(const BoardPos_t & pos) = 0;
+        virtual Piece::Enum pieceEnumAt(const BoardPos_t & pos) = 0;
 
         virtual BoardPosOpt_t findRandomEmptyPos(const Context & context) const = 0;
 
-        [[nodiscard]] virtual IPieceUPtr_t makePiece(
-            const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) = 0;
-
-        virtual void placePiece(
-            const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) = 0;
-
-        virtual void removePieceFromPlay(const BoardPos_t & boardPos) = 0;
-
-        virtual void printStatus() const = 0;
-
-        virtual void removePiecesThatAreNoLongerInPlay() = 0;
-
-      protected:
-        virtual void setupCellSizeAndCounts(Context & context) = 0;
-        virtual void setupStartingMapPieces() = 0;
+        virtual IPieceUPtr_t makePiece(Context &, const Piece::Enum, const BoardPos_t & pos) = 0;
+        virtual void placePiece(Context &, IPieceUPtr_t) = 0;
+        virtual void placePieceAtRandomPos(Context &, const Piece::Enum) = 0;
+        virtual void placePiece(Context &, const Piece::Enum, const BoardPos_t & pos) = 0;
+        virtual void removePiece(Context &, const BoardPos_t & pos) = 0;
     };
 
     //
@@ -91,91 +86,147 @@ namespace boardgame
     class BoardBase : public IBoard
     {
       public:
-        BoardBase() = default;
+        BoardBase();
         virtual ~BoardBase() = default;
-
-        void reset(Context & context) override;
 
         void printStatus() const override;
 
-        sf::Vector2f cellSize() const override { return m_cellSize; }
+        const CellLayout & cells() const override { return m_cells; }
 
-        sf::FloatRect cellBounds(const BoardPos_t & boardPos) const override;
-
-        sf::Vector2s cellCounts() const override { return m_cellCounts; }
-        std::size_t cellCountTotal() const override { return (m_cellCounts.x * m_cellCounts.y); }
-
-        IPieceUVec_t & pieces() override { return m_pieces; }
-        const IPieceUVec_t & pieces() const override { return m_pieces; }
-
-        IPieceOpt_t pieceAt(const BoardPos_t & pos) const override;
-        Piece::Enum pieceEnumAt(const BoardPos_t & pos) const override;
-        bool isAnyPieceAt(const BoardPos_t & pos) const override;
+        IPieceUList_t & pieces() override { return m_pieces; }
+        const IPieceUList_t & pieces() const override { return m_pieces; }
 
         BoardPosOpt_t findRandomEmptyPos(const Context & context) const override;
 
-        [[nodiscard]] IPieceUPtr_t makePiece(
-            const Context & context,
-            const Piece::Enum piece,
-            const BoardPos_t & boardPos) override = 0;
+        bool isPieceAt(const BoardPos_t & pos) override;
+        IPieceOpt_t pieceAt(const BoardPos_t & pos) override;
+        Piece::Enum pieceEnumAt(const BoardPos_t & pos) override;
 
-        void placePiece(
-            const Context & context, const Piece::Enum which, const BoardPos_t & boardPos) override;
+        IPieceUPtr_t makePiece(Context &, const Piece::Enum, const BoardPos_t & pos) override = 0;
+        void placePiece(Context &, IPieceUPtr_t) override;
+        void placePieceAtRandomPos(Context &, const Piece::Enum) override;
+        void placePiece(Context &, const Piece::Enum, const BoardPos_t & pos) override;
+        void removePiece(Context &, const BoardPos_t & pos) override;
 
-        void removePieceFromPlay(const BoardPos_t & boardPos) override;
-
-        void removePiecesThatAreNoLongerInPlay() override;
-
-      protected:
-        void setupCellSizeAndCounts(Context & context) override;
-
-        // default does nothing so more complex boards can do it another way
-        void setupStartingMapPieces() override {}
+        IPieceUList_t::iterator findIterToPiece(const BoardPos_t & posToFind);
 
       protected:
-        sf::Vector2f m_cellSize;
-        sf::Vector2s m_cellCounts;
-        sf::Vector2f m_topLeftCellPos;
-        IPieceUVec_t m_pieces;
+        CellLayout m_cells;
+        IPieceUList_t m_pieces;
     };
 
     //
 
     struct SnakeBoard : public BoardBase
     {
-        SnakeBoard() = default;
         virtual ~SnakeBoard() = default;
 
-        void reset(Context & context) override;
+        void reset(Context &) override;
+        void setupCellSizesAndCounts(Context &);
+        void populateBoardWithMapPieces(Context & context);
 
-        [[nodiscard]] IPieceUPtr_t makePiece(
-            const Context & context, const Piece::Enum piece, const BoardPos_t & boardPos) override;
+        IPieceUPtr_t
+            makePiece(Context & context, const Piece::Enum piece, const BoardPos_t & pos) override;
     };
+
+    /*
+     // use when cell size/counts are known but map layout is not, must override populateCustom()
+        BoardBase();
+
+        // use when map layout is known but cell size/counts are not
+        BoardBase(const MapOfRowStrings_t & mapStrings);
+
+         void BoardBase::reset(Context & context)
+    {
+        const sf::Vector2f windowSize{ context.settings.windowSize() };
+
+        if (m_cellSizeRatio > 0.0f)
+        {
+            //  cell size/counts are known but map layout is not
+            const float windowSizeAvg{ (windowSize.x + windowSize.y) / 2.0f };
+            const float cellSideLength{ windowSizeAvg * m_cellSizeRatio };
+            setupCells(windowSize, cellSideLength);
+            populateCustom(context);
+        }
+        else
+        {
+            // map layout is known but cell size/counts are not
+            const sf::Vector2s countsOrig(m_mapStrings.front().size(), m_mapStrings.size());
+            const sf::Vector2f cellSizeOrig{ windowSize / sf::Vector2f(countsOrig) };
+            const float cellSideLength{ std::min(cellSizeOrig.x, cellSizeOrig.y) };
+            setupCells(windowSize, cellSideLength);
+            populateFromMapStrings(context);
+        }
+    }
+
+    struct MapFactory
+    {
+        static IPieceUList_t makeK
+    };
+
+    void BoardBase::populateFromMapStrings(Context & context)
+    {
+        m_pieces.clear();
+
+        M_ASSERT_OR_THROW(!m_mapStrings.empty());
+        M_ASSERT_OR_THROW(!m_mapStrings.front().empty());
+        M_ASSERT_OR_THROW((m_mapStrings.size() * m_mapStrings.front().size()) == cellCountTotal());
+
+        const MapCharToPieceMap_t charToPieceMap{ makeMapCharToPieceEnumMap() };
+
+        for (std::size_t vert(0); vert < m_mapStrings.size(); ++vert)
+        {
+            const std::string & row{ m_mapStrings.at(vert) };
+            M_ASSERT_OR_THROW(!row.empty());
+
+            for (std::size_t horiz(0); horiz < row.length(); ++horiz)
+            {
+                const char mapChar{ row.at(horiz) };
+                if (mapChar == ' ')
+                {
+                    continue;
+                }
+
+                const auto foundIter{ charToPieceMap.find(mapChar) };
+                if (foundIter == std::end(charToPieceMap))
+                {
+                    return;
+                }
+
+                const Piece::Enum piece{ foundIter->second };
+                if (Piece::NotInPlay == piece)
+                {
+                    continue;
+                }
+
+                const BoardPos_t pos{ sf::Vector2s(horiz, vert) };
+                placePiece(context, piece, pos);
+            }
+        }
+
+        M_ASSERT_OR_THROW((m_mapStrings.size() * m_mapStrings.front().size()) == cellCountTotal());
+    }
+
+    MapCharToPieceMap_t BoardBase::makeMapCharToPieceEnumMap() const
+    {
+        MapCharToPieceMap_t charToPieceMap;
+
+        for (int i(0); i < Piece::Count; ++i)
+        {
+            const Piece::Enum piece{ static_cast<Piece::Enum>(i) };
+            const std::string name{ Piece::name(piece) };
+            if (!name.empty())
+            {
+                charToPieceMap[name.front()] = piece;
+            }
+        }
+
+        M_ASSERT_OR_THROW(!charToPieceMap.empty());
+
+        return charToPieceMap;
+    }
+
+    */
 } // namespace boardgame
 
 #endif // BOARDGAME_BOARD_HPP_INCLUDED
-
-//
-
-// BoardPos_t indexToPos(const std::size_t index) const
-//{
-//    assert(index < map.cell_count_total);
-//
-//    const sf::Vector2s posSt(
-//        (index % map.cell_count_horiz), (index / map.cell_count_horiz));
-//
-//    const BoardPos_t pos(posSt);
-//    assert(isPosValid(pos));
-//
-//    return pos;
-//}
-//
-// std::size_t posToIndex(const BoardPos_t & pos) const
-//{
-//    assert(isPosValid(pos));
-//
-//    const std::size_t index{ static_cast<std::size_t>(
-//        (pos.y * map.cell_count_vert) + pos.x) };
-//
-//    return index;
-//}

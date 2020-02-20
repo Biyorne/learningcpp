@@ -667,35 +667,99 @@ namespace util
 
     // more misc sfml
 
-    template <typename T = int>
-    inline sf::Vector2<T>
-        arrowKeyToPositionAdj(const sf::Keyboard::Key arrowKey, const bool willReverse = false)
+    inline sf::Color colorBlend(
+        const float ratio,
+        const sf::Color & fromColor,
+        const sf::Color & toColor,
+        const bool willIgnoreAlpha = false)
     {
-        sf::Vector2<T> posAdj{ 0, 0 };
-
-        if (sf::Keyboard::Up == arrowKey)
+        if (ratio < 0.0f)
         {
-            --posAdj.y;
-        }
-        else if (sf::Keyboard::Down == arrowKey)
-        {
-            ++posAdj.y;
-        }
-        else if (sf::Keyboard::Left == arrowKey)
-        {
-            --posAdj.x;
-        }
-        else if (sf::Keyboard::Right == arrowKey)
-        {
-            ++posAdj.x;
+            return fromColor;
         }
 
-        if (willReverse)
+        if (ratio > 1.0f)
         {
-            posAdj *= -1;
+            return toColor;
         }
 
-        return posAdj;
+        auto calcColorValue = [ratio](const sf::Uint8 fromVal, const sf::Uint8 toVal) {
+            const float diff{ static_cast<float>(toVal) - static_cast<float>(fromVal) };
+            const float finalValue{ fromVal + (diff * ratio) };
+            return static_cast<sf::Uint8>(finalValue);
+        };
+
+        sf::Color color{ toColor };
+        color.r = calcColorValue(fromColor.r, toColor.r);
+        color.g = calcColorValue(fromColor.g, toColor.g);
+        color.b = calcColorValue(fromColor.b, toColor.b);
+
+        if (!willIgnoreAlpha)
+        {
+            color.a = calcColorValue(fromColor.a, toColor.a);
+        }
+
+        return color;
+    }
+
+    inline sf::Color colorStepToward(
+        const sf::Uint8 stepSize,
+        const sf::Color & fromColor,
+        const sf::Color & toColor,
+        const bool willIgnoreAlpha = false)
+    {
+        if (0 == stepSize)
+        {
+            return fromColor;
+        }
+
+        if (255 == stepSize)
+        {
+            return toColor;
+        }
+
+        auto calcColorValue = [stepSize](const sf::Uint8 fromVal, const sf::Uint8 toVal) {
+            if (fromVal == toVal)
+            {
+                return fromVal;
+            }
+
+            const int stepInt{ static_cast<int>(stepSize) };
+            const int fromInt{ static_cast<int>(fromVal) };
+            const int toInt{ static_cast<int>(toVal) };
+            const int diff{ std::min(std::abs(toInt - fromInt), stepInt) };
+
+            int finalValue{ fromInt };
+            if (toVal > fromVal)
+            {
+                finalValue += diff;
+            }
+            else
+            {
+                finalValue -= diff;
+            }
+
+            return static_cast<sf::Uint8>(std::clamp(finalValue, 0, 255));
+        };
+
+        sf::Color color{ toColor };
+        color.r = calcColorValue(fromColor.r, toColor.r);
+        color.g = calcColorValue(fromColor.g, toColor.g);
+        color.b = calcColorValue(fromColor.b, toColor.b);
+
+        if (!willIgnoreAlpha)
+        {
+            color.a = calcColorValue(fromColor.a, toColor.a);
+        }
+
+        return color;
+    }
+
+    inline bool isArrowKey(const sf::Keyboard::Key key)
+    {
+        return (
+            (key == sf::Keyboard::Up) || (key == sf::Keyboard::Down) ||
+            (key == sf::Keyboard::Left) || (key == sf::Keyboard::Right));
     }
 
     inline sf::Keyboard::Key oppositeDirection(const sf::Keyboard::Key dir)

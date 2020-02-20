@@ -5,6 +5,19 @@
 
 #include <cstddef>
 
+// tails that turn into walls should be gray and not kill but reduce points
+//
+// food should always eventually die and be respawned
+// food increasingly away from middle to intentionally next to wall/self/ect
+// poison pills near other food or that appear in your way
+// maps have walls
+// levels whith lots of food but your tail never shrinks
+// bonuses for turns with limited options or that avoided head-on collision
+// bonus for long straight shots
+// food that moves away from you
+// food that bounces
+// poison pill that grows like a snake
+
 int main(const int argc, const char * const argv[])
 {
     // setup misc game details

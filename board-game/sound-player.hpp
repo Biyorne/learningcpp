@@ -30,6 +30,7 @@ namespace util
         bool load(const std::initializer_list<std::string> & names);
         bool load(const std::string & name);
 
+        void volume(const float newVolume);
         void volumeUp();
         void volumeDown();
         inline float volume() const { return m_volume; }
@@ -38,8 +39,6 @@ namespace util
         inline bool isMuted() const { return m_isMuted; }
 
       private:
-        void volume(const float newVolume);
-
         std::vector<std::size_t> findCacheIndexesByName(const std::string & name) const;
 
         bool loadFiles(const std::string & nameMustMatch = "");

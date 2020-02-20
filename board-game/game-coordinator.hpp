@@ -32,9 +32,10 @@ namespace boardgame
         void reset();
         void handleEvents();
         void handleEvent(const sf::Event & event);
-        void updatePerFrame();
-        void updatePerPeriod();
+        void update(const float frameTimeSec);
         void draw();
+
+        void updateScore();
 
       private:
         SnakeGameSettings m_settings;
@@ -46,11 +47,7 @@ namespace boardgame
         util::AnimationPlayer m_animationPlayer;
         Context m_context;
 
-        sf::Clock m_frameClock;
-        float m_frameTimeElapsedSec;
-        float m_frameTimeElapsedMinSec;
-
-        sf::Clock m_periodClock;
+        sf::Text m_scoreText;
     };
 } // namespace boardgame
 
