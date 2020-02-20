@@ -25,8 +25,7 @@ struct Resources
         loadTexture("C:/src/learningcpp/media/image/seamless/brick-wall.jpg", bg_texture);
         loadTexture("C:/src/learningcpp/media/image/rabbit.png", rabbit_texture);
         loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
-        loadTexture(
-            "C:/src/learningcpp/media/image/particle/spirit-recruit-5.png", particle_texture);
+        loadTexture("C:/src/learningcpp/media/image/particle/star-typical.png", particle_texture);
     }
 
     void loadTexture(const std::string & filePath, sf::Texture & texture)

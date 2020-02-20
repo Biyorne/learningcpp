@@ -13,6 +13,7 @@
 Game::Game()
     : m_window(
           sf::VideoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel), "Simple Effect")
+    , m_bloomWindow(m_window)
     , m_resources()
     , m_random()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
@@ -97,6 +98,10 @@ void Game::processEvents()
                 {
                     m_willClear = !m_willClear;
                 }
+                else if (sf::Keyboard::B == event.key.code)
+                {
+                    m_bloomWindow.isEnabled(!m_bloomWindow.isEnabled());
+                }
 
                 break;
             }
@@ -173,17 +178,17 @@ void Game::render()
 {
     if (m_willClear)
     {
-        m_window.clear();
+        m_bloomWindow.clear();
     }
 
-    m_window.draw(m_bgSprite);
+    m_bloomWindow.draw(m_bgSprite);
 
     for (entity::IEffectUPtr_t & effect : m_effects)
     {
-        m_window.draw(*effect);
+        m_bloomWindow.draw(*effect);
     }
 
-    m_window.draw(m_emitter);
+    m_bloomWindow.draw(m_emitter);
 
-    m_window.display();
+    m_bloomWindow.display();
 }

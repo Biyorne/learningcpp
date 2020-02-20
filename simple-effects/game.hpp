@@ -1,6 +1,7 @@
 #ifndef SIMPLE_EFFECTS_GAME_HPP_INCLUDED
 #define SIMPLE_EFFECTS_GAME_HPP_INCLUDED
 
+#include "bloom-shader.hpp"
 #include "context.hpp"
 #include "effect-base.hpp"
 #include "particle-emitter.hpp"
@@ -35,6 +36,7 @@ class Game
 
   private:
     sf::RenderWindow m_window;
+    util::BloomEffectHelper m_bloomWindow;
 
     Resources m_resources;
     util::Random m_random;
