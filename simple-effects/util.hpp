@@ -1,6 +1,8 @@
 #ifndef SIMPLE_EFFECTS_UTIL_HPP_INCLUDED
 #define SIMPLE_EFFECTS_UTIL_HPP_INCLUDED
 
+#include "random.hpp"
+
 #include <ostream>
 
 #include <SFML/Graphics.hpp>

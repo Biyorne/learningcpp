@@ -2,6 +2,12 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "game.hpp"
 
+#include "follower.hpp"
+#include "rising-fade.hpp"
+#include "steady-mover.hpp"
+#include "util.hpp"
+#include "wall-bouncer.hpp"
+
 #include <iostream>
 
 Game::Game()
@@ -10,10 +16,11 @@ Game::Game()
     , m_resources()
     , m_random()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
-    , m_context(m_window, m_random, m_audio)
+    , m_context(m_window, m_random, m_audio, m_resources)
     , m_willClear(false)
     , m_bgSprite(m_resources.bg_texture)
     , m_effects()
+    , m_emitter()
     , m_simTimeMult(1.0f)
 //, m_quadVerts(sf::Quads)// Color Gradient
 //, m_offScreenTexture()
@@ -44,6 +51,7 @@ Game::Game()
     std::cout << "1: Rising Fade\n";
     std::cout << "2: Follower\n";
     std::cout << "3: Wall Bouncer\n";
+    std::cout << "4: Toggle Particle Emitter\n";
 }
 
 void Game::reset()
@@ -51,6 +59,7 @@ void Game::reset()
     m_audio.stopAll();
     m_willClear = true;
     m_effects.clear();
+    m_emitter.reset();
 }
 
 void Game::run()
@@ -131,6 +140,11 @@ void Game::processEvents()
                         sf::Vector2f(200.0f, -200.0f),
                         m_window));
                 }
+                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
+                {
+                    m_emitter.toggleEmission();
+                }
+
                 break;
             }
 
@@ -151,6 +165,8 @@ void Game::update(const float frameTimeSec)
     {
         effect->update(m_context, frameTimeSec);
     }
+
+    m_emitter.update(m_context, frameTimeSec);
 }
 
 void Game::render()
@@ -166,6 +182,8 @@ void Game::render()
     {
         m_window.draw(*effect);
     }
+
+    m_window.draw(m_emitter);
 
     m_window.display();
 }

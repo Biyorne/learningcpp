@@ -3,13 +3,10 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
-#include "follower.hpp"
+#include "particle-emitter.hpp"
+#include "random.hpp"
 #include "resources.hpp"
-#include "rising-fade.hpp"
 #include "sound-player.hpp"
-#include "steady-mover.hpp"
-#include "util.hpp"
-#include "wall-bouncer.hpp"
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
@@ -48,6 +45,8 @@ class Game
     sf::Sprite m_bgSprite;
 
     entity::IEffectUVec_t m_effects;
+
+    entity::ParticleEmitter m_emitter;
 
     float m_simTimeMult;
 

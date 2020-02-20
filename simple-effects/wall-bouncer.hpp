@@ -3,6 +3,7 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
+#include "random.hpp"
 #include "steady-mover.hpp"
 
 #include <SFML/Graphics/RenderTarget.hpp>
