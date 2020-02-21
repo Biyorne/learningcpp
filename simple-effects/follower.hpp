@@ -18,7 +18,7 @@ namespace entity
             const float textureSizeWindowRatio,
             const float acceleration,
             const float speedLimit)
-            : EffectBase(makeSprite(texture))
+            : EffectBase(makeSprite(context, texture, textureSizeWindowRatio))
             , m_velocity({ 0.0f, 0.0f })
             , m_acceleration({ 0.0f, 0.0f })
             , m_speedLimit(speedLimit)

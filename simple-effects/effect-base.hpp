@@ -47,12 +47,19 @@ namespace entity
         void handleEvent(const Context &, const sf::Event &) override {}
 
       protected:
-        static sf::Sprite
-            makeSprite(const sf::Texture & texture, const sf::Vector2f & spawnPos = { 0.0f, 0.0f })
+        static sf::Sprite makeSprite(
+            const Context & context,
+            const sf::Texture & texture,
+            const float textureSizeWindowRatio,
+            const sf::Vector2f & spawnPos = { 0.0f, 0.0f })
         {
+            const float windowSizeAvg{ (context.window_size.x + context.window_size.y) / 2.0f };
+            const float maxDimm{ windowSizeAvg * textureSizeWindowRatio };
+
             sf::Sprite sprite(texture);
             util::setOrigin2Center(sprite);
             sprite.setPosition(spawnPos);
+            util::scaleTo(maxDimm, sprite);
 
             return sprite;
         }
