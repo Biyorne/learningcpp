@@ -18,4 +18,5 @@ Thumbs.db
 *.vap
 *.dbp
 *.ilk
+.~*
 x

@@ -33,6 +33,8 @@ Game::Game()
     m_resources.bg_texture.setRepeated(true);
     m_bgSprite.setTextureRect({ { 0, 0 }, sf::Vector2i(m_context.window_size) });
 
+    m_audio.load({ "camera-click" });
+
     // Color Gradient: Colored vertexes that make a rect/quad
     // m_quadVerts.append(sf::Vertex({ 0.0f, 0.0f }, sf::Color::Red));
     // m_quadVerts.append(sf::Vertex({ m_context.window_size.x, 0.0f }, sf::Color::Blue));
@@ -101,6 +103,19 @@ void Game::processEvents()
                 else if (sf::Keyboard::B == event.key.code)
                 {
                     m_bloomWindow.isEnabled(!m_bloomWindow.isEnabled());
+                }
+                else if (sf::Keyboard::P == event.key.code)
+                {
+                    sf::Vector2u windowSize(m_window.getSize());
+
+                    sf::Texture texture;
+                    texture.create(windowSize.x, windowSize.y);
+                    texture.update(m_window);
+
+                    if (texture.copyToImage().saveToFile("screenshot.jpg"))
+                    {
+                        m_audio.play("camera-click");
+                    }
                 }
 
                 break;

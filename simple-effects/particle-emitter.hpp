@@ -84,6 +84,8 @@ namespace entity
             for (const ParticleEffect & particle : m_particles)
             {
                 target.draw(particle, states);
+                target.draw(particle, sf::BlendAdd);
+                target.draw(particle, sf::BlendAdd);
             }
         }
 
