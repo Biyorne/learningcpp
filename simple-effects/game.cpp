@@ -2,6 +2,7 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "game.hpp"
 
+#include "exploder.hpp"
 #include "follower.hpp"
 #include "rising-fade.hpp"
 #include "steady-mover.hpp"
@@ -55,6 +56,7 @@ Game::Game()
     std::cout << "2: Follower\n";
     std::cout << "3: Wall Bouncer\n";
     std::cout << "4: Toggle Particle Emitter\n";
+    std::cout << "5: Exploder\n";
 }
 
 void Game::reset()
@@ -163,6 +165,11 @@ void Game::processEvents()
                 else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
                 {
                     m_emitter.toggleEmission();
+                }
+                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
+                {
+                    m_effects.push_back(std::make_unique<entity::ExploderEffect>(
+                        m_context, m_resources.exploder_texture, m_context.mouse_pos.y, 100));
                 }
 
                 break;

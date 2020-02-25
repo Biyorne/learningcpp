@@ -7,6 +7,29 @@
 
 #include <SFML/Graphics.hpp>
 
+namespace sf
+{
+    using Vector2s = Vector2<std::size_t>;
+
+    template <typename T>
+    inline sf::Vector2<T> operator*(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
+    {
+        return { (left.x * right.x), (left.y * right.y) };
+    }
+
+    template <typename T>
+    inline sf::Vector2<T> operator/(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
+    {
+        if ((!(right.x > 0.0f) && !(right.x < 0.0f)) || (!(right.y > 0.0f) && !(right.y < 0.0f)))
+        {
+            return { 0.0f, 0.0f };
+        }
+
+        return { (left.x / right.x), (left.y / right.y) };
+    }
+
+} // namespace sf
+
 namespace util
 {
 
@@ -169,6 +192,18 @@ namespace util
     }
 
     // Size/scale
+
+    template <typename T>
+    inline sf::Vector2<T> size(const sf::Rect<T> & rect)
+    {
+        return { rect.width, rect.height };
+    }
+
+    template <typename T>
+    inline sf::Vector2<T> center(const sf::Rect<T> & rect)
+    {
+        return { (rect.left + (rect.width / T(2))), (rect.top + (rect.height / T(2))) };
+    }
 
     inline float windowDiagonalLength(const sf::RenderTarget & window)
     {
