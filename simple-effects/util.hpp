@@ -51,60 +51,128 @@ namespace util
             (thing.getLocalBounds().width * 0.5f), (thing.getLocalBounds().height * 0.5f));
     }
 
-    // Right-triangle
+    //
 
     template <typename T>
-    inline T rightTriHypotenuse(const sf::Vector2<T> & vec)
+    inline T rightTriangleHyp(const sf::Vector2<T> & vec)
     {
         return std::sqrt((vec.x * vec.x) + (vec.y * vec.y));
     }
 
-    // Position
+    //
 
-    inline sf::Vector2f posDiffV(const sf::Vector2f & from, const sf::Vector2f & to)
+    // Subtracts two positions
+    //(Returns two numbers for the difference in both axes)
+    // The order of the subtraction (to - from) ensures: from + result == to.
+    //"Turns two positions into a right triangle"
+    template <typename T>
+    inline sf::Vector2<T> differenceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
         return (to - from);
     }
 
-    inline float posDistance(const sf::Vector2f & from, const sf::Vector2f & to)
+    //...or, this is exactly the same as:
+    //"Turns two positions into a vector pointing from->to and with magnitude==distance."
+    template <typename T>
+    inline sf::Vector2<T> vectorMake(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
-        return rightTriHypotenuse(posDiffV(from, to));
+        return differenceFromTo(from, to);
     }
 
-    // Cartesian Vectors
+    //
 
-    inline float vecMagnitude(const sf::Vector2f & vec) { return rightTriHypotenuse(vec); }
-
-    inline sf::Vector2f
-        vecNormal(const sf::Vector2f & vec, const sf::Vector2f & onError = { 0.0f, 0.0f })
+    // Calc distance between two positions
+    //(Returns one number for the difference of both axes combined)
+    // In the Cartesian space, from and to define a right triangle, then the answer is obvious
+    template <typename T>
+    inline T distanceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
-        const float mag(vecMagnitude(vec));
-        if (mag > 0.0f)
+        return rightTriangleHyp(differenceFromTo(from, to));
+    }
+
+    //...or, this is exactly the same as:
+    // In Cartesian space, both positions can be thought of as the corners of a right triangle
+    template <typename T>
+    inline T vectorMagnitudeFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
+    {
+        return rightTriangleHyp(vectorMake(from, to));
+    }
+
+    //...or, this is exactly the same as:
+    template <typename T>
+    inline T vectorMagnitude(const sf::Vector2<T> & vec)
+    {
+        return rightTriangleHyp(vec);
+    }
+
+    //
+
+    // Sets the magnitude of a vector without changing direction
+    template <typename T>
+    inline sf::Vector2<T> vectorMagnitudeOnlySet(const sf::Vector2<T> & vec, const T newMagnitude)
+    {
+        const T currentMag(vectorMagnitude(vec));
+
+        if (currentMag > T(0))
         {
-            return (vec / mag);
+            return (vec * (newMagnitude / currentMag));
         }
         else
         {
-            return onError;
+            return {};
         }
     }
 
-    inline sf::Vector2f vecScale(const sf::Vector2f & vec, const float magnitude)
+    // Sets the magnitude of a vector to 1 without changing direction (AKA Unit Vector)
+    template <typename T>
+    inline sf::Vector2<T> vectorNormalize(const sf::Vector2<T> & vec)
     {
-        return (vecNormal(vec) * magnitude);
+        return vectorMagnitudeOnlySet(vec, T(1));
     }
 
-    inline sf::Vector2f vecSetDirection(
-        const sf::Vector2f & vec, const sf::Vector2f & from, const sf::Vector2f & to)
+    // Get a vector that only has the direction
+    template <typename T>
+    inline sf::Vector2<T>
+        vectorNormalizeFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
-        return (util::vecNormal(to - from) * vecMagnitude(vec));
+        return vectorNormalize(vectorMake(from, to));
+    }
+
+    // Gets the direction of a vector
+    template <typename T>
+    inline sf::Vector2<T> vectorDirection(const sf::Vector2<T> & vec)
+    {
+        return vectorNormalize(vec);
+    }
+
+    // Get a vector that only has the direction
+    template <typename T>
+    inline sf::Vector2<T>
+        vectorDirectionFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
+    {
+        return vectorDirection(vectorMake(from, to));
+    }
+
+    // Sets the direction of a vector without changing the magnitude
+    template <typename T>
+    inline sf::Vector2<T> vectorDirectionOnlySetFromTo(
+        const sf::Vector2<T> & vec, const sf::Vector2<T> & from, const sf::Vector2<T> & to)
+    {
+        return (vectorNormalizeFromTo(from, to) * vectorMagnitude(vec));
+    }
+
+    template <typename T>
+    inline sf::Vector2<T>
+        vectorMakeWithMag(const sf::Vector2<T> & from, const sf::Vector2<T> & to, const T mag)
+    {
+        return (vectorNormalizeFromTo(from, to) * mag);
     }
 
     // Size/scale
 
     inline float windowDiagonalLength(const sf::RenderTarget & window)
     {
-        return rightTriHypotenuse(sf::Vector2f(window.getSize()));
+        return rightTriangleHyp(sf::Vector2f(window.getSize()));
     }
 
     template <typename T = float>

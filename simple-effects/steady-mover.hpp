@@ -96,7 +96,7 @@ namespace entity
         // requires max >= 0.0f (see constructor)
         sf::Vector2f clamp(sf::Vector2f vec)
         {
-            const float magnitude{ util::vecMagnitude(vec) };
+            const float magnitude{ util::vectorMagnitude(vec) };
             if (magnitude > max)
             {
                 vec *= (max / magnitude);

@@ -37,7 +37,9 @@ namespace entity
             m_targetPos = findTargetPos(context);
 
             m_acceleration.vector =
-                (util::vecNormal(m_targetPos - m_sprite.getPosition()) * m_accelerationMag);
+                util::vectorMakeWithMag(m_sprite.getPosition(), m_targetPos, m_accelerationMag);
+            //(util::vectorNormalizeFromTo(m_sprite.getPosition(), m_targetPos) *
+            //m_accelerationMag);
 
             m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
 
