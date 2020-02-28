@@ -84,104 +84,118 @@ void Game::run()
 void Game::processEvents()
 {
     sf::Event event;
-    while (m_window.pollEvent(event))
+    while (m_window.isOpen() && m_window.pollEvent(event))
     {
-        switch (event.type)
+        processEvent(event);
+
+        // clang-format off
+        const bool willEffectsIgnoreEvent{
+            (event.type == sf::Event::GainedFocus) ||
+            (event.type == sf::Event::LostFocus) ||
+            (event.type == sf::Event::MouseEntered) ||
+            (event.type == sf::Event::MouseLeft) ||
+            (event.type == sf::Event::MouseMoved) };
+        // clang-format on
+
+        if (!willEffectsIgnoreEvent)
         {
-            case sf::Event::KeyPressed:
+            for (auto & effect : m_effects)
             {
-                if (sf::Keyboard::Escape == event.key.code)
-                {
-                    m_window.close();
-                }
-                else if (sf::Keyboard::R == event.key.code)
-                {
-                    reset();
-                }
-                else if (sf::Keyboard::C == event.key.code)
-                {
-                    m_willClear = !m_willClear;
-                }
-                else if (sf::Keyboard::B == event.key.code)
-                {
-                    m_bloomWindow.isEnabled(!m_bloomWindow.isEnabled());
-                }
-                else if (sf::Keyboard::P == event.key.code)
-                {
-                    sf::Vector2u windowSize(m_window.getSize());
-
-                    sf::Texture texture;
-                    texture.create(windowSize.x, windowSize.y);
-                    texture.update(m_window);
-
-                    if (texture.copyToImage().saveToFile("screenshot.jpg"))
-                    {
-                        m_audio.play("camera-click");
-                    }
-                }
-
-                break;
+                effect->handleEvent(m_context, event);
             }
+        }
+    }
+}
 
-            case sf::Event::MouseWheelScrolled:
+void Game::processEvent(const sf::Event & event)
+{
+    if (event.type == sf::Event::Closed)
+    {
+        m_window.close();
+        return;
+    }
+
+    if (event.type == sf::Event::KeyPressed)
+    {
+        if (sf::Keyboard::Escape == event.key.code)
+        {
+            m_window.close();
+        }
+        else if (sf::Keyboard::R == event.key.code)
+        {
+            reset();
+        }
+        else if (sf::Keyboard::C == event.key.code)
+        {
+            m_willClear = !m_willClear;
+        }
+        else if (sf::Keyboard::B == event.key.code)
+        {
+            m_bloomWindow.isEnabled(!m_bloomWindow.isEnabled());
+        }
+        else if (sf::Keyboard::P == event.key.code)
+        {
+            sf::Vector2u windowSize(m_window.getSize());
+
+            sf::Texture texture;
+            texture.create(windowSize.x, windowSize.y);
+            texture.update(m_window);
+
+            if (texture.copyToImage().saveToFile("screenshot.jpg"))
             {
-                // On Nel's laptop, values are whole numbers from[-5,5] but usually just [-1,1] //
-                // On Til's laptop, values are reals around [0.0083, 5.0f]
-                const float scrollAmount(event.mouseWheelScroll.delta);
-
-                if (scrollAmount > 0.0f)
-                {
-                    m_simTimeMult *= 1.1f;
-                }
-                else
-                {
-                    m_simTimeMult *= 0.9f;
-                }
-
-                std::cout << scrollAmount << "->" << m_simTimeMult << std::endl;
-                break;
+                m_audio.play("camera-click");
             }
+        }
+    }
+    else if (event.type == sf::Event::MouseWheelScrolled)
+    {
+        // On Nel's laptop, values are whole numbers from[-5,5] but usually just [-1,1] //
+        // On Til's laptop, values are reals around [0.0083, 5.0f]
+        const float scrollAmount(event.mouseWheelScroll.delta);
 
-            case sf::Event::MouseButtonPressed: //
+        if (scrollAmount > 0.0f)
+        {
+            m_simTimeMult *= 1.1f;
+        }
+        else
+        {
+            m_simTimeMult *= 0.9f;
+        }
+
+        std::cout << scrollAmount << "->" << m_simTimeMult << std::endl;
+    }
+    else if (event.type == sf::Event::MouseButtonPressed)
+    {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
+        {
+            m_effects.push_back(std::make_unique<entity::RisingFadeEffect>(
+                m_context, m_resources.particle_texture, 0.1f));
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
+        {
+            m_effects.push_back(std::make_unique<entity::MouseFollowerEffect>(
+                m_context, m_resources.rabbit_texture, 0.333f, 1000.0f, 500.0f));
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
+        {
+            m_effects.push_back(std::make_unique<entity::WallBouncerEffect>(
+                m_context, m_resources.warn_texture, sf::Vector2f(200.0f, -200.0f), m_window));
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
+        {
+            m_emitter.toggleEmission();
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
+        {
+            const std::size_t tileCount{ static_cast<std::size_t>(
+                sf::Mouse::getPosition(m_window).y / 2.5f) };
+
+            const auto size{ m_resources.exploder_texture.getSize() };
+            if ((tileCount > 4) && (tileCount < std::min(size.x, size.y)))
             {
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
-                {
-                    m_effects.push_back(std::make_unique<entity::RisingFadeEffect>(
-                        m_context, m_resources.particle_texture, 0.1f));
-                }
-                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
-                {
-                    m_effects.push_back(std::make_unique<entity::MouseFollowerEffect>(
-                        m_context, m_resources.rabbit_texture, 0.333f, 1000.0f, 500.0f));
-                }
-                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
-                {
-                    m_effects.push_back(std::make_unique<entity::WallBouncerEffect>(
-                        m_context,
-                        m_resources.warn_texture,
-                        sf::Vector2f(200.0f, -200.0f),
-                        m_window));
-                }
-                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
-                {
-                    m_emitter.toggleEmission();
-                }
-                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
-                {
-                    m_effects.push_back(std::make_unique<entity::ExploderEffect>(
-                        m_context, m_resources.exploder_texture, m_context.mouse_pos.y, 100));
-                }
-
-                break;
+                m_effects.push_back(std::make_unique<entity::ExploderEffect>(
+                    m_context, m_resources.exploder_texture, m_context.mouse_pos.y, tileCount));
             }
-
-            case sf::Event::Closed:
-            {
-                m_window.close();
-                break;
-            }
-
-            default: break;
         }
     }
 }

@@ -7,6 +7,8 @@
 
 #include <SFML/Graphics.hpp>
 
+//
+
 namespace sf
 {
     using Vector2s = Vector2<std::size_t>;
@@ -14,30 +16,36 @@ namespace sf
     template <typename T>
     inline sf::Vector2<T> operator*(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return { (left.x * right.x), (left.y * right.y) };
     }
 
     template <typename T>
     inline sf::Vector2<T> operator/(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
     {
-        if ((!(right.x > 0.0f) && !(right.x < 0.0f)) || (!(right.y > 0.0f) && !(right.y < 0.0f)))
+        static_assert(std::is_arithmetic_v<T>);
+
+        if ((!(right.x > T(0)) && !(right.x < T(0))) || (!(right.y > T(0)) && !(right.y < T(0))))
         {
-            return { 0.0f, 0.0f };
+            return { T(0), T(0) };
         }
 
         return { (left.x / right.x), (left.y / right.y) };
+    }
+
+    template <typename T>
+    inline std::ostream & operator<<(std::ostream & os, const sf::Vector2<T> & vec)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+
+        os << '(' << vec.x << ',' << vec.y << ')';
+        return os;
     }
 
 } // namespace sf
 
 namespace util
 {
-
-    inline std::ostream & operator<<(std::ostream & os, const sf::Vector2f & vec)
-    {
-        os << '(' << vec.x << ',' << vec.y << ')';
-        return os;
-    }
 
     //
 
@@ -68,6 +76,27 @@ namespace util
     }
 
     template <typename T>
+    inline sf::Vector2<T> position(const sf::Rect<T> & rect)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+        return { rect.left, rect.top };
+    }
+
+    template <typename T>
+    inline sf::Vector2<T> size(const sf::Rect<T> & rect)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+        return { rect.width, rect.height };
+    }
+
+    template <typename T>
+    inline sf::Vector2<T> center(const sf::Rect<T> & rect)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+        return { (rect.left + (rect.width / T(2))), (rect.top + (rect.height / T(2))) };
+    }
+
+    template <typename T>
     inline void setOrigin2Center(T & thing)
     {
         thing.setOrigin(
@@ -79,6 +108,7 @@ namespace util
     template <typename T>
     inline T rightTriangleHyp(const sf::Vector2<T> & vec)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return std::sqrt((vec.x * vec.x) + (vec.y * vec.y));
     }
 
@@ -91,6 +121,7 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> differenceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return (to - from);
     }
 
@@ -99,6 +130,7 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> vectorMake(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return differenceFromTo(from, to);
     }
 
@@ -110,6 +142,7 @@ namespace util
     template <typename T>
     inline T distanceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return rightTriangleHyp(differenceFromTo(from, to));
     }
 
@@ -118,6 +151,7 @@ namespace util
     template <typename T>
     inline T vectorMagnitudeFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return rightTriangleHyp(vectorMake(from, to));
     }
 
@@ -125,6 +159,7 @@ namespace util
     template <typename T>
     inline T vectorMagnitude(const sf::Vector2<T> & vec)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return rightTriangleHyp(vec);
     }
 
@@ -134,6 +169,8 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> vectorMagnitudeOnlySet(const sf::Vector2<T> & vec, const T newMagnitude)
     {
+        static_assert(std::is_arithmetic_v<T>);
+
         const T currentMag(vectorMagnitude(vec));
 
         if (currentMag > T(0))
@@ -150,6 +187,7 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> vectorNormalize(const sf::Vector2<T> & vec)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return vectorMagnitudeOnlySet(vec, T(1));
     }
 
@@ -158,6 +196,7 @@ namespace util
     inline sf::Vector2<T>
         vectorNormalizeFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return vectorNormalize(vectorMake(from, to));
     }
 
@@ -165,6 +204,7 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> vectorDirection(const sf::Vector2<T> & vec)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return vectorNormalize(vec);
     }
 
@@ -173,6 +213,7 @@ namespace util
     inline sf::Vector2<T>
         vectorDirectionFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return vectorDirection(vectorMake(from, to));
     }
 
@@ -181,6 +222,7 @@ namespace util
     inline sf::Vector2<T> vectorDirectionOnlySetFromTo(
         const sf::Vector2<T> & vec, const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return (vectorNormalizeFromTo(from, to) * vectorMagnitude(vec));
     }
 
@@ -188,22 +230,11 @@ namespace util
     inline sf::Vector2<T>
         vectorMakeWithMag(const sf::Vector2<T> & from, const sf::Vector2<T> & to, const T mag)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return (vectorNormalizeFromTo(from, to) * mag);
     }
 
-    // Size/scale
-
-    template <typename T>
-    inline sf::Vector2<T> size(const sf::Rect<T> & rect)
-    {
-        return { rect.width, rect.height };
-    }
-
-    template <typename T>
-    inline sf::Vector2<T> center(const sf::Rect<T> & rect)
-    {
-        return { (rect.left + (rect.width / T(2))), (rect.top + (rect.height / T(2))) };
-    }
+    // Scale
 
     inline float windowDiagonalLength(const sf::RenderTarget & window)
     {
@@ -213,6 +244,7 @@ namespace util
     template <typename T = float>
     inline T windowSizeAvg(const sf::RenderTarget & window)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return static_cast<T>((window.getSize().x + window.getSize().y) / 2u);
     }
 
@@ -245,12 +277,14 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> sfRandom(const Random & random, const sf::Vector2<T> & ranges)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return { random.zeroTo(ranges.x), random.zeroTo(ranges.y) };
     }
 
     template <typename T>
     inline sf::Vector2<T> sfRandom(const Random & random, const sf::Rect<T> & bounds)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return { random.fromTo(bounds.left, right(bounds)),
                  random.fromTo(bounds.top, bottom(bounds)) };
     }

@@ -29,6 +29,7 @@ class Game
 
   private:
     void processEvents();
+    void processEvent(const sf::Event & event);
     void update(const float frameTimeSec);
     void render();
 

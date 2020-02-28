@@ -3,6 +3,7 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
+#include "particle-emitter.hpp"
 #include "random.hpp"
 #include "steady-mover.hpp"
 
@@ -16,67 +17,101 @@ namespace entity
         ExploderEffect(
             const Context & context,
             const sf::Texture & texture,
-            const float speedLimit,
-            const std::size_t pieceCount)
+            const float,
+            const std::size_t tileCount)
             : EffectBase(makeSprite(
                   context,
                   texture,
                   context.sprite_size_ratio_default,
                   (context.window_size * 0.5f)))
-            , m_pieces()
+            , m_tiles()
+            , m_offScreenTexture()
+            , m_willExplode(false)
         {
-            m_pieces.reserve(pieceCount);
-            divideIntoRects(pieceCount, texture);
-            m_sprite.setPosition({});
-            m_sprite.move(m_sprite.getOrigin());
+            m_tiles.reserve(tileCount);
+
+            makeScaledTextureCopy();
+            divideIntoRects(context, tileCount, m_offScreenTexture.getTexture());
         }
 
         virtual ~ExploderEffect() = default;
 
-        void divideIntoRects(const std::size_t pieceCount, const sf::Texture & texture)
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
         {
-            const float cellSideLength(static_cast<float>(std::sqrt(pieceCount)));
-            const sf::Vector2f cellSize(cellSideLength, cellSideLength);
+            // EffectBase::draw(target, states);
 
-            const sf::Vector2f imageSize(util::size(m_sprite.getGlobalBounds()));
-            const sf::Vector2i pieceCounts(imageSize / cellSize);
-
-            for (int vert(0); vert < pieceCounts.y; ++vert)
+            for (const auto & tile : m_tiles)
             {
-                for (int horiz(0); horiz < pieceCounts.x; ++horiz)
+                target.draw(tile, states);
+            }
+        }
+
+        void update(const Context & context, const float frameTimeSec) override
+        {
+            if (m_willExplode)
+            {
+                for (auto & tile : m_tiles)
                 {
-                    const sf::Vector2i piecePos(sf::Vector2i(horiz, vert) * pieceCounts);
-
-                    // const auto pos = (rectPos + spritePos) - (spriteSize / 2.0f);
-                    // rect = {pos, size};
-
-                    // const sf::Vector2f finalPos(
-                    //    (piecePos + m_sprite.getPosition()) -
-                    //    (util::size(m_sprite.getGlobalBounds()) / 2.0f));
-
-                    const sf::IntRect rect(piecePos, pieceCounts);
-                    const auto rs = util::makeRectangleShape(sf::FloatRect(rect));
-                    m_pieces.push_back(rs);
-                    // sf::Sprite sprite(texture, sf::IntRect(rect));
-                    // m_pieces.push_back(sprite);
+                    tile.update(context, frameTimeSec);
                 }
             }
         }
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
+        void handleEvent(const Context &, const sf::Event & event) override
         {
-            EffectBase::draw(target, states);
-
-            for (const auto & piece : m_pieces)
+            if (m_willExplode)
             {
-                target.draw(piece, states);
+                return;
+            }
+
+            m_willExplode =
+                ((event.type == sf::Event::MouseButtonPressed) &&
+                 (event.mouseButton.button == sf::Mouse::Right));
+        }
+
+      private:
+        void makeScaledTextureCopy()
+        {
+            m_offScreenTexture.create(
+                static_cast<unsigned>(m_sprite.getGlobalBounds().width),
+                static_cast<unsigned>(m_sprite.getGlobalBounds().height));
+
+            m_offScreenTexture.clear();
+
+            sf::Sprite tempSprite(m_sprite);
+            tempSprite.setPosition(0.0f, 0.0f);
+            tempSprite.move(m_sprite.getOrigin() * m_sprite.getScale());
+            m_offScreenTexture.draw(tempSprite);
+            m_offScreenTexture.display();
+        }
+
+        void divideIntoRects(
+            const Context & context, const std::size_t tileCount, const sf::Texture & texture)
+        {
+            const sf::Vector2i textureSizeInt(texture.getSize());
+            const int tileCountPerSide(static_cast<int>(std::sqrt(tileCount)));
+            const sf::Vector2i tileCounts(tileCountPerSide, tileCountPerSide);
+            const sf::Vector2i tileSize(textureSizeInt / tileCounts);
+
+            for (int vert(0); vert < textureSizeInt.y; vert += tileSize.y)
+            {
+                for (int horiz(0); horiz < textureSizeInt.x; horiz += tileSize.x)
+                {
+                    const sf::IntRect tileBounds({ horiz, vert }, tileSize);
+                    sf::Sprite sp(texture, tileBounds);
+                    util::setOrigin2Center(sp);
+                    sp.setPosition(util::center(sf::FloatRect(tileBounds)));
+                    sp.move(m_sprite.getPosition());
+                    sp.move(m_sprite.getOrigin() * -m_sprite.getScale());
+                    m_tiles.push_back(ParticleEffect(context, sp));
+                }
             }
         }
 
-        void update(const Context &, const float frameTimeSec) override {}
-
       private:
-        std::vector<sf::RectangleShape> m_pieces;
+        std::vector<ParticleEffect> m_tiles;
+        sf::RenderTexture m_offScreenTexture;
+        bool m_willExplode;
     };
 
 } // namespace entity

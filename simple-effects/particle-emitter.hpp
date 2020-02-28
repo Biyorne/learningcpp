@@ -27,6 +27,14 @@ namespace entity
             , m_speedLimit(300.0f)
         {}
 
+        ParticleEffect(const Context & context, const sf::Sprite & sprite)
+            : EffectBase(sprite)
+            , m_velocity({ context.random.fromTo(-300.0f, 300.0f),
+                           context.random.fromTo(-300.0f, 300.0f) })
+            , m_acceleration({ 0.0f, 100.0f })
+            , m_speedLimit(300.0f)
+        {}
+
         virtual ~ParticleEffect() = default;
 
         void update(const Context &, const float frameTimeSec) override
