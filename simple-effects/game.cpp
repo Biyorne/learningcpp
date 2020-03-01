@@ -24,6 +24,7 @@ Game::Game()
     , m_effects()
     , m_emitter()
     , m_simTimeMult(1.0f)
+    , m_statusText(m_context)
 //, m_quadVerts(sf::Quads)// Color Gradient
 //, m_offScreenTexture()
 //, m_image()
@@ -162,7 +163,12 @@ void Game::processEvent(const sf::Event & event)
             m_simTimeMult *= 0.9f;
         }
 
-        std::cout << scrollAmount << "->" << m_simTimeMult << std::endl;
+        std::ostringstream ss;
+        ss << scrollAmount << "->" << m_simTimeMult;
+
+        std::cout << ss.str() << std::endl;
+
+        m_statusText.setPostfix(ss.str());
     }
     else if (event.type == sf::Event::MouseButtonPressed)
     {
@@ -208,6 +214,8 @@ void Game::update(const float frameTimeSec)
     }
 
     m_emitter.update(m_context, frameTimeSec);
+
+    m_statusText.update(m_context, frameTimeSec);
 }
 
 void Game::render()
@@ -225,6 +233,8 @@ void Game::render()
     }
 
     m_bloomWindow.draw(m_emitter);
+
+    m_bloomWindow.draw(m_statusText);
 
     m_bloomWindow.display();
 }

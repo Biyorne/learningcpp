@@ -59,7 +59,7 @@ namespace entity
             sf::Sprite sprite(texture);
             util::setOrigin2Center(sprite);
             sprite.setPosition(spawnPos);
-            util::scaleTo(maxDimm, sprite);
+            util::scaleTo(sprite, sf::Vector2f(maxDimm, maxDimm));
 
             return sprite;
         }

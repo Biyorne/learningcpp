@@ -103,6 +103,25 @@ namespace util
             (thing.getLocalBounds().width * 0.5f), (thing.getLocalBounds().height * 0.5f));
     }
 
+    inline void setOriginToLocalPos(sf::Text & text)
+    {
+        text.setOrigin(text.getLocalBounds().left, text.getLocalBounds().top);
+    }
+
+    // With textures and sprites:
+    //   WE DECIDED were the origin should be set.  (center spin sprite)
+    //
+    // With text:
+    //  SFML DECIDED where the origin should be set, and it is: localBounds (pos)
+    //  HOW to fix it:  SET THE ORIGIN to where SFML figured out it should be:
+    //                  m_text.setOrigin( m_text.getLocalBounds().left, ...top)
+    //  WHEN you will have to fix it:  changes to: string/character_size/font/scale
+    //  Good Advice:  Pick ONE function that sets/changes the sf::Text,
+    //                So you only have to write one line of code to fix this crap.
+
+    // Call me whenever you change string/character_size/font/scale
+    inline void fixSfTextPos(sf::Text & text) { setOriginToLocalPos(text); }
+
     //
 
     template <typename T>
@@ -248,28 +267,30 @@ namespace util
         return static_cast<T>((window.getSize().x + window.getSize().y) / 2u);
     }
 
-    inline void scaleTo(const float maxDimension, sf::Sprite & sprite)
+    template <typename T>
+    inline void scaleTo(T & sfThing, const sf::Vector2f & bounds)
     {
-        if (maxDimension < 0.0f)
+        if ((bounds.x < 0.0f) || (bounds.y < 0.0f))
         {
             return;
         }
 
-        if ((sprite.getLocalBounds().width < 1.0f) || (sprite.getLocalBounds().height < 1.0f))
+        const auto localBounds{ sfThing.getLocalBounds() };
+        if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
         {
             return;
         }
 
         // Scale by width
-        const float widthRatio(maxDimension / sprite.getLocalBounds().width);
-        sprite.setScale(widthRatio, widthRatio);
+        const float widthRatio(bounds.x / localBounds.width);
+        sfThing.setScale(widthRatio, widthRatio);
 
         // Check to see if it fits, if not...
-        if (sprite.getGlobalBounds().height > maxDimension)
+        if (sfThing.getGlobalBounds().height > bounds.y)
         {
             // Scale by height
-            const float heightRatio(maxDimension / sprite.getLocalBounds().height);
-            sprite.setScale(heightRatio, heightRatio);
+            const float heightRatio(bounds.y / localBounds.height);
+            sfThing.setScale(heightRatio, heightRatio);
         }
     }
 

@@ -27,6 +27,11 @@ struct Resources
         loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
         loadTexture("C:/src/learningcpp/media/image/particle/star-typical.png", particle_texture);
         loadTexture("C:/src/learningcpp/media/image/ruby.jpg", exploder_texture);
+
+        if (!font.loadFromFile("C:/src/learningcpp/media/font/gentium-plus/gentium-plus.ttf"))
+        {
+            std::cerr << "Unable to load font: gentium-plus.ttf" << std::endl;
+        }
     }
 
     void loadTexture(const std::string & filePath, sf::Texture & texture)
@@ -45,7 +50,7 @@ struct Resources
     sf::Texture carrot_texture;
     sf::Texture particle_texture;
     sf::Texture exploder_texture;
-
+    sf::Font font;
     sf::Music music;
 };
 //
