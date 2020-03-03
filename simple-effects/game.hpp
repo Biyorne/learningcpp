@@ -8,6 +8,7 @@
 #include "random.hpp"
 #include "resources.hpp"
 #include "sound-player.hpp"
+#include "status-text.hpp"
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
@@ -29,6 +30,7 @@ class Game
 
   private:
     void processEvents();
+    void processEvent(const sf::Event & event);
     void update(const float frameTimeSec);
     void render();
 
@@ -49,6 +51,8 @@ class Game
     entity::IEffectUVec_t m_effects;
 
     entity::ParticleEmitter m_emitter;
+
+    entity::StatusText m_statusText;
 
     float m_simTimeMult;
 

@@ -7,14 +7,45 @@
 
 #include <SFML/Graphics.hpp>
 
-namespace util
-{
+//
 
-    inline std::ostream & operator<<(std::ostream & os, const sf::Vector2f & vec)
+namespace sf
+{
+    using Vector2s = Vector2<std::size_t>;
+
+    template <typename T>
+    inline sf::Vector2<T> operator*(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
     {
+        static_assert(std::is_arithmetic_v<T>);
+        return { (left.x * right.x), (left.y * right.y) };
+    }
+
+    template <typename T>
+    inline sf::Vector2<T> operator/(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+
+        if ((!(right.x > T(0)) && !(right.x < T(0))) || (!(right.y > T(0)) && !(right.y < T(0))))
+        {
+            return { T(0), T(0) };
+        }
+
+        return { (left.x / right.x), (left.y / right.y) };
+    }
+
+    template <typename T>
+    inline std::ostream & operator<<(std::ostream & os, const sf::Vector2<T> & vec)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+
         os << '(' << vec.x << ',' << vec.y << ')';
         return os;
     }
+
+} // namespace sf
+
+namespace util
+{
 
     //
 
@@ -45,17 +76,58 @@ namespace util
     }
 
     template <typename T>
+    inline sf::Vector2<T> position(const sf::Rect<T> & rect)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+        return { rect.left, rect.top };
+    }
+
+    template <typename T>
+    inline sf::Vector2<T> size(const sf::Rect<T> & rect)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+        return { rect.width, rect.height };
+    }
+
+    template <typename T>
+    inline sf::Vector2<T> center(const sf::Rect<T> & rect)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+        return { (rect.left + (rect.width / T(2))), (rect.top + (rect.height / T(2))) };
+    }
+
+    template <typename T>
     inline void setOrigin2Center(T & thing)
     {
         thing.setOrigin(
             (thing.getLocalBounds().width * 0.5f), (thing.getLocalBounds().height * 0.5f));
     }
 
+    inline void setOriginToLocalPos(sf::Text & text)
+    {
+        text.setOrigin(text.getLocalBounds().left, text.getLocalBounds().top);
+    }
+
+    // With textures and sprites:
+    //   WE DECIDED were the origin should be set.  (center spin sprite)
+    //
+    // With text:
+    //  SFML DECIDED where the origin should be set, and it is: localBounds (pos)
+    //  HOW to fix it:  SET THE ORIGIN to where SFML figured out it should be:
+    //                  m_text.setOrigin( m_text.getLocalBounds().left, ...top)
+    //  WHEN you will have to fix it:  changes to: string/character_size/font/scale
+    //  Good Advice:  Pick ONE function that sets/changes the sf::Text,
+    //                So you only have to write one line of code to fix this crap.
+
+    // Call me whenever you change string/character_size/font/scale
+    inline void fixSfTextPos(sf::Text & text) { setOriginToLocalPos(text); }
+
     //
 
     template <typename T>
     inline T rightTriangleHyp(const sf::Vector2<T> & vec)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return std::sqrt((vec.x * vec.x) + (vec.y * vec.y));
     }
 
@@ -68,6 +140,7 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> differenceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return (to - from);
     }
 
@@ -76,6 +149,7 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> vectorMake(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return differenceFromTo(from, to);
     }
 
@@ -87,6 +161,7 @@ namespace util
     template <typename T>
     inline T distanceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return rightTriangleHyp(differenceFromTo(from, to));
     }
 
@@ -95,6 +170,7 @@ namespace util
     template <typename T>
     inline T vectorMagnitudeFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return rightTriangleHyp(vectorMake(from, to));
     }
 
@@ -102,6 +178,7 @@ namespace util
     template <typename T>
     inline T vectorMagnitude(const sf::Vector2<T> & vec)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return rightTriangleHyp(vec);
     }
 
@@ -111,6 +188,8 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> vectorMagnitudeOnlySet(const sf::Vector2<T> & vec, const T newMagnitude)
     {
+        static_assert(std::is_arithmetic_v<T>);
+
         const T currentMag(vectorMagnitude(vec));
 
         if (currentMag > T(0))
@@ -127,6 +206,7 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> vectorNormalize(const sf::Vector2<T> & vec)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return vectorMagnitudeOnlySet(vec, T(1));
     }
 
@@ -135,6 +215,7 @@ namespace util
     inline sf::Vector2<T>
         vectorNormalizeFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return vectorNormalize(vectorMake(from, to));
     }
 
@@ -142,6 +223,7 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> vectorDirection(const sf::Vector2<T> & vec)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return vectorNormalize(vec);
     }
 
@@ -150,6 +232,7 @@ namespace util
     inline sf::Vector2<T>
         vectorDirectionFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return vectorDirection(vectorMake(from, to));
     }
 
@@ -158,6 +241,7 @@ namespace util
     inline sf::Vector2<T> vectorDirectionOnlySetFromTo(
         const sf::Vector2<T> & vec, const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return (vectorNormalizeFromTo(from, to) * vectorMagnitude(vec));
     }
 
@@ -165,10 +249,11 @@ namespace util
     inline sf::Vector2<T>
         vectorMakeWithMag(const sf::Vector2<T> & from, const sf::Vector2<T> & to, const T mag)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return (vectorNormalizeFromTo(from, to) * mag);
     }
 
-    // Size/scale
+    // Scale
 
     inline float windowDiagonalLength(const sf::RenderTarget & window)
     {
@@ -178,31 +263,34 @@ namespace util
     template <typename T = float>
     inline T windowSizeAvg(const sf::RenderTarget & window)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return static_cast<T>((window.getSize().x + window.getSize().y) / 2u);
     }
 
-    inline void scaleTo(const float maxDimension, sf::Sprite & sprite)
+    template <typename T>
+    inline void scaleTo(T & sfThing, const sf::Vector2f & bounds)
     {
-        if (maxDimension < 0.0f)
+        if ((bounds.x < 0.0f) || (bounds.y < 0.0f))
         {
             return;
         }
 
-        if ((sprite.getLocalBounds().width < 1.0f) || (sprite.getLocalBounds().height < 1.0f))
+        const auto localBounds{ sfThing.getLocalBounds() };
+        if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
         {
             return;
         }
 
         // Scale by width
-        const float widthRatio(maxDimension / sprite.getLocalBounds().width);
-        sprite.setScale(widthRatio, widthRatio);
+        const float widthRatio(bounds.x / localBounds.width);
+        sfThing.setScale(widthRatio, widthRatio);
 
         // Check to see if it fits, if not...
-        if (sprite.getGlobalBounds().height > maxDimension)
+        if (sfThing.getGlobalBounds().height > bounds.y)
         {
             // Scale by height
-            const float heightRatio(maxDimension / sprite.getLocalBounds().height);
-            sprite.setScale(heightRatio, heightRatio);
+            const float heightRatio(bounds.y / localBounds.height);
+            sfThing.setScale(heightRatio, heightRatio);
         }
     }
 
@@ -210,12 +298,14 @@ namespace util
     template <typename T>
     inline sf::Vector2<T> sfRandom(const Random & random, const sf::Vector2<T> & ranges)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return { random.zeroTo(ranges.x), random.zeroTo(ranges.y) };
     }
 
     template <typename T>
     inline sf::Vector2<T> sfRandom(const Random & random, const sf::Rect<T> & bounds)
     {
+        static_assert(std::is_arithmetic_v<T>);
         return { random.fromTo(bounds.left, right(bounds)),
                  random.fromTo(bounds.top, bottom(bounds)) };
     }
