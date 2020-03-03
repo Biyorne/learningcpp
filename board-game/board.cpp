@@ -2,95 +2,120 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "board.hpp"
 
+#include "check-macros.hpp"
 #include "context.hpp"
 #include "pieces.hpp"
 #include "random.hpp"
 #include "settings.hpp"
-
-#include <set>
+#include "util.hpp"
 
 namespace boardgame
 {
-    void CellLayout::reset(const sf::Vector2f & windowSize, const float cellSideLengthOrig)
+    void Layout::setup(const IGameSettings & settings)
     {
-        const float cellSideLength{ /*std::floor ? TODO*/ (cellSideLengthOrig) };
-        M_ASSERT_OR_THROW(!(cellSideLength < 1.0f));
+        board_bounds = settings.windowBounds();
 
-        size.x = cellSideLength;
-        size.y = cellSideLength;
+        M_CHECK_SS(
+            (!(board_bounds.left < 0.0f) && !(board_bounds.top < 0.0f) &&
+             (board_bounds.width > 1.0f) && (board_bounds.height > 1.0f)),
+            board_bounds);
 
-        counts = sf::Vector2s{ windowSize / cellSideLength };
-        counts_int = sf::Vector2i(counts);
-        M_ASSERT_OR_THROW((counts.x > 0) && (counts.y > 0));
+        cell_counts = settings.cellCounts();
+        M_CHECK_SS(((cell_counts.x > 0) && (cell_counts.y > 0)), cell_counts);
 
-        count_total = (counts.x * counts.y);
-        M_ASSERT_OR_THROW(count_total > 0);
+        cell_size = (util::size(board_bounds) / sf::Vector2f(cell_counts));
+        M_CHECK_SS((!(cell_size.x < 1.0f) && !(cell_size.y < 1.0f)), cell_size);
 
-        const sf::Vector2f boardSize{ sf::Vector2f(counts) * size };
-
-        top_left_pos = ((windowSize - boardSize) / 2.0f);
-        M_ASSERT_OR_THROW(!(top_left_pos.x < 0.0f));
-        M_ASSERT_OR_THROW(!(top_left_pos.y < 0.0f));
+        cell_count_total = static_cast<std::size_t>(cell_counts.x * cell_counts.y);
+        M_CHECK_SS((cell_count_total > 0), cell_count_total);
 
         // create a set of all valid positions, this is needed all over
-        all_cell_positions.clear();
-        for (int vert(0); vert < counts_int.y; ++vert)
+        all_valid_positions.clear();
+        for (int vert(0); vert < cell_counts.y; ++vert)
         {
-            for (int horiz(0); horiz < counts_int.x; ++horiz)
+            for (int horiz(0); horiz < cell_counts.x; ++horiz)
             {
-                all_cell_positions.insert(BoardPos_t{ horiz, vert });
+                all_valid_positions.insert(BoardPos_t{ horiz, vert });
             }
         }
 
-        M_ASSERT_OR_THROW(all_cell_positions.size() == count_total);
+        M_CHECK(all_valid_positions.size() == cell_count_total);
     }
 
     //
 
-    BoardBase::BoardBase()
-        : m_cells()
-        , m_pieces()
-    {}
+    // void BoardBase::printStatus() const
+    //{
+    //    std::cout << "\nBOARD STATUS:";
+    //    std::cout << "\n\t board_bounds         = " << board_bounds;
+    //    std::cout << "\n\t cell_counts          = " << m_cells.counts;
+    //    std::cout << "\n\t cells_total          = " << m_cells.count_total;
+    //    std::cout << "\n\t cell_size            = " << m_cells.size;
+    //    std::cout << "\n\t pieces_vec_size      = " << m_pieces.size();
+    //
+    //    std::map<Piece, std::size_t> pieceCountMap;
+    //    for (const IPieceUPtr_t & piece : m_pieces)
+    //    {
+    //        ++pieceCountMap[piece->piece()];
+    //    }
+    //
+    //    for (const auto & [piece, count] : pieceCountMap)
+    //    {
+    //        std::cout << "\n\t\t" << Piece::name(piece) << "\t x" << count;
+    //    }
+    //
+    //    // print the picture of the map on the console
+    //    // std::cout << "\n\t-" << std::endl;
+    //    // for (int vert(0); vert < m_cells.counts_int.y; ++vert)
+    //    //{
+    //    //    for (int horiz(0); horiz < m_cells.counts_int.x; ++horiz)
+    //    //    {
+    //    //        const BoardPos_t pos(horiz, vert);
+    //    //        const std::string name{ Piece::name(pieceEnumAt(pos)) };
+    //    //        std::cout << ((name.empty()) ? '?' : name.front());
+    //    //    }
+    //    //
+    //    //    std::cout << '\n';
+    //    //}
+    //
+    //    std::cout << std::endl;
+    //}
 
-    void BoardBase::printStatus() const
+    void BoardBase::setup(const IGameSettings & settings)
     {
-        std::cout << "\nBOARD STATUS:";
-        std::cout << "\n\t cell_counts          = " << m_cells.counts;
-        std::cout << "\n\t cells_total          = " << m_cells.count_total;
-        std::cout << "\n\t cell_size            = " << m_cells.size;
-        std::cout << "\n\t pieces_vec_size      = " << m_pieces.size();
-
-        std::map<Piece::Enum, std::size_t> pieceCountMap;
-        for (const IPieceUPtr_t & piece : m_pieces)
-        {
-            ++pieceCountMap[piece->which()];
-        }
-
-        for (const auto & [piece, count] : pieceCountMap)
-        {
-            std::cout << "\n\t\t" << Piece::name(piece) << "\t x" << count;
-        }
-
-        // print the picture of the map on the console
-        // std::cout << "\n\t-" << std::endl;
-        // for (int vert(0); vert < m_cells.counts_int.y; ++vert)
-        //{
-        //    for (int horiz(0); horiz < m_cells.counts_int.x; ++horiz)
-        //    {
-        //        const BoardPos_t pos(horiz, vert);
-        //        const std::string name{ Piece::name(pieceEnumAt(pos)) };
-        //        std::cout << ((name.empty()) ? '?' : name.front());
-        //    }
-        //
-        //    std::cout << '\n';
-        //}
-
-        std::cout << std::endl;
+        // reset(context);
+        m_layout.setup(settings);
     }
 
-    IPieceOpt_t BoardBase::pieceAt(const BoardPos_t & posToFind)
+    // void BoardBase::reset(Context &) { m_pieces.clear(); }
+
+    void BoardBase::update(Context & context, const float elapsedTimeSec)
     {
-        const auto foundIter{ findIterToPiece(posToFind) };
+        for (IPieceUPtr_t & piece : m_pieces)
+        {
+            piece->update(context, elapsedTimeSec);
+        }
+    }
+
+    void BoardBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
+    {
+        for (const IPieceUPtr_t & piece : m_pieces)
+        {
+            target.draw(*piece, states);
+        }
+    }
+
+    void BoardBase::handleEvent(Context & context, const sf::Event & event)
+    {
+        for (const IPieceUPtr_t & piece : m_pieces)
+        {
+            piece->handleEvent(context, event);
+        }
+    }
+
+    IPieceOpt_t BoardBase::pieceAtOpt(const BoardPos_t & posToFind)
+    {
+        const auto foundIter{ pieceIterAt(posToFind) };
         if (foundIter == std::end(m_pieces))
         {
             return std::nullopt;
@@ -101,28 +126,105 @@ namespace boardgame
         }
     }
 
-    Piece::Enum BoardBase::pieceEnumAt(const BoardPos_t & posToFind)
+    bool BoardBase::isPieceAt(const BoardPos_t & posToFind)
     {
-        const auto foundIter{ findIterToPiece(posToFind) };
-        if (foundIter == std::end(m_pieces))
+        return pieceAtOpt(posToFind).has_value();
+    }
+
+    Piece BoardBase::pieceEnumAt(const BoardPos_t & posToFind)
+    {
+        const auto opt{ pieceAtOpt(posToFind) };
+        if (opt)
         {
-            return Piece::Count;
+            return opt.value().get().piece();
         }
         else
         {
-            return foundIter->get()->which();
+            return Piece::Count;
         }
     }
 
-    bool BoardBase::isPieceAt(const BoardPos_t & posToFind)
+    IPieceUListIter_t BoardBase::pieceIterAt(const BoardPos_t & posToFind)
     {
-        return (pieceEnumAt(posToFind) != Piece::Count);
+        return std::find_if(
+            std::begin(m_pieces), std::end(m_pieces), [&](const IPieceUPtr_t & piece) {
+                return (piece->position() == posToFind);
+            });
     }
 
-    BoardPosOpt_t BoardBase::findRandomEmptyPos(const Context & context) const
+    void BoardBase::removePiece(Context &, const BoardPos_t & posToFind)
+    {
+        // M_CHECK_SS(m_layout.isPositionValid(posToFind), posToFind);
+
+        const auto iter{ pieceIterAt(posToFind) };
+        if (iter == std::end(m_pieces))
+        {
+            // this is not an error case, because we often just remove without checking first
+            return;
+        }
+
+        m_pieces.erase(iter);
+
+        M_CHECK(!isPieceAt(posToFind));
+    }
+
+    // void BoardBase::move(Context & context, const BoardPos_t & posFrom, const BoardPos_t & posTo)
+    //{
+    //    const auto fromIter{ pieceIterAt(posFrom) };
+    //    M_CHECK_SS((fromIter != std::end(m_pieces)), posFrom);
+    //    M_CHECK_SS((fromIter->get()->piece() != Piece::Count), posFrom);
+    //
+    //    remove(context, posTo);
+    //
+    //    fromIter->get()->
+    //
+    //    placePiece(context, makePiece(context, piece, pos));
+    //}
+
+    void BoardBase::addPiece(Context & context, IPieceUPtr_t iPieceUPtr)
+    {
+        M_CHECK(iPieceUPtr);
+
+        const Piece newEnum{ iPieceUPtr->piece() };
+        M_CHECK(newEnum != Piece::Count);
+
+        const BoardPos_t newPos{ iPieceUPtr->position() };
+        M_CHECK_SS(m_layout.isPositionValid(newPos), newPos);
+
+        // no need to check if there is a piece to remove or not
+        removePiece(context, newPos);
+
+        m_pieces.push_back(std::move(iPieceUPtr));
+
+        M_CHECK(pieceEnumAt(newPos) == newEnum);
+    }
+
+    void BoardBase::addPiece(Context & context, const Piece piece, const BoardPos_t & pos)
+    {
+        M_CHECK_SS((piece != Piece::Count), piece);
+        M_CHECK_SS(m_layout.isPositionValid(pos), pos);
+        addPiece(context, makePiece(context, piece, pos));
+    }
+
+    void BoardBase::addPieceRandomFreePos(Context & context, const Piece piece)
+    {
+        const auto posOpt{ findRandomFreePos(context) };
+        if (!posOpt.has_value())
+        {
+            M_CHECK_LOG_SS(
+                posOpt.has_value(),
+                "Let the game keep running, and maybe a free spot will open up later.");
+
+            return;
+        }
+
+        addPiece(context, piece, posOpt.value());
+    }
+
+    BoardPosOpt_t BoardBase::findRandomFreePos(const Context & context) const
     {
         // start with a copy of all valid/on-board positions
-        std::set<BoardPos_t> positions{ m_cells.allCellPositions() };
+        std::set<BoardPos_t> positions{ m_layout.all_valid_positions };
 
         // remove any that are alraedy occupied
         for (const IPieceUPtr_t & piece : m_pieces)
@@ -138,117 +240,46 @@ namespace boardgame
         return context.random.from(positions);
     }
 
-    void BoardBase::placePieceAtRandomPos(Context & context, const Piece::Enum which)
-    {
-        const auto posOpt{ findRandomEmptyPos(context) };
-        if (posOpt)
-        {
-            placePiece(context, which, posOpt.value());
-        }
-    }
-
-    void BoardBase::placePiece(Context & context, const Piece::Enum piece, const BoardPos_t & pos)
-    {
-        placePiece(context, makePiece(context, piece, pos));
-    }
-
-    void BoardBase::placePiece(Context & context, IPieceUPtr_t iPieceUPtr)
-    {
-        M_ASSERT_OR_THROW(iPieceUPtr);
-
-        const BoardPos_t pos{ iPieceUPtr->position() };
-        const Piece::Enum newEnum{ iPieceUPtr->which() };
-
-        removePiece(context, pos);
-
-        m_pieces.emplace_back(std::move(iPieceUPtr))->setup(context);
-
-        M_ASSERT_OR_THROW(pieceEnumAt(pos) == newEnum);
-    }
-
-    void BoardBase::removePiece(Context & context, const BoardPos_t & posToFind)
-    {
-        const auto foundIter{ findIterToPiece(posToFind) };
-        if (foundIter == std::end(m_pieces))
-        {
-            return;
-        }
-
-        foundIter->get()->teardown(context);
-        m_pieces.erase(foundIter);
-
-        M_ASSERT_OR_THROW(!isPieceAt(posToFind));
-    }
-
-    IPieceUList_t::iterator BoardBase::findIterToPiece(const BoardPos_t & posToFind)
-    {
-        return std::find_if(
-            std::begin(m_pieces), std::end(m_pieces), [&](const IPieceUPtr_t & piece) {
-                return (piece->position() == posToFind);
-            });
-    }
-
     //
 
-    void SnakeBoard::reset(Context & context)
-    {
-        m_pieces.clear();
-        TailPiece::reset();
-        setupCellSizesAndCounts(context);
-        populateBoardWithMapPieces(context);
-    }
-
-    void SnakeBoard::setupCellSizesAndCounts(Context & context)
-    {
-        const sf::Vector2f windowSize{ context.settings.windowSize() };
-        const float windowSizeAvg{ (windowSize.x + windowSize.y) / 2.0f };
-        const float cellSideLength{ windowSizeAvg * context.settings.cell_size_window_ratio };
-        m_cells.reset(windowSize, cellSideLength);
-    }
+    // void SnakeBoard::reset(Context & context)
+    //{
+    //    BoardBase::reset(context);
+    //    populateBoardWithMapPieces(context);
+    //}
 
     void SnakeBoard::populateBoardWithMapPieces(Context & context)
     {
-        const sf::Vector2i counts{ m_cells.counts_int };
+        const sf::Vector2i counts{ m_layout.cell_counts };
 
         const BoardPos_t centerPos{ counts / 2 };
 
-        placePiece(context, Piece::Head, centerPos);
-        // placePiece(context, Piece::Tail, (centerPos + sf::Vector2i(0, 1)));
-        // placePiece(context, Piece::Food, (centerPos + sf::Vector2i(0, -4)));
+        addPiece(context, Piece::Head, centerPos);
 
         for (int horiz(0); horiz < counts.x; ++horiz)
         {
-            placePiece(context, Piece::Wall, BoardPos_t(horiz, 0));
-            placePiece(context, Piece::Wall, BoardPos_t(horiz, (counts.y - 1)));
+            addPiece(context, Piece::Wall, BoardPos_t(horiz, 0));
+            addPiece(context, Piece::Wall, BoardPos_t(horiz, (counts.y - 1)));
         }
         for (int vert(0); vert < counts.y; ++vert)
         {
-            placePiece(context, Piece::Wall, BoardPos_t(0, vert));
-            placePiece(context, Piece::Wall, BoardPos_t((counts.x - 1), vert));
+            addPiece(context, Piece::Wall, BoardPos_t(0, vert));
+            addPiece(context, Piece::Wall, BoardPos_t((counts.x - 1), vert));
         }
 
-        for (int i(0); i < 20; ++i)
+        for (int i(0); i < 5; ++i)
         {
-            placePieceAtRandomPos(context, Piece::Food);
+            addPieceRandomFreePos(context, Piece::Food);
         }
-
-        // for (int i(0); i < 20; ++i)
-        //{
-        //    placePieceAtRandomPos(context, Piece::Wall);
-        //}
     }
 
-    IPieceUPtr_t
-        SnakeBoard::makePiece(Context & context, const Piece::Enum piece, const BoardPos_t & pos)
+    IPieceUPtr_t SnakeBoard::makePiece(Context & context, const Piece piece, const BoardPos_t & pos)
     {
-        M_ASSERT_OR_THROW((piece >= 0) && (piece < Piece::Count));
-
         switch (piece)
         {
             case Piece::Food: return std::make_unique<FoodPiece>(context, pos);
             case Piece::Head: return std::make_unique<HeadPiece>(context, pos);
             case Piece::Tail: return std::make_unique<TailPiece>(context, pos);
-
             case Piece::Wall:
             case Piece::Count:
             default: return std::make_unique<WallPiece>(context, pos);

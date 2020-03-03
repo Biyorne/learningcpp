@@ -23,31 +23,26 @@ namespace boardgame
     class GameCoordinator
     {
       public:
-        explicit GameCoordinator(const SnakeGameSettings & settings);
+        explicit GameCoordinator(const GameSettingsBase & settings);
         virtual ~GameCoordinator();
 
         void run();
 
       private:
-        void reset();
         void handleEvents();
         void handleEvent(const sf::Event & event);
-        void update(const float frameTimeSec);
+        void update(const float elapsedTimeSec);
         void draw();
 
-        void updateScore();
-
       private:
-        SnakeGameSettings m_settings;
+        GameSettingsBase m_settings;
         sf::RenderWindow m_window;
         SnakeBoard m_board;
         util::Random m_random;
-        SnakeResources m_resources;
+        ResourcesBase m_resources;
         util::SoundPlayer m_soundPlayer;
         util::AnimationPlayer m_animationPlayer;
         Context m_context;
-
-        sf::Text m_scoreText;
     };
 } // namespace boardgame
 

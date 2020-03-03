@@ -1,48 +1,16 @@
 #ifndef BOARDGAME_UTIL_HPP_INCLUDED
 #define BOARDGAME_UTIL_HPP_INCLUDED
 //
-// util-misc.hpp
+// util.hpp
 //
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 #include <SFML/Graphics.hpp>
-
-//
-
-#include <cassert>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-
-#ifdef NDEBUG
-#define M_THROW(message) throw std::runtime_error(message);
-#define M_ASSERT(exp) ;
-#else
-#define M_THROW(message) ;
-#define M_ASSERT(exp) assert((exp));
-#endif
-
-//
-
-#define M_ASSERT_OR_THROW(exp)                                                           \
-    {                                                                                    \
-        if (!(exp))                                                                      \
-        {                                                                                \
-            std::ostringstream _m_ss;                                                    \
-                                                                                         \
-            _m_ss << "M_ASSERT_OR_THROW(" << #exp << ") failed at \"" << __FILE__ << ':' \
-                  << __func__ << "():" << __LINE__;                                      \
-                                                                                         \
-            std::cout << _m_ss.str() << std::endl;                                       \
-                                                                                         \
-            M_THROW(_m_ss.str())                                                         \
-            M_ASSERT((exp))                                                              \
-        }                                                                                \
-    }
 
 //
 
@@ -55,6 +23,90 @@ constexpr std::ptrdiff_t operator"" _pd(unsigned long long number)
 {
     return static_cast<std::ptrdiff_t>(number);
 }
+
+//
+
+namespace boardgame
+{
+    struct Context;
+
+    struct IEntity : public sf::Drawable
+    {
+        virtual ~IEntity() = default;
+
+        virtual sf::FloatRect bounds() const = 0;
+        // virtual void reset(Context &) = 0;
+
+        // perFrameChanges
+        virtual void update(Context &, const float elapsedTimeSec) = 0;
+        void draw(sf::RenderTarget &, sf::RenderStates) const override = 0;
+        virtual void handleEvent(Context &, const sf::Event & event) = 0;
+    };
+} // namespace boardgame
+
+//
+
+namespace util
+{
+    inline const std::string colorToString(const sf::Color & C)
+    {
+        std::string str;
+        str.reserve(16);
+
+        str += '(';
+
+        if (sf::Color::Black == C)
+        {
+            str += "Black";
+        }
+        else if (sf::Color::White == C)
+        {
+            str += "White";
+        }
+        else if (sf::Color::Red == C)
+        {
+            str += "Red";
+        }
+        else if (sf::Color::Green == C)
+        {
+            str += "Green";
+        }
+        else if (sf::Color::Blue == C)
+        {
+            str += "Blue";
+        }
+        else if (sf::Color::Yellow == C)
+        {
+            str += "Yellow";
+        }
+        else if (sf::Color::Magenta == C)
+        {
+            str += "Magenta";
+        }
+        else if (sf::Color::Cyan == C)
+        {
+            str += "Cyan";
+        }
+        else
+        {
+            str += std::to_string(static_cast<unsigned>(C.r));
+            str += ',';
+            str += std::to_string(static_cast<unsigned>(C.g));
+            str += ',';
+            str += std::to_string(static_cast<unsigned>(C.b));
+
+            if (C.a != 255)
+            {
+                str += ',';
+                str += std::to_string(static_cast<unsigned>(C.a));
+            }
+        }
+
+        str += ')';
+
+        return str;
+    }
+} // namespace util
 
 //
 
@@ -102,12 +154,28 @@ namespace sf
         os << '(' << rect.left << ',' << rect.top << '_' << rect.width << 'x' << rect.height << ')';
         return os;
     }
+
+    inline std::ostream & operator<<(std::ostream & os, const sf::Color & C)
+    {
+        os << util::colorToString(C);
+        return os;
+    }
+
+    inline std::ostream & operator<<(std::ostream & os, const sf::Vertex & vert)
+    {
+        os << "(pos=" << vert.position << ", col=" << vert.color << ", tc=" << vert.texCoords
+           << ")";
+
+        return os;
+    }
 } // namespace sf
 
 //
 
 namespace util
 {
+    constexpr const std::size_t verts_per_quad{ 4 };
+
     // bit hacking
 
     // Counting High Bits
@@ -277,6 +345,29 @@ namespace util
     {
         thing.setOrigin(positionLocal(thing));
     }
+
+    template <typename Output_t, typename Input_t>
+    Output_t makeMultOf(const Input_t startingNumber, const Output_t mult)
+    {
+        static_assert(std::is_integral_v<Output_t>);
+
+        Output_t result{ static_cast<Output_t>(startingNumber) };
+
+        while ((result % mult) != 0)
+        {
+            ++result;
+        }
+
+        return result;
+    };
+
+    template <typename Output_t, typename Input_t>
+    sf::Vector2<Output_t>
+        makeVector2MultOf(const sf::Vector2<Input_t> & before, const sf::Vector2<Output_t> & mults)
+    {
+        static_assert(std::is_integral_v<Output_t>);
+        return { makeMultOf(before.x, mults.x), makeMultOf(before.y, mults.y) };
+    };
 
     // vetor and euclidian math
 
@@ -493,7 +584,7 @@ namespace util
         verts[index + 3].position = sf::Vector2f( pos.x          , (pos.y + size.y));
         // clang-format on
 
-        if (color.a > 0)
+        if (color != sf::Color::Transparent)
         {
             verts[index + 0].color = color;
             verts[index + 1].color = color;
@@ -753,37 +844,6 @@ namespace util
         }
 
         return color;
-    }
-
-    inline bool isArrowKey(const sf::Keyboard::Key key)
-    {
-        return (
-            (key == sf::Keyboard::Up) || (key == sf::Keyboard::Down) ||
-            (key == sf::Keyboard::Left) || (key == sf::Keyboard::Right));
-    }
-
-    inline sf::Keyboard::Key oppositeDirection(const sf::Keyboard::Key dir)
-    {
-        if (dir == sf::Keyboard::Up)
-        {
-            return sf::Keyboard::Down;
-        }
-        else if (dir == sf::Keyboard::Down)
-        {
-            return sf::Keyboard::Up;
-        }
-        else if (dir == sf::Keyboard::Left)
-        {
-            return sf::Keyboard::Right;
-        }
-        else if (dir == sf::Keyboard::Right)
-        {
-            return sf::Keyboard::Left;
-        }
-        else
-        {
-            return dir;
-        }
     }
 
     // statistics

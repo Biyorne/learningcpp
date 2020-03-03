@@ -17,172 +17,107 @@ namespace boardgame
 
     //
 
-    struct GameSettings
+    struct IGameSettings
     {
-        GameSettings() = default;
-        virtual ~GameSettings() = default;
+        virtual ~IGameSettings() = default;
 
-        virtual void reset();
-        virtual void printStatus() const;
+        virtual std::string name() const = 0;
+        virtual int score() const = 0;
+        virtual int scoreAdj(const int adj) = 0;
 
-        virtual sf::Vector2f windowSize() const
-        {
-            return sf::Vector2f{ sf::Vector2u(video_mode.width, video_mode.height) };
-        }
+        virtual bool isGameOver() const = 0;
+        virtual void isGameOver(const bool isOver) = 0;
 
-        virtual sf::FloatRect windowBounds() const { return { { 0.0f, 0.0f }, windowSize() }; }
+        virtual bool isGamePaused() const = 0;
+        virtual void isGamePaused(const bool isPaused) = 0;
 
-        std::string game_name{ "(no_name)" };
+        virtual std::filesystem::path mediaDirPath() const = 0;
 
-        std::filesystem::path media_path{ std::filesystem::current_path() };
+        virtual sf::VideoMode videoMode() const = 0;
+        virtual unsigned int windowStyle() const = 0;
+        virtual unsigned int frameRateLimit() const = 0;
+        virtual sf::Vector2f windowSize() const = 0;
+        virtual sf::FloatRect windowBounds() const = 0;
 
-        sf::VideoMode video_mode{ 1600,
-                                  1200,
-                                  sf::VideoMode::getDesktopMode().bitsPerPixel }; //(2880u, 1800u,
-
-        // i.e.  (sf::Style::Titlebar | sf::Style::Close)
-        unsigned int sf_window_style{ sf::Style::Default };
-
-        bool is_game_over{ false };
-        bool is_game_paused{ false };
-        bool is_self_play_test{ false };
-        bool is_god_mode{ false };
-
-        // zero will disable the limit
-        unsigned int frame_rate_limit{ (is_god_mode) ? 0u : 60u };
+        virtual sf::Vector2i cellCounts() const = 0;
     };
 
     //
 
-    class SnakeGameSettings : public GameSettings
+    class GameSettingsBase : public IGameSettings
     {
       public:
-        SnakeGameSettings() = default;
-        virtual ~SnakeGameSettings() = default;
+        explicit GameSettingsBase(
+            const std::string & gameName,
+            const sf::Vector2i & cellCounts,
+            const std::filesystem::path & mediaDirPath,
+            const sf::VideoMode & videoMode = sf::VideoMode::getDesktopMode(),
+            const unsigned style = sf::Style::Default,
+            const unsigned frameRateLimit = 60)
+            : m_name(gameName)
+            , m_score(0)
+            , m_isGameOver(false)
+            , m_isGamePaused(false)
+            , m_mediaDirPath(mediaDirPath)
+            , m_cellCounts(cellCounts)
+            , m_videoMode(videoMode)
+            , m_windowStyle(style)
+            , m_frameRateLimit(frameRateLimit)
 
-        void reset() override;
-        void printStatus() const override;
+        {}
 
-        float cell_size_window_ratio{ 0.0125f }; // { 0.0175f };
+        virtual ~GameSettingsBase() = default;
 
-        // state
-        std::size_t total_turns_played{ 0 };
-        bool will_eating_tail_turn_it_into_wall{ true };
+        std::string name() const override { return m_name; }
+        std::filesystem::path mediaDirPath() const override { return m_mediaDirPath; }
 
-        float timeBetweenTurnsSec() const { return time_between_turns_cur_sec; }
-        bool isTailGrowing() const { return (tail_pieces_to_grow_remaining > 0); }
-        void handleEat();
+        sf::VideoMode videoMode() const override { return m_videoMode; }
 
-        void handleTailLengthIncrease()
+        unsigned int windowStyle() const override { return m_windowStyle; }
+        unsigned int frameRateLimit() const override { return m_frameRateLimit; }
+
+        bool isGameOver() const override { return m_isGameOver; }
+        void isGameOver(const bool isOver) override { m_isGameOver = isOver; }
+
+        bool isGamePaused() const override { return m_isGamePaused; }
+        void isGamePaused(const bool isPaused) override { m_isGamePaused = isPaused; }
+
+        sf::Vector2f windowSize() const override
         {
-            if (tail_pieces_to_grow_remaining > 0)
-            {
-                --tail_pieces_to_grow_remaining;
-            }
+            return sf::Vector2f{ sf::Vector2u(m_videoMode.width, m_videoMode.height) };
         }
 
-        std::size_t tailLength() const;
+        sf::FloatRect windowBounds() const override { return { { 0.0f, 0.0f }, windowSize() }; }
 
-        float speedDifficultyRatio() const
+        int score() const override { return m_score; }
+
+        int scoreAdj(const int adj) override
         {
-            return std::clamp(
-                ((time_between_turns_max_sec - time_between_turns_min_sec) /
-                 time_between_turns_cur_sec),
-                0.0f,
-                1.0f);
+            m_score += adj;
+
+            if (m_score < 0)
+            {
+                m_score = 0;
+            }
+
+            return m_score;
         }
 
-        int scoreIncrementAndGet()
-        {
-            int multiplier{ 0 };
+        sf::Vector2i cellCounts() const override { return m_cellCounts; }
 
-            if (scoreAdjustmentsRemaining > 0)
-            {
-                multiplier = 1;
-            }
-            else if (scoreAdjustmentsRemaining < 0)
-            {
-                if (scoreCurrent <= 0)
-                {
-                    multiplier = 0;
-                }
-                else
-                {
-                    multiplier = -1;
-                }
-            }
-            else
-            {
-                multiplier = 0;
-            }
+      protected:
+        std::string m_name;
 
-            int scoreChange{ 0 };
-            const int adjAbs{ std::abs(scoreAdjustmentsRemaining) };
+        int m_score;
+        bool m_isGameOver;
+        bool m_isGamePaused;
 
-            if (adjAbs > 10)
-            {
-                scoreChange = (multiplier * (adjAbs / 10));
-            }
-            else
-            {
-                scoreChange = multiplier;
-            }
+        std::filesystem::path m_mediaDirPath;
 
-            scoreCurrent += scoreChange;
-            scoreAdjustmentsRemaining -= scoreChange;
-
-            if (scoreCurrent <= 0)
-            {
-                scoreCurrent = 0;
-
-                if (scoreAdjustmentsRemaining < 0)
-                {
-                    scoreAdjustmentsRemaining = 0;
-                }
-            }
-
-            return scoreCurrent;
-        }
-
-        int adjustScore() const { return scoreAdjustmentsRemaining; }
-
-        void adjustScore(const int adj)
-        {
-            if (scoreCurrent <= 0)
-            {
-                scoreCurrent = 0;
-
-                if (scoreAdjustmentsRemaining < 0)
-                {
-                    scoreAdjustmentsRemaining = 0;
-                }
-            }
-            scoreAdjustmentsRemaining += adj;
-        }
-
-        std::size_t foodEatenCount() const { return food_eaten_count; }
-
-      private:
-        void increaseMoveSpeed()
-        {
-            time_between_turns_cur_sec *= time_between_turns_shrink_ratio;
-            if (time_between_turns_cur_sec < time_between_turns_min_sec)
-            {
-                time_between_turns_cur_sec = time_between_turns_min_sec;
-            }
-        }
-
-        int scoreAdjustmentsRemaining{ 0 };
-        int scoreCurrent{ 0 };
-
-        std::size_t food_eaten_count{ 0 };
-        std::size_t tail_growth_per_food_count{ (is_self_play_test) ? 1_st : 5_st };
-        std::size_t tail_pieces_to_grow_remaining{ 3 };
-
-        float time_between_turns_min_sec{ (is_self_play_test) ? 0.01f : 0.0125f };
-        float time_between_turns_max_sec{ (is_self_play_test) ? time_between_turns_min_sec : 0.1f };
-        float time_between_turns_cur_sec{ time_between_turns_max_sec };
-        float time_between_turns_shrink_ratio{ 0.96f };
+        sf::Vector2i m_cellCounts;
+        sf::VideoMode m_videoMode;
+        unsigned int m_windowStyle;
+        unsigned int m_frameRateLimit; // zero will disable the limit
     };
 } // namespace boardgame
 

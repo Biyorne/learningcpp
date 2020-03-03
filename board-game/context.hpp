@@ -21,14 +21,14 @@ namespace boardgame
 {
     struct IBoard;
     struct IResources;
-    class SnakeGameSettings;
+    struct IGameSettings;
 
     //
 
     struct Context
     {
         Context(
-            SnakeGameSettings & set,
+            IGameSettings & set,
             const IResources & res,
             IBoard & bor,
             util::Random & ran,
@@ -42,7 +42,7 @@ namespace boardgame
             , anim(ani)
         {}
 
-        SnakeGameSettings & settings;
+        IGameSettings & settings;
         const IResources & resources;
         IBoard & board;
         const util::Random & random;

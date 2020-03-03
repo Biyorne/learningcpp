@@ -9,6 +9,7 @@
 #include "resources.hpp"
 #include "settings.hpp"
 #include "types.hpp"
+#include "util.hpp"
 
 #include <array>
 #include <iterator>
@@ -24,26 +25,19 @@ namespace boardgame
 {
     //
 
-    struct IPiece : public sf::Drawable
+    struct IPiece : public IEntity
     {
         virtual ~IPiece() = default;
 
-        // don't call this yourself, let the Board call this after adding it
-        virtual void setup(Context &) = 0;
-
-        // don't call this yourself, let the Board call this just before removing it
-        virtual void teardown(Context &) = 0;
-
-        virtual Piece::Enum which() const = 0;
+        virtual Piece piece() const = 0;
         virtual BoardPos_t position() const = 0;
-        virtual sf::FloatRect bounds() const = 0;
+        virtual sf::FloatRect bounds() const override = 0;
 
         virtual void takeTurn(Context &) = 0;
-        virtual void update(Context &, const float) = 0;
-        virtual void handleEvent(Context &, const sf::Event &) = 0;
+        virtual void update(Context &, const float) override = 0;
+        virtual void handleEvent(Context &, const sf::Event &) override = 0;
         void draw(sf::RenderTarget &, sf::RenderStates) const override = 0;
 
-        // don't change m_position yourself, use this every time
         virtual void move(Context & context, const BoardPos_t & posNew) = 0;
     };
 
@@ -52,41 +46,30 @@ namespace boardgame
     using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
     using IPieceUPtr_t = std::unique_ptr<IPiece>;
     using IPieceUList_t = std::list<IPieceUPtr_t>;
+    using IPieceUListIter_t = IPieceUList_t::iterator;
 
     //
 
     struct PieceBase : public IPiece
     {
-        PieceBase(
-            Context &, const Piece::Enum which, const BoardPos_t & pos, const sf::Sprite & sprite)
-            : m_enum(which)
+        PieceBase(Context &, const Piece piece, const BoardPos_t & pos, const sf::Sprite & sprite)
+            : m_piece(piece)
             , m_position(pos)
             , m_sprite(sprite)
         {}
 
         PieceBase(
-            Context & context,
-            const Piece::Enum piece,
-            const BoardPos_t & pos,
-            const sf::Color & color)
-            : PieceBase(context, piece, pos, context.resources.sprite(context, piece, pos, color))
+            Context & context, const Piece piece, const BoardPos_t & pos, const sf::Color & color)
+            : PieceBase(
+                  context,
+                  piece,
+                  pos,
+                  context.resources.makeDefaultSprite(context, piece, pos, color))
         {}
 
         virtual ~PieceBase() = default;
 
-        void setup(Context &) override
-        {
-            M_ASSERT_OR_THROW(!m_hasTeardown);
-            m_hasSetup = true;
-        }
-        void teardown(Context &) override
-        {
-            M_ASSERT_OR_THROW(m_hasSetup);
-            M_ASSERT_OR_THROW(!m_hasTeardown);
-            m_hasTeardown = true;
-        }
-
-        Piece::Enum which() const override { return m_enum; }
+        Piece piece() const override { return m_piece; }
         BoardPos_t position() const override { return m_position; }
         sf::FloatRect bounds() const override { return m_sprite.getGlobalBounds(); }
 
@@ -96,21 +79,15 @@ namespace boardgame
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override
         {
-            M_ASSERT_OR_THROW(m_hasSetup);
-            M_ASSERT_OR_THROW(!m_hasTeardown);
             target.draw(m_sprite, states);
         }
 
         void move(Context & context, const BoardPos_t & posNew) override;
 
       protected:
-        Piece::Enum m_enum;
+        Piece m_piece;
         BoardPos_t m_position;
         sf::Sprite m_sprite;
-
-        // remove after testing TODO
-        bool m_hasSetup{ false };
-        bool m_hasTeardown{ false };
     };
 
     //
@@ -133,32 +110,6 @@ namespace boardgame
         {}
 
         virtual ~FoodPiece() = default;
-
-        void teardown(Context & context) override
-        {
-            // context.board.placePieceAtRandomPos(context, Piece::Food);
-
-            for (int i(0); i < (context.settings.foodEatenCount() / 3);)
-            {
-                const auto posOpt = context.board.findRandomEmptyPos(context);
-                if (!posOpt)
-                {
-                    break;
-                }
-
-                const auto posDiff{ posOpt.value() - context.board.pieces().front()->position() };
-                const auto distance{ std::abs(posDiff.x) + std::abs(posDiff.y) };
-
-                if (distance < 20)
-                {
-                    continue;
-                }
-
-                context.board.placePiece(context, Piece::Wall, posOpt.value());
-
-                ++i;
-            }
-        }
     };
 
     //
@@ -167,86 +118,10 @@ namespace boardgame
     {
       public:
         TailPiece(Context & context, const BoardPos_t & pos)
-            : PieceBase(context, Piece::Tail, pos, sf::Color::White)
-            , m_timeElapsedSinceLastTurnSec(0.0f)
+            : PieceBase(context, Piece::Tail, pos, sf::Color::Green)
         {}
 
         virtual ~TailPiece() = default;
-
-        static void reset() { m_tailPositions.clear(); }
-
-        void setup(Context & context) override
-        {
-            PieceBase::setup(context);
-            context.settings.handleTailLengthIncrease();
-            m_tailPositions.push_front(position());
-            updateColor();
-        }
-
-        void update(Context & context, const float frameTimeSec) override
-        {
-            m_timeElapsedSinceLastTurnSec += frameTimeSec;
-            if (m_timeElapsedSinceLastTurnSec > context.settings.timeBetweenTurnsSec())
-            {
-                m_timeElapsedSinceLastTurnSec -= context.settings.timeBetweenTurnsSec();
-
-                updateColor();
-            }
-        }
-
-        static void removeLastTailPiece(Context & context)
-        {
-            if (m_tailPositions.empty())
-            {
-                return;
-            }
-
-            const BoardPos_t pos{ m_tailPositions.back() };
-            m_tailPositions.pop_back();
-
-            if (context.board.pieceEnumAt(pos) != Piece::Tail)
-            {
-                return;
-            }
-
-            context.board.removePiece(context, pos);
-        }
-
-        static std::size_t tailLength() { return m_tailPositions.size(); }
-
-      private:
-        void updateColor()
-        {
-            const float count{ static_cast<float>(m_tailPositions.size() + 1) };
-
-            float index{ 0.0f };
-            for (const BoardPos_t & pos : m_tailPositions)
-            {
-                if (position() == pos)
-                {
-                    break;
-                }
-                else
-                {
-                    index += 1.0f;
-                }
-            }
-
-            const float ratio{ index / count };
-
-            m_sprite.setColor(util::colorBlend(ratio, m_colorLight, m_colorDark));
-        }
-
-      private:
-        float m_timeElapsedSinceLastTurnSec;
-
-        static inline sf::Color m_colorLight{ 64, 255, 0 };
-
-        static inline sf::Color m_colorDark{ static_cast<sf::Uint8>(m_colorLight.r / 4),
-                                             static_cast<sf::Uint8>(m_colorLight.g / 4),
-                                             static_cast<sf::Uint8>(m_colorLight.b / 4) };
-
-        static inline std::list<BoardPos_t> m_tailPositions;
     };
 
     //
@@ -256,43 +131,34 @@ namespace boardgame
       public:
         HeadPiece(Context & context, const BoardPos_t & pos)
             : PieceBase(context, Piece::Head, pos, sf::Color(64, 255, 0))
-            , m_directionKeyPrev(sf::Keyboard::Up)
             , m_directionKeyNext(sf::Keyboard::Up)
-            , m_timeElapsedSinceLastTurnSec(0.0f)
             , m_eatSfxPitch(0.4f)
             , m_eatSfxPitchAdj(0.033f)
+            , m_timeBetweenTurnsElapsedSec(0.0f)
+            , m_timeBetweenTurnsSec(0.1f)
+            , m_timeBetweenTurnsShrinkRatio(0.96f)
         {}
 
         virtual ~HeadPiece() = default;
 
         void handleEvent(Context &, const sf::Event &) override;
-        void update(Context & context, const float frameTimeSec) override;
-
-        void changeDirectionIfArrowKeyIsPressed(Context & context);
-
+        void update(Context & context, const float elapsedTimeSec) override;
         void takeTurn(Context & context) override;
 
-        void handleDeathFromCollision(Context & context, const Piece::Enum which);
+        void handleDeathFromCollision(Context & context, const Piece piece);
 
         static BoardPos_t
             changePositionWithArrowKey(const BoardPos_t & pos, const sf::Keyboard::Key key);
 
         static bool isPositionNextToFood(Context & context, const BoardPos_t & pos);
 
-        bool flip(Context & context);
-
-        sf::Keyboard::Key selfTestDirectionSet(Context & context);
-        BoardPos_t pickTarget(Context & context);
-
       private:
-        sf::Keyboard::Key m_directionKeyPrev;
         sf::Keyboard::Key m_directionKeyNext;
-        float m_timeElapsedSinceLastTurnSec;
         float m_eatSfxPitch;
         float m_eatSfxPitchAdj;
-
-        BoardPos_t m_selfTestTargretPos{ 2, 2 };
-        std::size_t m_selfTestMoveCount{ 0 };
+        float m_timeBetweenTurnsElapsedSec;
+        float m_timeBetweenTurnsSec;
+        float m_timeBetweenTurnsShrinkRatio;
     };
 } // namespace boardgame
 

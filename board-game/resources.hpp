@@ -4,6 +4,7 @@
 // resources.hpp
 //
 #include "board.hpp"
+#include "check-macros.hpp"
 #include "context.hpp"
 #include "types.hpp"
 
@@ -26,13 +27,12 @@ namespace boardgame
     {
         virtual ~IResources() = default;
 
-        virtual const sf::Font & font(const Piece::Enum) const = 0;
+        virtual const sf::Font & font(const Piece) const = 0;
+        virtual const sf::Texture & texture(const Piece) const = 0;
 
-        virtual const sf::Texture & texture(const Piece::Enum) const = 0;
-
-        virtual sf::Sprite sprite(
+        virtual sf::Sprite makeDefaultSprite(
             const Context & context,
-            const Piece::Enum piece,
+            const Piece piece,
             const BoardPos_t & boardPos,
             const sf::Color & color) const = 0;
     };
@@ -42,19 +42,18 @@ namespace boardgame
     class ResourcesBase : public IResources
     {
       public:
-        explicit ResourcesBase(const std::filesystem::path & mediaDirPath)
-            : m_mediaPath(mediaDirPath)
-            , m_textures()
-            , m_font()
-        {
-            m_textures.reserve(static_cast<std::size_t>(Piece::Count) * 2);
-        }
-
+        ResourcesBase() = default;
         virtual ~ResourcesBase() = default;
 
-        const sf::Font & font(const Piece::Enum) const override { return m_font; }
+        void setup(const std::filesystem::path & mediaDirPath)
+        {
+            makeDefaultTexture();
+            load((mediaDirPath / "font/gentium-plus/gentium-plus.ttf"), m_font);
+        }
 
-        const sf::Texture & texture(const Piece::Enum piece) const override
+        const sf::Font & font(const Piece) const override { return m_font; }
+
+        const sf::Texture & texture(const Piece piece) const override
         {
             const std::size_t index = static_cast<std::size_t>(piece);
             if (index < m_textures.size())
@@ -67,45 +66,34 @@ namespace boardgame
             }
         }
 
-        sf::Sprite sprite(
+        sf::Sprite makeDefaultSprite(
             const Context & context,
-            const Piece::Enum which,
+            const Piece which,
             const BoardPos_t & boardPos,
             const sf::Color & color) const override
         {
-            M_ASSERT_OR_THROW(Piece::Count != which);
+            M_CHECK(Piece::Count != which);
             sf::Sprite sprite(texture(which));
-            util::scaleAndCenterInside(sprite, context.board.cells().bounds(boardPos));
+            util::scaleAndCenterInside(sprite, context.board.layout().bounds(boardPos));
             sprite.setColor(color);
             return sprite;
         }
 
       protected:
-        // void loadImages() override
-        // {
-        //     for (std::size_t i(0); i < Piece::Count; ++i)
-        //     {
-        //         const Piece::Enum piece = static_cast<Piece::Enum>(i);
-        //         m_textures.push_back(std::make_unique<sf::Texture>());
-        //         load(imagePath(piece), *m_textures.back());
-        //     }
-        // }
-
-        // void loadFonts() override
-        //{
-        //    load((m_mediaPath / "font/gentium-plus/gentium-plus.ttf"), m_font);
-        //}
+        void makeDefaultTexture()
+        {
+            sf::Image image;
+            image.create(1, 1, sf::Color::White);
+            m_defaultTexture.loadFromImage(image);
+        }
 
         template <typename T>
         void load(const std::filesystem::path & path, T & loadable)
         {
             if (!std::filesystem::exists(path) || !std::filesystem::is_regular_file(path))
             {
-                std::cout
-                    << "Error:  ResourcesBase::load(\"" << path
-                    << "\") failed because that file does not exist, or is not a regular file."
-                    << std::endl;
-
+                M_CHECK_LOG_SS(std::filesystem::exists(path), path);
+                M_CHECK_LOG_SS(std::filesystem::is_regular_file(path), path);
                 return;
             }
 
@@ -116,36 +104,27 @@ namespace boardgame
             }
         }
 
-        // default is kinda useless
-        // virtual std::filesystem::path imagePath(const Piece::Enum) const { return m_mediaPath;
-        // }
-
       protected:
-        std::filesystem::path m_mediaPath;
         std::vector<std::unique_ptr<sf::Texture>> m_textures;
         sf::Font m_font;
 
-        static inline sf::Texture m_defaultTexture{};
+        static inline sf::Texture m_defaultTexture;
     };
 
-    //
+    // void loadImages() override
+    // {
+    //     for (std::size_t i(0); i < Piece::Count; ++i)
+    //     {
+    //         const Piece piece = static_cast<Piece>(i);
+    //         m_textures.push_back(std::make_unique<sf::Texture>());
+    //         load(imagePath(piece), *m_textures.back());
+    //     }
+    // }
 
-    class SnakeResources : public ResourcesBase
-    {
-      public:
-        SnakeResources(const std::filesystem::path & mediaDirPath)
-            : ResourcesBase(mediaDirPath)
-        {
-            load((m_mediaPath / "font/gentium-plus/gentium-plus.ttf"), m_font);
-
-            // make the default texture a solid white cell-sozed square
-            sf::Image image;
-            image.create(256, 256, sf::Color::White);
-            m_defaultTexture.loadFromImage(image);
-        }
-
-        virtual ~SnakeResources() = default;
-    };
+    // void loadFonts() override
+    //{
+    //    load((m_mediaPath / "font/gentium-plus/gentium-plus.ttf"), m_font);
+    //}
 } // namespace boardgame
 
 #endif // #define BOARDGAME_RESOURCES_HPP_INCLUDED
