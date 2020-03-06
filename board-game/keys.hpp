@@ -137,6 +137,27 @@ namespace boardgame
             os << keys::toString(dir);
             return os;
         }
+
+        template <typename T>
+        std::optional<T> toNumberOpt(const sf::Keyboard::Key key)
+        {
+            static_assert(std::is_arithmetic_v<T>);
+
+            // clang-format off
+            if (key == sf::Keyboard::Num0) return T(0);
+            if (key == sf::Keyboard::Num1) return T(1);
+            if (key == sf::Keyboard::Num2) return T(2);
+            if (key == sf::Keyboard::Num3) return T(3);
+            if (key == sf::Keyboard::Num4) return T(4);
+            if (key == sf::Keyboard::Num5) return T(5);
+            if (key == sf::Keyboard::Num6) return T(6);
+            if (key == sf::Keyboard::Num7) return T(7);
+            if (key == sf::Keyboard::Num8) return T(8);
+            if (key == sf::Keyboard::Num9) return T(9);
+            // clang-format on
+
+            return std::nullopt;
+        }
     } // namespace keys
 } // namespace boardgame
 

@@ -3,10 +3,13 @@
 //
 // settings.hpp
 //
+#include "check-macros.hpp"
 #include "types.hpp"
 #include "util.hpp"
 
 #include <filesystem>
+#include <limits>
+#include <set>
 #include <string>
 
 #include <SFML/Graphics.hpp>
@@ -15,109 +18,117 @@ namespace boardgame
 {
     using BoardPos_t = sf::Vector2i;
 
-    //
-
-    struct IGameSettings
+    // All settings about the game that must be set before...well before everything else.
+    // No need for an interface class since this will be const in Context.
+    struct GameConfig
     {
-        virtual ~IGameSettings() = default;
+        std::string game_name;
+        std::filesystem::path media_dir_path{ std::filesystem::current_path() / "media" };
+        sf::VideoMode video_mode{ sf::VideoMode::getDesktopMode() };
+        bool is_fullscreen{ true };
+        unsigned frame_rate_limit{ 60 };
+        sf::Color background_color{ sf::Color::Black };
 
-        virtual std::string name() const = 0;
+        template <typename T>
+        sf::Vector2<T> windowSize() const
+        {
+            return sf::Vector2<T>{ static_cast<T>(video_mode.width),
+                                   static_cast<T>(video_mode.height) };
+        }
+    };
+
+    // Boardgame boards are so small that their contents are simply rows of strings, where different
+    // chars stand for different map contents.  i.e. walls/pickups/etc.
+    // Each string MUST be the same length.
+    using Map_t = std::vector<std::string>;
+
+    // Everything about the window that can only be calculated once BOTH the window is open and the
+    // map has been parsed.
+    struct ILayout
+    {
+        virtual ~ILayout() = default;
+
+        virtual sf::Vector2f windowSize() const = 0;
+        virtual sf::FloatRect windowBounds() const = 0;
+        virtual sf::FloatRect boardBounds() const = 0;
+        virtual sf::Vector2i cellCounts() const = 0;
+        virtual std::size_t cellCountTotal() const = 0;
+        virtual sf::Vector2f cellSize() const = 0;
+        virtual sf::FloatRect cellBounds(const BoardPos_t & pos) const = 0;
+
+        virtual bool isPositionValid(const BoardPos_t & pos) const = 0;
+        virtual const std::set<BoardPos_t> & allValidPositions() const = 0;
+
+        static inline const BoardPos_t not_a_pos{ std::numeric_limits<int>::lowest(),
+                                                  std::numeric_limits<int>::lowest() };
+    };
+
+    //
+    class SimpleLayout : public ILayout
+    {
+      public:
+        SimpleLayout() = default;
+        virtual ~SimpleLayout() = default;
+
+        sf::Vector2f windowSize() const { return util::size(m_windowBounds); }
+        sf::FloatRect windowBounds() const { return m_windowBounds; }
+        sf::FloatRect boardBounds() const { return m_boardBounds; }
+        sf::Vector2i cellCounts() const { return m_cellCounts; }
+        std::size_t cellCountTotal() const { return m_cellCountTotal; }
+        sf::Vector2f cellSize() const { return m_cellSize; }
+        sf::FloatRect cellBounds(const BoardPos_t & pos) const;
+
+        bool isPositionValid(const BoardPos_t & pos) const;
+        const std::set<BoardPos_t> & allValidPositions() const { return m_allValidPositions; }
+
+        void setup(const Map_t & map, const GameConfig & config);
+
+      protected:
+        sf::FloatRect m_windowBounds;
+        sf::FloatRect m_boardBounds;
+        sf::Vector2i m_cellCounts;
+        std::size_t m_cellCountTotal{ 0 };
+        sf::Vector2f m_cellSize;
+        std::set<BoardPos_t> m_allValidPositions;
+    };
+
+    // All info about a game in progress that can changes during play.
+    struct IGameInPlay
+    {
+        virtual ~IGameInPlay() = default;
+
         virtual int score() const = 0;
         virtual int scoreAdj(const int adj) = 0;
 
         virtual bool isGameOver() const = 0;
         virtual void isGameOver(const bool isOver) = 0;
 
-        virtual bool isGamePaused() const = 0;
-        virtual void isGamePaused(const bool isPaused) = 0;
-
-        virtual std::filesystem::path mediaDirPath() const = 0;
-
-        virtual sf::VideoMode videoMode() const = 0;
-        virtual unsigned int windowStyle() const = 0;
-        virtual unsigned int frameRateLimit() const = 0;
-        virtual sf::Vector2f windowSize() const = 0;
-        virtual sf::FloatRect windowBounds() const = 0;
-
-        virtual sf::Vector2i cellCounts() const = 0;
+        virtual bool didPlayerWin() const = 0;
+        virtual void didPlayerWin(const bool didPlayerWin) = 0;
     };
 
     //
-
-    class GameSettingsBase : public IGameSettings
+    class SimpleGameInPlay : public IGameInPlay
     {
       public:
-        explicit GameSettingsBase(
-            const std::string & gameName,
-            const sf::Vector2i & cellCounts,
-            const std::filesystem::path & mediaDirPath,
-            const sf::VideoMode & videoMode = sf::VideoMode::getDesktopMode(),
-            const unsigned style = sf::Style::Default,
-            const unsigned frameRateLimit = 60)
-            : m_name(gameName)
-            , m_score(0)
-            , m_isGameOver(false)
-            , m_isGamePaused(false)
-            , m_mediaDirPath(mediaDirPath)
-            , m_cellCounts(cellCounts)
-            , m_videoMode(videoMode)
-            , m_windowStyle(style)
-            , m_frameRateLimit(frameRateLimit)
+        SimpleGameInPlay() = default;
+        virtual ~SimpleGameInPlay() = default;
 
-        {}
+        void reset();
 
-        virtual ~GameSettingsBase() = default;
-
-        std::string name() const override { return m_name; }
-        std::filesystem::path mediaDirPath() const override { return m_mediaDirPath; }
-
-        sf::VideoMode videoMode() const override { return m_videoMode; }
-
-        unsigned int windowStyle() const override { return m_windowStyle; }
-        unsigned int frameRateLimit() const override { return m_frameRateLimit; }
+        int score() const override { return m_score; }
+        int scoreAdj(const int adj) override;
 
         bool isGameOver() const override { return m_isGameOver; }
         void isGameOver(const bool isOver) override { m_isGameOver = isOver; }
 
-        bool isGamePaused() const override { return m_isGamePaused; }
-        void isGamePaused(const bool isPaused) override { m_isGamePaused = isPaused; }
-
-        sf::Vector2f windowSize() const override
-        {
-            return sf::Vector2f{ sf::Vector2u(m_videoMode.width, m_videoMode.height) };
-        }
-
-        sf::FloatRect windowBounds() const override { return { { 0.0f, 0.0f }, windowSize() }; }
-
-        int score() const override { return m_score; }
-
-        int scoreAdj(const int adj) override
-        {
-            m_score += adj;
-
-            if (m_score < 0)
-            {
-                m_score = 0;
-            }
-
-            return m_score;
-        }
-
-        sf::Vector2i cellCounts() const override { return m_cellCounts; }
+        bool didPlayerWin() const override { return m_didPlayerWin; }
+        void didPlayerWin(const bool didWin) override { m_didPlayerWin = didWin; }
 
       protected:
-        std::string m_name;
-
-        int m_score;
-        bool m_isGameOver;
-        bool m_isGamePaused;
-
-        std::filesystem::path m_mediaDirPath;
-
-        sf::Vector2i m_cellCounts;
-        sf::VideoMode m_videoMode;
-        unsigned int m_windowStyle;
-        unsigned int m_frameRateLimit; // zero will disable the limit
+        int m_score{ 0 };
+        bool m_isGameOver{ false };
+        bool m_didPlayerWin{ false };
     };
 } // namespace boardgame
 

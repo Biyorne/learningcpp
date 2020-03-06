@@ -1,5 +1,8 @@
 // This is an open source non-commercial project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+//
+// main.cpp
+//
 #include "game-coordinator.hpp"
 
 #include <cstddef>
@@ -10,20 +13,19 @@ int main(const int argc, const char * const argv[])
 {
     using namespace boardgame;
 
-    // find the media directory
-    std::filesystem::path mediaDirPath{ std::filesystem::current_path() / "media" };
-    if (argc > 1)
-    {
-        mediaDirPath = argv[1];
-    }
-
-    //
-    const GameSettingsBase settings("Snaker", { 40, 30 }, mediaDirPath);
-
-    //
     try
     {
-        boardgame::GameCoordinator game(settings);
+        GameConfig config;
+        if (argc > 1)
+        {
+            config.media_dir_path = std::filesystem::path{ argv[1] };
+        }
+
+        // empty maps are auto-replaced by the default
+        Map_t emptyMap;
+
+        LightsOutGame game;
+        game.reset(config, emptyMap);
         game.run();
     }
     catch (const std::exception & ex)

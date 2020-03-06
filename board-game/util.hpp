@@ -26,26 +26,6 @@ constexpr std::ptrdiff_t operator"" _pd(unsigned long long number)
 
 //
 
-namespace boardgame
-{
-    struct Context;
-
-    struct IEntity : public sf::Drawable
-    {
-        virtual ~IEntity() = default;
-
-        virtual sf::FloatRect bounds() const = 0;
-        // virtual void reset(Context &) = 0;
-
-        // perFrameChanges
-        virtual void update(Context &, const float elapsedTimeSec) = 0;
-        void draw(sf::RenderTarget &, sf::RenderStates) const override = 0;
-        virtual void handleEvent(Context &, const sf::Event & event) = 0;
-    };
-} // namespace boardgame
-
-//
-
 namespace util
 {
     inline const std::string colorToString(const sf::Color & C)
@@ -542,6 +522,27 @@ namespace util
     }
 
     template <typename T>
+    void skew(T & thing, const sf::Vector2f & size, const bool willCorrectLocalPos = false)
+    {
+        // skip if source size is zero (or close) to avoid dividing by zero below
+        const sf::FloatRect localBounds{ thing.getLocalBounds() };
+        if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
+        {
+            return;
+        }
+
+        const sf::Vector2f scalingVetor{ (size.x / localBounds.width),
+                                         (size.y / localBounds.height) };
+
+        thing.setScale(scalingVetor);
+
+        if (willCorrectLocalPos || std::is_same_v<std::remove_cv_t<T>, sf::Text>)
+        {
+            setOriginToPosition(thing);
+        }
+    }
+
+    template <typename T>
     void scale(T & thing, const sf::FloatRect & rect, const bool willCorrectLocalPos = false)
     {
         scale(thing, { rect.width, rect.height }, willCorrectLocalPos);
@@ -564,6 +565,14 @@ namespace util
         T & thing, const sf::FloatRect & rect, const bool willCorrectLocalPos = false)
     {
         scale(thing, rect, willCorrectLocalPos);
+        centerInside(thing, rect);
+    }
+
+    template <typename T>
+    void skewAndCenterInside(
+        T & thing, const sf::FloatRect & rect, const bool willCorrectLocalPos = false)
+    {
+        skew(thing, rect, willCorrectLocalPos);
         centerInside(thing, rect);
     }
 

@@ -10,10 +10,7 @@ namespace boardgame
 {
     enum class Piece
     {
-        Head = 0,
-        Tail,
-        Food,
-        Wall,
+        Cell = 0,
         Count
     };
 
@@ -21,10 +18,7 @@ namespace boardgame
     {
         switch (piece)
         {
-            case Piece::Head: return "Head";
-            case Piece::Tail: return "Tail";
-            case Piece::Food: return "Food";
-            case Piece::Wall: return "Wall";
+            case Piece::Cell: return "Cell";
             case Piece::Count:
             default: return "";
         }
@@ -35,6 +29,8 @@ namespace boardgame
         os << toString(piece);
         return os;
     }
+
+    inline Piece mapCharToPiece(const char) { return Piece::Cell; }
 } // namespace boardgame
 
 #endif // #define BOARDGAME_TYPES_HPP_INCLUDED

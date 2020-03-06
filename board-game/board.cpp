@@ -1,5 +1,8 @@
 // This is an open source non-commercial project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+//
+// board.cpp
+//
 #include "board.hpp"
 
 #include "check-macros.hpp"
@@ -7,89 +10,49 @@
 #include "pieces.hpp"
 #include "random.hpp"
 #include "settings.hpp"
+#include "types.hpp"
 #include "util.hpp"
 
 namespace boardgame
 {
-    void Layout::setup(const IGameSettings & settings)
+    void SimpleBoard::reset(Context & context)
     {
-        board_bounds = settings.windowBounds();
+        removeAllPieces();
+        addMapPieces(context);
+    }
 
-        M_CHECK_SS(
-            (!(board_bounds.left < 0.0f) && !(board_bounds.top < 0.0f) &&
-             (board_bounds.width > 1.0f) && (board_bounds.height > 1.0f)),
-            board_bounds);
-
-        cell_counts = settings.cellCounts();
-        M_CHECK_SS(((cell_counts.x > 0) && (cell_counts.y > 0)), cell_counts);
-
-        cell_size = (util::size(board_bounds) / sf::Vector2f(cell_counts));
-        M_CHECK_SS((!(cell_size.x < 1.0f) && !(cell_size.y < 1.0f)), cell_size);
-
-        cell_count_total = static_cast<std::size_t>(cell_counts.x * cell_counts.y);
-        M_CHECK_SS((cell_count_total > 0), cell_count_total);
-
-        // create a set of all valid positions, this is needed all over
-        all_valid_positions.clear();
-        for (int vert(0); vert < cell_counts.y; ++vert)
+    void SimpleBoard::addMapPieces(Context & context)
+    {
+        std::size_t rowWidth{ context.map.at(0).size() };
+        for (std::size_t vert(0); vert < context.map.size(); ++vert)
         {
-            for (int horiz(0); horiz < cell_counts.x; ++horiz)
+            const std::string row{ context.map.at(vert) };
+
+            M_CHECK_SS((row.size() == rowWidth), "Not all of the map rows were the same length");
+
+            for (std::size_t horiz(0); horiz < row.size(); ++horiz)
             {
-                all_valid_positions.insert(BoardPos_t{ horiz, vert });
+                const BoardPos_t boardPos{ sf::Vector2s(horiz, vert) };
+
+                const char mapChar{ row.at(horiz) };
+                const Piece piece{ mapCharToPiece(mapChar) };
+
+                if (piece != Piece::Count)
+                {
+                    addPiece(context, makePiece(context, piece, boardPos));
+                }
             }
         }
-
-        M_CHECK(all_valid_positions.size() == cell_count_total);
     }
 
-    //
-
-    // void BoardBase::printStatus() const
-    //{
-    //    std::cout << "\nBOARD STATUS:";
-    //    std::cout << "\n\t board_bounds         = " << board_bounds;
-    //    std::cout << "\n\t cell_counts          = " << m_cells.counts;
-    //    std::cout << "\n\t cells_total          = " << m_cells.count_total;
-    //    std::cout << "\n\t cell_size            = " << m_cells.size;
-    //    std::cout << "\n\t pieces_vec_size      = " << m_pieces.size();
-    //
-    //    std::map<Piece, std::size_t> pieceCountMap;
-    //    for (const IPieceUPtr_t & piece : m_pieces)
-    //    {
-    //        ++pieceCountMap[piece->piece()];
-    //    }
-    //
-    //    for (const auto & [piece, count] : pieceCountMap)
-    //    {
-    //        std::cout << "\n\t\t" << Piece::name(piece) << "\t x" << count;
-    //    }
-    //
-    //    // print the picture of the map on the console
-    //    // std::cout << "\n\t-" << std::endl;
-    //    // for (int vert(0); vert < m_cells.counts_int.y; ++vert)
-    //    //{
-    //    //    for (int horiz(0); horiz < m_cells.counts_int.x; ++horiz)
-    //    //    {
-    //    //        const BoardPos_t pos(horiz, vert);
-    //    //        const std::string name{ Piece::name(pieceEnumAt(pos)) };
-    //    //        std::cout << ((name.empty()) ? '?' : name.front());
-    //    //    }
-    //    //
-    //    //    std::cout << '\n';
-    //    //}
-    //
-    //    std::cout << std::endl;
-    //}
-
-    void BoardBase::setup(const IGameSettings & settings)
+    IPieceUPtr_t
+        SimpleBoard::makePiece(Context & context, const Piece piece, const BoardPos_t & pos)
     {
-        // reset(context);
-        m_layout.setup(settings);
+        M_CHECK_SS((piece != Piece::Count), piece);
+        return std::make_unique<CellPiece>(context, pos);
     }
 
-    // void BoardBase::reset(Context &) { m_pieces.clear(); }
-
-    void BoardBase::update(Context & context, const float elapsedTimeSec)
+    void SimpleBoard::update(Context & context, const float elapsedTimeSec)
     {
         for (IPieceUPtr_t & piece : m_pieces)
         {
@@ -97,7 +60,7 @@ namespace boardgame
         }
     }
 
-    void BoardBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
+    void SimpleBoard::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {
         for (const IPieceUPtr_t & piece : m_pieces)
         {
@@ -105,7 +68,7 @@ namespace boardgame
         }
     }
 
-    void BoardBase::handleEvent(Context & context, const sf::Event & event)
+    void SimpleBoard::handleEvent(Context & context, const sf::Event & event)
     {
         for (const IPieceUPtr_t & piece : m_pieces)
         {
@@ -113,7 +76,7 @@ namespace boardgame
         }
     }
 
-    IPieceOpt_t BoardBase::pieceAtOpt(const BoardPos_t & posToFind)
+    IPieceOpt_t SimpleBoard::pieceAtOpt(const BoardPos_t & posToFind)
     {
         const auto foundIter{ pieceIterAt(posToFind) };
         if (foundIter == std::end(m_pieces))
@@ -126,12 +89,12 @@ namespace boardgame
         }
     }
 
-    bool BoardBase::isPieceAt(const BoardPos_t & posToFind)
+    bool SimpleBoard::isPieceAt(const BoardPos_t & posToFind)
     {
         return pieceAtOpt(posToFind).has_value();
     }
 
-    Piece BoardBase::pieceEnumAt(const BoardPos_t & posToFind)
+    Piece SimpleBoard::pieceEnumAt(const BoardPos_t & posToFind)
     {
         const auto opt{ pieceAtOpt(posToFind) };
         if (opt)
@@ -144,7 +107,7 @@ namespace boardgame
         }
     }
 
-    IPieceUListIter_t BoardBase::pieceIterAt(const BoardPos_t & posToFind)
+    IPieceUListIter_t SimpleBoard::pieceIterAt(const BoardPos_t & posToFind)
     {
         return std::find_if(
             std::begin(m_pieces), std::end(m_pieces), [&](const IPieceUPtr_t & piece) {
@@ -152,7 +115,7 @@ namespace boardgame
             });
     }
 
-    void BoardBase::removePiece(Context &, const BoardPos_t & posToFind)
+    void SimpleBoard::removePiece(Context &, const BoardPos_t & posToFind)
     {
         // M_CHECK_SS(m_layout.isPositionValid(posToFind), posToFind);
 
@@ -168,20 +131,9 @@ namespace boardgame
         M_CHECK(!isPieceAt(posToFind));
     }
 
-    // void BoardBase::move(Context & context, const BoardPos_t & posFrom, const BoardPos_t & posTo)
-    //{
-    //    const auto fromIter{ pieceIterAt(posFrom) };
-    //    M_CHECK_SS((fromIter != std::end(m_pieces)), posFrom);
-    //    M_CHECK_SS((fromIter->get()->piece() != Piece::Count), posFrom);
-    //
-    //    remove(context, posTo);
-    //
-    //    fromIter->get()->
-    //
-    //    placePiece(context, makePiece(context, piece, pos));
-    //}
+    void SimpleBoard::removeAllPieces() { m_pieces.clear(); }
 
-    void BoardBase::addPiece(Context & context, IPieceUPtr_t iPieceUPtr)
+    void SimpleBoard::addPiece(Context & context, IPieceUPtr_t iPieceUPtr)
     {
         M_CHECK(iPieceUPtr);
 
@@ -189,7 +141,7 @@ namespace boardgame
         M_CHECK(newEnum != Piece::Count);
 
         const BoardPos_t newPos{ iPieceUPtr->position() };
-        M_CHECK_SS(m_layout.isPositionValid(newPos), newPos);
+        M_CHECK_SS(context.layout.isPositionValid(newPos), newPos);
 
         // no need to check if there is a piece to remove or not
         removePiece(context, newPos);
@@ -199,14 +151,14 @@ namespace boardgame
         M_CHECK(pieceEnumAt(newPos) == newEnum);
     }
 
-    void BoardBase::addPiece(Context & context, const Piece piece, const BoardPos_t & pos)
+    void SimpleBoard::addPiece(Context & context, const Piece piece, const BoardPos_t & pos)
     {
         M_CHECK_SS((piece != Piece::Count), piece);
-        M_CHECK_SS(m_layout.isPositionValid(pos), pos);
+        M_CHECK_SS(context.layout.isPositionValid(pos), pos);
         addPiece(context, makePiece(context, piece, pos));
     }
 
-    void BoardBase::addPieceRandomFreePos(Context & context, const Piece piece)
+    void SimpleBoard::addPieceRandomFreePos(Context & context, const Piece piece)
     {
         const auto posOpt{ findRandomFreePos(context) };
         if (!posOpt.has_value())
@@ -221,10 +173,10 @@ namespace boardgame
         addPiece(context, piece, posOpt.value());
     }
 
-    BoardPosOpt_t BoardBase::findRandomFreePos(const Context & context) const
+    BoardPosOpt_t SimpleBoard::findRandomFreePos(const Context & context) const
     {
         // start with a copy of all valid/on-board positions
-        std::set<BoardPos_t> positions{ m_layout.all_valid_positions };
+        std::set<BoardPos_t> positions{ context.layout.allValidPositions() };
 
         // remove any that are alraedy occupied
         for (const IPieceUPtr_t & piece : m_pieces)
@@ -241,48 +193,4 @@ namespace boardgame
     }
 
     //
-
-    // void SnakeBoard::reset(Context & context)
-    //{
-    //    BoardBase::reset(context);
-    //    populateBoardWithMapPieces(context);
-    //}
-
-    void SnakeBoard::populateBoardWithMapPieces(Context & context)
-    {
-        const sf::Vector2i counts{ m_layout.cell_counts };
-
-        const BoardPos_t centerPos{ counts / 2 };
-
-        addPiece(context, Piece::Head, centerPos);
-
-        for (int horiz(0); horiz < counts.x; ++horiz)
-        {
-            addPiece(context, Piece::Wall, BoardPos_t(horiz, 0));
-            addPiece(context, Piece::Wall, BoardPos_t(horiz, (counts.y - 1)));
-        }
-        for (int vert(0); vert < counts.y; ++vert)
-        {
-            addPiece(context, Piece::Wall, BoardPos_t(0, vert));
-            addPiece(context, Piece::Wall, BoardPos_t((counts.x - 1), vert));
-        }
-
-        for (int i(0); i < 5; ++i)
-        {
-            addPieceRandomFreePos(context, Piece::Food);
-        }
-    }
-
-    IPieceUPtr_t SnakeBoard::makePiece(Context & context, const Piece piece, const BoardPos_t & pos)
-    {
-        switch (piece)
-        {
-            case Piece::Food: return std::make_unique<FoodPiece>(context, pos);
-            case Piece::Head: return std::make_unique<HeadPiece>(context, pos);
-            case Piece::Tail: return std::make_unique<TailPiece>(context, pos);
-            case Piece::Wall:
-            case Piece::Count:
-            default: return std::make_unique<WallPiece>(context, pos);
-        }
-    }
 } // namespace boardgame

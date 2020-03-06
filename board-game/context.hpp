@@ -3,12 +3,8 @@
 //
 // context.hpp
 //
-#include <filesystem>
-#include <memory>
 #include <string>
 #include <vector>
-
-#include <SFML/Graphics.hpp>
 
 namespace util
 {
@@ -20,30 +16,46 @@ namespace util
 namespace boardgame
 {
     struct IBoard;
-    struct IResources;
-    struct IGameSettings;
+    struct IMedia;
+    struct IMedia;
+    struct ILayout;
+    struct GameConfig;
+
+    using Map_t = std::vector<std::string>;
 
     //
 
     struct Context
     {
         Context(
-            IGameSettings & set,
-            const IResources & res,
+            const Map_t & mp,
+            const GameConfig & conf,
+            const ILayout & lay,
+            const IMedia & med,
             IBoard & bor,
-            util::Random & ran,
+            const util::Random & ran,
             util::SoundPlayer & aud,
             util::AnimationPlayer & ani)
-            : settings(set)
-            , resources(res)
+            : map(mp)
+            , config(conf)
+            , layout(lay)
+            , media(med)
             , board(bor)
             , random(ran)
             , audio(aud)
             , anim(ani)
         {}
 
-        IGameSettings & settings;
-        const IResources & resources;
+        Context(const Context &) = delete;
+        Context(Context &&) = delete;
+
+        Context & operator=(const Context &) = delete;
+        Context & operator=(Context &&) = delete;
+
+        const Map_t & map;
+        const GameConfig & config;
+        const ILayout & layout;
+        const IMedia & media;
         IBoard & board;
         const util::Random & random;
         util::SoundPlayer & audio;

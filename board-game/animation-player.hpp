@@ -111,6 +111,8 @@ namespace util
       public:
         explicit AnimationPlayer(const Random & random, const std::string & pathStr = {});
 
+        void setMediaPath(const std::string & pathStr) { m_pathStr = pathStr; }
+
         std::size_t playingAtOnceMax() const { return m_maxPlayingAtOnceCount; }
         void playingAtOnceMax(const std::size_t maxCount) { m_maxPlayingAtOnceCount = maxCount; }
 

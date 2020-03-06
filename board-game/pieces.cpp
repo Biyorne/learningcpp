@@ -10,16 +10,39 @@
 #include "context.hpp"
 #include "keys.hpp"
 #include "random.hpp"
+#include "resources.hpp"
 #include "settings.hpp"
 #include "sound-player.hpp"
-#include "util.hpp"
 
 #include <cassert>
-#include <functional>
 
 namespace boardgame
 {
-    void PieceBase::move(Context & context, const BoardPos_t & posNew)
+    SimplePiece::SimplePiece(Context &, const Piece piece, const BoardPos_t & pos)
+        : m_piece(piece)
+        , m_position(pos)
+        , m_sprite()
+    {}
+
+    SimplePiece::SimplePiece(
+        Context &, const Piece piece, const BoardPos_t & pos, const sf::Sprite & sprite)
+        : m_piece(piece)
+        , m_position(pos)
+        , m_sprite(sprite)
+    {}
+
+    SimplePiece::SimplePiece(
+        Context & context, const Piece piece, const BoardPos_t & pos, const sf::Color & color)
+        : SimplePiece(
+              context, piece, pos, context.media.makeDefaultSprite(context, piece, pos, color))
+    {}
+
+    void SimplePiece::draw(sf::RenderTarget & target, sf::RenderStates states) const
+    {
+        target.draw(m_sprite, states);
+    }
+
+    void SimplePiece::move(Context & context, const BoardPos_t & posNew)
     {
         M_CHECK_SS((posNew != m_position), "posCurrent=" << m_position << ", posNew=" << m_piece);
 
@@ -27,73 +50,51 @@ namespace boardgame
 
         // we don't use Board::placePiece() because there is no need
         m_position = posNew;
-        util::centerInside(m_sprite, context.board.layout().bounds(posNew));
+        util::centerInside(m_sprite, context.layout.cellBounds(posNew));
 
         M_CHECK(context.board.pieceEnumAt(posNew) == m_piece);
     }
 
     //
 
-    void HeadPiece::handleEvent(Context & context, const sf::Event & event)
+    CellPiece::CellPiece(Context & context, const BoardPos_t & pos)
+        : SimplePiece(context, Piece::Cell, pos)
+        , m_isOn(false)
+        , m_baseColor(sf::Color(110, 115, 235))
     {
-        if (sf::Event::KeyPressed != event.type)
+        m_sprite.setTexture(context.media.texture(Piece::Cell));
+        m_sprite.setColor(sf::Color::Black);
+
+        util::skew(m_sprite, context.layout.cellSize());
+        util::centerInside(m_sprite, context.layout.cellBounds(pos));
+
+        m_sprite.scale(0.975f, 0.975f);
+    }
+
+    void CellPiece::update(Context &, const float) {}
+
+    void CellPiece::handleEvent(Context & context, const sf::Event & event)
+    {
+        if (event.type != sf::Event::MouseButtonPressed)
         {
             return;
         }
 
-        if (keys::isArrow(event.key.code))
+        const sf::Vector2f clickPos{ sf::Vector2i(event.mouseButton.x, event.mouseButton.y) };
+
+        if (m_sprite.getGlobalBounds().contains(clickPos))
         {
-            if (m_directionKeyNext != event.key.code)
+            m_isOn = !m_isOn;
+            context.audio.play("tap");
+
+            if (m_isOn)
             {
-                context.audio.play("tap-1-a.ogg");
-                m_directionKeyNext = event.key.code;
+                m_sprite.setColor(m_baseColor);
             }
-
-            return;
-        }
-    }
-
-    void HeadPiece::update(Context & context, const float elapsedTimeSec)
-    {
-        m_timeBetweenTurnsElapsedSec += elapsedTimeSec;
-        if (m_timeBetweenTurnsElapsedSec > m_timeBetweenTurnsSec)
-        {
-            m_timeBetweenTurnsElapsedSec = 0.0f;
-            takeTurn(context);
-        }
-    }
-
-    void HeadPiece::takeTurn(Context & context)
-    {
-        const BoardPos_t posOld{ m_position };
-        const BoardPos_t posNew{ keys::move(m_position, m_directionKeyNext) };
-        M_CHECK(posOld != posNew);
-
-        const Piece posNewPieceEnum{ context.board.pieceEnumAt(posNew) };
-
-        // move head
-        move(context, posNew);
-        M_CHECK(context.board.pieceEnumAt(posNew) == Piece::Head);
-        M_CHECK(context.board.pieceEnumAt(posOld) == Piece::Count);
-
-        // place a new tail piece behind the head
-        context.board.addPiece(context, Piece::Tail, posOld);
-
-        // handle whatever we just ate
-        if (posNewPieceEnum == Piece::Food)
-        {
-            context.audio.play("shine", m_eatSfxPitch);
-            m_eatSfxPitch += m_eatSfxPitchAdj;
-            m_timeBetweenTurnsSec *= m_timeBetweenTurnsShrinkRatio;
-            return;
-        }
-
-        if (posNewPieceEnum != Piece::Count)
-        {
-            context.audio.play("rpg-game-over");
-            m_sprite.setColor(sf::Color::Red);
-            context.settings.isGameOver(true);
-            return;
+            else
+            {
+                m_sprite.setColor(sf::Color::Black);
+            }
         }
     }
 } // namespace boardgame
