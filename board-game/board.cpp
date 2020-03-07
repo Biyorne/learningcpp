@@ -49,7 +49,7 @@ namespace boardgame
         SimpleBoard::makePiece(Context & context, const Piece piece, const BoardPos_t & pos)
     {
         M_CHECK_SS((piece != Piece::Count), piece);
-        return std::make_unique<CellPiece>(context, pos);
+        return std::make_unique<CellPiece>(context, pos, piece);
     }
 
     void SimpleBoard::update(Context & context, const float elapsedTimeSec)
@@ -68,12 +68,18 @@ namespace boardgame
         }
     }
 
-    void SimpleBoard::handleEvent(Context & context, const sf::Event & event)
+    bool SimpleBoard::handleEvent(Context & context, const sf::Event & event)
     {
+        bool didAnyPiecesHandleThEvent{ false };
         for (const IPieceUPtr_t & piece : m_pieces)
         {
-            piece->handleEvent(context, event);
+            if (piece->handleEvent(context, event))
+            {
+                didAnyPiecesHandleThEvent = true;
+            }
         }
+
+        return didAnyPiecesHandleThEvent;
     }
 
     IPieceOpt_t SimpleBoard::pieceAtOpt(const BoardPos_t & posToFind)

@@ -11,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <SFML/Graphics.hpp>
@@ -34,7 +35,7 @@ namespace boardgame
 
         virtual void takeTurn(Context &) = 0;
         virtual void update(Context &, const float) = 0;
-        virtual void handleEvent(Context &, const sf::Event &) = 0;
+        virtual bool handleEvent(Context &, const sf::Event &) = 0;
         void draw(sf::RenderTarget &, sf::RenderStates) const = 0;
 
         virtual void move(Context & context, const BoardPos_t & posNew) = 0;
@@ -53,7 +54,13 @@ namespace boardgame
     {
         SimplePiece(Context &, const Piece piece, const BoardPos_t & pos);
         SimplePiece(Context &, const Piece, const BoardPos_t & pos, const sf::Sprite & sprite);
-        SimplePiece(Context &, const Piece, const BoardPos_t & pos, const sf::Color & color);
+
+        SimplePiece(
+            Context &,
+            const Piece,
+            const BoardPos_t & pos,
+            const sf::Color & color,
+            const bool willSkewToFitExactly);
 
         virtual ~SimplePiece() = default;
 
@@ -63,7 +70,7 @@ namespace boardgame
 
         void takeTurn(Context &) override {}
         void update(Context &, const float) override {}
-        void handleEvent(Context &, const sf::Event &) override {}
+        bool handleEvent(Context &, const sf::Event &) override { return false; }
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
@@ -80,15 +87,14 @@ namespace boardgame
     class CellPiece : public SimplePiece
     {
       public:
-        CellPiece(Context & context, const BoardPos_t & pos);
+        CellPiece(Context & context, const BoardPos_t & pos, const Piece piece);
         virtual ~CellPiece() = default;
 
-        void update(Context &, const float) override;
-        void handleEvent(Context & context, const sf::Event & event) override;
+        bool handleEvent(Context & context, const sf::Event & event) override;
+        void takeTurn(Context & context) override { toggleOnOff(context); }
 
       private:
-        bool m_isOn;
-        sf::Color m_baseColor;
+        void toggleOnOff(Context & contex);
     };
 } // namespace boardgame
 

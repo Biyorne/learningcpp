@@ -495,7 +495,7 @@ namespace util
 
     // does NOT change the shape
     template <typename T>
-    void scale(T & thing, const sf::Vector2f & size, const bool willCorrectLocalPos = false)
+    void scale(T & thing, const sf::Vector2f & size, const bool willSkewToFitExactly = false)
     {
         // skip if source size is zero (or close) to avoid dividing by zero below
         const sf::FloatRect localBounds{ thing.getLocalBounds() };
@@ -504,54 +504,36 @@ namespace util
             return;
         }
 
+        const sf::Vector2f scaleExact{ (size.x / localBounds.width),
+                                       (size.y / localBounds.height) };
+
+        if (willSkewToFitExactly)
         {
-            const float scaleHoriz{ size.x / localBounds.width };
-            thing.setScale(scaleHoriz, scaleHoriz);
+            thing.setScale(scaleExact);
+        }
+        else
+        {
+            thing.setScale(scaleExact.x, scaleExact.x);
+
+            if (thing.getGlobalBounds().height > size.y)
+            {
+                thing.setScale(scaleExact.y, scaleExact.y);
+            }
         }
 
-        if (thing.getGlobalBounds().height > size.y)
-        {
-            const float scaleVert{ size.y / localBounds.height };
-            thing.setScale(scaleVert, scaleVert);
-        }
-
-        if (willCorrectLocalPos || std::is_same_v<std::remove_cv_t<T>, sf::Text>)
-        {
-            setOriginToPosition(thing);
-        }
+        setOriginToPosition(thing);
     }
 
     template <typename T>
-    void skew(T & thing, const sf::Vector2f & size, const bool willCorrectLocalPos = false)
+    void scale(T & thing, const sf::FloatRect & rect, const bool willSkewToFitExactly = false)
     {
-        // skip if source size is zero (or close) to avoid dividing by zero below
-        const sf::FloatRect localBounds{ thing.getLocalBounds() };
-        if ((localBounds.width < 1.0f) || (localBounds.height < 1.0f))
-        {
-            return;
-        }
-
-        const sf::Vector2f scalingVetor{ (size.x / localBounds.width),
-                                         (size.y / localBounds.height) };
-
-        thing.setScale(scalingVetor);
-
-        if (willCorrectLocalPos || std::is_same_v<std::remove_cv_t<T>, sf::Text>)
-        {
-            setOriginToPosition(thing);
-        }
+        scale(thing, { rect.width, rect.height }, willSkewToFitExactly);
     }
 
     template <typename T>
-    void scale(T & thing, const sf::FloatRect & rect, const bool willCorrectLocalPos = false)
+    void scale(T & thing, const float newScale, const bool willSkewToFitExactly = false)
     {
-        scale(thing, { rect.width, rect.height }, willCorrectLocalPos);
-    }
-
-    template <typename T>
-    void scale(T & thing, const float newScale, const bool willCorrectLocalPos = false)
-    {
-        scale(thing, { newScale, newScale }, willCorrectLocalPos);
+        scale(thing, { newScale, newScale }, willSkewToFitExactly);
     }
 
     template <typename T>
@@ -562,17 +544,17 @@ namespace util
 
     template <typename T>
     void scaleAndCenterInside(
-        T & thing, const sf::FloatRect & rect, const bool willCorrectLocalPos = false)
+        T & thing, const sf::FloatRect & rect, const bool willSkewToFitExactly = false)
     {
-        scale(thing, rect, willCorrectLocalPos);
+        scale(thing, rect, willSkewToFitExactly);
         centerInside(thing, rect);
     }
 
     template <typename T>
     void skewAndCenterInside(
-        T & thing, const sf::FloatRect & rect, const bool willCorrectLocalPos = false)
+        T & thing, const sf::FloatRect & rect, const bool willSkewToFitExactly = false)
     {
-        skew(thing, rect, willCorrectLocalPos);
+        skew(thing, rect, willSkewToFitExactly);
         centerInside(thing, rect);
     }
 

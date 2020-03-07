@@ -37,7 +37,7 @@ namespace boardgame
         virtual void reset(Context &) = 0;
         virtual void update(Context &, const float elapsedTimeSec) = 0;
         void draw(sf::RenderTarget &, sf::RenderStates) const override = 0;
-        virtual void handleEvent(Context &, const sf::Event & event) = 0;
+        virtual bool handleEvent(Context &, const sf::Event & event) = 0;
 
         virtual bool isPieceAt(const BoardPos_t & pos) = 0;
         virtual IPieceOpt_t pieceAtOpt(const BoardPos_t & pos) = 0;
@@ -54,6 +54,9 @@ namespace boardgame
 
         virtual BoardPosOpt_t findRandomFreePos(const Context & context) const = 0;
         virtual IPieceUPtr_t makePiece(Context &, const Piece, const BoardPos_t & pos) = 0;
+
+        static inline const BoardPos_t not_a_pos{ std::numeric_limits<int>::lowest(),
+                                                  std::numeric_limits<int>::lowest() };
     };
 
     // A simple reference implementation of an IBoard that should suffice for most games.
@@ -66,7 +69,7 @@ namespace boardgame
         void reset(Context &) override;
         void update(Context &, const float elapsedTimeSec) override;
         void draw(sf::RenderTarget &, sf::RenderStates) const override;
-        void handleEvent(Context &, const sf::Event & event) override;
+        bool handleEvent(Context &, const sf::Event & event) override;
 
         bool isPieceAt(const BoardPos_t & pos) override;
         IPieceOpt_t pieceAtOpt(const BoardPos_t & pos) override;

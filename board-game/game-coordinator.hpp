@@ -25,11 +25,11 @@
 
 namespace boardgame
 {
-    class SimpleGame
+    class SimpleGameCoordinator
     {
       public:
-        SimpleGame();
-        virtual ~SimpleGame() = default;
+        SimpleGameCoordinator();
+        virtual ~SimpleGameCoordinator() = default;
 
         virtual void reset(const GameConfig & config, const Map_t & map);
         virtual void switchToMap(const Map_t & map);
@@ -38,9 +38,12 @@ namespace boardgame
       protected:
         virtual void openWindow();
         virtual void handleEvents();
-        virtual void handleEvent(const sf::Event & event);
+        virtual bool handleEvent(const sf::Event & event);
+        virtual bool handleExitEvents(const sf::Event & event);
         virtual void update(const float elapsedTimeSec);
         virtual void draw();
+        virtual int calcFinalScore() { return m_game.score(); }
+        virtual void printFinalStatusToConsole();
 
       protected:
         Map_t m_map;
@@ -60,72 +63,34 @@ namespace boardgame
 
     //
 
-    class LightsOutGame : public SimpleGame
+    class LightsOutGame : public SimpleGameCoordinator
     {
       public:
         LightsOutGame() = default;
         virtual ~LightsOutGame() = default;
 
-        void reset(const GameConfig & configOld, const Map_t & mapOrig) override
-        {
-            GameConfig configNew{ configOld };
-            configNew.game_name = "Lights Out";
-            configNew.background_color = sf::Color(26, 26, 32);
-            configNew.is_fullscreen = false;
-            configNew.video_mode.width = 1600;
-            configNew.video_mode.height = 1200;
-
-            Map_t mapToUse{ mapOrig };
-            if (mapToUse.empty())
-            {
-                mapToUse = makeMapOfSize(5);
-            }
-
-            SimpleGame::reset(configNew, mapToUse);
-
-            m_soundPlayer.load({ "tap-1-a.ogg", "spawn-huge.ogg" });
-        }
-
-        void handleEvent(const sf::Event & event) override
-        {
-            if (sf::Event::KeyPressed == event.type)
-            {
-                const auto numberOpt{ keys::toNumberOpt<std::size_t>(event.key.code) };
-                if (numberOpt)
-                {
-                    const Map_t newMap{ makeMapOfSize(numberOpt.value()) };
-                    if (!newMap.empty())
-                    {
-                        switchToMap(newMap);
-                        return;
-                    }
-                }
-            }
-
-            SimpleGame::handleEvent(event);
-        }
+        void reset(const GameConfig & configOld, const Map_t & mapOrig) override;
+        void switchToMap(const Map_t & map) override;
 
       private:
-        static Map_t makeMapOfSize(std::size_t size)
-        {
-            if (size < 2)
-            {
-                size = 2;
-            }
-            else if (size > 9)
-            {
-                size = 9;
-            }
+        bool handleEvent(const sf::Event & event) override;
+        void handlePieceClickedOn(const IPiece & piece);
+        std::vector<sf::Vector2f> findAdjacentCellCenters(const IPiece & piece) const;
+        bool handleBoardResizeMapEvent(const sf::Event & event);
+        void playTaggleSfx(const IPiece & piece) const;
 
-            Map_t map;
-            const std::string row(size, 'C');
-            for (std::size_t vert(0); vert < size; ++vert)
-            {
-                map.push_back(row);
-            }
+        void handleIfGameWon();
+        void toggleAdjacentPieces(const IPiece & piece);
+        void togglePieceCenteredAt(const sf::Vector2i & centerWinPos);
 
-            return map;
-        }
+        bool areBoardPositionsAdjacent(const BoardPos_t & posA, const BoardPos_t & posB) const;
+        Map_t makeMapOfSize(std::size_t size) const;
+
+        std::size_t countOffPieces() const;
+        int calcFinalScore() override;
+
+      private:
+        int m_moveCount{ 0 };
     };
 } // namespace boardgame
 

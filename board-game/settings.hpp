@@ -3,6 +3,7 @@
 //
 // settings.hpp
 //
+#include "board.hpp"
 #include "check-macros.hpp"
 #include "types.hpp"
 #include "util.hpp"
@@ -16,6 +17,7 @@
 
 namespace boardgame
 {
+    struct Context;
     using BoardPos_t = sf::Vector2i;
 
     // All settings about the game that must be set before...well before everything else.
@@ -57,10 +59,7 @@ namespace boardgame
         virtual sf::FloatRect cellBounds(const BoardPos_t & pos) const = 0;
 
         virtual bool isPositionValid(const BoardPos_t & pos) const = 0;
-        virtual const std::set<BoardPos_t> & allValidPositions() const = 0;
-
-        static inline const BoardPos_t not_a_pos{ std::numeric_limits<int>::lowest(),
-                                                  std::numeric_limits<int>::lowest() };
+        virtual std::set<BoardPos_t> allValidPositions() const = 0;
     };
 
     //
@@ -79,7 +78,7 @@ namespace boardgame
         sf::FloatRect cellBounds(const BoardPos_t & pos) const;
 
         bool isPositionValid(const BoardPos_t & pos) const;
-        const std::set<BoardPos_t> & allValidPositions() const { return m_allValidPositions; }
+        std::set<BoardPos_t> allValidPositions() const { return m_allValidPositions; }
 
         void setup(const Map_t & map, const GameConfig & config);
 
@@ -101,10 +100,8 @@ namespace boardgame
         virtual int scoreAdj(const int adj) = 0;
 
         virtual bool isGameOver() const = 0;
-        virtual void isGameOver(const bool isOver) = 0;
-
+        virtual void endGame(const bool didPlayerWin) = 0;
         virtual bool didPlayerWin() const = 0;
-        virtual void didPlayerWin(const bool didPlayerWin) = 0;
     };
 
     //
@@ -114,16 +111,28 @@ namespace boardgame
         SimpleGameInPlay() = default;
         virtual ~SimpleGameInPlay() = default;
 
-        void reset();
+        virtual void reset();
 
         int score() const override { return m_score; }
         int scoreAdj(const int adj) override;
 
         bool isGameOver() const override { return m_isGameOver; }
-        void isGameOver(const bool isOver) override { m_isGameOver = isOver; }
 
-        bool didPlayerWin() const override { return m_didPlayerWin; }
-        void didPlayerWin(const bool didWin) override { m_didPlayerWin = didWin; }
+        void endGame(const bool didPlayerWin) override
+        {
+            m_isGameOver = true;
+            m_didPlayerWin = didPlayerWin;
+        }
+
+        bool didPlayerWin() const override
+        {
+            if (!m_isGameOver)
+            {
+                return false;
+            }
+
+            return m_didPlayerWin;
+        }
 
       protected:
         int m_score{ 0 };

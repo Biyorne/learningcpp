@@ -31,7 +31,8 @@ namespace boardgame
             const Context & context,
             const Piece piece,
             const BoardPos_t & boardPos,
-            const sf::Color & color) const = 0;
+            const sf::Color & color,
+            const bool willSkewToFitExactly = false) const = 0;
     };
 
     //
@@ -49,9 +50,10 @@ namespace boardgame
 
         sf::Sprite makeDefaultSprite(
             const Context & context,
-            const Piece which,
+            const Piece piece,
             const BoardPos_t & boardPos,
-            const sf::Color & color) const override;
+            const sf::Color & color,
+            const bool willSkewToFitExactly) const override;
 
       protected:
         void makeDefaultTexture();

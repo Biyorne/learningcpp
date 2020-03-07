@@ -32,9 +32,16 @@ namespace boardgame
     {}
 
     SimplePiece::SimplePiece(
-        Context & context, const Piece piece, const BoardPos_t & pos, const sf::Color & color)
+        Context & context,
+        const Piece piece,
+        const BoardPos_t & pos,
+        const sf::Color & color,
+        const bool willSkewToFitExactly)
         : SimplePiece(
-              context, piece, pos, context.media.makeDefaultSprite(context, piece, pos, color))
+              context,
+              piece,
+              pos,
+              context.media.makeDefaultSprite(context, piece, pos, color, willSkewToFitExactly))
     {}
 
     void SimplePiece::draw(sf::RenderTarget & target, sf::RenderStates states) const
@@ -57,44 +64,42 @@ namespace boardgame
 
     //
 
-    CellPiece::CellPiece(Context & context, const BoardPos_t & pos)
-        : SimplePiece(context, Piece::Cell, pos)
-        , m_isOn(false)
-        , m_baseColor(sf::Color(110, 115, 235))
+    CellPiece::CellPiece(Context & context, const BoardPos_t & pos, const Piece piece)
+        : SimplePiece(context, piece, pos, toColor(piece), true)
     {
-        m_sprite.setTexture(context.media.texture(Piece::Cell));
-        m_sprite.setColor(sf::Color::Black);
-
-        util::skew(m_sprite, context.layout.cellSize());
-        util::centerInside(m_sprite, context.layout.cellBounds(pos));
-
-        m_sprite.scale(0.975f, 0.975f);
+        // shrink the size of the cell to make a nice looking border around them all
+        const float m_betweenCellsPadRatio{ 0.975f };
+        m_sprite.scale(m_betweenCellsPadRatio, m_betweenCellsPadRatio);
     }
 
-    void CellPiece::update(Context &, const float) {}
+    void CellPiece::toggleOnOff(Context &)
+    {
+        if (Piece::On == m_piece)
+        {
+            m_piece = Piece::Off;
+        }
+        else
+        {
+            m_piece = Piece::On;
+        }
 
-    void CellPiece::handleEvent(Context & context, const sf::Event & event)
+        m_sprite.setColor(toColor(m_piece));
+    }
+
+    bool CellPiece::handleEvent(Context & context, const sf::Event & event)
     {
         if (event.type != sf::Event::MouseButtonPressed)
         {
-            return;
+            return false;
         }
 
         const sf::Vector2f clickPos{ sf::Vector2i(event.mouseButton.x, event.mouseButton.y) };
-
-        if (m_sprite.getGlobalBounds().contains(clickPos))
+        if (bounds().contains(clickPos))
         {
-            m_isOn = !m_isOn;
-            context.audio.play("tap");
-
-            if (m_isOn)
-            {
-                m_sprite.setColor(m_baseColor);
-            }
-            else
-            {
-                m_sprite.setColor(sf::Color::Black);
-            }
+            takeTurn(context);
+            return true;
         }
+
+        return false;
     }
 } // namespace boardgame

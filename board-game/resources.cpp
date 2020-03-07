@@ -43,13 +43,16 @@ namespace boardgame
 
     sf::Sprite SimpleMedia::makeDefaultSprite(
         const Context & context,
-        const Piece which,
+        const Piece piece,
         const BoardPos_t & boardPos,
-        const sf::Color & color) const
+        const sf::Color & color,
+        const bool willSkewToFitExactly) const
     {
-        M_CHECK(Piece::Count != which);
-        sf::Sprite sprite(texture(which));
-        util::scaleAndCenterInside(sprite, context.layout.cellBounds(boardPos));
+        M_CHECK(Piece::Count != piece);
+        sf::Sprite sprite(texture(piece));
+
+        const sf::FloatRect bounds{ context.layout.cellBounds(boardPos) };
+        util::scaleAndCenterInside(sprite, bounds, willSkewToFitExactly);
         sprite.setColor(color);
         return sprite;
     }

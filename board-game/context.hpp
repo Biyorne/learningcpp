@@ -20,6 +20,7 @@ namespace boardgame
     struct IMedia;
     struct ILayout;
     struct GameConfig;
+    struct IGameInPlay;
 
     using Map_t = std::vector<std::string>;
 
@@ -28,6 +29,7 @@ namespace boardgame
     struct Context
     {
         Context(
+            IGameInPlay & gam,
             const Map_t & mp,
             const GameConfig & conf,
             const ILayout & lay,
@@ -36,7 +38,8 @@ namespace boardgame
             const util::Random & ran,
             util::SoundPlayer & aud,
             util::AnimationPlayer & ani)
-            : map(mp)
+            : game(gam)
+            , map(mp)
             , config(conf)
             , layout(lay)
             , media(med)
@@ -52,6 +55,7 @@ namespace boardgame
         Context & operator=(const Context &) = delete;
         Context & operator=(Context &&) = delete;
 
+        IGameInPlay & game;
         const Map_t & map;
         const GameConfig & config;
         const ILayout & layout;

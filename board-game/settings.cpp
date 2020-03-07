@@ -5,6 +5,8 @@
 //
 #include "settings.hpp"
 
+#include "context.hpp"
+
 namespace boardgame
 {
     void SimpleLayout::setup(const Map_t & map, const GameConfig & config)

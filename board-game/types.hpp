@@ -6,11 +6,14 @@
 #include <ostream>
 #include <string>
 
+#include <SFML/Graphics/Color.hpp>
+
 namespace boardgame
 {
     enum class Piece
     {
-        Cell = 0,
+        On = 0,
+        Off,
         Count
     };
 
@@ -18,7 +21,8 @@ namespace boardgame
     {
         switch (piece)
         {
-            case Piece::Cell: return "Cell";
+            case Piece::On: return "On";
+            case Piece::Off: return "Off";
             case Piece::Count:
             default: return "";
         }
@@ -30,7 +34,27 @@ namespace boardgame
         return os;
     }
 
-    inline Piece mapCharToPiece(const char) { return Piece::Cell; }
-} // namespace boardgame
+    inline Piece mapCharToPiece(const char mapChar)
+    {
+        if (mapChar == ' ')
+        {
+            return Piece::Off;
+        }
+        else
+        {
+            return Piece::On;
+        }
+    }
 
+    inline sf::Color toColor(const Piece piece)
+    {
+        switch (piece)
+        {
+            case Piece::On: return sf::Color(110, 115, 235);
+            case Piece::Off:
+            case Piece::Count:
+            default: return sf::Color::Black;
+        }
+    }
+} // namespace boardgame
 #endif // #define BOARDGAME_TYPES_HPP_INCLUDED
