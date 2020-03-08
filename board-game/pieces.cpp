@@ -19,15 +19,15 @@
 namespace boardgame
 {
     SimplePiece::SimplePiece(Context &, const Piece piece, const BoardPos_t & pos)
-        : m_piece(piece)
-        , m_position(pos)
+        : BoardPosKeeper(pos)
+        , m_piece(piece)
         , m_sprite()
     {}
 
     SimplePiece::SimplePiece(
         Context &, const Piece piece, const BoardPos_t & pos, const sf::Sprite & sprite)
-        : m_piece(piece)
-        , m_position(pos)
+        : BoardPosKeeper(pos)
+        , m_piece(piece)
         , m_sprite(sprite)
     {}
 
@@ -49,17 +49,10 @@ namespace boardgame
         target.draw(m_sprite, states);
     }
 
-    void SimplePiece::move(Context & context, const BoardPos_t & posNew)
+    void SimplePiece::move(Context & context, const BoardPos_t & newPos)
     {
-        M_CHECK_SS((posNew != m_position), "posCurrent=" << m_position << ", posNew=" << m_piece);
-
-        context.board.removePiece(context, posNew);
-
-        // we don't use Board::placePiece() because there is no need
-        m_position = posNew;
-        util::centerInside(m_sprite, context.layout.cellBounds(posNew));
-
-        M_CHECK(context.board.pieceEnumAt(posNew) == m_piece);
+        context.board.movePiece(context, *this, newPos);
+        util::centerInside(m_sprite, context.layout.cellBounds(position()));
     }
 
     //
@@ -68,11 +61,11 @@ namespace boardgame
         : SimplePiece(context, piece, pos, toColor(piece), true)
     {
         // shrink the size of the cell to make a nice looking border around them all
-        const float m_betweenCellsPadRatio{ 0.975f };
-        m_sprite.scale(m_betweenCellsPadRatio, m_betweenCellsPadRatio);
+        const float pad{ context.config.between_cells_pad_ratio };
+        m_sprite.scale(pad, pad);
     }
 
-    void CellPiece::toggleOnOff(Context &)
+    void CellPiece::takeTurn(Context &)
     {
         if (Piece::On == m_piece)
         {
@@ -84,22 +77,5 @@ namespace boardgame
         }
 
         m_sprite.setColor(toColor(m_piece));
-    }
-
-    bool CellPiece::handleEvent(Context & context, const sf::Event & event)
-    {
-        if (event.type != sf::Event::MouseButtonPressed)
-        {
-            return false;
-        }
-
-        const sf::Vector2f clickPos{ sf::Vector2i(event.mouseButton.x, event.mouseButton.y) };
-        if (bounds().contains(clickPos))
-        {
-            takeTurn(context);
-            return true;
-        }
-
-        return false;
     }
 } // namespace boardgame

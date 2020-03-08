@@ -38,11 +38,10 @@ namespace boardgame
       protected:
         virtual void openWindow();
         virtual void handleEvents();
-        virtual bool handleEvent(const sf::Event & event);
+        virtual void handleEvent(const sf::Event & event);
         virtual bool handleExitEvents(const sf::Event & event);
         virtual void update(const float elapsedTimeSec);
         virtual void draw();
-        virtual int calcFinalScore() { return m_game.score(); }
         virtual void printFinalStatusToConsole();
 
       protected:
@@ -65,32 +64,44 @@ namespace boardgame
 
     class LightsOutGame : public SimpleGameCoordinator
     {
+        struct Score
+        {
+            void print() const;
+            int finalScore() const;
+
+            int all_cells_off_perfect_starting_score{ 0 };
+            int cells_left_on{ 0 };
+            int cells_left_on_penalty{ 0 };
+            int click_count{ 0 };
+            int click_count_adj{ 0 };
+            int time_spent_playing_sec{ 0 };
+            int time_spent_playing_adj{ 0 };
+            int win_bonus{ 0 };
+        };
+
       public:
         LightsOutGame() = default;
-        virtual ~LightsOutGame() = default;
+        virtual ~LightsOutGame() { m_score.print(); }
 
         void reset(const GameConfig & configOld, const Map_t & mapOrig) override;
         void switchToMap(const Map_t & map) override;
+        static Map_t makeMapOfSize(std::size_t size);
 
       private:
-        bool handleEvent(const sf::Event & event) override;
-        void handlePieceClickedOn(const IPiece & piece);
-        std::vector<sf::Vector2f> findAdjacentCellCenters(const IPiece & piece) const;
+        void handleEvent(const sf::Event & event) override;
         bool handleBoardResizeMapEvent(const sf::Event & event);
-        void playTaggleSfx(const IPiece & piece) const;
-
-        void handleIfGameWon();
+        void handlePieceClickedOn(const IPiece & piece);
         void toggleAdjacentPieces(const IPiece & piece);
-        void togglePieceCenteredAt(const sf::Vector2i & centerWinPos);
-
-        bool areBoardPositionsAdjacent(const BoardPos_t & posA, const BoardPos_t & posB) const;
-        Map_t makeMapOfSize(std::size_t size) const;
-
+        void togglePiece(const BoardPos_t & pos);
+        void updateScore();
+        void handleIfGameWon();
         std::size_t countOffPieces() const;
-        int calcFinalScore() override;
+        Score calcScore() const;
+        void randomizeOffPieces();
 
       private:
-        int m_moveCount{ 0 };
+        sf::Clock m_gameElapsedClock;
+        Score m_score;
     };
 } // namespace boardgame
 

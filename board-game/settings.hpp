@@ -5,19 +5,19 @@
 //
 #include "board.hpp"
 #include "check-macros.hpp"
+#include "context.hpp"
 #include "types.hpp"
 #include "util.hpp"
 
 #include <filesystem>
 #include <limits>
-#include <set>
 #include <string>
+#include <vector>
 
 #include <SFML/Graphics.hpp>
 
 namespace boardgame
 {
-    struct Context;
     using BoardPos_t = sf::Vector2i;
 
     // All settings about the game that must be set before...well before everything else.
@@ -30,6 +30,7 @@ namespace boardgame
         bool is_fullscreen{ true };
         unsigned frame_rate_limit{ 60 };
         sf::Color background_color{ sf::Color::Black };
+        float between_cells_pad_ratio{ 0.975f };
 
         template <typename T>
         sf::Vector2<T> windowSize() const
@@ -59,7 +60,7 @@ namespace boardgame
         virtual sf::FloatRect cellBounds(const BoardPos_t & pos) const = 0;
 
         virtual bool isPositionValid(const BoardPos_t & pos) const = 0;
-        virtual std::set<BoardPos_t> allValidPositions() const = 0;
+        virtual const std::vector<BoardPos_t> & allValidPositions() const = 0;
     };
 
     //
@@ -78,7 +79,7 @@ namespace boardgame
         sf::FloatRect cellBounds(const BoardPos_t & pos) const;
 
         bool isPositionValid(const BoardPos_t & pos) const;
-        std::set<BoardPos_t> allValidPositions() const { return m_allValidPositions; }
+        const std::vector<BoardPos_t> & allValidPositions() const { return m_allValidPositions; }
 
         void setup(const Map_t & map, const GameConfig & config);
 
@@ -88,7 +89,7 @@ namespace boardgame
         sf::Vector2i m_cellCounts;
         std::size_t m_cellCountTotal{ 0 };
         sf::Vector2f m_cellSize;
-        std::set<BoardPos_t> m_allValidPositions;
+        std::vector<BoardPos_t> m_allValidPositions;
     };
 
     // All info about a game in progress that can changes during play.
@@ -97,6 +98,7 @@ namespace boardgame
         virtual ~IGameInPlay() = default;
 
         virtual int score() const = 0;
+        virtual void score(const int newScore) = 0;
         virtual int scoreAdj(const int adj) = 0;
 
         virtual bool isGameOver() const = 0;
@@ -114,6 +116,7 @@ namespace boardgame
         virtual void reset();
 
         int score() const override { return m_score; }
+        void score(const int newScore) override { m_score = newScore; }
         int scoreAdj(const int adj) override;
 
         bool isGameOver() const override { return m_isGameOver; }

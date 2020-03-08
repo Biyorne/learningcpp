@@ -40,7 +40,7 @@ namespace boardgame
             {
                 const BoardPos_t pos{ horiz, vert };
                 M_CHECK_SS(isPositionValid(pos), pos);
-                m_allValidPositions.insert(pos);
+                m_allValidPositions.push_back(pos);
             }
         }
 

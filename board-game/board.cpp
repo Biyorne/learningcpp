@@ -15,9 +15,54 @@
 
 namespace boardgame
 {
+    void IBoard::movePiece(
+        const Context & context, BoardPosKeeper & posManager, const BoardPos_t & newPos)
+    {
+        const BoardPos_t & posFrom{ posManager.m_position };
+
+        M_CHECK_SS(context.layout.isPositionValid(posFrom), posFrom);
+        M_CHECK_SS(context.layout.isPositionValid(newPos), newPos);
+
+        if (posFrom == newPos)
+        {
+            M_CHECK_LOG_SS(
+                (posFrom != newPos),
+                "Ignoring an attempt to move a piece to where it already is:  posFrom="
+                    << posFrom << ", newPos=" << newPos);
+
+            return;
+        }
+
+        removePiece(newPos);
+
+        posManager.m_position = newPos;
+
+        M_CHECK_SS(
+            (context.board.pieceEnumAt(posFrom) != Piece::Count),
+            "There is still a Piece in the old position after moving to a new position:  posFrom="
+                << posFrom << ", posNew=" << newPos
+                << ", piece_enum=" << context.board.pieceEnumAt(posFrom));
+    }
+
+    void SimpleBoard::movePiece(
+        const Context & context, const BoardPos_t & posFrom, const BoardPos_t & posTo)
+    {
+        const auto opt{ pieceAtOpt(posFrom) };
+        M_CHECK_SS(opt.has_value(), posFrom);
+
+        IBoard::movePiece(context, (BoardPosKeeper &)opt.value().get(), posTo);
+
+        M_CHECK_SS(
+            (context.board.pieceEnumAt(posTo) != opt.value().get().piece()),
+            "After moving a Piece, the board found the piece in the new position that had a "
+            "different Piece::Enum:  posFrom="
+                << posFrom << ", posNew=" << posTo
+                << ", piece_enum=" << context.board.pieceEnumAt(posFrom));
+    }
+
     void SimpleBoard::reset(Context & context)
     {
-        removeAllPieces();
+        m_pieces.clear();
         addMapPieces(context);
     }
 
@@ -52,50 +97,33 @@ namespace boardgame
         return std::make_unique<CellPiece>(context, pos, piece);
     }
 
-    void SimpleBoard::update(Context & context, const float elapsedTimeSec)
-    {
-        for (IPieceUPtr_t & piece : m_pieces)
-        {
-            piece->update(context, elapsedTimeSec);
-        }
-    }
-
-    void SimpleBoard::draw(sf::RenderTarget & target, sf::RenderStates states) const
+    IPieceOpt_t SimpleBoard::pieceAtOpt(const BoardPos_t & posToFind)
     {
         for (const IPieceUPtr_t & piece : m_pieces)
         {
-            target.draw(*piece, states);
-        }
-    }
-
-    bool SimpleBoard::handleEvent(Context & context, const sf::Event & event)
-    {
-        bool didAnyPiecesHandleThEvent{ false };
-        for (const IPieceUPtr_t & piece : m_pieces)
-        {
-            if (piece->handleEvent(context, event))
+            if (posToFind == piece->position())
             {
-                didAnyPiecesHandleThEvent = true;
+                return *piece;
             }
         }
 
-        return didAnyPiecesHandleThEvent;
+        return std::nullopt;
     }
 
-    IPieceOpt_t SimpleBoard::pieceAtOpt(const BoardPos_t & posToFind)
+    const IPieceOpt_t SimpleBoard::pieceAtOpt(const BoardPos_t & posToFind) const
     {
-        const auto foundIter{ pieceIterAt(posToFind) };
-        if (foundIter == std::end(m_pieces))
+        for (const IPieceUPtr_t & piece : m_pieces)
         {
-            return std::nullopt;
+            if (posToFind == piece->position())
+            {
+                return *piece;
+            }
         }
-        else
-        {
-            return { **foundIter };
-        }
+
+        return std::nullopt;
     }
 
-    bool SimpleBoard::isPieceAt(const BoardPos_t & posToFind)
+    bool SimpleBoard::isPieceAt(const BoardPos_t & posToFind) const
     {
         return pieceAtOpt(posToFind).has_value();
     }
@@ -113,31 +141,19 @@ namespace boardgame
         }
     }
 
-    IPieceUListIter_t SimpleBoard::pieceIterAt(const BoardPos_t & posToFind)
+    void SimpleBoard::removePiece(const BoardPos_t & posToFind)
     {
-        return std::find_if(
-            std::begin(m_pieces), std::end(m_pieces), [&](const IPieceUPtr_t & piece) {
-                return (piece->position() == posToFind);
-            });
-    }
-
-    void SimpleBoard::removePiece(Context &, const BoardPos_t & posToFind)
-    {
-        // M_CHECK_SS(m_layout.isPositionValid(posToFind), posToFind);
-
-        const auto iter{ pieceIterAt(posToFind) };
-        if (iter == std::end(m_pieces))
-        {
-            // this is not an error case, because we often just remove without checking first
-            return;
-        }
-
-        m_pieces.erase(iter);
+        m_pieces.erase(
+            std::remove_if(
+                std::begin(m_pieces),
+                std::end(m_pieces),
+                [&](const IPieceUPtr_t & pieceInPlay) {
+                    return (posToFind == pieceInPlay->position());
+                }),
+            std::end(m_pieces));
 
         M_CHECK(!isPieceAt(posToFind));
     }
-
-    void SimpleBoard::removeAllPieces() { m_pieces.clear(); }
 
     void SimpleBoard::addPiece(Context & context, IPieceUPtr_t iPieceUPtr)
     {
@@ -149,8 +165,7 @@ namespace boardgame
         const BoardPos_t newPos{ iPieceUPtr->position() };
         M_CHECK_SS(context.layout.isPositionValid(newPos), newPos);
 
-        // no need to check if there is a piece to remove or not
-        removePiece(context, newPos);
+        removePiece(newPos);
 
         m_pieces.push_back(std::move(iPieceUPtr));
 
@@ -164,30 +179,16 @@ namespace boardgame
         addPiece(context, makePiece(context, piece, pos));
     }
 
-    void SimpleBoard::addPieceRandomFreePos(Context & context, const Piece piece)
-    {
-        const auto posOpt{ findRandomFreePos(context) };
-        if (!posOpt.has_value())
-        {
-            M_CHECK_LOG_SS(
-                posOpt.has_value(),
-                "Let the game keep running, and maybe a free spot will open up later.");
-
-            return;
-        }
-
-        addPiece(context, piece, posOpt.value());
-    }
-
     BoardPosOpt_t SimpleBoard::findRandomFreePos(const Context & context) const
     {
         // start with a copy of all valid/on-board positions
-        std::set<BoardPos_t> positions{ context.layout.allValidPositions() };
+        std::vector<BoardPos_t> positions{ context.layout.allValidPositions() };
 
         // remove any that are alraedy occupied
         for (const IPieceUPtr_t & piece : m_pieces)
         {
-            positions.erase(piece->position());
+            positions.erase(
+                std::remove(std::begin(positions), std::end(positions), piece->position()));
         }
 
         if (positions.empty())

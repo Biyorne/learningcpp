@@ -15,17 +15,22 @@ int main(const int argc, const char * const argv[])
 
     try
     {
+        //
         GameConfig config;
         if (argc > 1)
         {
             config.media_dir_path = std::filesystem::path{ argv[1] };
         }
+        config.is_fullscreen = false;
+        config.video_mode.width = 1600;
+        config.video_mode.height = 1200;
 
-        // empty maps are auto-replaced by the default
-        Map_t emptyMap;
+        //
+        Map_t map{ LightsOutGame::makeMapOfSize(5) };
 
+        //
         LightsOutGame game;
-        game.reset(config, emptyMap);
+        game.reset(config, map);
         game.run();
     }
     catch (const std::exception & ex)

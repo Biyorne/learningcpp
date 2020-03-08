@@ -4,6 +4,7 @@
 // media.hpp
 //
 #include "check-macros.hpp"
+#include "context.hpp"
 #include "types.hpp"
 
 #include <filesystem>
@@ -14,7 +15,6 @@
 
 namespace boardgame
 {
-    struct Context;
     struct GameConfig;
     using BoardPos_t = sf::Vector2i;
 
