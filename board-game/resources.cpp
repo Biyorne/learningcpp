@@ -48,12 +48,12 @@ namespace boardgame
         const sf::Color & color,
         const bool willSkewToFitExactly) const
     {
-        M_CHECK(Piece::Count != piece);
         sf::Sprite sprite(texture(piece));
+        sprite.setColor(color);
 
         const sf::FloatRect bounds{ context.layout.cellBounds(boardPos) };
         util::scaleAndCenterInside(sprite, bounds, willSkewToFitExactly);
-        sprite.setColor(color);
+
         return sprite;
     }
 

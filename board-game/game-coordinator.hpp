@@ -64,44 +64,23 @@ namespace boardgame
 
     class LightsOutGame : public SimpleGameCoordinator
     {
-        struct Score
-        {
-            void print() const;
-            int finalScore() const;
-
-            int all_cells_off_perfect_starting_score{ 0 };
-            int cells_left_on{ 0 };
-            int cells_left_on_penalty{ 0 };
-            int click_count{ 0 };
-            int click_count_adj{ 0 };
-            int time_spent_playing_sec{ 0 };
-            int time_spent_playing_adj{ 0 };
-            int win_bonus{ 0 };
-        };
-
       public:
         LightsOutGame() = default;
-        virtual ~LightsOutGame() { m_score.print(); }
+        virtual ~LightsOutGame() = default;
 
         void reset(const GameConfig & configOld, const Map_t & mapOrig) override;
         void switchToMap(const Map_t & map) override;
+        void draw() override;
+
         static Map_t makeMapOfSize(std::size_t size);
 
       private:
+        void printFinalStatusToConsole() override;
         void handleEvent(const sf::Event & event) override;
         bool handleBoardResizeMapEvent(const sf::Event & event);
-        void handlePieceClickedOn(const IPiece & piece);
-        void toggleAdjacentPieces(const IPiece & piece);
-        void togglePiece(const BoardPos_t & pos);
-        void updateScore();
-        void handleIfGameWon();
-        std::size_t countOffPieces() const;
-        Score calcScore() const;
-        void randomizeOffPieces();
-
-      private:
-        sf::Clock m_gameElapsedClock;
-        Score m_score;
+        void toggleCell(const BoardPos_t & pos);
+        void randomizeCells();
+        std::vector<BoardPos_t> findAllBoardPosToToggle(const BoardPos_t & clickedBoardPos) const;
     };
 } // namespace boardgame
 

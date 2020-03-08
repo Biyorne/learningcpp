@@ -19,15 +19,15 @@
 namespace boardgame
 {
     SimplePiece::SimplePiece(Context &, const Piece piece, const BoardPos_t & pos)
-        : BoardPosKeeper(pos)
-        , m_piece(piece)
+        : m_piece(piece)
+        , m_position(pos)
         , m_sprite()
     {}
 
     SimplePiece::SimplePiece(
         Context &, const Piece piece, const BoardPos_t & pos, const sf::Sprite & sprite)
-        : BoardPosKeeper(pos)
-        , m_piece(piece)
+        : m_piece(piece)
+        , m_position(pos)
         , m_sprite(sprite)
     {}
 
@@ -51,31 +51,28 @@ namespace boardgame
 
     void SimplePiece::move(Context & context, const BoardPos_t & newPos)
     {
-        context.board.movePiece(context, *this, newPos);
+        context.board.removePiece(newPos);
+        m_position = newPos;
         util::centerInside(m_sprite, context.layout.cellBounds(position()));
     }
 
     //
 
-    CellPiece::CellPiece(Context & context, const BoardPos_t & pos, const Piece piece)
-        : SimplePiece(context, piece, pos, toColor(piece), true)
+    CellPiece::CellPiece(Context & context, const BoardPos_t & pos, const Piece)
+        : SimplePiece(context, Piece::Cell, pos, makeDefaultSprite(context, pos, Piece::Cell))
+    {}
+
+    sf::Sprite CellPiece::makeDefaultSprite(
+        const Context & context, const BoardPos_t & boardPos, const Piece piece)
     {
+        sf::Sprite sprite{ context.media.makeDefaultSprite(
+            context, Piece::Cell, boardPos, toColor(piece), true) };
+
         // shrink the size of the cell to make a nice looking border around them all
         const float pad{ context.config.between_cells_pad_ratio };
-        m_sprite.scale(pad, pad);
-    }
 
-    void CellPiece::takeTurn(Context &)
-    {
-        if (Piece::On == m_piece)
-        {
-            m_piece = Piece::Off;
-        }
-        else
-        {
-            m_piece = Piece::On;
-        }
+        sprite.scale(pad, pad);
 
-        m_sprite.setColor(toColor(m_piece));
+        return sprite;
     }
 } // namespace boardgame

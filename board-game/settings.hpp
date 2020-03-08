@@ -61,6 +61,7 @@ namespace boardgame
 
         virtual bool isPositionValid(const BoardPos_t & pos) const = 0;
         virtual const std::vector<BoardPos_t> & allValidPositions() const = 0;
+        virtual BoardPosOpt_t windowPosToBoardPos(const sf::Vector2f windowPos) const = 0;
     };
 
     //
@@ -70,18 +71,24 @@ namespace boardgame
         SimpleLayout() = default;
         virtual ~SimpleLayout() = default;
 
-        sf::Vector2f windowSize() const { return util::size(m_windowBounds); }
-        sf::FloatRect windowBounds() const { return m_windowBounds; }
-        sf::FloatRect boardBounds() const { return m_boardBounds; }
-        sf::Vector2i cellCounts() const { return m_cellCounts; }
-        std::size_t cellCountTotal() const { return m_cellCountTotal; }
-        sf::Vector2f cellSize() const { return m_cellSize; }
-        sf::FloatRect cellBounds(const BoardPos_t & pos) const;
-
-        bool isPositionValid(const BoardPos_t & pos) const;
-        const std::vector<BoardPos_t> & allValidPositions() const { return m_allValidPositions; }
-
         void setup(const Map_t & map, const GameConfig & config);
+
+        sf::Vector2f windowSize() const override { return util::size(m_windowBounds); }
+        sf::FloatRect windowBounds() const override { return m_windowBounds; }
+        sf::FloatRect boardBounds() const override { return m_boardBounds; }
+        sf::Vector2i cellCounts() const override { return m_cellCounts; }
+        std::size_t cellCountTotal() const override { return m_cellCountTotal; }
+        sf::Vector2f cellSize() const override { return m_cellSize; }
+        sf::FloatRect cellBounds(const BoardPos_t & pos) const override;
+
+        bool isPositionValid(const BoardPos_t & pos) const override;
+
+        const std::vector<BoardPos_t> & allValidPositions() const override
+        {
+            return m_allValidPositions;
+        }
+
+        BoardPosOpt_t windowPosToBoardPos(const sf::Vector2f windowPos) const override;
 
       protected:
         sf::FloatRect m_windowBounds;
@@ -96,6 +103,8 @@ namespace boardgame
     struct IGameInPlay
     {
         virtual ~IGameInPlay() = default;
+
+        virtual void reset() = 0;
 
         virtual int score() const = 0;
         virtual void score(const int newScore) = 0;
@@ -113,7 +122,7 @@ namespace boardgame
         SimpleGameInPlay() = default;
         virtual ~SimpleGameInPlay() = default;
 
-        virtual void reset();
+        void reset() override;
 
         int score() const override { return m_score; }
         void score(const int newScore) override { m_score = newScore; }

@@ -58,16 +58,26 @@ namespace boardgame
 
     sf::FloatRect SimpleLayout::cellBounds(const BoardPos_t & pos) const
     {
-        if (!isPositionValid(pos))
-        {
-            return { 0.0f, 0.0f, 0.0f, 0.0f };
-        }
+        M_CHECK_SS(isPositionValid(pos), pos);
 
         const sf::FloatRect bounds{
             (util::position(m_boardBounds) + (m_cellSize * sf::Vector2f(pos))), m_cellSize
         };
 
         return bounds;
+    }
+
+    BoardPosOpt_t SimpleLayout::windowPosToBoardPos(const sf::Vector2f windowPos) const
+    {
+        for (const BoardPos_t & boardPos : m_allValidPositions)
+        {
+            if (cellBounds(boardPos).contains(windowPos))
+            {
+                return boardPos;
+            }
+        }
+
+        return std::nullopt;
     }
 
     //

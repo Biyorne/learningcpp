@@ -26,7 +26,7 @@ int main(const int argc, const char * const argv[])
         config.video_mode.height = 1200;
 
         //
-        Map_t map{ LightsOutGame::makeMapOfSize(5) };
+        Map_t map{ LightsOutGame::makeMapOfSize(3) };
 
         //
         LightsOutGame game;

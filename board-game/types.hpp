@@ -12,8 +12,7 @@ namespace boardgame
 {
     enum class Piece
     {
-        On = 0,
-        Off,
+        Cell = 0,
         Count
     };
 
@@ -21,8 +20,7 @@ namespace boardgame
     {
         switch (piece)
         {
-            case Piece::On: return "On";
-            case Piece::Off: return "Off";
+            case Piece::Cell: return "Cell";
             case Piece::Count:
             default: return "";
         }
@@ -38,11 +36,21 @@ namespace boardgame
     {
         if (mapChar == ' ')
         {
-            return Piece::Off;
+            return Piece::Count;
         }
         else
         {
-            return Piece::On;
+            return Piece::Cell;
+        }
+    }
+
+    inline char pieceToMapChar(const Piece piece)
+    {
+        switch (piece)
+        {
+            case Piece::Cell: return 'C';
+            case Piece::Count:
+            default: return ' ';
         }
     }
 
@@ -50,8 +58,7 @@ namespace boardgame
     {
         switch (piece)
         {
-            case Piece::On: return sf::Color(110, 115, 235);
-            case Piece::Off:
+            case Piece::Cell: return sf::Color(110, 115, 235);
             case Piece::Count:
             default: return sf::Color::Black;
         }

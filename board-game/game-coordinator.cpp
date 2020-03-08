@@ -118,13 +118,15 @@ namespace boardgame
     {
         if (m_game.isGameOver())
         {
-            std::cout << "Game Over:  You " << ((m_game.didPlayerWin()) ? "WON!" : "LOST  (loser)")
+            std::cout << "Game Over.   You " << ((m_game.didPlayerWin()) ? "WON!" : "LOST  (loser)")
                       << std::endl;
         }
         else
         {
             std::cout << "Application shutdown before game was over." << std::endl;
         }
+
+        std::cout << "Final score = " << m_game.score() << std::endl;
     }
 
     void SimpleGameCoordinator::handleEvents()
@@ -197,33 +199,6 @@ namespace boardgame
 
     //
 
-    int LightsOutGame::Score::finalScore() const
-    {
-        return (
-            all_cells_off_perfect_starting_score + click_count_adj + win_bonus +
-            time_spent_playing_adj - cells_left_on_penalty);
-    }
-
-    void LightsOutGame::Score::print() const
-    {
-        std::cout << "Final Score                   = " << finalScore();
-        std::cout << "\n   winner_bonus               = " << win_bonus;
-        std::cout << "\n   avg_high_score_possible    = " << all_cells_off_perfect_starting_score;
-        std::cout << "\n   cells_left_on              = " << cells_left_on;
-        std::cout << "\n   cells_left_on_penalty      = " << -cells_left_on_penalty;
-        std::cout << "\n   click_count                = " << click_count;
-        std::cout << "\n   click_count_adj            = " << click_count_adj;
-
-        std::cout << "\n   time_spent_playing         = " << std::setw(2) << std::right
-                  << std::setfill('0') << (time_spent_playing_sec / 60) << ":" << std::setw(2)
-                  << std::right << std::setfill('0') << (time_spent_playing_sec % 60) << "s";
-
-        std::cout << "\n   time_spent_playing_adj     = " << time_spent_playing_adj;
-        std::cout << std::endl << std::endl;
-    }
-
-    //
-
     void LightsOutGame::reset(const GameConfig & configOld, const Map_t & map)
     {
         GameConfig configNew{ configOld };
@@ -235,22 +210,44 @@ namespace boardgame
         m_soundPlayer.load({ "tap-1-a.ogg", "spawn-huge.ogg" });
     }
 
-    void LightsOutGame::switchToMap(const Map_t & map)
+    void LightsOutGame::printFinalStatusToConsole()
     {
-        std::cout << "Switching to new map." << std::endl;
+        const float inverseScoreRatio{ static_cast<float>(m_board.pieces().size()) /
+                                       static_cast<float>(m_layout.cellCountTotal()) };
 
-        if (m_score.click_count > 0)
-        {
-            m_score.print();
-        }
+        m_game.score(static_cast<int>(100.0f * std::clamp((1.0f - inverseScoreRatio), 0.0f, 1.0f)));
 
-        m_score = Score{};
-        SimpleGameCoordinator::switchToMap(map);
-        randomizeOffPieces();
-        m_gameElapsedClock.restart();
+        SimpleGameCoordinator::printFinalStatusToConsole();
     }
 
-    void LightsOutGame::randomizeOffPieces()
+    void LightsOutGame::draw()
+    {
+        m_window.clear(m_config.background_color);
+
+        for (const BoardPos_t & pos : m_layout.allValidPositions())
+        {
+            const auto pieceOpt{ m_board.pieceAtOpt(pos) };
+            if (pieceOpt)
+            {
+                m_window.draw(pieceOpt.value());
+            }
+            else
+            {
+                m_window.draw(CellPiece::makeDefaultSprite(m_context, pos, Piece::Count));
+            }
+        }
+
+        m_window.display();
+    }
+
+    void LightsOutGame::switchToMap(const Map_t & map)
+    {
+        printFinalStatusToConsole();
+        SimpleGameCoordinator::switchToMap(map);
+        randomizeCells();
+    }
+
+    void LightsOutGame::randomizeCells()
     {
         std::vector<BoardPos_t> positionsToTurnOff{ m_layout.allValidPositions() };
 
@@ -261,15 +258,21 @@ namespace boardgame
 
         for (const BoardPos_t & pos : positionsToTurnOff)
         {
-            togglePiece(pos);
+            toggleCell(pos);
         }
     }
 
-    void LightsOutGame::togglePiece(const BoardPos_t & pos)
+    void LightsOutGame::toggleCell(const BoardPos_t & pos)
     {
-        const auto pieceOpt{ m_board.pieceAtOpt(pos) };
-        M_CHECK_SS((pieceOpt.has_value()), pos);
-        pieceOpt->get().takeTurn(m_context);
+        auto pieceOpt{ m_board.pieceAtOpt(pos) };
+        if (pieceOpt)
+        {
+            m_board.removePiece(pos);
+        }
+        else
+        {
+            m_board.addPiece(m_context, Piece::Cell, pos);
+        }
     }
 
     bool LightsOutGame::handleBoardResizeMapEvent(const sf::Event & event)
@@ -312,28 +315,18 @@ namespace boardgame
             return;
         }
 
+        // check if the click was inside any cell's bounds
         const sf::Vector2f clickWindowPos{ sf::Vector2i(event.mouseButton.x, event.mouseButton.y) };
-
-        const IPieceUList_t & pieces{ m_board.pieces() };
-
-        const auto foundIter = std::find_if(
-            std::begin(pieces), std::end(pieces), [&](const IPieceUPtr_t & maybePiece) {
-                return maybePiece->bounds().contains(clickWindowPos);
-            });
-
-        if (foundIter == std::end(pieces))
+        auto boardPosOpt{ m_layout.windowPosToBoardPos(clickWindowPos) };
+        if (!boardPosOpt)
         {
             return;
         }
 
-        handlePieceClickedOn(**foundIter);
-    }
+        const BoardPos_t clickBoardPos{ boardPosOpt.value() };
 
-    void LightsOutGame::handlePieceClickedOn(const IPiece & piece)
-    {
-        ++m_score.click_count;
-
-        if (piece.piece() == Piece::On)
+        // play the sfx different if turning on/off
+        if (m_board.isPieceAt(clickBoardPos))
         {
             m_context.audio.play("tap", 0.6f);
         }
@@ -342,110 +335,35 @@ namespace boardgame
             m_context.audio.play("tap");
         }
 
-        toggleAdjacentPieces(piece);
-        handleIfGameWon();
-        updateScore();
-    }
-
-    void LightsOutGame::toggleAdjacentPieces(const IPiece & clickedOnPiece)
-    {
-        const BoardPos_t clickedOnPos{ clickedOnPiece.position() };
-
-        for (IPieceUPtr_t & otherPiece : m_board.pieces())
+        // toggle the clicked cell and all around it
+        for (const BoardPos_t & pos : findAllBoardPosToToggle(clickBoardPos))
         {
-            const BoardPos_t otherPos{ otherPiece->position() };
-
-            if ((std::abs(clickedOnPos.x - otherPos.x) <= 1) &&
-                (std::abs(clickedOnPos.y - otherPos.y) <= 1))
-            {
-                togglePiece(otherPos);
-            }
+            toggleCell(pos);
         }
-    }
 
-    void LightsOutGame::handleIfGameWon()
-    {
-        if (countOffPieces() == m_layout.cellCountTotal())
+        // check if the player won
+        if (m_board.pieces().empty())
         {
             m_game.endGame(true);
         }
     }
 
-    void LightsOutGame::updateScore()
+    std::vector<BoardPos_t>
+        LightsOutGame::findAllBoardPosToToggle(const BoardPos_t & clickedBoardPos) const
     {
-        m_score = calcScore();
-        m_game.score(m_score.finalScore());
-    }
+        std::vector<BoardPos_t> positionsToToggle;
+        positionsToToggle.reserve(9);
 
-    LightsOutGame::Score LightsOutGame::calcScore() const
-    {
-        Score score;
-
-        score.click_count = m_score.click_count;
-        score.click_count_adj = (static_cast<int>(m_layout.cellCountTotal()) - score.click_count);
-        if (score.click_count_adj < 0)
+        for (const BoardPos_t & otherBoardPos : m_layout.allValidPositions())
         {
-            score.click_count_adj =
-                -(score.click_count / static_cast<int>(std::sqrt(m_layout.cellCountTotal())));
-        }
-
-        const sf::Vector2i cellCounts{ m_layout.cellCounts() };
-
-        score.all_cells_off_perfect_starting_score =
-            ((cellCounts.x + cellCounts.y) + (cellCounts.x * cellCounts.y));
-
-        score.cells_left_on = (m_layout.cellCountTotal() - countOffPieces());
-
-        score.cells_left_on_penalty = static_cast<int>(
-            (score.cells_left_on + score.cells_left_on) +
-            (score.cells_left_on * score.cells_left_on));
-
-        score.time_spent_playing_sec =
-            static_cast<int>(m_gameElapsedClock.getElapsedTime().asSeconds());
-
-        if (score.time_spent_playing_sec < 10)
-        {
-            score.time_spent_playing_adj = (10 - score.time_spent_playing_sec);
-        }
-        else
-        {
-            score.time_spent_playing_adj = -(score.time_spent_playing_sec / 10);
-        }
-
-        score.win_bonus = 0;
-
-        if (m_game.didPlayerWin())
-        {
-            score.win_bonus = (static_cast<int>(m_layout.cellCountTotal()) * 2);
-        }
-        else
-        {
-            if (score.click_count_adj > 0)
+            if ((std::abs(clickedBoardPos.x - otherBoardPos.x) <= 1) &&
+                (std::abs(clickedBoardPos.y - otherBoardPos.y) <= 1))
             {
-                score.click_count_adj = 0;
-            }
-
-            if (score.time_spent_playing_adj > 0)
-            {
-                score.time_spent_playing_adj = 0;
+                positionsToToggle.push_back(otherBoardPos);
             }
         }
 
-        return score;
-    }
-
-    std::size_t LightsOutGame::countOffPieces() const
-    {
-        std::size_t counter{ 0 };
-        for (const IPieceUPtr_t & piece : m_board.pieces())
-        {
-            if (piece->piece() == Piece::Off)
-            {
-                ++counter;
-            }
-        }
-
-        return counter;
+        return positionsToToggle;
     }
 
     Map_t LightsOutGame::makeMapOfSize(std::size_t size)
@@ -459,13 +377,7 @@ namespace boardgame
             size = 9;
         }
 
-        Map_t map;
-        const std::string row(size, 'X'); // anything other than an empty space works here
-        for (std::size_t vert(0); vert < size; ++vert)
-        {
-            map.push_back(row);
-        }
-
-        return map;
+        // important that they all start on (or there, or whatever)
+        return Map_t(size, std::string(size, pieceToMapChar(Piece::Cell)));
     }
 } // namespace boardgame

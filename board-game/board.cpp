@@ -15,49 +15,23 @@
 
 namespace boardgame
 {
-    void IBoard::movePiece(
-        const Context & context, BoardPosKeeper & posManager, const BoardPos_t & newPos)
-    {
-        const BoardPos_t & posFrom{ posManager.m_position };
-
-        M_CHECK_SS(context.layout.isPositionValid(posFrom), posFrom);
-        M_CHECK_SS(context.layout.isPositionValid(newPos), newPos);
-
-        if (posFrom == newPos)
-        {
-            M_CHECK_LOG_SS(
-                (posFrom != newPos),
-                "Ignoring an attempt to move a piece to where it already is:  posFrom="
-                    << posFrom << ", newPos=" << newPos);
-
-            return;
-        }
-
-        removePiece(newPos);
-
-        posManager.m_position = newPos;
-
-        M_CHECK_SS(
-            (context.board.pieceEnumAt(posFrom) != Piece::Count),
-            "There is still a Piece in the old position after moving to a new position:  posFrom="
-                << posFrom << ", posNew=" << newPos
-                << ", piece_enum=" << context.board.pieceEnumAt(posFrom));
-    }
-
     void SimpleBoard::movePiece(
-        const Context & context, const BoardPos_t & posFrom, const BoardPos_t & posTo)
+        Context & context, const BoardPos_t & posFrom, const BoardPos_t & posTo)
     {
-        const auto opt{ pieceAtOpt(posFrom) };
-        M_CHECK_SS(opt.has_value(), posFrom);
+        const auto pieceOpt{ pieceAtOpt(posFrom) };
+        M_CHECK_SS(pieceOpt.has_value(), "posFrom=" << posFrom << ", posTo=" << posTo);
 
-        IBoard::movePiece(context, (BoardPosKeeper &)opt.value().get(), posTo);
+        pieceOpt->get().move(context, posTo);
 
         M_CHECK_SS(
-            (context.board.pieceEnumAt(posTo) != opt.value().get().piece()),
-            "After moving a Piece, the board found the piece in the new position that had a "
-            "different Piece::Enum:  posFrom="
-                << posFrom << ", posNew=" << posTo
-                << ", piece_enum=" << context.board.pieceEnumAt(posFrom));
+            ((&pieceOpt->get()) == (&pieceAtOpt(posTo)->get())),
+            "posFrom=" << posFrom << ", enumFrom-" << pieceOpt->get().piece() << ", posTo=" << posTo
+                       << ", enumTo=" << pieceEnumAt(posTo));
+
+        M_CHECK_SS(
+            (pieceEnumAt(posTo) == pieceOpt->get().piece()),
+            "posFrom=" << posFrom << ", enumFrom-" << pieceOpt->get().piece() << ", posTo=" << posTo
+                       << ", enumTo=" << pieceEnumAt(posTo));
     }
 
     void SimpleBoard::reset(Context & context)

@@ -54,9 +54,9 @@ namespace boardgame
         virtual BoardPosOpt_t findRandomFreePos(const Context & context) const = 0;
         virtual IPieceUPtr_t makePiece(Context &, const Piece, const BoardPos_t & pos) = 0;
 
-        // TODO do I really need more than one?
-        virtual void movePiece(const Context &, const BoardPos_t & from, const BoardPos_t & to) = 0;
-        void movePiece(const Context &, BoardPosKeeper & posManager, const BoardPos_t & newPos);
+        // void movePiece(Context &, BoardPosKeeper & posManager, const BoardPos_t & newPos);
+        //
+        virtual void movePiece(Context &, const BoardPos_t & from, const BoardPos_t & to) = 0;
     };
 
     // A simple reference implementation of an IBoard that should suffice for most games.
@@ -83,7 +83,7 @@ namespace boardgame
         void addPiece(Context &, const Piece piece, const BoardPos_t & pos) override;
         void addMapPieces(Context & context) override;
 
-        void movePiece(const Context &, const BoardPos_t & from, const BoardPos_t & to) override;
+        void movePiece(Context &, const BoardPos_t & from, const BoardPos_t & to) override;
 
         BoardPosOpt_t findRandomFreePos(const Context & context) const override;
         IPieceUPtr_t makePiece(Context &, const Piece piece, const BoardPos_t & pos) override;
