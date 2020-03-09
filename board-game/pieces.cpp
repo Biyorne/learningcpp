@@ -51,28 +51,146 @@ namespace boardgame
 
     void SimplePiece::move(Context & context, const BoardPos_t & newPos)
     {
+        const auto posBefore{ m_position };
+        M_CHECK_SS((newPos != m_position), newPos);
         context.board.removePiece(newPos);
         m_position = newPos;
         util::centerInside(m_sprite, context.layout.cellBounds(position()));
+        M_CHECK(context.board.pieceEnumAt(newPos) == m_piece);
+        M_CHECK(context.board.pieceEnumAt(posBefore) == Piece::Count);
     }
 
     //
 
-    CellPiece::CellPiece(Context & context, const BoardPos_t & pos, const Piece)
-        : SimplePiece(context, Piece::Cell, pos, makeDefaultSprite(context, pos, Piece::Cell))
+    FoodPiece::FoodPiece(Context & context, const BoardPos_t & pos, const Piece)
+        : SimplePiece(context, Piece::Food, pos, toColor(Piece::Food), true)
+    {
+        const float pad{ context.config.between_cells_pad_ratio };
+        m_sprite.scale(pad, pad);
+    }
+
+    //
+
+    WallPiece::WallPiece(Context & context, const BoardPos_t & pos, const Piece)
+        : SimplePiece(context, Piece::Wall, pos, toColor(Piece::Wall), true)
+    {
+        const float pad{ context.config.between_cells_pad_ratio };
+        m_sprite.scale(pad, pad);
+    }
+
+    //
+
+    EaterPiece::EaterPiece(Context & context, const BoardPos_t & pos, const Piece)
+        : SimplePiece(context, Piece::Eater, pos, toColor(Piece::Eater), true)
+        , m_direction(context.random.from(
+              { sf::Keyboard::Up, sf::Keyboard::Down, sf::Keyboard::Left, sf::Keyboard::Right }))
+    {
+        const float pad{ context.config.between_cells_pad_ratio };
+        m_sprite.scale(pad, pad);
+    }
+
+    // void EaterPiece::takeTurn(Context & context)
+    //{
+    //    static std::set<sf::Keyboard::Key> directions;
+    //    directions.clear();
+    //    directions.insert(sf::Keyboard::Up);
+    //    directions.insert(sf::Keyboard::Down);
+    //    directions.insert(sf::Keyboard::Left);
+    //    directions.insert(sf::Keyboard::Right);
+    //
+    //    // directions.erase(keys::opposite(m_direction));
+    //
+    //    m_direction = context.random.from(directions);
+    //
+    //    const BoardPos_t newPos{ keys::move(position(), m_direction) };
+    //    M_CHECK((newPos != position()));
+    //
+    //    const Piece newPosPieceEnum{ context.board.pieceEnumAt(newPos) };
+    //    if (newPosPieceEnum == Piece::Wall)
+    //    {
+    //        return;
+    //    }
+    //
+    //    SimplePiece::move(context, newPos);
+    //}
+
+    void EaterPiece::takeTurn(Context & context)
+    {
+        static std::vector<PosInfo> posInfos;
+
+        posInfos.clear();
+        posInfos.push_back({ context, sf::Keyboard::Up, position() });
+        posInfos.push_back({ context, sf::Keyboard::Down, position() });
+        posInfos.push_back({ context, sf::Keyboard::Left, position() });
+        posInfos.push_back({ context, sf::Keyboard::Right, position() });
+
+        posInfos.erase(
+            std::remove_if(
+                std::begin(posInfos),
+                std::end(posInfos),
+                [&](const PosInfo & info) { return (info.piece == Piece::Wall); }),
+            std::end(posInfos));
+
+        if (posInfos.empty())
+        {
+            return;
+        }
+
+        context.random.shuffle(posInfos);
+        m_direction = posInfos.front().dir;
+        const BoardPos_t newPos{ keys::move(position(), m_direction) };
+        SimplePiece::move(context, newPos);
+
+        // if (posInfos.size() == 1)
+        //{
+        //    m_direction = posInfos.front().dir;
+        //}
+        // else
+        //{
+        //    std::sort(
+        //        std::begin(posInfos),
+        //        std::end(posInfos),
+        //        [&](const PosInfo & A, const PosInfo & B) {
+        //            if (A.isOccupiedBy(Piece::Eater) != B.isOccupiedBy(Piece::Eater))
+        //            {
+        //                return A.isOccupiedBy(Piece::Eater);
+        //            }
+        //            else if (A.isOccupiedBy(Piece::Food) != B.isOccupiedBy(Piece::Food))
+        //            {
+        //                return A.isOccupiedBy(Piece::Food);
+        //            }
+        //            else
+        //            {
+        //                return (A.dir < B.dir);
+        //            }
+        //        });
+        //
+        //    m_direction = posInfos.front().dir;
+        //}
+        //
+        // const BoardPos_t newPos{ keys::move(position(), m_direction) };
+        // SimplePiece::move(context, newPos);
+        // return;
+    }
+
+    //
+
+    PosInfo::PosInfo(
+        const Context & context, const sf::Keyboard::Key direction, const BoardPos_t & selfPos)
+        : dir(direction)
+        , pos(keys::move(selfPos, dir))
+        , piece(context.board.pieceEnumAt(pos))
     {}
 
-    sf::Sprite CellPiece::makeDefaultSprite(
-        const Context & context, const BoardPos_t & boardPos, const Piece piece)
+    bool PosInfo::isOccupied() const { return (Piece::Count != piece); }
+
+    bool PosInfo::isOccupiedBy(const Piece potentialPiece) const
     {
-        sf::Sprite sprite{ context.media.makeDefaultSprite(
-            context, Piece::Cell, boardPos, toColor(piece), true) };
+        return (isOccupied() && (potentialPiece == piece));
+    }
 
-        // shrink the size of the cell to make a nice looking border around them all
-        const float pad{ context.config.between_cells_pad_ratio };
-
-        sprite.scale(pad, pad);
-
-        return sprite;
+    bool PosInfo::isOccupiedButNotBy(const Piece potentialPiece) const
+    {
+        return (isOccupied() && (potentialPiece != piece));
     }
 } // namespace boardgame

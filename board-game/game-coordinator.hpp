@@ -44,6 +44,8 @@ namespace boardgame
         virtual void draw();
         virtual void printFinalStatusToConsole();
 
+        void runFullCheck();
+
       protected:
         Map_t m_map;
         GameConfig m_config;
@@ -62,25 +64,32 @@ namespace boardgame
 
     //
 
-    class LightsOutGame : public SimpleGameCoordinator
+    class TestingFrenzyGame : public SimpleGameCoordinator
     {
       public:
-        LightsOutGame() = default;
-        virtual ~LightsOutGame() = default;
+        TestingFrenzyGame() = default;
+        virtual ~TestingFrenzyGame() = default;
 
         void reset(const GameConfig & configOld, const Map_t & mapOrig) override;
-        void switchToMap(const Map_t & map) override;
+
+        static Map_t makeMapOfSize(std::size_t horiz, std::size_t vert);
+        void update(const float elapsedTimeSec) override;
         void draw() override;
 
-        static Map_t makeMapOfSize(std::size_t size);
+      private:
+        void handleEvent(const sf::Event & event) override;
+        void restartWithNewMapSize();
+        void switchToMap(const Map_t & map) override;
 
       private:
-        void printFinalStatusToConsole() override;
-        void handleEvent(const sf::Event & event) override;
-        bool handleBoardResizeMapEvent(const sf::Event & event);
-        void toggleCell(const BoardPos_t & pos);
-        void randomizeCells();
-        std::vector<BoardPos_t> findAllBoardPosToToggle(const BoardPos_t & clickedBoardPos) const;
+        sf::Clock m_mapResizeClock{};
+        float m_mapResizeTimeRemainingSec{ 0.0f };
+        std::size_t m_eaterCount{ 0 };
+        std::size_t m_foodCount{ 0 };
+        std::size_t m_obstacleCount{ 0 };
+        float m_timeUntilPopulationChecks{ 0.0f };
+        sf::Clock m_oneSecondClock{};
+        float m_frameCount{ 0.0f };
     };
 } // namespace boardgame
 

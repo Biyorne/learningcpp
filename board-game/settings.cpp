@@ -32,6 +32,24 @@ namespace boardgame
             "m_windowBounds=" << m_windowBounds << ", m_cellCounts=" << m_cellCounts
                               << ", m_cellSize=" << m_cellSize);
 
+        if (config.will_force_square_cells)
+        {
+            m_cellSize.x = std::floor(std::min(m_cellSize.x, m_cellSize.y));
+            m_cellSize.y = m_cellSize.x;
+
+            M_CHECK_SS(
+                (!(m_cellSize.x < 1.0f) && !(m_cellSize.y < 1.0f)),
+                "m_windowBounds=" << m_windowBounds << ", m_cellCounts=" << m_cellCounts
+                                  << ", m_cellSize=" << m_cellSize);
+
+            const sf::Vector2f actualBoardSize{ sf::Vector2i(m_cellSize) * m_cellCounts };
+
+            const sf::Vector2f actualBoardPos{ util::center(m_boardBounds) -
+                                               (actualBoardSize / 2.0f) };
+
+            m_boardBounds = sf::FloatRect(actualBoardPos, actualBoardSize);
+        }
+
         m_allValidPositions.clear();
 
         for (int vert(0); vert < m_cellCounts.y; ++vert)

@@ -72,6 +72,15 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         -Wcast-align
         -Wformat=2)
 
+
+    option(ASAN "Using Clang's Address Sanitizer" ON)
+
+    if(ASAN)
+	message(" *** Using Clang's Address Sanitizer *** (-DASAN=OFF will disable it)")
+        target_compile_options(${PROJECT_NAME} PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+        target_link_libraries(${PROJECT_NAME} -fsanitize=address -fno-omit-frame-pointer)
+    endif()
+
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 
     target_compile_options(

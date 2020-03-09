@@ -27,7 +27,7 @@
 
 #if !defined(M_DISABLE_ALL_CHECK_MACROS)
 
-#define M_LOG(streamable_message) std::cout << streamable_message << std::endl;
+#define M_LOG(streamable_message) std::cout << streamable_message << std::flush << std::endl;
 
 //
 

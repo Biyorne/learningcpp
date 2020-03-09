@@ -12,7 +12,9 @@ namespace boardgame
 {
     enum class Piece
     {
-        Cell = 0,
+        Eater = 0,
+        Food,
+        Wall,
         Count
     };
 
@@ -20,7 +22,9 @@ namespace boardgame
     {
         switch (piece)
         {
-            case Piece::Cell: return "Cell";
+            case Piece::Eater: return "Eater";
+            case Piece::Food: return "Food";
+            case Piece::Wall: return "Wall";
             case Piece::Count:
             default: return "";
         }
@@ -34,13 +38,13 @@ namespace boardgame
 
     inline Piece mapCharToPiece(const char mapChar)
     {
-        if (mapChar == ' ')
+        switch (mapChar)
         {
-            return Piece::Count;
-        }
-        else
-        {
-            return Piece::Cell;
+            case 'E': return Piece::Eater;
+            case 'F': return Piece::Food;
+            case 'W': return Piece::Wall;
+            case ' ':
+            default: return Piece::Count;
         }
     }
 
@@ -48,7 +52,9 @@ namespace boardgame
     {
         switch (piece)
         {
-            case Piece::Cell: return 'C';
+            case Piece::Eater: return 'E';
+            case Piece::Food: return 'F';
+            case Piece::Wall: return 'W';
             case Piece::Count:
             default: return ' ';
         }
@@ -58,9 +64,11 @@ namespace boardgame
     {
         switch (piece)
         {
-            case Piece::Cell: return sf::Color(110, 115, 235);
+            case Piece::Eater: return sf::Color::Red;
+            case Piece::Food: return sf::Color::Yellow;
+            case Piece::Wall: return sf::Color(100, 60, 5); // brown
             case Piece::Count:
-            default: return sf::Color::Black;
+            default: return sf::Color::Transparent;
         }
     }
 } // namespace boardgame

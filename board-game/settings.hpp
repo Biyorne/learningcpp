@@ -31,6 +31,7 @@ namespace boardgame
         unsigned frame_rate_limit{ 60 };
         sf::Color background_color{ sf::Color::Black };
         float between_cells_pad_ratio{ 0.975f };
+        bool will_force_square_cells{ true };
 
         template <typename T>
         sf::Vector2<T> windowSize() const

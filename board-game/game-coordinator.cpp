@@ -33,10 +33,14 @@ namespace boardgame
               m_random,
               m_soundPlayer,
               m_animationPlayer)
-    {}
+    {
+        runFullCheck();
+    }
 
     void SimpleGameCoordinator::reset(const GameConfig & config, const Map_t & map)
     {
+        runFullCheck();
+
         m_config = config;
         M_CHECK_SS(std::filesystem::exists(m_config.media_dir_path), m_config.media_dir_path);
         M_CHECK_SS(std::filesystem::is_directory(m_config.media_dir_path), m_config.media_dir_path);
@@ -56,10 +60,14 @@ namespace boardgame
         m_media.setup(m_config);
 
         switchToMap(map);
+
+        runFullCheck();
     }
 
     void SimpleGameCoordinator::switchToMap(const Map_t & map)
     {
+        runFullCheck();
+
         m_map = map;
 
         M_CHECK_SS(
@@ -69,6 +77,8 @@ namespace boardgame
         m_layout.setup(m_map, m_config);
         m_board.reset(m_context);
         m_game.reset();
+
+        runFullCheck();
     }
 
     void SimpleGameCoordinator::openWindow()
@@ -102,6 +112,8 @@ namespace boardgame
 
     void SimpleGameCoordinator::run()
     {
+        runFullCheck();
+
         sf::Clock frameClock;
 
         while (m_window.isOpen() && !m_game.isGameOver())
@@ -112,6 +124,8 @@ namespace boardgame
         }
 
         printFinalStatusToConsole();
+
+        runFullCheck();
     }
 
     void SimpleGameCoordinator::printFinalStatusToConsole()
@@ -199,185 +213,379 @@ namespace boardgame
 
     //
 
-    void LightsOutGame::reset(const GameConfig & configOld, const Map_t & map)
+    void TestingFrenzyGame::reset(const GameConfig & configOld, const Map_t & map)
     {
         GameConfig configNew{ configOld };
-        configNew.game_name = "Lights Out";
-        configNew.background_color = sf::Color(26, 26, 32);
+        configNew.game_name = "Testing Frenzy";
+        configNew.background_color = sf::Color(32, 26, 26);
 
         SimpleGameCoordinator::reset(configNew, map);
-
-        m_soundPlayer.load({ "tap-1-a.ogg", "spawn-huge.ogg" });
+        m_soundPlayer.volume(0.0f);
     }
 
-    void LightsOutGame::printFinalStatusToConsole()
+    void TestingFrenzyGame::update(const float elapsedTimeSec)
     {
-        const float inverseScoreRatio{ static_cast<float>(m_board.pieces().size()) /
-                                       static_cast<float>(m_layout.cellCountTotal()) };
+        runFullCheck();
 
-        m_game.score(static_cast<int>(100.0f * std::clamp((1.0f - inverseScoreRatio), 0.0f, 1.0f)));
+        m_frameCount += 1.0f;
 
-        SimpleGameCoordinator::printFinalStatusToConsole();
-    }
-
-    void LightsOutGame::draw()
-    {
-        m_window.clear(m_config.background_color);
-
-        for (const BoardPos_t & pos : m_layout.allValidPositions())
+        if (m_oneSecondClock.getElapsedTime().asSeconds() > 1.0f)
         {
-            const auto pieceOpt{ m_board.pieceAtOpt(pos) };
-            if (pieceOpt)
+            std::cout << "fps=" << (m_frameCount / m_oneSecondClock.getElapsedTime().asSeconds())
+                      << std::endl;
+
+            m_frameCount = 0.0f;
+            m_oneSecondClock.restart();
+            SimpleGameCoordinator::draw();
+        }
+
+        m_timeUntilPopulationChecks -= elapsedTimeSec;
+        if (m_timeUntilPopulationChecks < 0.0f)
+        {
+            if (m_random.boolean())
             {
-                m_window.draw(pieceOpt.value());
+                m_timeUntilPopulationChecks = m_random.zeroTo(0.25f);
             }
             else
             {
-                m_window.draw(CellPiece::makeDefaultSprite(m_context, pos, Piece::Count));
+                m_timeUntilPopulationChecks = 0.0f;
+            }
+
+            const auto & pieces{ m_board.pieces() };
+
+            const std::size_t eatersCurrentCount = std::count_if(
+                std::begin(pieces), std::end(pieces), [&](const IPieceUPtr_t & piece) {
+                    return (piece->piece() == Piece::Eater);
+                });
+
+            for (std::size_t i(eatersCurrentCount); i < m_eaterCount; ++i)
+            {
+                m_board.addPieceAtRandomFreePos(m_context, Piece::Eater);
+            }
+
+            const std::size_t foodCurrentCount = std::count_if(
+                std::begin(pieces), std::end(pieces), [&](const IPieceUPtr_t & piece) {
+                    return (piece->piece() == Piece::Food);
+                });
+
+            for (std::size_t i(foodCurrentCount); i < m_foodCount; ++i)
+            {
+                m_board.addPieceAtRandomFreePos(m_context, Piece::Food);
+            }
+
+            SimpleGameCoordinator::draw();
+            return;
+        }
+
+        m_mapResizeTimeRemainingSec -= elapsedTimeSec;
+        if (m_mapResizeTimeRemainingSec < 0.0f)
+        {
+            m_mapResizeTimeRemainingSec = m_random.fromTo(1.0f, 10.0f);
+            restartWithNewMapSize();
+
+            SimpleGameCoordinator::draw();
+            return;
+        }
+
+        for (const IPieceUPtr_t & piece : m_board.pieces())
+        {
+            if (piece->piece() != Piece::Eater)
+            {
+                continue;
+            }
+
+            piece->takeTurn(m_context);
+        }
+    }
+
+    void SimpleGameCoordinator::runFullCheck()
+    {
+        static std::map<BoardPos_t, std::pair<std::size_t, std::string>> allTakenPositions;
+        allTakenPositions.clear();
+
+        static std::map<IPiece *, std::pair<std::size_t, std::string>> allTakenPointers;
+        allTakenPointers.clear();
+
+        for (const IPieceUPtr_t & piece : m_board.pieces())
+        {
+            M_CHECK_SS((piece->piece() != Piece::Count), piece->piece());
+
+            const auto pos{ piece->position() };
+            const auto ptr{ piece.get() };
+
+            M_CHECK_SS(m_layout.isPositionValid((pos)), pos);
+
+            {
+                auto & [count, str] = allTakenPositions[pos];
+
+                std::ostringstream ss;
+
+                ss << "\n pos=" << pos << ", type=" << piece->piece()
+                   << ", bounds=" << piece->bounds() << ", ptr=" << ptr << ", count=" << count;
+
+                str += ss.str();
+
+                ++count;
+            }
+
+            {
+                auto & [count, str] = allTakenPointers[ptr];
+
+                std::ostringstream ss;
+
+                ss << "\n pos=" << pos << ", type=" << piece->piece()
+                   << ", bounds=" << piece->bounds() << ", ptr=" << ptr << ", count=" << count;
+
+                str += ss.str();
+
+                ++count;
             }
         }
 
-        m_window.display();
+        std::size_t duplicateCount{ 0 };
+        {
+            for (const auto & [pos, pair] : allTakenPositions)
+            {
+                const auto & [count, str] = pair;
+
+                if (count > 1)
+                {
+                    std::cout << "MULTIPLE PIECES (z" << count << ") IN THE SAME BOARD POS (" << pos
+                              << "):" << str << std::endl
+                              << std::endl;
+
+                    ++duplicateCount;
+                }
+            }
+        }
+
+        {
+            for (const auto & [ptr, pair] : allTakenPointers)
+            {
+                const auto & [count, str] = pair;
+
+                if (count > 1)
+                {
+                    std::cout << "DUPLICATE POINTERS (x" << count << ") ON THE BOARD (" << ptr
+                              << "):" << str << std::endl
+                              << std::endl;
+
+                    ++duplicateCount;
+                }
+            }
+        }
+
+        M_CHECK_SS((0 == duplicateCount), duplicateCount);
     }
 
-    void LightsOutGame::switchToMap(const Map_t & map)
+    void TestingFrenzyGame::restartWithNewMapSize()
     {
-        printFinalStatusToConsole();
-        SimpleGameCoordinator::switchToMap(map);
-        randomizeCells();
+        m_timeUntilPopulationChecks = m_random.zeroTo(0.25f);
+
+        const Map_t newMap{ makeMapOfSize(
+            m_random.fromTo(2_st, 7_st), m_random.fromTo(2_st, 7_st)) };
+
+        SimpleGameCoordinator::switchToMap(newMap);
+
+        std::size_t availablePosCount{ 0 };
+        for (const std::string & row : m_map)
+        {
+            availablePosCount += std::count(std::begin(row), std::end(row), ' ');
+        }
+
+        // determine how many things will be in the arena
+        m_eaterCount = m_random.zeroTo(newMap.size() * m_random.fromTo(1_st, 8_st));
+        if (m_random.ratio() < 0.025f)
+        {
+            std::cout << "Rare zero out of EATERS" << std::endl;
+            m_eaterCount = 0;
+        }
+
+        m_foodCount = m_random.zeroTo(newMap.front().size() * m_random.fromTo(1_st, 8_st));
+        if (m_random.ratio() < 0.025f)
+        {
+            std::cout << "Rare zero out of FOOD" << std::endl;
+            m_foodCount = 0;
+        }
+
+        m_obstacleCount = m_random.zeroTo(
+            (newMap.size() * newMap.front().size()) /
+            m_random.fromTo((newMap.size() / 4), newMap.size()));
+
+        if (m_random.ratio() < 0.025f)
+        {
+            std::cout << "Rare zero out of OBSTACLES" << std::endl;
+            m_obstacleCount = 0;
+        }
+
+        auto calcPopulationCount = [&]() { return (m_eaterCount + m_foodCount + m_obstacleCount); };
+
+        std::size_t populationCount{ calcPopulationCount() };
+
+        if (populationCount > availablePosCount)
+        {
+            std::cout << "*** population count " << populationCount
+                      << " too high for avaliable : " << availablePosCount;
+
+            m_eaterCount /= 2;
+            m_foodCount /= 2;
+            m_obstacleCount /= 2;
+
+            populationCount = calcPopulationCount();
+
+            std::cout << ", so halfed all and now pop count is " << populationCount << std::endl;
+        }
+
+        if (m_random.ratio() < 0.01f)
+        {
+            std::cout << "Random full!";
+
+            while (calcPopulationCount() < availablePosCount)
+            {
+                std::cout << '.';
+                const int whichToSpawn{ m_random.zeroTo(2) };
+
+                switch (whichToSpawn)
+                {
+                    case 0: {
+                        ++m_eaterCount;
+                        break;
+                    }
+                    case 1: {
+                        ++m_foodCount;
+                        break;
+                    }
+                    case 2:
+                    default: {
+                        ++m_obstacleCount;
+                        break;
+                    }
+                }
+            }
+
+            std::cout << std::endl;
+        }
+        else if (m_random.ratio() < 0.01f)
+        {
+            std::cout << "Random Empty!" << std::endl;
+            m_eaterCount = 0;
+            m_foodCount = 0;
+            m_obstacleCount = 0;
+        }
+
+        populationCount = calcPopulationCount();
+
+        std::cout << "\nChanging Map Size: " << m_layout.cellCounts()
+                  << " (total=" << m_layout.cellCountTotal() << ")";
+
+        std::cout << "\n eater_count      = " << m_eaterCount;
+        std::cout << "\n food_count       = " << m_foodCount;
+        std::cout << "\n obstacle_count   = " << m_obstacleCount;
+        std::cout << "\n population_count = " << populationCount;
+        std::cout << "\n percent_full     = "
+                  << 100.0f * (static_cast<float>(populationCount) /
+                               static_cast<float>(m_layout.cellCountTotal()))
+                  << "%";
+
+        std::cout << std::endl << std::endl;
+
+        auto freePositions{ m_layout.allValidPositions() };
+
+        freePositions.erase(
+            std::remove_if(
+                std::begin(freePositions),
+                std::end(freePositions),
+                [&](const BoardPos_t & pos) {
+                    const char mapChar{ m_map.at(pos.y).at(pos.x) };
+                    return (pieceToMapChar(Piece::Wall) == mapChar);
+                }),
+            std::end(freePositions));
+
+        std::cout << "Free positions started at " << m_layout.allValidPositions().size()
+                  << ", but after removing walls it was " << freePositions.size() << std::endl
+                  << std::endl;
+
+        // M_CHECK_SS(
+        //    (freePositions.size() == ((m_map.size() * 2) + (m_map.front().size() * 2) -
+        //    2)), "freePositions.size()=" << freePositions.size() << ", vs="
+        //                            << ((m_map.size() * 2) + (m_map.front().size() * 2) -
+        //                            2));
+
+        m_random.shuffle(freePositions);
+
+        for (std::size_t i(0); ((i < m_obstacleCount) && !freePositions.empty()); ++i)
+        {
+            m_board.addPiece(m_context, Piece::Wall, freePositions.back());
+            freePositions.pop_back();
+        }
+
+        for (std::size_t i(0); ((i < m_foodCount) && !freePositions.empty()); ++i)
+        {
+            m_board.addPiece(m_context, Piece::Food, freePositions.back());
+            freePositions.pop_back();
+        }
+
+        for (std::size_t i(0); ((i < m_eaterCount) && !freePositions.empty()); ++i)
+        {
+            m_board.addPiece(m_context, Piece::Eater, freePositions.back());
+            freePositions.pop_back();
+        }
+
+        std::cout << "final avail count=" << freePositions.size() << std::endl;
     }
 
-    void LightsOutGame::randomizeCells()
-    {
-        std::vector<BoardPos_t> positionsToTurnOff{ m_layout.allValidPositions() };
-
-        m_random.shuffle(positionsToTurnOff);
-
-        const std::size_t turnOffCount{ m_random.zeroTo(positionsToTurnOff.size() - 1) };
-        positionsToTurnOff.resize(turnOffCount);
-
-        for (const BoardPos_t & pos : positionsToTurnOff)
-        {
-            toggleCell(pos);
-        }
-    }
-
-    void LightsOutGame::toggleCell(const BoardPos_t & pos)
-    {
-        auto pieceOpt{ m_board.pieceAtOpt(pos) };
-        if (pieceOpt)
-        {
-            m_board.removePiece(pos);
-        }
-        else
-        {
-            m_board.addPiece(m_context, Piece::Cell, pos);
-        }
-    }
-
-    bool LightsOutGame::handleBoardResizeMapEvent(const sf::Event & event)
-    {
-        if (sf::Event::KeyPressed != event.type)
-        {
-            return false;
-        }
-
-        const auto numberOpt{ keys::toNumberOpt<std::size_t>(event.key.code) };
-        if (!numberOpt)
-        {
-            return false;
-        }
-
-        const Map_t newMap{ makeMapOfSize(numberOpt.value()) };
-        if (newMap.empty())
-        {
-            return false;
-        }
-
-        switchToMap(newMap);
-        return true;
-    }
-
-    void LightsOutGame::handleEvent(const sf::Event & event)
+    void TestingFrenzyGame::handleEvent(const sf::Event & event)
     {
         if (SimpleGameCoordinator::handleExitEvents(event))
         {
+            runFullCheck();
             return;
-        }
-
-        if (handleBoardResizeMapEvent(event))
-        {
-            return;
-        }
-
-        if (event.type != sf::Event::MouseButtonPressed)
-        {
-            return;
-        }
-
-        // check if the click was inside any cell's bounds
-        const sf::Vector2f clickWindowPos{ sf::Vector2i(event.mouseButton.x, event.mouseButton.y) };
-        auto boardPosOpt{ m_layout.windowPosToBoardPos(clickWindowPos) };
-        if (!boardPosOpt)
-        {
-            return;
-        }
-
-        const BoardPos_t clickBoardPos{ boardPosOpt.value() };
-
-        // play the sfx different if turning on/off
-        if (m_board.isPieceAt(clickBoardPos))
-        {
-            m_context.audio.play("tap", 0.6f);
-        }
-        else
-        {
-            m_context.audio.play("tap");
-        }
-
-        // toggle the clicked cell and all around it
-        for (const BoardPos_t & pos : findAllBoardPosToToggle(clickBoardPos))
-        {
-            toggleCell(pos);
-        }
-
-        // check if the player won
-        if (m_board.pieces().empty())
-        {
-            m_game.endGame(true);
         }
     }
 
-    std::vector<BoardPos_t>
-        LightsOutGame::findAllBoardPosToToggle(const BoardPos_t & clickedBoardPos) const
+    void TestingFrenzyGame::draw()
     {
-        std::vector<BoardPos_t> positionsToToggle;
-        positionsToToggle.reserve(9);
-
-        for (const BoardPos_t & otherBoardPos : m_layout.allValidPositions())
-        {
-            if ((std::abs(clickedBoardPos.x - otherBoardPos.x) <= 1) &&
-                (std::abs(clickedBoardPos.y - otherBoardPos.y) <= 1))
-            {
-                positionsToToggle.push_back(otherBoardPos);
-            }
-        }
-
-        return positionsToToggle;
+        // m_window.clear(m_config.background_color);
+        //
+        // for (const IPieceUPtr_t& piece : m_board.pieces())
+        //{
+        //    m_window.draw(*piece);
+        //}
+        //
+        // m_window.display();
     }
 
-    Map_t LightsOutGame::makeMapOfSize(std::size_t size)
+    Map_t TestingFrenzyGame::makeMapOfSize(std::size_t horiz, std::size_t vert)
     {
-        if (size < 1)
-        {
-            size = 1;
-        }
-        else if (size > 9)
-        {
-            size = 9;
-        }
+        horiz = std::clamp((horiz * 10), 10_st, 30_st);
+        vert = std::clamp((vert * 10), 10_st, 30_st);
 
         // important that they all start on (or there, or whatever)
-        return Map_t(size, std::string(size, pieceToMapChar(Piece::Cell)));
+        Map_t map;
+
+        for (std::size_t v(0); v < vert; ++v)
+        {
+            std::string row;
+            if ((0 == v) || ((vert - 1) == v))
+            {
+                row = std::string(horiz, pieceToMapChar(Piece::Wall));
+            }
+            else
+            {
+                row = std::string(horiz, pieceToMapChar(Piece::Count));
+                row.front() = pieceToMapChar(Piece::Wall);
+                row.back() = pieceToMapChar(Piece::Wall);
+            }
+
+            map.push_back(row);
+        }
+
+        M_CHECK(map.size() == vert);
+        M_CHECK(map.front().size() == horiz);
+        M_CHECK(map.back().size() == horiz);
+
+        return map;
     }
+
+    void TestingFrenzyGame::switchToMap(const Map_t &) { restartWithNewMapSize(); }
 } // namespace boardgame

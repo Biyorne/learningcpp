@@ -84,14 +84,50 @@ namespace boardgame
 
     //
 
-    class CellPiece : public SimplePiece
+    class FoodPiece : public SimplePiece
     {
       public:
-        CellPiece(Context & context, const BoardPos_t & pos, const Piece piece);
-        virtual ~CellPiece() = default;
+        FoodPiece(Context & context, const BoardPos_t & pos, const Piece piece);
+        virtual ~FoodPiece() = default;
+    };
 
-        static sf::Sprite makeDefaultSprite(
-            const Context & context, const BoardPos_t & boardPos, const Piece piece);
+    //
+
+    class WallPiece : public SimplePiece
+    {
+      public:
+        WallPiece(Context & context, const BoardPos_t & pos, const Piece piece);
+        virtual ~WallPiece() = default;
+    };
+
+    //
+
+    class EaterPiece : public SimplePiece
+    {
+      public:
+        EaterPiece(Context & context, const BoardPos_t & pos, const Piece piece);
+        virtual ~EaterPiece() = default;
+
+        void takeTurn(Context &) override;
+
+      private:
+        sf::Keyboard::Key m_direction;
+    };
+
+    //
+
+    struct PosInfo
+    {
+        PosInfo(
+            const Context & context, const sf::Keyboard::Key direction, const BoardPos_t & selfPos);
+
+        bool isOccupied() const;
+        bool isOccupiedBy(const Piece potentialPiece) const;
+        bool isOccupiedButNotBy(const Piece potentialPiece) const;
+
+        sf::Keyboard::Key dir;
+        BoardPos_t pos;
+        Piece piece;
     };
 } // namespace boardgame
 

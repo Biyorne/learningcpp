@@ -68,7 +68,15 @@ namespace boardgame
         SimpleBoard::makePiece(Context & context, const Piece piece, const BoardPos_t & pos)
     {
         M_CHECK_SS((piece != Piece::Count), piece);
-        return std::make_unique<CellPiece>(context, pos, piece);
+
+        switch (piece)
+        {
+            case Piece::Eater: return std::make_unique<EaterPiece>(context, pos, piece);
+            case Piece::Food: return std::make_unique<FoodPiece>(context, pos, piece);
+            case Piece::Wall:
+            case Piece::Count:
+            default: return std::make_unique<WallPiece>(context, pos, piece);
+        }
     }
 
     IPieceOpt_t SimpleBoard::pieceAtOpt(const BoardPos_t & posToFind)
@@ -117,14 +125,39 @@ namespace boardgame
 
     void SimpleBoard::removePiece(const BoardPos_t & posToFind)
     {
-        m_pieces.erase(
-            std::remove_if(
-                std::begin(m_pieces),
-                std::end(m_pieces),
-                [&](const IPieceUPtr_t & pieceInPlay) {
-                    return (posToFind == pieceInPlay->position());
-                }),
-            std::end(m_pieces));
+        // WARNING:
+        //  I'm NOT using the idiomatic erase-remove intentionally, to avoid use-after-free CRASHES.
+        //
+        // The Problem:
+        //   If you use the erase-remove here AND this code is called from inside a loop or
+        //   ranged-for, then it can lead to the loop's underlying iterator to become std::end() at
+        //   the bottom of that loop.  I thought this would be perfecrtly safe because the next loop
+        //   iteration should check for that.  Somehow, I'm wrong.
+        //
+        //   You might think this is easy to check at the bottom of the loop, like so:
+        //      {  if (iter==end} break;  }
+        //   You might even decide that this is a best-practice or must-have for any loops that
+        //   might erase/change their container -but you would be WRONG.  While that trick does seem
+        //   to work on windows/MSVC builds, it still crashes on clang and gcc.
+        //
+        // The Solution:
+        //    Do NOT use the erase-reomove idiom, or anything similar. (i.e. swap & pop)
+        //    -
+        //    If only erasing one item, use:           std::list::erase()
+        //     " -but you have to find it first, use:  std::find() then std::list::erase()
+        //    If erasing multiple items, use:          std::list::remove() or remove_if()
+        //    (both of those functions actually erase, and both will erase ALL matching items)
+        //
+
+        // m_pieces.erase(
+        //    std::remove_if(
+        //        std::begin(m_pieces),
+        //        std::end(m_pieces),
+        //        [&](const IPieceUPtr_t & piece) { return (posToFind == piece->position()); }),
+        //    std::end(m_pieces));
+
+        m_pieces.remove_if(
+            [&](const IPieceUPtr_t & piece) { return (posToFind == piece->position()); });
 
         M_CHECK(!isPieceAt(posToFind));
     }
@@ -153,17 +186,34 @@ namespace boardgame
         addPiece(context, makePiece(context, piece, pos));
     }
 
+    void SimpleBoard::addPieceAtRandomFreePos(Context & context, const Piece piece)
+    {
+        const auto posOpt{ findRandomFreePos(context) };
+        if (!posOpt)
+        {
+            std::cout << "Failed to add a " << piece << " piece because no free pos found!"
+                      << std::endl;
+
+            return;
+        }
+
+        addPiece(context, piece, posOpt.value());
+    }
+
     BoardPosOpt_t SimpleBoard::findRandomFreePos(const Context & context) const
     {
         // start with a copy of all valid/on-board positions
-        std::vector<BoardPos_t> positions{ context.layout.allValidPositions() };
+        static std::vector<BoardPos_t> positions;
+        positions = context.layout.allValidPositions();
 
+        auto endIter{ std::end(positions) };
         // remove any that are alraedy occupied
         for (const IPieceUPtr_t & piece : m_pieces)
         {
-            positions.erase(
-                std::remove(std::begin(positions), std::end(positions), piece->position()));
+            endIter = std::remove(std::begin(positions), endIter, piece->position());
         }
+
+        positions.erase(endIter, std::end(positions));
 
         if (positions.empty())
         {
