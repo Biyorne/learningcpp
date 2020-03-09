@@ -20,15 +20,15 @@ namespace boardgame
 {
     SimplePiece::SimplePiece(Context &, const Piece piece, const BoardPos_t & pos)
         : m_piece(piece)
-        , m_position(pos)
         , m_sprite()
+        , m_position(pos)
     {}
 
     SimplePiece::SimplePiece(
         Context &, const Piece piece, const BoardPos_t & pos, const sf::Sprite & sprite)
         : m_piece(piece)
-        , m_position(pos)
         , m_sprite(sprite)
+        , m_position(pos)
     {}
 
     SimplePiece::SimplePiece(
@@ -49,15 +49,10 @@ namespace boardgame
         target.draw(m_sprite, states);
     }
 
-    void SimplePiece::move(Context & context, const BoardPos_t & newPos)
+    void SimplePiece::updateAfterMove(Context & context, const BoardPos_t & newPos)
     {
-        const auto posBefore{ m_position };
-        M_CHECK_SS((newPos != m_position), newPos);
-        context.board.removePiece(newPos);
         m_position = newPos;
         util::centerInside(m_sprite, context.layout.cellBounds(position()));
-        M_CHECK(context.board.pieceEnumAt(newPos) == m_piece);
-        M_CHECK(context.board.pieceEnumAt(posBefore) == Piece::Count);
     }
 
     //
@@ -89,33 +84,15 @@ namespace boardgame
         m_sprite.scale(pad, pad);
     }
 
-    // void EaterPiece::takeTurn(Context & context)
-    //{
-    //    static std::set<sf::Keyboard::Key> directions;
-    //    directions.clear();
-    //    directions.insert(sf::Keyboard::Up);
-    //    directions.insert(sf::Keyboard::Down);
-    //    directions.insert(sf::Keyboard::Left);
-    //    directions.insert(sf::Keyboard::Right);
-    //
-    //    // directions.erase(keys::opposite(m_direction));
-    //
-    //    m_direction = context.random.from(directions);
-    //
-    //    const BoardPos_t newPos{ keys::move(position(), m_direction) };
-    //    M_CHECK((newPos != position()));
-    //
-    //    const Piece newPosPieceEnum{ context.board.pieceEnumAt(newPos) };
-    //    if (newPosPieceEnum == Piece::Wall)
-    //    {
-    //        return;
-    //    }
-    //
-    //    SimplePiece::move(context, newPos);
-    //}
-
     void EaterPiece::takeTurn(Context & context)
     {
+        // if (context.random.ratio() < 0.025f)
+        // {
+        //     std::cout << "SUICIDE!" << std::endl;
+        //     context.board.removePiece(m_position);
+        //     return;
+        // }
+
         static std::vector<PosInfo> posInfos;
 
         posInfos.clear();
@@ -135,42 +112,37 @@ namespace boardgame
         {
             return;
         }
+        else if (posInfos.size() == 1)
+        {
+            m_direction = posInfos.front().dir;
+        }
+        else
+        {
+            context.random.shuffle(posInfos);
 
-        context.random.shuffle(posInfos);
-        m_direction = posInfos.front().dir;
+            std::sort(
+                std::begin(posInfos),
+                std::end(posInfos),
+                [&](const PosInfo & A, const PosInfo & B) {
+                    if (A.isOccupiedBy(Piece::Food) != B.isOccupiedBy(Piece::Food))
+                    {
+                        return A.isOccupiedBy(Piece::Food);
+                    }
+                    else if (A.isOccupiedBy(Piece::Eater) != B.isOccupiedBy(Piece::Eater))
+                    {
+                        return A.isOccupiedBy(Piece::Eater);
+                    }
+                    else
+                    {
+                        return (std::abs(A.dir - m_direction) < std::abs(B.dir - m_direction));
+                    }
+                });
+
+            m_direction = posInfos.front().dir;
+        }
+
         const BoardPos_t newPos{ keys::move(position(), m_direction) };
-        SimplePiece::move(context, newPos);
-
-        // if (posInfos.size() == 1)
-        //{
-        //    m_direction = posInfos.front().dir;
-        //}
-        // else
-        //{
-        //    std::sort(
-        //        std::begin(posInfos),
-        //        std::end(posInfos),
-        //        [&](const PosInfo & A, const PosInfo & B) {
-        //            if (A.isOccupiedBy(Piece::Eater) != B.isOccupiedBy(Piece::Eater))
-        //            {
-        //                return A.isOccupiedBy(Piece::Eater);
-        //            }
-        //            else if (A.isOccupiedBy(Piece::Food) != B.isOccupiedBy(Piece::Food))
-        //            {
-        //                return A.isOccupiedBy(Piece::Food);
-        //            }
-        //            else
-        //            {
-        //                return (A.dir < B.dir);
-        //            }
-        //        });
-        //
-        //    m_direction = posInfos.front().dir;
-        //}
-        //
-        // const BoardPos_t newPos{ keys::move(position(), m_direction) };
-        // SimplePiece::move(context, newPos);
-        // return;
+        context.board.movePiece(context, position(), newPos);
     }
 
     //

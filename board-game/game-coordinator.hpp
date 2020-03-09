@@ -84,9 +84,9 @@ namespace boardgame
       private:
         sf::Clock m_mapResizeClock{};
         float m_mapResizeTimeRemainingSec{ 0.0f };
-        std::size_t m_eaterCount{ 0 };
-        std::size_t m_foodCount{ 0 };
-        std::size_t m_obstacleCount{ 0 };
+        std::ptrdiff_t m_eaterCount{ 0 };
+        std::ptrdiff_t m_foodCount{ 0 };
+        std::ptrdiff_t m_obstacleCount{ 0 };
         float m_timeUntilPopulationChecks{ 0.0f };
         sf::Clock m_oneSecondClock{};
         float m_frameCount{ 0.0f };

@@ -13,6 +13,8 @@
 #include "types.hpp"
 #include "util.hpp"
 
+#include <iostream>
+
 namespace boardgame
 {
     void SimpleBoard::movePiece(
@@ -21,7 +23,8 @@ namespace boardgame
         const auto pieceOpt{ pieceAtOpt(posFrom) };
         M_CHECK_SS(pieceOpt.has_value(), "posFrom=" << posFrom << ", posTo=" << posTo);
 
-        pieceOpt->get().move(context, posTo);
+        removePiece(posTo);
+        pieceOpt->get().updateAfterMove(context, posTo);
 
         M_CHECK_SS(
             ((&pieceOpt->get()) == (&pieceAtOpt(posTo)->get())),
@@ -149,13 +152,6 @@ namespace boardgame
         //    (both of those functions actually erase, and both will erase ALL matching items)
         //
 
-        // m_pieces.erase(
-        //    std::remove_if(
-        //        std::begin(m_pieces),
-        //        std::end(m_pieces),
-        //        [&](const IPieceUPtr_t & piece) { return (posToFind == piece->position()); }),
-        //    std::end(m_pieces));
-
         m_pieces.remove_if(
             [&](const IPieceUPtr_t & piece) { return (posToFind == piece->position()); });
 
@@ -206,14 +202,13 @@ namespace boardgame
         static std::vector<BoardPos_t> positions;
         positions = context.layout.allValidPositions();
 
-        auto endIter{ std::end(positions) };
         // remove any that are alraedy occupied
         for (const IPieceUPtr_t & piece : m_pieces)
         {
-            endIter = std::remove(std::begin(positions), endIter, piece->position());
+            positions.erase(
+                std::remove(std::begin(positions), std::end(positions), piece->position()),
+                std::end(positions));
         }
-
-        positions.erase(endIter, std::end(positions));
 
         if (positions.empty())
         {
@@ -222,6 +217,4 @@ namespace boardgame
 
         return context.random.from(positions);
     }
-
-    //
 } // namespace boardgame

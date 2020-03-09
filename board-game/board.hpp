@@ -289,8 +289,6 @@ namespace boardgame
         virtual BoardPosOpt_t findRandomFreePos(const Context & context) const = 0;
         virtual IPieceUPtr_t makePiece(Context &, const Piece, const BoardPos_t & pos) = 0;
 
-        // void movePiece(Context &, BoardPosKeeper & posManager, const BoardPos_t & newPos);
-        //
         virtual void movePiece(Context &, const BoardPos_t & from, const BoardPos_t & to) = 0;
 
         // virtual const AdjacentInfoOpt_t

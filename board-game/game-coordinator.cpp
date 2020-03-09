@@ -118,7 +118,7 @@ namespace boardgame
 
         while (m_window.isOpen() && !m_game.isGameOver())
         {
-            handleEvents();
+            // handleEvents();
             update(frameClock.restart().asSeconds());
             draw();
         }
@@ -253,26 +253,27 @@ namespace boardgame
 
             const auto & pieces{ m_board.pieces() };
 
-            const std::size_t eatersCurrentCount = std::count_if(
+            const std::ptrdiff_t eatersCurrentCount = std::count_if(
                 std::begin(pieces), std::end(pieces), [&](const IPieceUPtr_t & piece) {
                     return (piece->piece() == Piece::Eater);
                 });
 
-            for (std::size_t i(eatersCurrentCount); i < m_eaterCount; ++i)
+            for (std::ptrdiff_t i(eatersCurrentCount); i < m_eaterCount; ++i)
             {
                 m_board.addPieceAtRandomFreePos(m_context, Piece::Eater);
             }
 
-            const std::size_t foodCurrentCount = std::count_if(
+            const std::ptrdiff_t foodCurrentCount = std::count_if(
                 std::begin(pieces), std::end(pieces), [&](const IPieceUPtr_t & piece) {
                     return (piece->piece() == Piece::Food);
                 });
 
-            for (std::size_t i(foodCurrentCount); i < m_foodCount; ++i)
+            for (std::ptrdiff_t i(foodCurrentCount); i < m_foodCount; ++i)
             {
                 m_board.addPieceAtRandomFreePos(m_context, Piece::Food);
             }
 
+            handleEvents();
             SimpleGameCoordinator::draw();
             return;
         }
@@ -300,6 +301,8 @@ namespace boardgame
 
     void SimpleGameCoordinator::runFullCheck()
     {
+        return;
+
         static std::map<BoardPos_t, std::pair<std::size_t, std::string>> allTakenPositions;
         allTakenPositions.clear();
 
@@ -387,30 +390,34 @@ namespace boardgame
 
         SimpleGameCoordinator::switchToMap(newMap);
 
-        std::size_t availablePosCount{ 0 };
+        std::ptrdiff_t availablePosCount{ 0 };
         for (const std::string & row : m_map)
         {
             availablePosCount += std::count(std::begin(row), std::end(row), ' ');
         }
 
         // determine how many things will be in the arena
-        m_eaterCount = m_random.zeroTo(newMap.size() * m_random.fromTo(1_st, 8_st));
+        m_eaterCount = static_cast<std::ptrdiff_t>(
+            m_random.zeroTo(newMap.size() * m_random.fromTo(1_st, 8_st)));
+
         if (m_random.ratio() < 0.025f)
         {
             std::cout << "Rare zero out of EATERS" << std::endl;
             m_eaterCount = 0;
         }
 
-        m_foodCount = m_random.zeroTo(newMap.front().size() * m_random.fromTo(1_st, 8_st));
+        m_foodCount = static_cast<std::ptrdiff_t>(
+            m_random.zeroTo(newMap.front().size() * m_random.fromTo(1_st, 8_st)));
+
         if (m_random.ratio() < 0.025f)
         {
             std::cout << "Rare zero out of FOOD" << std::endl;
             m_foodCount = 0;
         }
 
-        m_obstacleCount = m_random.zeroTo(
+        m_obstacleCount = static_cast<std::ptrdiff_t>(m_random.zeroTo(
             (newMap.size() * newMap.front().size()) /
-            m_random.fromTo((newMap.size() / 4), newMap.size()));
+            m_random.fromTo((newMap.size() / 4), newMap.size())));
 
         if (m_random.ratio() < 0.025f)
         {
@@ -418,9 +425,11 @@ namespace boardgame
             m_obstacleCount = 0;
         }
 
-        auto calcPopulationCount = [&]() { return (m_eaterCount + m_foodCount + m_obstacleCount); };
+        auto calcPopulationCount = [&]() {
+            return std::ptrdiff_t(m_eaterCount + m_foodCount + m_obstacleCount);
+        };
 
-        std::size_t populationCount{ calcPopulationCount() };
+        std::ptrdiff_t populationCount{ calcPopulationCount() };
 
         if (populationCount > availablePosCount)
         {
@@ -495,8 +504,9 @@ namespace boardgame
             std::remove_if(
                 std::begin(freePositions),
                 std::end(freePositions),
-                [&](const BoardPos_t & pos) {
-                    const char mapChar{ m_map.at(pos.y).at(pos.x) };
+                [&](const BoardPos_t & posInt) {
+                    const sf::Vector2s posST{ posInt };
+                    const char mapChar{ m_map.at(posST.y).at(posST.x) };
                     return (pieceToMapChar(Piece::Wall) == mapChar);
                 }),
             std::end(freePositions));
@@ -513,19 +523,19 @@ namespace boardgame
 
         m_random.shuffle(freePositions);
 
-        for (std::size_t i(0); ((i < m_obstacleCount) && !freePositions.empty()); ++i)
+        for (std::ptrdiff_t i(0); ((i < m_obstacleCount) && !freePositions.empty()); ++i)
         {
             m_board.addPiece(m_context, Piece::Wall, freePositions.back());
             freePositions.pop_back();
         }
 
-        for (std::size_t i(0); ((i < m_foodCount) && !freePositions.empty()); ++i)
+        for (std::ptrdiff_t i(0); ((i < m_foodCount) && !freePositions.empty()); ++i)
         {
             m_board.addPiece(m_context, Piece::Food, freePositions.back());
             freePositions.pop_back();
         }
 
-        for (std::size_t i(0); ((i < m_eaterCount) && !freePositions.empty()); ++i)
+        for (std::ptrdiff_t i(0); ((i < m_eaterCount) && !freePositions.empty()); ++i)
         {
             m_board.addPiece(m_context, Piece::Eater, freePositions.back());
             freePositions.pop_back();
