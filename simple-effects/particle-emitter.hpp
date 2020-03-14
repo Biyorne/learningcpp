@@ -21,38 +21,32 @@ namespace entity
       public:
         ParticleEffect(const Context & context, const sf::Texture & texture)
             : EffectBase(makeSprite(context, texture, 0.01f, (context.window_size * 0.5f)))
-            , m_velocity(
-                  { context.random.fromTo(-50.0f, 50.0f), context.random.fromTo(-300.0f, -100.0f) })
-            , m_acceleration({ 0.0f, 100.0f })
-            , m_speedLimit(300.0f)
+            , m_mover(
+                  { context.random.fromTo(-50.0f, 50.0f), context.random.fromTo(-300.0f, -100.0f) },
+                  { 0.0f, 100.0f },
+                  300.0f)
         {}
 
         ParticleEffect(const Context & context, const sf::Sprite & sprite)
             : EffectBase(sprite)
-            , m_velocity({ context.random.fromTo(-300.0f, 300.0f),
-                           context.random.fromTo(-300.0f, 300.0f) })
-            , m_acceleration({ 0.0f, 100.0f })
-            , m_speedLimit(300.0f)
+            , m_mover(
+                  { context.random.fromTo(-300.0f, 300.0f),
+                    context.random.fromTo(-300.0f, 300.0f) },
+                  { 0.0f, 100.0f },
+                  300.0f)
         {}
 
         virtual ~ParticleEffect() = default;
 
         void update(const Context &, const float frameTimeSec) override
         {
-            m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
-
-            m_velocity.vector = util::vectorMagnitudeLimit(m_velocity.vector, m_speedLimit);
-
+            m_sprite.move(m_mover.updateDelta(frameTimeSec));
             m_sprite.scale(1.005f, 1.005f);
-
-            m_sprite.move(m_velocity.updateDelta(frameTimeSec));
             m_sprite.rotate(1.0f);
         }
 
       private:
-        MovementVector m_velocity;
-        MovementVector m_acceleration;
-        float m_speedLimit;
+        Mover m_mover;
     };
 
     //

@@ -9,6 +9,8 @@ namespace entity
 {
     struct MovementVector
     {
+        MovementVector() = default;
+
         explicit MovementVector(const sf::Vector2f & vel)
             : vector(vel)
         {}
@@ -20,8 +22,64 @@ namespace entity
             return (pos + updateDelta(frameTimeSec));
         }
 
-        sf::Vector2f vector;
+        sf::Vector2f vector{ 0.0f, 0.0f };
     };
+
+    //
+
+    class Mover
+    {
+      public:
+        Mover() = default;
+
+        explicit Mover(
+            const sf::Vector2f & vel,
+            const sf::Vector2f & acc = { 0.0f, 0.0f },
+            const float speedLimit = { 0.0f })
+        {
+            setup(vel, acc, speedLimit);
+        }
+
+        virtual void setup(
+            const sf::Vector2f & vel,
+            const sf::Vector2f & acc = { 0.0f, 0.0f },
+            const float speedLimit = { 0.0f })
+        {
+            m_velocity.vector = vel;
+            m_acceleration.vector = acc;
+            m_speedLimit = speedLimit;
+        }
+
+        virtual void aim(const sf::Vector2f & from, const sf::Vector2f & to)
+        {
+            m_acceleration.vector =
+                util::vectorDirectionOnlySetFromTo(m_acceleration.vector, from, to);
+        }
+
+        virtual sf::Vector2f updateDelta(const float frameTimeSec)
+        {
+            m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
+
+            if (m_speedLimit > 0.0f)
+            {
+                m_velocity.vector = util::vectorMagnitudeLimit(m_velocity.vector, m_speedLimit);
+            }
+
+            return m_velocity.updateDelta(frameTimeSec);
+        }
+
+        virtual sf::Vector2f updateAbsolute(const float frameTimeSec, const sf::Vector2f & pos)
+        {
+            return (pos + updateDelta(frameTimeSec));
+        }
+
+      private:
+        MovementVector m_velocity;
+        MovementVector m_acceleration;
+        float m_speedLimit{ 0.0f };
+    };
+
+    //
 
     struct BounceResult
     {
