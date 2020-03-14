@@ -3,7 +3,7 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
-#include "steady-mover.hpp"
+#include "movement.hpp"
 
 namespace entity
 {
@@ -28,7 +28,7 @@ namespace entity
         }
 
       private:
-        Velocity m_velocity;
+        MovementVector m_velocity;
     };
 } // namespace entity
 #endif // SIMPLE_EFFECTS_RISING_FADE_HPP_INCLUDED

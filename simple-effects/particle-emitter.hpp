@@ -3,8 +3,8 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
+#include "movement.hpp"
 #include "resources.hpp"
-#include "steady-mover.hpp"
 #include "util.hpp"
 
 // Variations per particle
@@ -40,7 +40,8 @@ namespace entity
         void update(const Context &, const float frameTimeSec) override
         {
             m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
-            m_velocity.vector = m_speedLimit.clamp(m_velocity.vector);
+
+            m_velocity.vector = util::vectorMagnitudeLimit(m_velocity.vector, m_speedLimit);
 
             m_sprite.scale(1.005f, 1.005f);
 
@@ -49,9 +50,9 @@ namespace entity
         }
 
       private:
-        Velocity m_velocity;
-        Acceleration m_acceleration;
-        MagnitudeClamp m_speedLimit;
+        MovementVector m_velocity;
+        MovementVector m_acceleration;
+        float m_speedLimit;
     };
 
     //

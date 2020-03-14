@@ -19,7 +19,7 @@
 //  All vectors of both kinds have a hypotenuse that is often called the magnitude.
 //  A normalized vector (sometimes called a unit vector) has a magnitude of 1.
 //  To normalize a vector, simply divide it by its magnitude.
-//  Velocity is a change to position. The hypotenuse can be magnitude or speed.
+//  velocity is a change to position. The hypotenuse can be magnitude or speed.
 
 class Game
 {

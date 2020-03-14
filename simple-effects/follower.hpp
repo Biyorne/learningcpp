@@ -3,7 +3,7 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
-#include "steady-mover.hpp"
+#include "movement.hpp"
 #include "util.hpp"
 
 namespace entity
@@ -38,20 +38,18 @@ namespace entity
 
             m_acceleration.vector =
                 util::vectorMakeWithMag(m_sprite.getPosition(), m_targetPos, m_accelerationMag);
-            //(util::vectorNormalizeFromTo(m_sprite.getPosition(), m_targetPos) *
-            //m_accelerationMag);
 
             m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
 
-            m_velocity.vector = m_speedLimit.clamp(m_velocity.vector);
+            m_velocity.vector = util::vectorMagnitudeLimit(m_velocity.vector, m_speedLimit);
 
             m_sprite.move(m_velocity.updateDelta(frameTimeSec));
         }
 
       private:
-        Velocity m_velocity;
-        Acceleration m_acceleration;
-        MagnitudeClamp m_speedLimit;
+        MovementVector m_velocity;
+        MovementVector m_acceleration;
+        float m_speedLimit;
 
         sf::Vector2f m_targetPos;
         float m_accelerationMag;

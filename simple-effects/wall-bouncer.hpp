@@ -3,8 +3,8 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
+#include "movement.hpp"
 #include "random.hpp"
-#include "steady-mover.hpp"
 
 #include <SFML/Graphics/RenderTarget.hpp>
 
@@ -44,7 +44,7 @@ namespace entity
         }
 
       private:
-        entity::Velocity m_velocity;
+        entity::MovementVector m_velocity;
         entity::Fence m_fence;
     };
 
@@ -71,8 +71,8 @@ namespace entity
         }
 
       private:
-        Velocity m_velocity;
-        Acceleration m_acceleration;
+        MovementVector m_velocity;
+        MovementVector m_acceleration;
     };
 } // namespace entity
 

@@ -3,7 +3,7 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
-#include "steady-mover.hpp"
+#include "movement.hpp"
 
 namespace entity
 {

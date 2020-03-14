@@ -4,8 +4,8 @@
 
 #include "exploder.hpp"
 #include "follower.hpp"
+#include "movement.hpp"
 #include "rising-fade.hpp"
-#include "steady-mover.hpp"
 #include "util.hpp"
 #include "wall-bouncer.hpp"
 
@@ -180,7 +180,7 @@ void Game::processEvent(const sf::Event & event)
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
         {
             m_effects.push_back(std::make_unique<entity::MouseFollowerEffect>(
-                m_context, m_resources.rabbit_texture, 0.333f, 1000.0f, 500.0f));
+                m_context, m_resources.rabbit_texture, 0.333f, 10000.0f, 500.0f));
         }
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
         {

@@ -2,7 +2,7 @@
 #define SIMPLE_EFFECTS_BASE_HPP_INCLUDED
 
 #include "context.hpp"
-#include "steady-mover.hpp"
+#include "movement.hpp"
 
 #include <memory>
 

@@ -125,7 +125,7 @@ namespace util
     //
 
     template <typename T>
-    inline T rightTriangleHyp(const sf::Vector2<T> & vec)
+    [[nodiscard]] inline T rightTriangleHyp(const sf::Vector2<T> & vec)
     {
         static_assert(std::is_arithmetic_v<T>);
         return std::sqrt((vec.x * vec.x) + (vec.y * vec.y));
@@ -138,7 +138,8 @@ namespace util
     // The order of the subtraction (to - from) ensures: from + result == to.
     //"Turns two positions into a right triangle"
     template <typename T>
-    inline sf::Vector2<T> differenceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
+    [[nodiscard]] inline sf::Vector2<T>
+        differenceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
         static_assert(std::is_arithmetic_v<T>);
         return (to - from);
@@ -147,7 +148,8 @@ namespace util
     //...or, this is exactly the same as:
     //"Turns two positions into a vector pointing from->to and with magnitude==distance."
     template <typename T>
-    inline sf::Vector2<T> vectorMake(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
+    [[nodiscard]] inline sf::Vector2<T>
+        vectorMake(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
         static_assert(std::is_arithmetic_v<T>);
         return differenceFromTo(from, to);
@@ -159,7 +161,7 @@ namespace util
     //(Returns one number for the difference of both axes combined)
     // In the Cartesian space, from and to define a right triangle, then the answer is obvious
     template <typename T>
-    inline T distanceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
+    [[nodiscard]] inline T distanceFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
         static_assert(std::is_arithmetic_v<T>);
         return rightTriangleHyp(differenceFromTo(from, to));
@@ -168,7 +170,8 @@ namespace util
     //...or, this is exactly the same as:
     // In Cartesian space, both positions can be thought of as the corners of a right triangle
     template <typename T>
-    inline T vectorMagnitudeFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
+    [[nodiscard]] inline T
+        vectorMagnitudeFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
         static_assert(std::is_arithmetic_v<T>);
         return rightTriangleHyp(vectorMake(from, to));
@@ -176,7 +179,7 @@ namespace util
 
     //...or, this is exactly the same as:
     template <typename T>
-    inline T vectorMagnitude(const sf::Vector2<T> & vec)
+    [[nodiscard]] inline T vectorMagnitude(const sf::Vector2<T> & vec)
     {
         static_assert(std::is_arithmetic_v<T>);
         return rightTriangleHyp(vec);
@@ -186,7 +189,8 @@ namespace util
 
     // Sets the magnitude of a vector without changing direction
     template <typename T>
-    inline sf::Vector2<T> vectorMagnitudeOnlySet(const sf::Vector2<T> & vec, const T newMagnitude)
+    [[nodiscard]] inline sf::Vector2<T>
+        vectorMagnitudeOnlySet(const sf::Vector2<T> & vec, const T newMagnitude)
     {
         static_assert(std::is_arithmetic_v<T>);
 
@@ -204,7 +208,7 @@ namespace util
 
     // Sets the magnitude of a vector to 1 without changing direction (AKA Unit Vector)
     template <typename T>
-    inline sf::Vector2<T> vectorNormalize(const sf::Vector2<T> & vec)
+    [[nodiscard]] inline sf::Vector2<T> vectorNormalize(const sf::Vector2<T> & vec)
     {
         static_assert(std::is_arithmetic_v<T>);
         return vectorMagnitudeOnlySet(vec, T(1));
@@ -212,7 +216,7 @@ namespace util
 
     // Get a vector that only has the direction
     template <typename T>
-    inline sf::Vector2<T>
+    [[nodiscard]] inline sf::Vector2<T>
         vectorNormalizeFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
         static_assert(std::is_arithmetic_v<T>);
@@ -221,7 +225,7 @@ namespace util
 
     // Gets the direction of a vector
     template <typename T>
-    inline sf::Vector2<T> vectorDirection(const sf::Vector2<T> & vec)
+    [[nodiscard]] inline sf::Vector2<T> vectorDirection(const sf::Vector2<T> & vec)
     {
         static_assert(std::is_arithmetic_v<T>);
         return vectorNormalize(vec);
@@ -229,7 +233,7 @@ namespace util
 
     // Get a vector that only has the direction
     template <typename T>
-    inline sf::Vector2<T>
+    [[nodiscard]] inline sf::Vector2<T>
         vectorDirectionFromTo(const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
         static_assert(std::is_arithmetic_v<T>);
@@ -238,7 +242,7 @@ namespace util
 
     // Sets the direction of a vector without changing the magnitude
     template <typename T>
-    inline sf::Vector2<T> vectorDirectionOnlySetFromTo(
+    [[nodiscard]] inline sf::Vector2<T> vectorDirectionOnlySetFromTo(
         const sf::Vector2<T> & vec, const sf::Vector2<T> & from, const sf::Vector2<T> & to)
     {
         static_assert(std::is_arithmetic_v<T>);
@@ -246,11 +250,25 @@ namespace util
     }
 
     template <typename T>
-    inline sf::Vector2<T>
+    [[nodiscard]] inline sf::Vector2<T>
         vectorMakeWithMag(const sf::Vector2<T> & from, const sf::Vector2<T> & to, const T mag)
     {
         static_assert(std::is_arithmetic_v<T>);
         return (vectorNormalizeFromTo(from, to) * mag);
+    }
+
+    // Limits the magnitude of a vector if if it exceeds a certain value
+    [[nodiscard]] inline sf::Vector2f
+        vectorMagnitudeLimit(const sf::Vector2f & vec, const float limit)
+    {
+        if (vectorMagnitude(vec) > limit)
+        {
+            return vectorMagnitudeOnlySet(vec, limit);
+        }
+        else
+        {
+            return vec;
+        }
     }
 
     // Scale

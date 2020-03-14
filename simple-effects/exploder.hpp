@@ -3,9 +3,9 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
+#include "movement.hpp"
 #include "particle-emitter.hpp"
 #include "random.hpp"
-#include "steady-mover.hpp"
 
 #include <SFML/Graphics/RenderTarget.hpp>
 
