@@ -3,7 +3,7 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
-#include "steady-mover.hpp"
+#include "movement.hpp"
 
 namespace entity
 {
@@ -16,19 +16,19 @@ namespace entity
             const sf::Texture & texture,
             const float textureSizeWindowRatio)
             : EffectBase(makeSprite(context, texture, textureSizeWindowRatio, context.mouse_pos))
-            , m_velocity({ 0.0f, -90.0f })
+            , m_mover({ 0.0f, -90.0f })
         {}
 
         virtual ~RisingFadeEffect() = default;
 
         void update(const Context &, const float frameTimeSec) override
         {
-            m_sprite.move(m_velocity.updateDelta(frameTimeSec));
+            m_sprite.move(m_mover.updateDelta(frameTimeSec));
             m_sprite.setColor(m_sprite.getColor() - sf::Color(0, 0, 0, 5));
         }
 
       private:
-        Velocity m_velocity;
+        Mover m_mover;
     };
 } // namespace entity
 #endif // SIMPLE_EFFECTS_RISING_FADE_HPP_INCLUDED

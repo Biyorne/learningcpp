@@ -3,9 +3,9 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
+#include "movement.hpp"
 #include "particle-emitter.hpp"
 #include "random.hpp"
-#include "steady-mover.hpp"
 
 #include <SFML/Graphics/RenderTarget.hpp>
 
@@ -97,13 +97,25 @@ namespace entity
             {
                 for (int horiz(0); horiz < textureSizeInt.x; horiz += tileSize.x)
                 {
+                    // clang-format off
+                    MoverRatios ratios{
+                        BaseRatios_t(0.0f, -1.0f),
+                        BaseRatios_t(0.0f, 1.0f),
+                        1.0f };
+
+                    MoverRanges ranges{0.5f, 0.0f};
+                    // clang-format on
+
+                    const Mover mover =
+                        MoverFactory::makeFromRanges(context, 300.0f, ratios, ranges);
+
                     const sf::IntRect tileBounds({ horiz, vert }, tileSize);
                     sf::Sprite sp(texture, tileBounds);
                     util::setOrigin2Center(sp);
                     sp.setPosition(util::center(sf::FloatRect(tileBounds)));
                     sp.move(m_sprite.getPosition());
                     sp.move(m_sprite.getOrigin() * -m_sprite.getScale());
-                    m_tiles.push_back(ParticleEffect(context, sp));
+                    m_tiles.push_back(ParticleEffect(context, sp, mover, sp.getPosition()));
                 }
             }
         }

@@ -4,8 +4,8 @@
 
 #include "exploder.hpp"
 #include "follower.hpp"
+#include "movement.hpp"
 #include "rising-fade.hpp"
-#include "steady-mover.hpp"
 #include "util.hpp"
 #include "wall-bouncer.hpp"
 
@@ -21,6 +21,7 @@ Game::Game()
     , m_context(m_window, m_random, m_audio, m_resources)
     , m_willClear(false)
     , m_bgSprite(m_resources.bg_texture)
+    , m_backdropSprite(m_resources.backdrop_texture)
     , m_effects()
     , m_emitter()
     , m_simTimeMult(1.0f)
@@ -34,6 +35,11 @@ Game::Game()
     // m_audio.loadAll();
     m_resources.bg_texture.setRepeated(true);
     m_bgSprite.setTextureRect({ { 0, 0 }, sf::Vector2i(m_context.window_size) });
+
+    const sf::Vector2f backdropScale(
+        m_context.window_size / sf::Vector2f(m_resources.backdrop_texture.getSize()));
+
+    m_backdropSprite.setScale(backdropScale);
 
     m_audio.load({ "camera-click" });
 
@@ -172,25 +178,30 @@ void Game::processEvent(const sf::Event & event)
     }
     else if (event.type == sf::Event::MouseButtonPressed)
     {
+        // Rising Fade
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
         {
             m_effects.push_back(std::make_unique<entity::RisingFadeEffect>(
                 m_context, m_resources.particle_texture, 0.1f));
         }
+        // Mouse Follower
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
         {
             m_effects.push_back(std::make_unique<entity::MouseFollowerEffect>(
-                m_context, m_resources.rabbit_texture, 0.333f, 1000.0f, 500.0f));
+                m_context, m_resources.rabbit_texture, 0.333f, 10000.0f, 500.0f));
         }
+        // Wall Bouncer
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
         {
             m_effects.push_back(std::make_unique<entity::WallBouncerEffect>(
-                m_context, m_resources.warn_texture, sf::Vector2f(200.0f, -200.0f), m_window));
+                m_context, m_resources.warn_texture, sf::Vector2f(200.0f, -200.0f)));
         }
+        // Particle Emitter
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
         {
-            m_emitter.toggleEmission();
+            m_emitter.toggleEmission(m_context.mouse_pos);
         }
+        // Exploder
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
         {
             const std::size_t tileCount{ static_cast<std::size_t>(
@@ -226,6 +237,8 @@ void Game::render()
     }
 
     m_bloomWindow.draw(m_bgSprite);
+
+    m_bloomWindow.draw(m_backdropSprite);
 
     for (entity::IEffectUPtr_t & effect : m_effects)
     {

@@ -3,7 +3,7 @@
 
 #include "context.hpp"
 #include "effect-base.hpp"
-#include "steady-mover.hpp"
+#include "movement.hpp"
 #include "util.hpp"
 
 namespace entity
@@ -19,12 +19,14 @@ namespace entity
             const float acceleration,
             const float speedLimit)
             : EffectBase(makeSprite(context, texture, textureSizeWindowRatio))
-            , m_velocity({ 0.0f, 0.0f })
-            , m_acceleration({ 0.0f, 0.0f })
-            , m_speedLimit(speedLimit)
-            , m_targetPos(m_sprite.getPosition())
-            , m_accelerationMag(acceleration)
-        {}
+            , m_targetPos(context.mouse_pos)
+            , m_mover()
+        {
+            const sf::Vector2f acc =
+                util::vectorMakeWithMag(m_sprite.getPosition(), m_targetPos, acceleration);
+
+            m_mover.setup({ 0.0f, 0.0f }, acc, speedLimit);
+        }
 
         virtual ~FollowerEffectBase() = default;
 
@@ -35,26 +37,13 @@ namespace entity
         void update(const Context & context, const float frameTimeSec) override
         {
             m_targetPos = findTargetPos(context);
-
-            m_acceleration.vector =
-                util::vectorMakeWithMag(m_sprite.getPosition(), m_targetPos, m_accelerationMag);
-            //(util::vectorNormalizeFromTo(m_sprite.getPosition(), m_targetPos) *
-            //m_accelerationMag);
-
-            m_velocity.vector += m_acceleration.updateDelta(frameTimeSec);
-
-            m_velocity.vector = m_speedLimit.clamp(m_velocity.vector);
-
-            m_sprite.move(m_velocity.updateDelta(frameTimeSec));
+            m_mover.aim(m_sprite.getPosition(), m_targetPos);
+            m_sprite.move(m_mover.updateDelta(frameTimeSec));
         }
 
       private:
-        Velocity m_velocity;
-        Acceleration m_acceleration;
-        MagnitudeClamp m_speedLimit;
-
         sf::Vector2f m_targetPos;
-        float m_accelerationMag;
+        Mover m_mover;
     };
 
     //
