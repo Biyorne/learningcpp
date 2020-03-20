@@ -178,25 +178,30 @@ void Game::processEvent(const sf::Event & event)
     }
     else if (event.type == sf::Event::MouseButtonPressed)
     {
+        // Rising Fade
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
         {
             m_effects.push_back(std::make_unique<entity::RisingFadeEffect>(
                 m_context, m_resources.particle_texture, 0.1f));
         }
+        // Mouse Follower
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
         {
             m_effects.push_back(std::make_unique<entity::MouseFollowerEffect>(
                 m_context, m_resources.rabbit_texture, 0.333f, 10000.0f, 500.0f));
         }
+        // Wall Bouncer
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
         {
             m_effects.push_back(std::make_unique<entity::WallBouncerEffect>(
-                m_context, m_resources.warn_texture, sf::Vector2f(200.0f, -200.0f), m_window));
+                m_context, m_resources.warn_texture, sf::Vector2f(200.0f, -200.0f)));
         }
+        // Particle Emitter
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
         {
             m_emitter.toggleEmission(m_context.mouse_pos);
         }
+        // Exploder
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
         {
             const std::size_t tileCount{ static_cast<std::size_t>(

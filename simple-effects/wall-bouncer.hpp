@@ -6,7 +6,7 @@
 #include "movement.hpp"
 #include "random.hpp"
 
-#include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics.hpp>
 
 namespace entity
 {
@@ -14,17 +14,13 @@ namespace entity
     {
       public:
         WallBouncerEffect(
-            const Context & context,
-            const sf::Texture & texture,
-            const sf::Vector2f & velocity,
-            const sf::RenderTarget & target)
+            const Context & context, const sf::Texture & texture, const sf::Vector2f & velocity)
             : EffectBase(makeSprite(
                   context,
                   texture,
                   context.sprite_size_ratio_default,
-                  util::sfRandom(context.random, m_fence.bounds)))
-            , m_velocity(velocity)
-            , m_fence({ sf::Vector2f(0.0f, 0.0f), sf::Vector2f(target.getSize()) })
+                  util::sfRandom(context.random, context.window_rect)))
+            , m_mover(context.window_rect, velocity)
         {}
 
         virtual ~WallBouncerEffect() = default;
@@ -32,20 +28,13 @@ namespace entity
         void update(const Context &, const float frameTimeSec) override
         {
             const sf::Vector2f posMoved(
-                m_velocity.updateAbsolute(frameTimeSec, m_sprite.getPosition()));
+                m_mover.updateDelta(m_sprite.getGlobalBounds(), frameTimeSec));
 
-            m_sprite.setPosition(posMoved);
-
-            const entity::BounceResult bounceResult(
-                m_fence.updateDeltaBounce(m_sprite.getGlobalBounds(), m_velocity.vector));
-
-            m_velocity.vector = bounceResult.velocity;
-            m_sprite.move(bounceResult.pos_delta);
+            m_sprite.move(posMoved);
         }
 
       private:
-        entity::MovementVector m_velocity;
-        entity::Fence m_fence;
+        FencedMover m_mover;
     };
 
     class GravityBouncerEffect : public EffectBase

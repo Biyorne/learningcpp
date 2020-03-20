@@ -93,20 +93,29 @@ namespace entity
             const sf::Vector2i tileCounts(tileCountPerSide, tileCountPerSide);
             const sf::Vector2i tileSize(textureSizeInt / tileCounts);
 
-            const Mover mover({ 0.0f, -300.0f }, { 0.0f, 300.0f }, 300.0f);
-
             for (int vert(0); vert < textureSizeInt.y; vert += tileSize.y)
             {
                 for (int horiz(0); horiz < textureSizeInt.x; horiz += tileSize.x)
                 {
+                    // clang-format off
+                    MoverRatios ratios{
+                        BaseRatios_t(0.0f, -1.0f),
+                        BaseRatios_t(0.0f, 1.0f),
+                        1.0f };
+
+                    MoverRanges ranges{0.5f, 0.0f};
+                    // clang-format on
+
+                    const Mover mover =
+                        MoverFactory::makeFromRanges(context, 300.0f, ratios, ranges);
+
                     const sf::IntRect tileBounds({ horiz, vert }, tileSize);
                     sf::Sprite sp(texture, tileBounds);
                     util::setOrigin2Center(sp);
                     sp.setPosition(util::center(sf::FloatRect(tileBounds)));
                     sp.move(m_sprite.getPosition());
                     sp.move(m_sprite.getOrigin() * -m_sprite.getScale());
-                    m_tiles.push_back(
-                        ParticleEffect(context, sp, mover, (context.window_size * 0.5f)));
+                    m_tiles.push_back(ParticleEffect(context, sp, mover, sp.getPosition()));
                 }
             }
         }

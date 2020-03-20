@@ -27,8 +27,43 @@ namespace entity
 
     //
 
+    using BaseRatios_t = sf::Vector2f;
+    using RangeRatios_t = sf::Vector2f;
+
+    struct MoverRatios
+    {
+        BaseRatios_t velocity;
+        BaseRatios_t acceleration;
+        float speed_limit = { 0.0f };
+    };
+
+    struct MoverRanges
+    {
+        MoverRanges() = default;
+
+        MoverRanges(const float vel, const float acc)
+            : MoverRanges(vel, acc, vel)
+        {}
+
+        MoverRanges(const float vel, const float acc, const float spd)
+            : velocity(vel, vel)
+            , acceleration(acc, acc)
+            , speed_limit(spd)
+        {}
+
+        RangeRatios_t velocity;
+        RangeRatios_t acceleration;
+        float speed_limit = { 0.0f };
+    };
+
+    //
+
+    struct MoverFactory;
+
     class Mover
     {
+        friend MoverFactory;
+
       public:
         Mover() = default;
 
@@ -39,6 +74,8 @@ namespace entity
         {
             setup(vel, acc, speedLimit);
         }
+
+        virtual ~Mover() = default;
 
         virtual void setup(
             const sf::Vector2f & vel,
@@ -73,10 +110,74 @@ namespace entity
             return (pos + updateDelta(frameTimeSec));
         }
 
-      private:
+        // const MovementVector & velocity() { return m_velocity; }
+        //
+        // const MovementVector & acceleration() { return m_acceleration; }
+        //
+        // const float & speedLimit() { return m_speedLimit; }
+
+      protected:
         MovementVector m_velocity;
         MovementVector m_acceleration;
         float m_speedLimit{ 0.0f };
+    };
+
+    //
+
+    // too many constructors, lets give them names
+    // There is too much code required to make a Mover.
+    struct MoverFactory
+    {
+        static Mover makeFromRatios(const float base, const MoverRatios & ratios)
+        {
+            return Mover(
+                (base * ratios.velocity),
+                (base * ratios.acceleration),
+                (base * ratios.speed_limit));
+        }
+
+        static Mover makeFromRatios(
+            const float base,
+            const BaseRatios_t & velocity,
+            const BaseRatios_t & acceleration = { 0.0f, 0.0f },
+            const float spdLimit = { 0.0f })
+        {
+            const MoverRatios ratios{ velocity, acceleration, spdLimit };
+            return makeFromRatios(base, ratios);
+        }
+
+        static Mover makeFromRanges(
+            const Context & context,
+            const float base,
+            const MoverRatios & ratios,
+            const MoverRanges & ranges)
+        {
+            Mover mover(makeFromRatios(base, ratios));
+
+            getRandomRange(context, mover.m_velocity.vector, base, ranges.velocity);
+            getRandomRange(context, mover.m_acceleration.vector, base, ranges.acceleration);
+            getRandomRange(context, mover.m_speedLimit, base, ranges.speed_limit);
+
+            return mover;
+        }
+
+      private:
+        static void getRandomRange(
+            const Context & context, float & midpoint, const float base, const float ratioOfBase)
+        {
+            const float rangeHalf(std::abs((base * ratioOfBase) / 2.0f));
+            midpoint = context.random.fromTo((midpoint - rangeHalf), (midpoint + rangeHalf));
+        }
+
+        static void getRandomRange(
+            const Context & context,
+            sf::Vector2f & midpoints,
+            const float base,
+            const RangeRatios_t & ranges)
+        {
+            getRandomRange(context, midpoints.x, base, ranges.x);
+            getRandomRange(context, midpoints.y, base, ranges.y);
+        }
     };
 
     //
@@ -91,6 +192,8 @@ namespace entity
 
     struct Fence
     {
+        Fence() = default;
+
         explicit Fence(const sf::FloatRect & bnd)
             : bounds(bnd)
         {}
@@ -147,6 +250,55 @@ namespace entity
         }
 
         sf::FloatRect bounds;
+    };
+
+    //
+
+    class FencedMover : public Mover
+    {
+      public:
+        FencedMover() = default;
+
+        FencedMover(
+            const sf::FloatRect & fence,
+            const sf::Vector2f & vel,
+            const sf::Vector2f & acc = { 0.0f, 0.0f },
+            const float speedLimit = { 0.0f })
+            : Mover(vel, acc, speedLimit)
+            , m_fence(fence)
+        {
+            setup(vel, acc, speedLimit);
+        }
+
+        virtual ~FencedMover() = default;
+
+        sf::Vector2f updateDelta(const sf::FloatRect & bounds, const float frameTimeSec)
+        {
+            sf::Vector2f posDelta(Mover::updateDelta(frameTimeSec));
+
+            const BounceResult bounceResult(m_fence.updateDeltaBounce(bounds, m_velocity.vector));
+
+            m_velocity.vector = bounceResult.velocity;
+
+            return (posDelta - bounceResult.pos_delta);
+        }
+
+        sf::Vector2f updateAbsolute(
+            const sf::FloatRect & bounds, const float frameTimeSec, const sf::Vector2f & pos)
+        {
+            return (pos + updateDelta(bounds, frameTimeSec));
+        }
+
+      private:
+        sf::Vector2f updateDelta(const float) override { return { 0.0f, 0.0f }; }
+
+        sf::Vector2f updateAbsolute(const float, const sf::Vector2f &) override
+        {
+            return { 0.0f, 0.0f };
+        }
+
+      private:
+        Fence m_fence;
     };
 
 } // namespace entity

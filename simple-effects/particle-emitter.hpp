@@ -96,13 +96,16 @@ namespace entity
                 m_elapsedSinceEmitSec = 0.0f;
                 m_betweenEmitSec = context.random.fromTo(0.01f, 0.25f);
 
-                const float base{ 300.0f };
-                const float range{ 250.0f };
-                const float velHoriz{ context.random.fromTo((base - range), (base + range)) };
-                float velVer{ context.random.fromTo((base - range), (base + range)) };
-                velVer += range;
+                // clang-format off
+                MoverRatios ratios{
+                    BaseRatios_t((1.0f / 3.0f), (8.0f / 5.0f)),
+                    BaseRatios_t(1.0f, -1.0f),
+                    1.0f };
 
-                const Mover mover({ velHoriz, velVer }, { velHoriz, -velVer }, base);
+                MoverRanges ranges{0.5f, 0.75f};
+                // clang-format on
+
+                const Mover mover = MoverFactory::makeFromRanges(context, 300.0f, ratios, ranges);
 
                 m_particles.push_back(
                     ParticleEffect(context, context.resources.particle_texture, mover, m_spawnPos));
@@ -118,7 +121,7 @@ namespace entity
         {
             for (const ParticleEffect & particle : m_particles)
             {
-                // target.draw(particle, states);
+                target.draw(particle, states);
                 // target.draw(particle, sf::BlendAdd);
                 target.draw(particle, sf::BlendAdd);
             }
