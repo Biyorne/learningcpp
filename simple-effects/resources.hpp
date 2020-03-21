@@ -27,7 +27,9 @@ struct Resources
         loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
         loadTexture("C:/src/learningcpp/media/image/particle/fire-cloud.png", particle_texture);
         loadTexture("C:/src/learningcpp/media/image/ruby.jpg", exploder_texture);
-        loadTexture("C:/src/learningcpp/media/image/backdrop/bluetear.jpg", backdrop_texture);
+        loadTexture("C:/src/learningcpp/media/image/backdrop/effluvium2.jpg", backdrop_texture);
+        loadTexture(
+            "C:/src/learningcpp/media/image/backdrop/effluvium-highlight.png", highlight_texture);
 
         if (!font.loadFromFile("C:/src/learningcpp/media/font/gentium-plus/gentium-plus.ttf"))
         {
@@ -52,6 +54,7 @@ struct Resources
     sf::Texture particle_texture;
     sf::Texture exploder_texture;
     sf::Texture backdrop_texture;
+    sf::Texture highlight_texture;
     sf::Font font;
     sf::Music music;
 };
