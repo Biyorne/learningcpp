@@ -43,6 +43,7 @@ constexpr std::size_t operator"" _st(unsigned long long number)
 
 namespace sf
 {
+    using Vector2s = Vector2<std::size_t>;
 
     inline bool operator<(const Color & left, const Color & right)
     {
@@ -89,7 +90,6 @@ namespace sf
         os << '(' << rect.left << ',' << rect.top << '_' << rect.width << 'x' << rect.height << ')';
         return os;
     }
-
 } // namespace sf
 
 // sf utils
@@ -379,57 +379,492 @@ inline std::vector<sf::FloatRect> subdivide(
 }
 
 //
-// if borderSize <0 then it's a scale of the default thin.  (i.e. -10 is ten times the default thin)
+
+template <typename T>
+inline bool isPerfectSquare(const T number)
+{
+    static_assert(std::is_integral_v<T>);
+
+    if (number < 4)
+    {
+        return false;
+    }
+
+    const T squareRootFloor { static_cast<T>(std::sqrt(number)) };
+    return ((squareRootFloor * squareRootFloor) == number);
+}
+
+template <typename T>
+inline bool isAlmostPerfectSquare(const T number)
+{
+    static_assert(std::is_integral_v<T>);
+
+    if (number < 4)
+    {
+        return false;
+    }
+
+    const T squareRootFloor { static_cast<T>(std::sqrt(number)) };
+    return ((squareRootFloor * (squareRootFloor + 1)) == number);
+}
+
+//
+
+enum class Squares
+{
+    Perfect,
+    Uniform,
+    Irregular
+};
+
+//
+
+template <typename T>
+inline bool isSquareEnough(const T number, const Squares allowed)
+{
+    if (isPerfectSquare(number))
+    {
+        return true;
+    }
+
+    return ((allowed == Squares::Uniform) && isAlmostPerfectSquare(number));
+}
+
+// may return the number given
+template <typename T>
+inline T findPrevSquare(const T count, const Squares allowed)
+{
+    T result { count };
+
+    if (result < 4)
+    {
+        return 0;
+    }
+
+    while ((result >= 4) && !isSquareEnough(result, allowed))
+    {
+        --result;
+    }
+
+    return result;
+}
+
+// may return the number given
+template <typename T>
+inline T findNextSquare(const T count, const Squares allowed)
+{
+    const T max { count * 100 };
+
+    T result { count };
+    while ((result < max) && !isSquareEnough(result, allowed))
+    {
+        ++result;
+    }
+
+    if (result >= max)
+    {
+        return 0;
+    }
+
+    return result;
+}
+
+//
+
+struct SquaresFinder
+{
+    SquaresFinder(const int count, const Squares allowed)
+        : prev(findPrevSquare(count, allowed))
+        , dist_to_prev(count - prev)
+        , next(findNextSquare(count, allowed))
+        , dist_to_next(next - count)
+        // clang-format off
+        , is_valid(
+            (count > 0)         &&
+            (prev <= count)     &&
+            (next >= count)     &&
+            (prev <= next)      &&
+            (dist_to_prev >= 0) &&
+            (dist_to_next >= 0))
+    // clang-format on
+    {
+        if (is_valid)
+        {
+            std::cout << "\n  count          = " << count;
+            std::cout << "\n  squares.prev   = " << prev << ", dist=" << dist_to_prev;
+            std::cout << "\n  squares.next   = " << next << ", dist=" << dist_to_next;
+            std::cout << "\n  squares.valid  = " << std::boolalpha << is_valid;
+        }
+    }
+
+    // prev of zero is not always an error
+    int prev;
+    int dist_to_prev;
+
+    int next;
+    int dist_to_next;
+
+    bool is_valid;
+};
+
+using ColPerRowVec_t = std::vector<int>;
+
+//
+
+inline ColPerRowVec_t
+    divideBounds_uniformTiles(const int count, const sf::FloatRect & bounds, const Squares allowed)
+{
+    if (count <= 0)
+    {
+        return {};
+    }
+
+    const bool isWiderThanTaller { bounds.width > bounds.height };
+
+    if (count <= 2)
+    {
+        if (isWiderThanTaller)
+        {
+            return ColPerRowVec_t(1, count);
+        }
+        else
+        {
+            return ColPerRowVec_t(count, 1);
+        }
+    }
+
+    const bool isOneRow { (bounds.height / bounds.width) < (1.0f / static_cast<float>(count / 2)) };
+    if (isOneRow)
+    {
+        return ColPerRowVec_t(1, count);
+    }
+
+    const bool isOneColumn { (bounds.width / bounds.height)
+                             < (1.0f / static_cast<float>(count / 2)) };
+
+    if (isOneColumn)
+    {
+        return ColPerRowVec_t(count, 1);
+    }
+
+    if (isPerfectSquare(count))
+    {
+        const int square { static_cast<int>(std::sqrt(count)) };
+        return ColPerRowVec_t(square, square);
+    }
+
+    if (Squares::Perfect == allowed)
+    {
+        const int square { static_cast<int>(std::ceil(std::sqrt(count))) };
+        return ColPerRowVec_t(square, square);
+    }
+    else
+    {
+        if (isAlmostPerfectSquare(count))
+        {
+            const int square { static_cast<int>(std::sqrt(count)) };
+            return ColPerRowVec_t(square, (square + 1));
+        }
+
+        if (Squares::Uniform == allowed)
+        {
+            const int nextPerfectCount { findNextSquare(count, Squares::Perfect) };
+            const int nextUniformCount { findNextSquare(count, Squares::Uniform) };
+
+            if (nextPerfectCount < nextUniformCount)
+            {
+                const int square { static_cast<int>(std::sqrt(nextPerfectCount)) };
+                return ColPerRowVec_t(square, square);
+            }
+            else
+            {
+                const int square { static_cast<int>(std::sqrt(nextUniformCount)) };
+                return ColPerRowVec_t(square, (square + 1));
+            }
+        }
+    }
+
+    return {};
+}
+
+inline ColPerRowVec_t divideBounds_irregularTiles(const int count)
+{
+    const SquaresFinder squares(count, Squares::Irregular);
+    if (!squares.is_valid)
+    {
+        if (count > 0)
+        {
+            std::cout << "SquaresFinder constructor EPIC FAIL";
+        }
+
+        return {};
+    }
+
+    // clang-format off
+    const bool will_use_prev{ (squares.prev > 0) && (squares.dist_to_prev <= squares.dist_to_next) };
+    const int count_to_use  { (will_use_prev) ? squares.prev : squares.next };
+    const int square_to_use { static_cast<int>(std::sqrt(count_to_use)) };
+    const int total         { (count_to_use / square_to_use) * square_to_use };
+    const int remaining     { static_cast<int>(count) - total };
+    const int rows          { count_to_use / square_to_use };
+    const int columns       { square_to_use };
+    // clang-format on
+
+    std::cout << "\n  using_prev      = " << std::boolalpha << will_use_prev;
+    std::cout << "\n  count           = " << count_to_use;
+    std::cout << "\n  square          = " << square_to_use;
+    std::cout << "\n  rows            = " << rows;
+    std::cout << "\n  columns         = " << columns;
+    std::cout << "\n  remain          = " << remaining;
+
+    ColPerRowVec_t colCountForEachRow(
+        static_cast<std::size_t>(rows), static_cast<std::size_t>(columns));
+
+    for (int i(0); i < std::abs(remaining); ++i)
+    {
+        if (remaining < 0)
+        {
+            colCountForEachRow.at(i)--;
+        }
+        else
+        {
+            colCountForEachRow.at(i)++;
+        }
+    }
+
+    std::cout << "\n  rows       = {";
+
+    for (const int colCount : colCountForEachRow)
+    {
+        std::cout << colCount << ",";
+    }
+
+    std::cout << "}" << std::endl;
+
+    return colCountForEachRow;
+}
+
+//
+
+inline ColPerRowVec_t
+    divideBounds(const int count, const sf::FloatRect & bounds, const Squares allowed)
+{
+    if ((bounds.width * bounds.height) < static_cast<float>(count))
+    {
+        return {};
+    }
+
+    const ColPerRowVec_t unifom { divideBounds_uniformTiles(count, bounds, allowed) };
+    if (!unifom.empty())
+    {
+        return unifom;
+    }
+
+    if (Squares::Irregular == allowed)
+    {
+        const ColPerRowVec_t irregular { divideBounds_irregularTiles(count) };
+        if (!irregular.empty())
+        {
+            return irregular;
+        }
+    }
+
+    return {};
+}
+
+// if borderSize <0 then it's a scale of the default thin.  (i.e. -10 is ten times the default
+// thin)
 inline std::vector<sf::FloatRect> subdivide_v1(
     const std::size_t count,
     const sf::FloatRect & bounds,
-    const float borderSizeOrig = 0.0f,
+    const float borderSize = 0.0f,
     const bool willForceSquare = false)
 {
+    ColPerRowVec_t rowVecI { divideBounds(static_cast<int>(count), bounds, Squares::Irregular) };
+
+    if (rowVecI.empty())
+    {
+        return {};
+    }
+
+    const std::vector<std::size_t> rowVecS(rowVecI.begin(), rowVecI.end());
+
+    return subdivide(rowVecS, bounds, borderSize, willForceSquare);
+}
+
+// const std::size_t countSquareCeil { static_cast<std::size_t>(std::ceil(std::sqrt(count))) };
+// const std::size_t ceilRowCount { (count / countSquareCeil) };
+// const std::size_t remainder { count - (ceilRowCount * countSquareCeil) };
+//
+// std::cout << "new stuff FAIL:";
+// std::cout << "\n  count        = " << count;
+// std::cout << "\n  sqrtFloor    = " << static_cast<std::size_t>(std::sqrt(count));
+// std::cout << "\n  sqrtCeil     = " << countSquareCeil;
+// std::cout << "\n  ceilRowCount = " << ceilRowCount
+//          << " (total=" << (ceilRowCount * countSquareCeil) << ")";
+// std::cout << "\n  remainder    = " << remainder;
+// std::cout << "\n  prevGood     = " << squares.prev;
+// std::cout << "\n  nextGood     = " << squares.next;
+// std::cout << std::endl;
+//
+// std::vector<std::size_t> colCountForEachRow(ceilRowCount, countSquareCeil);
+//
+// if (0 == remainder)
+//{
+//    // um...nothing
+//}
+// else if (remainder > (countSquareCeil / 2))
+//{
+//    colCountForEachRow.push_back(remainder);
+//}
+// else
+//{
+//    colCountForEachRow.back() += remainder;
+//}
+//// for (std::size_t i(0); i < remainder; ++i)
+////{
+////    colCountForEachRow.at(i)--;
+////}
+//
+// return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+
+// std::size_t colCount { static_cast<std::size_t>(std::ceil(std::sqrt(count))) };
+//
+// std::size_t rowCount { static_cast<std::size_t>(
+//    std::ceil(count / static_cast<float>(colCount))) };
+//
+// if (bounds.width < bounds.height)
+//{
+//    std::swap(colCount, rowCount);
+//    std::cout << rowCount << "x" << colCount << "  swap" << std::endl;
+//}
+// else
+//{
+//    std::cout << rowCount << "x" << colCount << std::endl;
+//}
+//
+// const std::vector<std::size_t> colCountForEachRow(rowCount, colCount);
+//
+// return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+
+//
+
+/*
+// if borderSize <0 then it's a scale of the default thin.  (i.e. -10 is ten times the default
+thin) inline std::vector<sf::FloatRect> subdivide_z( const std::size_t count, const
+sf::FloatRect & bounds, const float borderSize = 0.0f, const bool willForceSquare = false)
+{
+    if ((bounds.width < 1.0f) || (bounds.height < 1.0f))
+    {
+        return {};
+    }
+
     if (count <= 2)
     {
         if (bounds.width > bounds.height)
         {
             const std::vector<std::size_t> colCountForEachRow(1, count);
-            return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
+            return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
         }
         else
         {
             const std::vector<std::size_t> colCountForEachRow(count, 1);
-            return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
+            return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
         }
     }
 
-    if ((bounds.height / bounds.width) < (1.0f / static_cast<float>(count - 1)))
-    {
-        const std::vector<std::size_t> colCountForEachRow(1, count);
-        return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
-    }
-    else if ((bounds.width / bounds.height) < (1.0f / static_cast<float>(count - 1)))
-    {
-        const std::vector<std::size_t> colCountForEachRow(count, 1);
-        return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
-    }
-    else if (3 == count)
-    {
-        std::vector<std::size_t> colCountForEachRow;
-        colCountForEachRow.push_back(1);
-        colCountForEachRow.push_back(2);
-        return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
-    }
+    const float squareF { std::sqrtf(count) };
+    const std::size_t squareS { static_cast<std::size_t>(squareF) };
 
-    const float countsSquareF { std::sqrt(static_cast<float>(count)) };
-    const std::size_t countsSquareU { static_cast<std::size_t>(countsSquareF) };
+    const std::size_t horizFloorCount { std::clamp(
+        static_cast<std::size_t>(std::sqrtf(bounds.width)), 1_st, squareS) };
 
-    std::vector<std::size_t> colCountForEachRow(countsSquareU, countsSquareU);
+    const std::size_t vertFloorCount { std::clamp(
+        static_cast<std::size_t>(std::sqrtf(bounds.height)), 1_st, squareS) };
 
-    const std::size_t remainder { count - (countsSquareU * countsSquareU) };
-    if (remainder > 0)
+    const std::size_t floorCountTotal { horizFloorCount * vertFloorCount };
+
+    const std::size_t countDiff { std::max(count, floorCountTotal)
+                                  - std::min(count, floorCountTotal) };
+
+    if (floorCountTotal == count)
     {
-        colCountForEachRow.insert(std::begin(colCountForEachRow), remainder);
+        std::cout << "LUCKY #1"
+                  << "count=" << count << ", horiz_count=" << horizFloorCount
+                  << ", vert_count=" << vertFloorCount << ", diff=" << countDiff << std::endl;
+
+        const std::vector<std::size_t> colCountForEachRow(vertFloorCount, horizFloorCount);
+        return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
     }
 
-    return subdivide(colCountForEachRow, bounds, borderSizeOrig, willForceSquare);
+    if ((countDiff % horizFloorCount) == 0)
+    {
+        std::cout << "LUCKY #2 (horiz offset)"
+                  << "count=" << count << ", horiz_count=" << horizFloorCount
+                  << ", vert_count=" << vertFloorCount << ", diff=" << countDiff << std::endl;
+
+        if (bounds.width > bounds.height)
+        {
+            const std::vector<std::size_t> colCountForEachRow(
+                vertFloorCount, (horizFloorCount + (countDiff / vertFloorCount)));
+
+            return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+        }
+        else
+        {
+            const std::vector<std::size_t> colCountForEachRow(
+                (vertFloorCount + (countDiff / horizFloorCount)), horizFloorCount);
+
+            return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+        }
+    }
+
+    if ((countDiff % vertFloorCount) == 0)
+    {
+        std::cout << "LUCKY #3 (vert offset)"
+                  << "count=" << count << ", horiz_count=" << horizFloorCount
+                  << ", vert_count=" << vertFloorCount << ", diff=" << countDiff << std::endl;
+
+        if (bounds.width > bounds.height)
+        {
+            const std::vector<std::size_t> colCountForEachRow(
+                vertFloorCount, (horizFloorCount + (countDiff / vertFloorCount)));
+
+            return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+        }
+        else
+        {
+            const std::vector<std::size_t> colCountForEachRow(
+                (vertFloorCount + (countDiff / horizFloorCount)), horizFloorCount);
+
+            return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+        }
+    }
+
+    if (horizFloorCount < vertFloorCount)
+    {
+        std::vector<std::size_t> colCountForEachRow(vertFloorCount, (horizFloorCount + 1));
+        const std::size_t extra { (vertFloorCount * (horizFloorCount + 1)) - count };
+
+        for (std::size_t i(0); i < extra; ++i)
+        {
+            colCountForEachRow.at(i)--;
+        }
+
+        return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+    }
+    else
+    {
+        std::vector<std::size_t> colCountForEachRow((vertFloorCount + 1), horizFloorCount);
+        const std::size_t extra { ((vertFloorCount + 1) * horizFloorCount) - count };
+
+        for (std::size_t i(0); i < extra; ++i)
+        {
+            colCountForEachRow.at(i)--;
+        }
+
+        return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+    }
 }
 
 inline std::vector<sf::FloatRect> subdivide_v2(
@@ -454,18 +889,16 @@ inline std::vector<sf::FloatRect> subdivide_v2(
     return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
 
     /*
-    ceil(sqrt(n)) to compute the number of columns (since this is, as you apparently have guessed,
-    the smallest amount of columns you need in order to not have more rows than columns). Then, the
-    number of rows you need in order to accommodate n elements distributed across numColumns columns
-    will be given by ceil(n / (double)numColumns).
+    ceil(sqrt(n)) to compute the number of columns (since this is, as you apparently have
+    guessed, the smallest amount of columns you need in order to not have more rows than
+    columns). Then, the number of rows you need in order to accommodate n elements distributed
+    across numColumns columns will be given by ceil(n / (double)numColumns).
     */
-}
 
 //
 
 namespace color
 {
-
     using Diff_t = std::int32_t;
 
     // color value diffs
@@ -892,7 +1325,6 @@ namespace color
             float z { 0.0f };
             sf::Uint8 a { 255 }; // same as sf::Color.a (transparent=0, opaque=255)
         };
-
     } // namespace xyz
 
     namespace cie
@@ -931,7 +1363,6 @@ namespace color
             float b { 0.0f };
             sf::Uint8 alpha { 255 }; // same as sf::Color.a (transparent=0, opaque=255)
         };
-
     } // namespace cie
 
     // helper utils
@@ -1344,7 +1775,6 @@ namespace color
     private:
         std::vector<sf::Color> m_colors;
     };
-
 } // namespace color
 using namespace color;
 
@@ -1352,10 +1782,8 @@ using namespace color;
 
 namespace stats
 {
-
     namespace Row
     {
-
         enum Enum
         {
             VideoCard = 0,
@@ -1381,7 +1809,6 @@ namespace stats
         }
             // clang-format on
         }
-
     } // namespace Row
 
     struct ColorRow
@@ -1581,7 +2008,6 @@ namespace stats
         static inline constexpr std::size_t colors_per_generation { 1 << 14 };
         static inline constexpr std::size_t generation_repeat_count { 100 };
     };
-
 } // namespace stats
 using namespace stats;
 
@@ -1589,7 +2015,6 @@ using namespace stats;
 
 namespace ColorTest
 {
-
     enum Enum
     {
         Blend = 0,
@@ -1598,7 +2023,6 @@ namespace ColorTest
         Hsl,
         Greyscale
     };
-
 }
 
 inline void indexWrap(std::size_t & index, const std::size_t maxValid)
@@ -1765,8 +2189,125 @@ void makePalleteCode(const std::string & headerFilePath);
 
 //
 
+/*
+inline std::vector<std::size_t> subdivide_v3(const std::size_t count, const sf::FloatRect &
+bounds)
+{
+    if (count <= 0)
+    {
+        return {};
+    }
+    else if (1 == count)
+    {
+        return { 1 };
+    }
+    else if (2 == count)
+    {}
+
+    // const std::array<std::size_t, 19> countsThatTileUniform
+    //     = { 2, 6, 9, 12, 16, 20, 25, 30, 36, 42, 49, 56, 64, 72, 81, 90, 100 };
+
+    auto isPerfecectSquare = [](const std::size_t number) {
+        if (number < 4)
+        {
+            return false;
+        }
+
+        const std::size_t squareRoot { static_cast<std::size_t>(std::sqrt(number)) };
+
+        return ((squareRoot * squareRoot) == number);
+    };
+
+    // const std::size_t colCount { static_cast<std::size_t>(std::ceil(std::sqrt(count))) };
+    //
+    // const std::size_t rowCount { static_cast<std::size_t>(
+    //     std::ceil(count / static_cast<float>(colCount))) };
+    //
+    // std::cout << rowCount << "x" << colCount << std::endl;
+    // const std::vector<std::size_t> colCountForEachRow(rowCount, colCount);
+    //
+    // return subdivide(colCountForEachRow, bounds, borderSize, willForceSquare);
+
+    return {};
+}
+*/
+
 int main()
 {
+    const std::size_t countMax { 100 };
+
+    auto isPerfecectSquare = [countMax](const std::size_t number) {
+        if ((number < 4) || (number > countMax))
+        {
+            return false;
+        }
+
+        const std::size_t squareRoot { static_cast<std::size_t>(std::sqrt(number)) };
+        return ((squareRoot * squareRoot) == number);
+    };
+
+    auto findNextPerfectSquareAfter = [&](const std::size_t number) {
+        for (std::size_t i(number + 1); i < std::numeric_limits<std::size_t>::max(); ++i)
+        {
+            if (isPerfecectSquare(i))
+            {
+                return i;
+            }
+        }
+
+        return 0_st;
+    };
+
+    for (std::size_t count(0); count < countMax; ++count)
+    {
+        std::cout << count << '\t';
+
+        if (count < 4)
+        {
+            std::cout << "too small.  Ignore." << std::endl;
+            continue;
+        }
+        /*
+        if (isPerfecectSquare(count))
+        {
+            std::cout << "IS perfect square of " << std::sqrt(count) << std::endl;
+            continue;
+        }
+
+        const std::size_t imperfectFloorSquare { static_cast<std::size_t>(std::sqrt(count)) };
+
+        const std::size_t nextThatIsPerfectSquare { findNextPerfectSquareAfter(count) };
+        if (0 == nextThatIsPerfectSquare)
+        {
+            std::cout << "ERROR:  Unable to find next perfect square." << std::endl;
+            continue;
+        }
+
+        const std::size_t nextPerfectSquare { static_cast<std::size_t>(
+            std::sqrt(nextThatIsPerfectSquare)) };
+
+        std::cout << "has imperfectFloorSquare=" << imperfectFloorSquare;
+
+        std::cout << ", but will use the next perfect square of " << nextThatIsPerfectSquare <<
+        "("
+                  << nextPerfectSquare << "x" << nextPerfectSquare << ")";
+
+        const std::size_t diff { nextPerfectSquare - imperfectFloorSquare };
+        std::cout << ", which leaves diff=" << diff;
+
+        std::cout << ", which is how many of those rows will be one less="
+                  << (nextPerfectSquare - 1);
+
+        const std::size_t check { count - (diff * (nextPerfectSquare - 1)) };
+
+        std::cout << ", check=" << check << " " << ((check == nextPerfectSquare) ? "PASS" :
+        "FAIL")
+                  << std::endl;
+                  */
+    }
+
+    // return 0;
+
     // makePalleteCode("Z:\\src\\learningcpp\\color-range\\color-names.hpp");
 
     Resources res;
@@ -2872,8 +3413,8 @@ void Resources::test_subdivide_colsVec()
 
     const std::vector<std::size_t> cellCountForRows(vert_index, horiz_index);
 
-    const std::vector<sf::FloatRect> rects { subdivide(
-        cellCountForRows, bounds, cellBorderSize, boolean) };
+    const std::vector<sf::FloatRect> rects { subdivide_v1(
+        vert_index, bounds, cellBorderSize, boolean) };
 
     appendQuadRect(bounds, sf::Color(36, 35, 36));
 
@@ -2936,14 +3477,9 @@ void Resources::test_subdivide_count()
 
 /*
 
-
-
-
-
 Observer    2° (CIE 1931)   10° (CIE 1964)   Note
 
 Illuminant  X2  Y2   Z2  X10  Y10   Z10
-
 
 */
 
