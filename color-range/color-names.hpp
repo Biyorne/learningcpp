@@ -15,7 +15,6 @@
 
 namespace color
 {
-
     namespace pallete
     {
         // All of these pallets start with black and end with white.
@@ -37,7 +36,7 @@ namespace color
                 white   = 0xffffffff,
                 Count = 8
             };
-            
+
             static inline const std::vector<sf::Color> Colors{
                 sf::Color(black),
                 sf::Color(red),
@@ -4799,9 +4798,7 @@ namespace color
 
             static inline const std::string palleteName { "xkcd_949" };
         };
-
     } // namespace pallete
-
 } // namespace color
 
 #endif // SFUTIL_COLOR_NAMES_HPP_INCLUDED
