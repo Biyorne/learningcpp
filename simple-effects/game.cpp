@@ -206,15 +206,8 @@ void Game::processEvent(const sf::Event & event)
         // Exploder
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
         {
-            const std::size_t tileCount{ static_cast<std::size_t>(
-                sf::Mouse::getPosition(m_window).y / 2.5f) };
-
-            const auto size{ m_resources.exploder_texture.getSize() };
-            if ((tileCount > 4) && (tileCount < std::min(size.x, size.y)))
-            {
-                m_effects.push_back(std::make_unique<entity::ExploderEffect>(
-                    m_context, m_resources.exploder_texture, m_context.mouse_pos.y, tileCount));
-            }
+            m_effects.push_back(
+                std::make_unique<entity::ExploderEffect>(m_context, m_resources.exploder_texture));
         }
     }
 }

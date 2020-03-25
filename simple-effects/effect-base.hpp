@@ -37,7 +37,7 @@ namespace entity
 
         bool isFinished() const override { return (m_sprite.getColor().a == 0); }
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override //-V813
         {
             target.draw(m_sprite, states);
         }

@@ -324,7 +324,7 @@ void main()\
                                          "shaders are not supported on your shitty video card.");
             }
 
-            if (!m_sideTexture.create(window.getSize().x, window.getSize().y))
+            if (!m_sideTexture.create(window.getSize().x, window.getSize().y)) //-V807
             {
                 throw std::runtime_error(
                     "BloomEffectHelper's constructor was unable to create a side sf::RenderTexture "

@@ -130,7 +130,7 @@ namespace entity
             }
         }
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
+        void draw(sf::RenderTarget & target, sf::RenderStates) const override
         {
             target.draw(m_bgHighlight, sf::BlendAdd);
             for (const ParticleEffect & particle : m_particles)
