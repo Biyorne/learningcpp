@@ -23,7 +23,7 @@ Game::Game()
     , m_bgSprite(m_resources.bg_texture)
     , m_backdropSprite(m_resources.backdrop_texture)
     , m_effects()
-    , m_emitter()
+    , m_emitter(m_context)
     , m_simTimeMult(1.0f)
     , m_statusText(m_context)
 //, m_quadVerts(sf::Quads)// Color Gradient
@@ -200,19 +200,14 @@ void Game::processEvent(const sf::Event & event)
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
         {
             m_emitter.toggleEmission(m_context.mouse_pos);
+            m_bloomWindow.isEnabled(m_emitter.isEmitting());
+            m_bloomWindow.blurMultipassCount(5);
         }
         // Exploder
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
         {
-            const std::size_t tileCount{ static_cast<std::size_t>(
-                sf::Mouse::getPosition(m_window).y / 2.5f) };
-
-            const auto size{ m_resources.exploder_texture.getSize() };
-            if ((tileCount > 4) && (tileCount < std::min(size.x, size.y)))
-            {
-                m_effects.push_back(std::make_unique<entity::ExploderEffect>(
-                    m_context, m_resources.exploder_texture, m_context.mouse_pos.y, tileCount));
-            }
+            m_effects.push_back(
+                std::make_unique<entity::ExploderEffect>(m_context, m_resources.exploder_texture));
         }
     }
 }

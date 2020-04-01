@@ -37,6 +37,7 @@ namespace entity
         FencedMover m_mover;
     };
 
+    // TODO implement using Mover class
     class GravityBouncerEffect : public EffectBase
     {
       public:

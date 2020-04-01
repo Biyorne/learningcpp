@@ -39,7 +39,7 @@ namespace entity
 
         virtual ~StatusText() = default;
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override //-V813
         {
             target.draw(m_background, states);
             target.draw(m_text, states);

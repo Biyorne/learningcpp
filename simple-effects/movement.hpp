@@ -3,6 +3,8 @@
 
 #include "util.hpp"
 
+#include <optional>
+
 #include <SFML/Graphics.hpp>
 
 namespace entity
@@ -188,6 +190,8 @@ namespace entity
         sf::Vector2f velocity{ 0.0f, 0.0f };
     };
 
+    using BounceOpt_t = std::optional<BounceResult>;
+
     //
 
     struct Fence
@@ -231,22 +235,33 @@ namespace entity
         }
 
         // Returns posDelta AND new absolute velocity
-        BounceResult
+        BounceOpt_t
             updateDeltaBounce(const sf::FloatRect & entityBounds, const sf::Vector2f & vel) const
         {
             BounceResult result{ updateDelta(entityBounds), vel };
 
+            bool didBounce = false;
+
             if ((result.pos_delta.x > 0.0f) || (result.pos_delta.x < 0.0f))
             {
                 result.velocity.x *= -1.0f;
+                didBounce = true;
             }
 
             if ((result.pos_delta.y > 0.0f) || (result.pos_delta.y < 0.0f))
             {
                 result.velocity.y *= -1.0f;
+                didBounce = true;
             }
 
-            return result;
+            if (didBounce)
+            {
+                return result;
+            }
+            else
+            {
+                return std::nullopt;
+            }
         }
 
         sf::FloatRect bounds;
@@ -274,13 +289,17 @@ namespace entity
 
         sf::Vector2f updateDelta(const sf::FloatRect & bounds, const float frameTimeSec)
         {
-            sf::Vector2f posDelta(Mover::updateDelta(frameTimeSec));
+            const BounceOpt_t resultOpt(m_fence.updateDeltaBounce(bounds, m_velocity.vector));
 
-            const BounceResult bounceResult(m_fence.updateDeltaBounce(bounds, m_velocity.vector));
-
-            m_velocity.vector = bounceResult.velocity;
-
-            return (posDelta - bounceResult.pos_delta);
+            if (resultOpt)
+            {
+                m_velocity.vector = resultOpt.value().velocity;
+                return resultOpt.value().pos_delta;
+            }
+            else
+            {
+                return sf::Vector2f(Mover::updateDelta(frameTimeSec));
+            }
         }
 
         sf::Vector2f updateAbsolute(

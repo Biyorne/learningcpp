@@ -14,11 +14,7 @@ namespace entity
     class ExploderEffect : public EffectBase
     {
       public:
-        ExploderEffect(
-            const Context & context,
-            const sf::Texture & texture,
-            const float,
-            const std::size_t tileCount)
+        ExploderEffect(const Context & context, const sf::Texture & texture)
             : EffectBase(makeSprite(
                   context,
                   texture,
@@ -26,23 +22,28 @@ namespace entity
                   (context.window_size * 0.5f)))
             , m_tiles()
             , m_offScreenTexture()
+            , m_speedBase(0.0f)
             , m_willExplode(false)
         {
-            m_tiles.reserve(tileCount);
-
             makeScaledTextureCopy();
-            divideIntoRects(context, tileCount, m_offScreenTexture.getTexture());
         }
 
         virtual ~ExploderEffect() = default;
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override //-V813
         {
             // EffectBase::draw(target, states);
 
-            for (const auto & tile : m_tiles)
+            if (m_tiles.empty())
             {
-                target.draw(tile, states);
+                target.draw(m_sprite, states);
+            }
+            else
+            {
+                for (const auto & tile : m_tiles)
+                {
+                    target.draw(tile, states);
+                }
             }
         }
 
@@ -57,7 +58,7 @@ namespace entity
             }
         }
 
-        void handleEvent(const Context &, const sf::Event & event) override
+        void handleEvent(const Context & context, const sf::Event & event) override
         {
             if (m_willExplode)
             {
@@ -67,6 +68,21 @@ namespace entity
             m_willExplode =
                 ((event.type == sf::Event::MouseButtonPressed) &&
                  (event.mouseButton.button == sf::Mouse::Right));
+
+            if (!m_willExplode)
+            {
+                return;
+            }
+
+            m_speedBase = std::clamp(context.mouse_pos.y, 10.0f, context.window_size.x);
+
+            const sf::Vector2s textureLocalSize{ context.resources.exploder_texture.getSize() };
+            const sf::Vector2s mousePos(context.mouse_pos);
+
+            const std::size_t tileCount{ std::clamp(
+                mousePos.y, 4_st, std::min(textureLocalSize.x, textureLocalSize.y)) };
+
+            divideIntoRects(context, tileCount, m_offScreenTexture.getTexture());
         }
 
       private:
@@ -89,7 +105,7 @@ namespace entity
             const Context & context, const std::size_t tileCount, const sf::Texture & texture)
         {
             const sf::Vector2i textureSizeInt(texture.getSize());
-            const int tileCountPerSide(static_cast<int>(std::sqrt(tileCount)));
+            const int tileCountPerSide(static_cast<int>(std::sqrt(tileCount))); //-V113
             const sf::Vector2i tileCounts(tileCountPerSide, tileCountPerSide);
             const sf::Vector2i tileSize(textureSizeInt / tileCounts);
 
@@ -97,32 +113,49 @@ namespace entity
             {
                 for (int horiz(0); horiz < textureSizeInt.x; horiz += tileSize.x)
                 {
-                    // clang-format off
-                    MoverRatios ratios{
-                        BaseRatios_t(0.0f, -1.0f),
-                        BaseRatios_t(0.0f, 1.0f),
-                        1.0f };
-
-                    MoverRanges ranges{0.5f, 0.0f};
-                    // clang-format on
-
-                    const Mover mover =
-                        MoverFactory::makeFromRanges(context, 300.0f, ratios, ranges);
-
-                    const sf::IntRect tileBounds({ horiz, vert }, tileSize);
-                    sf::Sprite sp(texture, tileBounds);
-                    util::setOrigin2Center(sp);
-                    sp.setPosition(util::center(sf::FloatRect(tileBounds)));
-                    sp.move(m_sprite.getPosition());
-                    sp.move(m_sprite.getOrigin() * -m_sprite.getScale());
+                    const sf::IntRect texCoords({ horiz, vert }, tileSize);
+                    const sf::Sprite sp(makeParticleSprite(texture, texCoords));
+                    const Mover mover(calcMoverForParticle(context, horiz, textureSizeInt));
                     m_tiles.push_back(ParticleEffect(context, sp, mover, sp.getPosition()));
                 }
             }
         }
 
       private:
+        Mover calcMoverForParticle(
+            const Context & context, const int horiz, const sf::Vector2i & textureSize)
+        {
+            const bool isOnLeft(horiz < (textureSize.x / 2));
+
+            const float velRatio{ (isOnLeft) ? -1.0f : 1.0f };
+
+            const MoverRatios ratios{ BaseRatios_t(velRatio, -1.0f),
+                                      BaseRatios_t(0.0f, 1.0f),
+                                      10.0f };
+
+            MoverRanges ranges;
+            ranges.velocity.x = 1.0f;
+            ranges.velocity.y = 0.5f;
+
+            return MoverFactory::makeFromRanges(context, m_speedBase, ratios, ranges);
+        }
+
+        sf::Sprite makeParticleSprite(const sf::Texture & texture, const sf::IntRect & texCoords)
+        {
+            // TODO clean this up
+            sf::Sprite sp(texture, texCoords);
+            util::setOrigin2Center(sp);
+            sp.setPosition(util::center(sf::FloatRect(texCoords)));
+            sp.move(m_sprite.getPosition());
+            sp.move(m_sprite.getOrigin() * -m_sprite.getScale());
+
+            return sp;
+        }
+
+      private:
         std::vector<ParticleEffect> m_tiles;
         sf::RenderTexture m_offScreenTexture;
+        float m_speedBase;
         bool m_willExplode;
     };
 

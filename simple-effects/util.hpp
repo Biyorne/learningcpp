@@ -9,6 +9,13 @@
 
 //
 
+constexpr std::size_t operator"" _st(unsigned long long number)
+{
+    return static_cast<std::size_t>(number);
+}
+
+//
+
 namespace sf
 {
     using Vector2s = Vector2<std::size_t>;
