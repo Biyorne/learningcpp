@@ -1,7 +1,9 @@
 #ifndef SIMPLE_EFFECTS_RESOURCES_HPP_INCLUDED
 #define SIMPLE_EFFECTS_RESOURCES_HPP_INCLUDED
 
+#include <filesystem>
 #include <iostream>
+#include <memory>
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
@@ -21,8 +23,28 @@ struct Resources
             music.play();
         }
 
+        const std::filesystem::path tileImagePath("C:/src/learningcpp/media/image/seamless");
+
+        for (const std::filesystem::directory_entry & entry :
+             std::filesystem::directory_iterator(tileImagePath))
+        {
+            if (!(entry.is_regular_file()))
+            {
+                continue;
+            }
+
+            seamless_textures.push_back(std::move(std::make_unique<sf::Texture>()));
+            if (!loadTexture(entry.path().string(), *seamless_textures.back()))
+            {
+                seamless_textures.pop_back();
+                std::cout << "ERROR LOADING: " << entry.path().filename().string() << std::endl;
+            }
+        }
+
+        std::cout << "loaded this many images: " << seamless_textures.size() << std::endl;
+
         loadTexture("C:/src/learningcpp/media/image/warning.png", warn_texture);
-        loadTexture("C:/src/learningcpp/media/image/seamless/wood-dark-thin-1.jpg", bg_texture);
+        // loadTexture("C:/src/learningcpp/media/image/seamless/wood-dark-thin-1.jpg", bg_texture);
         loadTexture("C:/src/learningcpp/media/image/rabbit.png", rabbit_texture);
         loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
         loadTexture("C:/src/learningcpp/media/image/particle/fire-cloud.png", particle_texture);
@@ -37,16 +59,21 @@ struct Resources
         }
     }
 
-    void loadTexture(const std::string & filePath, sf::Texture & texture)
+    bool loadTexture(const std::string & filePath, sf::Texture & texture)
     {
-        if (!texture.loadFromFile(filePath))
+        if (texture.loadFromFile(filePath))
+        {
+            texture.setSmooth(true);
+            return true;
+        }
+        else
         {
             std::cerr << "Unable to load texure: " << filePath << std::endl;
+            return false;
         }
-
-        texture.setSmooth(true);
     }
 
+    std::vector<std::unique_ptr<sf::Texture>> seamless_textures;
     sf::Texture bg_texture;
     sf::Texture warn_texture;
     sf::Texture rabbit_texture;

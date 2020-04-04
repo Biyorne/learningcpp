@@ -70,6 +70,8 @@ void Game::reset()
     m_willClear = true;
     m_effects.clear();
     m_emitter.reset();
+    m_simTimeMult = 1.0f;
+    m_statusText.setPostfix("");
 }
 
 void Game::run()
@@ -156,28 +158,16 @@ void Game::processEvent(const sf::Event & event)
     {
         // On Nel's laptop, values are whole numbers from[-5,5] but usually just [-1,1] //
         // On Til's laptop, values are reals around [0.0083, 5.0f]
-        const float scrollAmount(event.mouseWheelScroll.delta);
+        const float scrollDelta(event.mouseWheelScroll.delta);
 
-        std::ostringstream ss;
-
-        if (scrollAmount > 0.0f)
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
         {
-            m_simTimeMult *= 1.1f;
-            ss << "(+) ";
+            changeSimTimeOnMouseScroll(scrollDelta);
         }
-        else
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
         {
-            m_simTimeMult *= 0.9f;
-            ss << "(-) ";
+            changeTiledBgImage(scrollDelta);
         }
-
-        const float simTimePercent(std::round((m_simTimeMult * 100.0f) * 10.0f) / 10.0f);
-
-        ss << std::setw(6) << simTimePercent << "% sim speed:  (" << m_simTimeMult << ')';
-
-        std::cout << ss.str() << std::endl;
-
-        m_statusText.setPostfix(ss.str());
     }
     else if (event.type == sf::Event::MouseButtonPressed)
     {
@@ -249,4 +239,27 @@ void Game::render()
     m_bloomWindow.draw(m_statusText);
 
     m_bloomWindow.display();
+}
+
+void Game::changeSimTimeOnMouseScroll(const float scrollDelta)
+{
+    std::ostringstream ss;
+
+    if (scrollDelta > 0.0f)
+    {
+        m_simTimeMult *= 1.1f;
+        ss << "(+) ";
+    }
+    else
+    {
+        m_simTimeMult *= 0.9f;
+        ss << "(-) ";
+    }
+
+    const float simTimePercent(std::round((m_simTimeMult * 100.0f) * 10.0f) / 10.0f);
+    ss << std::setw(6) << simTimePercent << "% sim speed:  (" << m_simTimeMult << ')';
+
+    std::cout << ss.str() << std::endl;
+
+    m_statusText.setPostfix(ss.str());
 }

@@ -36,6 +36,20 @@ class Game
 
     void reset();
 
+    void changeSimTimeOnMouseScroll(const float scrollDelta);
+
+    void changeTiledBgImage(const float scrollDelta)
+    {
+        if (scrollDelta > 0.0f)
+        {
+            std::cout << "Next image" << std::endl;
+        }
+        else
+        {
+            std::cout << "Previous image" << std::endl;
+        }
+    }
+
   private:
     sf::RenderWindow m_window;
     util::BloomEffectHelper m_bloomWindow;
