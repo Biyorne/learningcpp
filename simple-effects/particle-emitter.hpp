@@ -110,13 +110,13 @@ namespace entity
                 // clang-format off
                 MoverRatios ratios{
                     BaseRatios_t((1.0f / 3.0f), (8.0f / 5.0f)),
-                    BaseRatios_t(1.0f, -0.5f),
+                    BaseRatios_t(1.0f, -0.3f),
                     0.65f };
 
                 MoverRanges ranges{0.5f, 0.25f};
                 // clang-format on
 
-                const Mover mover = MoverFactory::makeFromRanges(context, 300.0f, ratios, ranges);
+                const Mover mover = MoverFactory::makeFromRanges(context, 150.0f, ratios, ranges);
 
                 m_particles.push_back(
                     ParticleEffect(context, context.resources.particle_texture, mover, m_spawnPos));

@@ -335,6 +335,61 @@ namespace util
                  random.fromTo(bounds.top, bottom(bounds)) };
     }
 
+    // Image Tiler
+
+    // TODO implement if you want
+   // inline void
+   //     tileTargetUsingSfmlTrick(sf::Texture & texture, sf::Sprite & sprite, sf::RenderTarget & target, sf::RenderStates states = {})
+   // {
+   //     texture.setRepeated(true);
+   //     sprite.setTexture(texture);
+   //     tileTarget(sprite, target, states);
+   // }
+
+    // This supports that sfml tile trick -just set the sf::Texture to repeat and target size.
+    // If so, then there is only ONE target.draw() call.
+    inline void
+        tileTarget(sf::Sprite sprite, sf::RenderTarget & target, sf::RenderStates states = {})
+    {
+        if (!(sprite.getGlobalBounds().width > 0.0f) || !(sprite.getGlobalBounds().height > 0.0f))
+        {
+            return;
+        }
+
+        const sf::Vector2f size(target.getSize());
+        if (!(size.x > 0.0f) || !(size.y > 0.0f))
+        {
+            return;
+        }
+
+        sprite.setPosition(0.0f, 0.0f);
+
+        if (sprite.getTexture()->isRepeated())
+        {
+            if ((sprite.getTextureRect().width >= size.x) &&
+                ((sprite.getTextureRect().height >= size.y)))
+            {
+                target.draw(sprite, states);
+                return;
+            }
+        }
+
+        while (sprite.getGlobalBounds().top < size.y)
+        {
+            target.draw(sprite, states);
+
+            if (sprite.getGlobalBounds().left < size.x)
+            {
+                sprite.move(sprite.getGlobalBounds().width, 0.0f);
+            }
+            else
+            {
+                sprite.move(
+                    (sprite.getGlobalBounds().left * -1.0f), sprite.getGlobalBounds().height);
+            }
+        }
+    }
+
     // quick & dirty
 
     inline sf::RectangleShape makeRectangleShape(

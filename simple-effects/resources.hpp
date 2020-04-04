@@ -22,7 +22,7 @@ struct Resources
         }
 
         loadTexture("C:/src/learningcpp/media/image/warning.png", warn_texture);
-        loadTexture("C:/src/learningcpp/media/image/seamless/brick-wall.jpg", bg_texture);
+        loadTexture("C:/src/learningcpp/media/image/seamless/wood-dark-thin-1.jpg", bg_texture);
         loadTexture("C:/src/learningcpp/media/image/rabbit.png", rabbit_texture);
         loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
         loadTexture("C:/src/learningcpp/media/image/particle/fire-cloud.png", particle_texture);

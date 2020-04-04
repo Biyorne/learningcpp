@@ -20,7 +20,8 @@ Game::Game()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
     , m_context(m_window, m_random, m_audio, m_resources)
     , m_willClear(false)
-    , m_bgSprite(m_resources.bg_texture)
+    , m_bgSprite()
+    , m_bgSfTrickSprite()
     , m_backdropSprite(m_resources.backdrop_texture)
     , m_effects()
     , m_emitter(m_context)
@@ -33,8 +34,14 @@ Game::Game()
     m_window.setFramerateLimit(60);
 
     // m_audio.loadAll();
+
+    // Normal tile
+    m_bgSprite.setTexture(m_resources.bg_texture);
+
+    // SF Tile trick
+    m_bgSfTrickSprite.setTexture(m_resources.bg_texture);
     m_resources.bg_texture.setRepeated(true);
-    m_bgSprite.setTextureRect({ { 0, 0 }, sf::Vector2i(m_context.window_size) });
+    m_bgSfTrickSprite.setTextureRect({ { 0, 0 }, sf::Vector2i(m_context.window_size) });
 
     const sf::Vector2f backdropScale(
         m_context.window_size / sf::Vector2f(m_resources.backdrop_texture.getSize()));
@@ -160,17 +167,22 @@ void Game::processEvent(const sf::Event & event)
         // On Til's laptop, values are reals around [0.0083, 5.0f]
         const float scrollAmount(event.mouseWheelScroll.delta);
 
+        std::ostringstream ss;
+
         if (scrollAmount > 0.0f)
         {
             m_simTimeMult *= 1.1f;
+            ss << "(+) ";
         }
         else
         {
             m_simTimeMult *= 0.9f;
+            ss << "(-) ";
         }
 
-        std::ostringstream ss;
-        ss << scrollAmount << "->" << m_simTimeMult;
+        const float simTimePercent(std::round((m_simTimeMult * 100.0f) * 10.0f) / 10.0f);
+
+        ss << std::setw(6) << simTimePercent << "% sim speed:  (" << m_simTimeMult << ')';
 
         std::cout << ss.str() << std::endl;
 
@@ -231,9 +243,10 @@ void Game::render()
         m_bloomWindow.clear();
     }
 
-    m_bloomWindow.draw(m_bgSprite);
+    // m_bloomWindow.draw(m_bgSfTrickSprite);
+    // m_bloomWindow.draw(m_backdropSprite);
 
-    m_bloomWindow.draw(m_backdropSprite);
+    util::tileTarget(m_bgSfTrickSprite, m_bloomWindow.renderTarget());
 
     for (entity::IEffectUPtr_t & effect : m_effects)
     {
