@@ -36,7 +36,7 @@ namespace entity
     {
         BaseRatios_t velocity;
         BaseRatios_t acceleration;
-        float speed_limit = { 0.0f };
+        float speed_limit{ 0.0f };
     };
 
     struct MoverRanges
@@ -55,7 +55,7 @@ namespace entity
 
         RangeRatios_t velocity;
         RangeRatios_t acceleration;
-        float speed_limit = { 0.0f };
+        float speed_limit{ 0.0f };
     };
 
     //
@@ -72,7 +72,7 @@ namespace entity
         explicit Mover(
             const sf::Vector2f & vel,
             const sf::Vector2f & acc = { 0.0f, 0.0f },
-            const float speedLimit = { 0.0f })
+            const float speedLimit = 0.0f)
         {
             setup(vel, acc, speedLimit);
         }
@@ -82,7 +82,7 @@ namespace entity
         virtual void setup(
             const sf::Vector2f & vel,
             const sf::Vector2f & acc = { 0.0f, 0.0f },
-            const float speedLimit = { 0.0f })
+            const float speedLimit = 0.0f)
         {
             m_velocity.vector = vel;
             m_acceleration.vector = acc;
@@ -142,7 +142,7 @@ namespace entity
             const float base,
             const BaseRatios_t & velocity,
             const BaseRatios_t & acceleration = { 0.0f, 0.0f },
-            const float spdLimit = { 0.0f })
+            const float spdLimit =  0.0f )
         {
             const MoverRatios ratios{ velocity, acceleration, spdLimit };
             return makeFromRatios(base, ratios);
@@ -278,7 +278,7 @@ namespace entity
             const sf::FloatRect & fence,
             const sf::Vector2f & vel,
             const sf::Vector2f & acc = { 0.0f, 0.0f },
-            const float speedLimit = { 0.0f })
+            const float speedLimit = 0.0f)
             : Mover(vel, acc, speedLimit)
             , m_fence(fence)
         {

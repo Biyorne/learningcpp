@@ -337,14 +337,11 @@ namespace util
 
     // Image Tiler
 
-    // TODO implement if you want
-   // inline void
-   //     tileTargetUsingSfmlTrick(sf::Texture & texture, sf::Sprite & sprite, sf::RenderTarget & target, sf::RenderStates states = {})
-   // {
-   //     texture.setRepeated(true);
-   //     sprite.setTexture(texture);
-   //     tileTarget(sprite, target, states);
-   // }
+    inline sf::Sprite setupSfmlTileTrick(sf::Texture & texture, const sf::RenderTarget & target)
+    {
+        texture.setRepeated(true);
+        return sf::Sprite(texture, sf::IntRect( { 0, 0 }, sf::Vector2i(target.getSize()) ));
+    }
 
     // This supports that sfml tile trick -just set the sf::Texture to repeat and target size.
     // If so, then there is only ONE target.draw() call.

@@ -46,8 +46,8 @@ class Game
     Context m_context;
 
     bool m_willClear;
+
     sf::Sprite m_bgSprite;
-    sf::Sprite m_bgSfTrickSprite;
     sf::Sprite m_backdropSprite;
 
     entity::IEffectUVec_t m_effects;

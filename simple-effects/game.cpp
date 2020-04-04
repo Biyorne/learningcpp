@@ -20,13 +20,12 @@ Game::Game()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
     , m_context(m_window, m_random, m_audio, m_resources)
     , m_willClear(false)
-    , m_bgSprite()
-    , m_bgSfTrickSprite()
+    , m_bgSprite(util::setupSfmlTileTrick(m_resources.bg_texture, m_bloomWindow.renderTarget()))
     , m_backdropSprite(m_resources.backdrop_texture)
     , m_effects()
     , m_emitter(m_context)
-    , m_simTimeMult(1.0f)
     , m_statusText(m_context)
+    , m_simTimeMult(1.0f)
 //, m_quadVerts(sf::Quads)// Color Gradient
 //, m_offScreenTexture()
 //, m_image()
@@ -34,14 +33,6 @@ Game::Game()
     m_window.setFramerateLimit(60);
 
     // m_audio.loadAll();
-
-    // Normal tile
-    m_bgSprite.setTexture(m_resources.bg_texture);
-
-    // SF Tile trick
-    m_bgSfTrickSprite.setTexture(m_resources.bg_texture);
-    m_resources.bg_texture.setRepeated(true);
-    m_bgSfTrickSprite.setTextureRect({ { 0, 0 }, sf::Vector2i(m_context.window_size) });
 
     const sf::Vector2f backdropScale(
         m_context.window_size / sf::Vector2f(m_resources.backdrop_texture.getSize()));
@@ -246,7 +237,7 @@ void Game::render()
     // m_bloomWindow.draw(m_bgSfTrickSprite);
     // m_bloomWindow.draw(m_backdropSprite);
 
-    util::tileTarget(m_bgSfTrickSprite, m_bloomWindow.renderTarget());
+    util::tileTarget(m_bgSprite, m_bloomWindow.renderTarget());
 
     for (entity::IEffectUPtr_t & effect : m_effects)
     {
