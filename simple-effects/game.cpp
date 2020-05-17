@@ -3,7 +3,7 @@
 #include "game.hpp"
 
 #include "exploder.hpp"
-#include "follower.hpp"
+#include "mouse-follower.hpp"
 #include "movement.hpp"
 #include "rising-fade.hpp"
 #include "util.hpp"

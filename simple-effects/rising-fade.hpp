@@ -14,18 +14,11 @@ namespace entity
         RisingFadeEffect(
             const Context & context,
             const sf::Texture & texture,
-            const float textureSizeWindowRatio)
-            : EffectBase(makeSprite(context, texture, textureSizeWindowRatio, context.mouse_pos))
-            , m_mover({ 0.0f, -90.0f })
-        {}
+            const float textureSizeWindowRatio);
 
         virtual ~RisingFadeEffect() = default;
 
-        void update(const Context &, const float frameTimeSec) override
-        {
-            m_sprite.move(m_mover.updateDelta(frameTimeSec));
-            m_sprite.setColor(m_sprite.getColor() - sf::Color(0, 0, 0, 5));
-        }
+        void update(const Context &, const float frameTimeSec) override;
 
       private:
         Mover m_mover;
