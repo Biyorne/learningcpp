@@ -10,6 +10,9 @@
 
 struct Resources
 {
+    using ImageVec_t = std::vector<std::unique_ptr<sf::Texture>>;
+    using ImageVecIter_t = ImageVec_t::iterator;
+
     Resources()
     {
         // try this music:  "C:/src/learningcpp/media/music/trippy-shpongle.ogg"
@@ -23,6 +26,8 @@ struct Resources
             music.play();
         }
 
+        //
+
         const std::filesystem::path tileImagePath("C:/src/learningcpp/media/image/seamless");
 
         for (const std::filesystem::directory_entry & entry :
@@ -34,7 +39,12 @@ struct Resources
             }
 
             seamless_textures.push_back(std::move(std::make_unique<sf::Texture>()));
-            if (!loadTexture(entry.path().string(), *seamless_textures.back()))
+
+            if (loadTexture(entry.path().string(), *seamless_textures.back()))
+            {
+                seamless_textures.back()->setRepeated(true);
+            }
+            else
             {
                 seamless_textures.pop_back();
                 std::cout << "ERROR LOADING: " << entry.path().filename().string() << std::endl;
@@ -42,6 +52,13 @@ struct Resources
         }
 
         std::cout << "loaded this many images: " << seamless_textures.size() << std::endl;
+
+        if (!seamless_textures.empty())
+        {
+            seamless_iter = std::begin(seamless_textures);
+        }
+
+        //
 
         loadTexture("C:/src/learningcpp/media/image/warning.png", warn_texture);
         // loadTexture("C:/src/learningcpp/media/image/seamless/wood-dark-thin-1.jpg", bg_texture);
@@ -73,7 +90,9 @@ struct Resources
         }
     }
 
-    std::vector<std::unique_ptr<sf::Texture>> seamless_textures;
+    ImageVec_t seamless_textures;
+    ImageVecIter_t seamless_iter;
+
     sf::Texture bg_texture;
     sf::Texture warn_texture;
     sf::Texture rabbit_texture;
@@ -84,6 +103,9 @@ struct Resources
     sf::Texture highlight_texture;
     sf::Font font;
     sf::Music music;
+
+    // std::vector<std::unique_ptr<sf::Texture>>::iterator
+    //
 };
 //
 

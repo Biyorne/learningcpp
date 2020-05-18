@@ -337,10 +337,10 @@ namespace util
 
     // Image Tiler
 
-    inline sf::Sprite setupSfmlTileTrick(sf::Texture & texture, const sf::RenderTarget & target)
+    inline sf::Sprite makeTiledSprite(sf::Texture & texture, const sf::RenderTarget & target)
     {
         texture.setRepeated(true);
-        return sf::Sprite(texture, sf::IntRect( { 0, 0 }, sf::Vector2i(target.getSize()) ));
+        return sf::Sprite(texture, sf::IntRect({ 0, 0 }, sf::Vector2i(target.getSize())));
     }
 
     // This supports that sfml tile trick -just set the sf::Texture to repeat and target size.

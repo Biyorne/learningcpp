@@ -20,8 +20,7 @@ Game::Game()
     , m_audio(m_random, "C:/src/learningcpp/media/sfx")
     , m_context(m_window, m_random, m_audio, m_resources)
     , m_willClear(false)
-    , m_bgSprite(util::setupSfmlTileTrick(m_resources.bg_texture, m_bloomWindow.renderTarget()))
-    , m_backdropSprite(m_resources.backdrop_texture)
+    , m_bgSprite(util::makeTiledSprite(**m_resources.seamless_iter, m_bloomWindow.renderTarget()))
     , m_effects()
     , m_emitter(m_context)
     , m_statusText(m_context)
@@ -36,8 +35,6 @@ Game::Game()
 
     const sf::Vector2f backdropScale(
         m_context.window_size / sf::Vector2f(m_resources.backdrop_texture.getSize()));
-
-    m_backdropSprite.setScale(backdropScale);
 
     m_audio.load({ "camera-click" });
 
@@ -153,6 +150,22 @@ void Game::processEvent(const sf::Event & event)
                 m_audio.play("camera-click");
             }
         }
+        else if (sf::Keyboard::Left == event.key.code)
+        {
+            // TODO handle wrap around
+            m_resources.seamless_iter--;
+            
+            m_bgSprite =
+                util::makeTiledSprite(**m_resources.seamless_iter, m_bloomWindow.renderTarget());
+        }
+        else if (sf::Keyboard::Right == event.key.code)
+        {
+            // TODO handle wrap around
+            m_resources.seamless_iter++;
+
+            m_bgSprite =
+                util::makeTiledSprite(**m_resources.seamless_iter, m_bloomWindow.renderTarget());
+        }
     }
     else if (event.type == sf::Event::MouseWheelScrolled)
     {
@@ -223,9 +236,6 @@ void Game::render()
     {
         m_bloomWindow.clear();
     }
-
-    // m_bloomWindow.draw(m_bgSfTrickSprite);
-    // m_bloomWindow.draw(m_backdropSprite);
 
     util::tileTarget(m_bgSprite, m_bloomWindow.renderTarget());
 
