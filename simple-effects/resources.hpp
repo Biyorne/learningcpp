@@ -8,6 +8,7 @@
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 
+#include <SFML/Graphics/Texture.hpp>
 struct Resources
 {
     using ImageVec_t = std::vector<std::unique_ptr<sf::Texture>>;
@@ -27,7 +28,6 @@ struct Resources
         }
 
         //
-
         const std::filesystem::path tileImagePath("C:/src/learningcpp/media/image/seamless");
 
         for (const std::filesystem::directory_entry & entry :
@@ -53,10 +53,7 @@ struct Resources
 
         std::cout << "loaded this many images: " << seamless_textures.size() << std::endl;
 
-        if (!seamless_textures.empty())
-        {
-            seamless_iter = std::begin(seamless_textures);
-        }
+        seamless_iter = std::begin(seamless_textures);
 
         //
 
@@ -90,8 +87,69 @@ struct Resources
         }
     }
 
+    sf::Texture & bgTextureNext()
+    {
+        if (seamless_textures.empty())
+        {
+            seamless_iter = std::end(seamless_textures);
+            return default_empty_texture;
+        }
+
+        if (std::end(seamless_textures) == seamless_iter)
+        {
+            seamless_iter = std::begin(seamless_textures);
+        }
+        else
+        {
+            seamless_iter++;
+        }
+
+        return bgTexture();
+    }
+
+    sf::Texture & bgTexturePrev()
+    {
+        if (seamless_textures.empty())
+        {
+            seamless_iter = std::end(seamless_textures);
+            return default_empty_texture;
+        }
+
+        if (std::begin(seamless_textures) == seamless_iter)
+        {
+            std::advance(seamless_iter, (seamless_textures.size() - 1));
+        }
+        else
+        {
+            seamless_iter--;
+        }
+
+        return bgTexture();
+    }
+
+    sf::Texture & bgTexture()
+    {
+        if (seamless_textures.empty())
+        {
+            seamless_iter = std::end(seamless_textures);
+            return default_empty_texture;
+        }
+
+        if (std::end(seamless_textures) == seamless_iter)
+        {
+            seamless_iter = std::begin(seamless_textures);
+        }
+
+        if (std::end(seamless_textures) == seamless_iter)
+        {
+            return default_empty_texture;
+        }
+
+        return **seamless_iter;
+    }
+
     ImageVec_t seamless_textures;
-    ImageVecIter_t seamless_iter;
+    ImageVecIter_t seamless_iter{ std::end(seamless_textures) };
 
     sf::Texture bg_texture;
     sf::Texture warn_texture;
@@ -101,6 +159,8 @@ struct Resources
     sf::Texture exploder_texture;
     sf::Texture backdrop_texture;
     sf::Texture highlight_texture;
+    sf::Texture default_empty_texture;
+
     sf::Font font;
     sf::Music music;
 

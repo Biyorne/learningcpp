@@ -152,19 +152,13 @@ void Game::processEvent(const sf::Event & event)
         }
         else if (sf::Keyboard::Left == event.key.code)
         {
-            // TODO handle wrap around
-            m_resources.seamless_iter--;
-            
             m_bgSprite =
-                util::makeTiledSprite(**m_resources.seamless_iter, m_bloomWindow.renderTarget());
+                util::makeTiledSprite(m_resources.bgTexturePrev(), m_bloomWindow.renderTarget());
         }
         else if (sf::Keyboard::Right == event.key.code)
         {
-            // TODO handle wrap around
-            m_resources.seamless_iter++;
-
             m_bgSprite =
-                util::makeTiledSprite(**m_resources.seamless_iter, m_bloomWindow.renderTarget());
+                util::makeTiledSprite(m_resources.bgTextureNext(), m_bloomWindow.renderTarget());
         }
     }
     else if (event.type == sf::Event::MouseWheelScrolled)
