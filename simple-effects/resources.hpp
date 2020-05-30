@@ -38,17 +38,30 @@ struct Resources
                 continue;
             }
 
-            seamless_textures.push_back(std::move(std::make_unique<sf::Texture>()));
+            std::unique_ptr<sf::Texture> textureUPtr(std::make_unique<sf::Texture>());
 
-            if (loadTexture(entry.path().string(), *seamless_textures.back()))
+            if (!loadTexture(entry.path().string(), *textureUPtr))
             {
-                seamless_textures.back()->setRepeated(true);
-            }
-            else
-            {
-                seamless_textures.pop_back();
                 std::cout << "ERROR LOADING: " << entry.path().filename().string() << std::endl;
+                continue;
             }
+
+            const sf::Vector2f localSize(textureUPtr->getSize());
+            const float localDimmMaxSize(std::max(localSize.x, localSize.y));
+
+            const float minDimmSize(100.0f);
+
+            if (localDimmMaxSize < minDimmSize)
+            {
+                std::cout << "Background Image too small: " << entry.path().filename().string()
+                          << ": local_dimm_max=" << localDimmMaxSize << " while min=" << minDimmSize
+                          << std::endl;
+
+                continue;
+            }
+
+            textureUPtr->setRepeated(true);
+            seamless_textures.push_back(std::move(textureUPtr));
         }
 
         std::cout << "loaded this many images: " << seamless_textures.size() << std::endl;
