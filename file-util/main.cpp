@@ -3,7 +3,10 @@
 #include <filesystem>
 #include <iostream>
 
-// target high-tolerance error handling, but start with good use of assert()
+// Error Handling:
+//  Start with non-tolerant, (i.e. assert/exceptions), because it won't take so much time write.
+//  Use std::cerr for all error output.
+//  Prefer using throwing version of std::filesystem functions.
 
 /*
  * FEATURE #1:  Find Duplicate Names
@@ -40,7 +43,10 @@ int main()
     catch (const std::exception & ex)
     {
         std::cerr << "Error after " << regularFileCount
-                  << " files:  Unhandled std::exception:  " << ex.what() << '\n';
+                  << " files:  Unhandled std::exception:  what=\'" << ex.what() << "\'"
+                  << std::endl;
+
+        assert(false);
     }
 
     return EXIT_SUCCESS;
@@ -58,6 +64,20 @@ void printAllFilesIn(const std::filesystem::path & dirPathOrig)
     for (const fs::directory_entry & entry : fs::recursive_directory_iterator(
              dirPathCann, fs::directory_options::skip_permission_denied))
     {
+
+        try
+        {
+            const fs::file_status status(entry.status());
+        }
+        catch (const std::exception & ex)
+        {
+            std::cerr << "Error:  printAllFilesIn(" << dirPathCann
+                      << ") threw exception trying to call status() on:  what=\'" << ex.what()
+                      << "\'.  Continuing..." << std::endl;
+
+            continue;
+        }
+
         if (!entry.is_regular_file())
         {
             continue;
@@ -68,11 +88,9 @@ void printAllFilesIn(const std::filesystem::path & dirPathOrig)
         if ((regularFileCount % regularFileCountPerStatus) == 0)
         {
             std::cout << "#" << regularFileCount << "\n";
-            regularFileCountPerStatus += 1000;
+            regularFileCountPerStatus += regularFileCount;
         }
-
-        // std::cout << entry.path().string() << '\n';
     }
 
-    std::cout << "Had access to " << regularFileCount << " regular files.\n";
+    std::cout << "Found/Had access to " << regularFileCount << " regular files.\n";
 }
