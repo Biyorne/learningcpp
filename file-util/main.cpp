@@ -12,10 +12,78 @@
 //  Use std::cerr for all error output.
 //  Prefer using throwing version of std::filesystem functions.
 
+
+
+
+// shorthand type names
+namespace fs = std::filesystem;
+
+using Map_t = std::map<std::string, std::size_t>;
+using MapPair_t = std::pair<std::string, std::size_t>;
+using VecPair_t = std::vector<MapPair_t>;
+
+
+// function declarations defined below main
+VecPair_t findDuplicatesIn(const std::filesystem::path & dirPath = std::filesystem::path("."));
+void feature_findDuplicates();
+void feature_findNonAscii(const std::filesystem::path & dirPathOrig);
+
+// Responsible for periodically printing how many files have been found,
+// since this app could run for whole minutes without showing anything,
+// and the user will think the app has hung.  And guess what happens to
+// your giant BlueRay files when the user thinks it's hung and interrupts
+// a copy/move/rename/etc... 
+struct Status
+{
+    static void reset()
+    { 
+        regularFileCount = 0; 
+        regularFileCountPerStatus = 10000;
+    }
+
+    static void printIfNeeded()
+    {
+        ++regularFileCount;
+
+        if ((regularFileCount % regularFileCountPerStatus) == 0)
+        {
+            std::cout << "#" << regularFileCount << '\n';
+            regularFileCountPerStatus += regularFileCount;
+        }
+    }
+
+
+    static inline std::size_t regularFileCount { 0 };
+    static inline std::size_t regularFileCountPerStatus { 10000 };
+};
+
+//
+
+//
+
+int main()
+{
+    try
+    {
+        feature_findNonAscii("N:/My Stuff/Music/Ace Attorney/Phoenix Wright - Trials and Tribulations");
+    }
+    catch (const std::exception & ex)
+    {
+        std::cerr << "Error after " << Status::regularFileCount
+                  << " files:  Unhandled std::exception:  what=\'" << std::flush << ex.what() << "\'"
+                  << std::endl;
+
+        assert(false);
+    }
+
+    std::cout << "(reached end of main)\n";
+    return EXIT_SUCCESS;
+}
+
 /*
  * FEATURE #1:  Find Duplicate Names
- *  Given a directory, prints all absolute paths for any regular files that have the same name,
-ignoring the extention.
+ *  Given a directory, prints all absolute paths for any regular files that have
+    the same name, ignoring the extention.
  *  Start with case-sensitive
  *  Start with only supporting ascii
  *
@@ -31,42 +99,63 @@ anotherfile.txt: (x2)
         c:\src
         c:\build
 
+--
+TODO: 
+    don't consider extensions when comparing filenames.
+    write the function that prints the final results.
+
 */
-
-void printAllFilesIn(const std::filesystem::path & dirPath = std::filesystem::path("."));
-
-std::size_t regularFileCount(0);
-std::size_t regularFileCountPerStatus(10'000);
-
-int main()
-{
-    try
-    {
-        printAllFilesIn("C:/");
-    }
-    catch (const std::exception & ex)
-    {
-        std::cerr << "Error after " << regularFileCount
-                  << " files:  Unhandled std::exception:  what=\'" << ex.what() << "\'"
-                  << std::endl;
-
-        assert(false);
-    }
-
-    return EXIT_SUCCESS;
+void feature_findDuplicates() {
+    Status::reset();
+    VecPair_t dupPairs(findDuplicatesIn("C:/")); 
 }
 
-void printAllFilesIn(const std::filesystem::path & dirPathOrig)
+void feature_findNonAscii(const std::filesystem::path & dirPathCann)
 {
-    namespace fs = std::filesystem;
+    // Status::reset();
+
+    // const fs::path dirPathCann(fs::canonical(dirPathOrig));
+
+    // assert(fs::exists(dirPathCann));
+    // assert(fs::is_directory(dirPathCann))
+     for (const fs::directory_entry & entry : fs::recursive_directory_iterator(
+             dirPathCann, fs::directory_options::skip_permission_denied))
+    {
+        //try
+        //{
+        //    const fs::file_status status(entry.status());
+        //}
+        //catch (const std::exception & ex)
+        //{
+        //    std::cerr << "Error!"  << std::endl;
+        //    continue;
+        //}
+        //
+        //if (!entry.is_regular_file())
+        //{
+        //    continue;
+        //}
+
+        //TODO If entry contains non-ascii characters, print
+
+         std::cout << ".\n";
+         //std::wcout << entry.path().filename().wstring() << std::endl;
+
+        //fileNamesToCount[entry.path().filename().string()]++;
+
+        //Status::printIfNeeded();
+    }
+}
+
+VecPair_t findDuplicatesIn(const std::filesystem::path & dirPathOrig)
+{
 
     const fs::path dirPathCann(fs::canonical(dirPathOrig));
 
     assert(fs::exists(dirPathCann));
     assert(fs::is_directory(dirPathCann));
 
-    using Map_t = std::map<std::string, std::size_t>;
-    using MapPair_t = std::pair<std::string, std::size_t>;
+
     Map_t fileNamesToCount;
 
     for (const fs::directory_entry & entry : fs::recursive_directory_iterator(
@@ -93,13 +182,7 @@ void printAllFilesIn(const std::filesystem::path & dirPathOrig)
 
         fileNamesToCount[entry.path().filename().string()]++;
 
-        // temp way to make sure it is not hung with status updates
-        ++regularFileCount;
-        if ((regularFileCount % regularFileCountPerStatus) == 0)
-        {
-            std::cout << "#" << regularFileCount << '\n';
-            regularFileCountPerStatus += regularFileCount;
-        }
+        Status::printIfNeeded();
     }
 
     std::cout << "Finished searching..." << std::endl;
@@ -117,25 +200,29 @@ void printAllFilesIn(const std::filesystem::path & dirPathOrig)
         nameCountDups.push_back(nameCountPair);
     }
 
-    std::sort(
-        std::begin(nameCountDups),
-        std::end(nameCountDups),
-        [](const MapPair_t & left, const MapPair_t & right) {
-            return (left.second < right.second);
-        });
-
-    for (const auto & [filename, count] : nameCountDups)
-    {
-        if (count <= 2)
-        {
-            continue;
-        }
-
-        std::cout << filename << ": " << count << '\n';
-    }
 
     std::cout << "Found " << fileNamesToCount.size() << " regular files with unique names, but "
               << nameCountDups.size() << " were duplicates." << std::endl;
 
-    fileNamesToCount.clear();
+    return nameCountDups;
 }
+
+//
+
+
+ //   std::sort(
+//       std::begin(nameCountDups),
+//       std::end(nameCountDups),
+//       [](const MapPair_t & left, const MapPair_t & right) {
+//           return (left.second < right.second);
+//       });
+
+//  for (const auto & [filename, count] : nameCountDups)
+//  {
+//      if (count <= 2)
+//      {
+//          continue;
+//      }
+//
+//      std::cout << filename << ": " << count << '\n';
+//  }
