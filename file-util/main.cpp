@@ -209,6 +209,20 @@ VecPair_t findDuplicatesIn(const std::filesystem::path & dirPathOrig)
 
 //
 
+/*
+
+#include "acme-refrigerator--model-1234.hpp"
+
+namespace acme
+{
+    const unsigned char * motorStartPtr(1);
+    const unsigned char * motorStopPtr(2);
+
+    const unsigned char * sensorFullPtr(3);
+    const unsigned char * sensorEmptyPtr(4);
+}
+
+*/
 
  //   std::sort(
 //       std::begin(nameCountDups),
@@ -226,3 +240,47 @@ VecPair_t findDuplicatesIn(const std::filesystem::path & dirPathOrig)
 //
 //      std::cout << filename << ": " << count << '\n';
 //  }
+
+
+
+
+
+
+
+//#include "acme-refrigerator--model-1234.hpp"
+
+
+namespace acme
+{
+    const unsigned char onValue(1);
+    const unsigned char offValue(0);
+
+    unsigned char * const motorStartPtr('\0');
+    unsigned char * const motorStopPtr('\0');
+
+    unsigned char * const sensorFullPtr('\0');
+    unsigned char * const sensorEmptyPtr('\0');
+
+    void callbackTrayStateSet(const bool willExecute) { }
+
+    void callbackTrayStateChanged() 
+    {
+        if (onValue == *sensorEmptyPtr)
+        {
+            *motorStartPtr = onValue;
+        }
+
+        if (onValue == *sensorFullPtr)
+        {
+            *motorStopPtr = onValue;
+        }
+    }
+
+}
+
+
+int main()
+{
+    acme::callbackTrayStateSet(true);
+    return EXIT_SUCCESS; 
+}
