@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project("file-util" VERSION 0.1.0 LANGUAGES CXX)
+project("file-io" VERSION 0.1.0 LANGUAGES CXX)
 
 
 file(GLOB source_files *.?pp)
