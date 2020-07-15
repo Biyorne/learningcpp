@@ -1,0 +1,87 @@
+
+
+horror theme
+single player, one NPC
+technically turn based, but the turns are moments that are designed not to feel turn-based
+possible end of turn on timeout
+no inventory
+certain moments decrease sanity
+sanity doesn't go up
+0 sanity = lose?
+
+small loops of moments?
+
+player picks a name
+that becomes the name of the save file
+if name is taken (save file exists), pop-up warning "Earse old game?"
+
+when app starts, the save file with the most recent change date/time is auto loaded.
+If there are multiple save files, maybe list them and let player pick?
+auto save on exit
+only menu option is to restart
+
+
+Extra:
+moments/endings change based on remaining sanity
+Reward players for keeping high sanity (backstory, extra paths, etc..)
+
+
+Crazy Ideas:
+Let Sanity go negative, which changes win condtion
+	-Killing your buddy before he escapes?
+
+
+
+
+Bunch of shit from Til
+---------------------------------------------------
+
+Game Design
+
+Single Player 
+
+Players will be driven by mood, fear, finding and using only a few one-shot-use powerful magical items, and winning by story logic.
+Players will NOT be driven by the high number of items such as money.
+
+Less like a video game and more like a ‘choose-your-own-adventure’ (CYOA) book.
+	Example:  A ghost appears, and the player must decide what to do.
+	Example:  Player ran from the ghost, but is now blocked by a locked door.
+
+Maintains a spooky/tense mood with occasional pop-corn launching surprises.
+Much will be done to eliminate the boring repetitive “read, click-on-action, repeat” style of play.
+	Example:  When the story stops and waits for the player to do or decide something, they will be very aware of time passing, and know if they don’t do/decide in time, it will probably be bad for them.
+
+There will be items, and thusly an inventory of some kind that only holds very few.
+
+Game designers write the story, and all of its loops and endings, just like a CYOA.
+Game designers then break those story lines into ‘Moments’ when the player must make a decision before the story can continue.
+The only way the game can continue is by Transitioning to a different Moment. 
+You can think of this as a flowchart where every box is a Moment, and every arrow is called a ‘Transition’.
+Transitions are instant and not something the player ever sees or interacts with.
+Moments are everything the player sees/interacts with.
+Similar to CYOA books, Moments are not meant to have hundreds or even dozens of possible Transitions. 
+
+Moments are simply a collection of lots of scrolling text, mood music, images that float and fade in/out, and a time limit before something default happens. (usually something bad, but not always)
+All Moments are unique, and uniquely identified by a positive whole number.
+Moments can be stored in simple text files.
+These files will have to stick to a consistent name scheme.
+	Perhaps: “000.txt”, “001.txt”
+	Perhaps: “000--the-nightmare-begins.txt”, “001--run-for-your-life.txt”
+Moments could contain dozens of different things, but for now we will restrict to:
+	- music  (mood music or stormy weather with occasional overlaid spooky sfx)
+	- text (that scrolls and does most of the describing)
+	- images
+		* background
+		* small avatar pic to help identify who is speaking
+		* some images will lazily drift or fade in/out
+	- timing  (things happen before the player can finish reading/thinking/etc)
+ 	- all possible player interactions (so many cool things here, but for now restrict to)
+		* mouse click on text or image
+		* mouse double-click to use crazy powerful demon possessed items
+		* ESC to quit
+
+- extra, ideas for later
+		* mouse moves in the right curves and speeds to interact with magic
+		* things the user say/scream/etc    (use the mic!)
+		* things the player frantically draws and then shows the laptop camera (use the cam!)
+	 	* coop multiplayer could be really interesting!
