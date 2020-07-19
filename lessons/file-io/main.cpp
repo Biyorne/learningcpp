@@ -99,6 +99,25 @@ private:
 //
 int main()
 {
+    // char nice('n');
+    // char evil('e');
+    //
+    //// A pointer is a type and a memory address
+    // char * nicePtr(&nice);
+    // char * evilPtr(&evil);
+    //
+    // std::cout << "nice= " << *nicePtr << std::endl;
+    // std::cout << "evil= " << *evilPtr << std::endl;
+    //
+    // char ** evilPtrPtr(&evilPtr);
+    //
+    //**evilPtrPtr = 'n';
+    //
+    // std::cout << "nice= " << *nicePtr << std::endl;
+    // std::cout << "evil= " << *evilPtr << std::endl;
+    //
+    // std::cout << "Are the pointers equal?  " << std::boolalpha << (nicePtr == evilPtr) <<
+    // std::endl;
 
     Ascii::printAll();
     Ascii::test();
