@@ -18,13 +18,60 @@
 #include "util-ascii.hpp"
 
 #include <cassert>
+#include <cctype>
 #include <cstdlib>
-#include <fstream>
+#include <filesystem>
 #include <iostream>
+
+inline void recursiveFinder(const std::filesystem::path & path) { recursiveFinder_Impl(path); }
+
+inline void recursiveFinder_Impl(const std::filesystem::path & path)
+{
+    namespace fs = std::filesystem;
+
+    const std::wstring showPathsForExtension { L".itc2" };
+
+    if (!fs::is_directory(path))
+    {
+        std::cerr << "Path given was not a directory: " << path << std::endl;
+        return;
+    }
+
+    fs::recursive_directory_iterator dirIters(path, fs::directory_options::skip_permission_denied);
+
+    for (const fs::directory_entry & entry : dirIters)
+    {
+        try
+        {
+            if (!entry.is_regular_file())
+            {
+                continue;
+            }
+
+            if (!showPathsForExtension.empty() && std::isdigit(showPathsForExtension.back()))
+            {
+                std::wcout << entry.path().wstring() << L"\n" << std::flush;
+            }
+
+            std::wcout << entry.path().extension().wstring() << '\n';
+        }
+        catch (const std::exception & ex)
+        {
+            std::wcerr << "Exception Error: " << ex.what() << ".  Will continue." << std::endl;
+            std::wcout.clear();
+            std::wcout.flush();
+        }
+        catch (...)
+        {
+            std::wcerr << "Unknown Exception Error.  Will continue." << std::endl;
+            std::wcout.clear();
+            std::wcout.flush();
+        }
+    }
+}
 
 int main()
 {
-    Ascii::printAll();
-    Ascii::test();
+    recursiveFinder("N:/My Stuff/Music");
     return EXIT_SUCCESS;
 }
