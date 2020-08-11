@@ -1,77 +1,68 @@
-// ----------------------------------------------------------------------------
-// "THE BEER-WARE LICENSE" (Revision 42):
-// Nel Carlson wrote this file.  As long as you retain this notice you
-// can do whatever you want with this stuff. If we meet some day, and you think
-// this stuff is worth it, you can buy me a beer in return.  <biyorne@gmail.com>
-// ----------------------------------------------------------------------------
+// This is an open source non-commercial project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+
 //
 // main.cpp
 //
+#include "ascii.hpp"
+#include "extension-fixer-1.hpp"
+#include "extension-fixer-2.hpp"
 
 //
 // The File Fixer App
 //  Features:
-//      Makes all file extensions in a directory (recursive) lower case.
-//      Print out the path of all files fixed.
+//      Make Filename Extensions Lower Case:  (in some directory) (recursive)
 //
-
-#include "util-ascii.hpp"
-
-#include <cassert>
-#include <cctype>
-#include <cstdlib>
-#include <filesystem>
-#include <iostream>
-
-inline void recursiveFinder(const std::filesystem::path & path) { recursiveFinder_Impl(path); }
-
-inline void recursiveFinder_Impl(const std::filesystem::path & path)
-{
-    namespace fs = std::filesystem;
-
-    const std::wstring showPathsForExtension { L".itc2" };
-
-    if (!fs::is_directory(path))
-    {
-        std::cerr << "Path given was not a directory: " << path << std::endl;
-        return;
-    }
-
-    fs::recursive_directory_iterator dirIters(path, fs::directory_options::skip_permission_denied);
-
-    for (const fs::directory_entry & entry : dirIters)
-    {
-        try
-        {
-            if (!entry.is_regular_file())
-            {
-                continue;
-            }
-
-            if (!showPathsForExtension.empty() && std::isdigit(showPathsForExtension.back()))
-            {
-                std::wcout << entry.path().wstring() << L"\n" << std::flush;
-            }
-
-            std::wcout << entry.path().extension().wstring() << '\n';
-        }
-        catch (const std::exception & ex)
-        {
-            std::wcerr << "Exception Error: " << ex.what() << ".  Will continue." << std::endl;
-            std::wcout.clear();
-            std::wcout.flush();
-        }
-        catch (...)
-        {
-            std::wcerr << "Unknown Exception Error.  Will continue." << std::endl;
-            std::wcout.clear();
-            std::wcout.flush();
-        }
-    }
-}
+//  Common Features (or goals if still TODO):
+//      Not stopped by strange filesystem.
+//      Print the path of all files fixed.
+//      Print paths with unicode, unprintable chars, or just unsupported ascii.
+//      Strange chars are shown as '?' and do not crash the app.
+//
 
 int main()
 {
-    recursiveFinder("N:/My Stuff/Music");
+
+    //  N:/music
+    //  C:/Users/z
+    //  C:/Users/z/Desktop/test/1
+    //  Z:/
+    //  Z:/temp/test/1/../2"
+    //  Z:/Music/Music
+    //  Z:/src/learningcpp/media/sfx
+    //  ../../Music/Music
+    //  ..\\../build\\file-fixer"
+    //  /Volumes/Macintosh HD/System/Volumes/Data/private/
+    //
+
+    using namespace fixer;
+    using namespace fixer::util;
+    namespace fs = std::filesystem;
+
+    try
+    {
+        ext2::Extension extFixer;
+        extFixer.makeLowerCase(L"C:/Users/z/Desktop/test/1");
+    }
+    catch (const fs::filesystem_error & fsEx)
+    {
+        Ascii::printOnlySupported(L"\nCaught Filesystem Exception Error in main():  what=\"");
+        Ascii::printOnlySupported(Ascii::toWide(fsEx.what()));
+        Ascii::printOnlySupported(L"\".  Bail.", true);
+    }
+    catch (const std::exception & stdEx)
+    {
+        Ascii::printOnlySupported(L"\nCaught Standard Exception Error in main():  what=\"");
+        Ascii::printOnlySupported(Ascii::toWide(stdEx.what()));
+        Ascii::printOnlySupported(L"\".  Bail.", true);
+    }
+    catch (...)
+    {
+        Ascii::printOnlySupported(
+            L"\nCaught Unknown Exception Error in main():  what=\"unknown "
+            L"exception\".  Bail.",
+            true);
+    }
+
     return EXIT_SUCCESS;
 }
