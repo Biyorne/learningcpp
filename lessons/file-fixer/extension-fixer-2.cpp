@@ -32,8 +32,18 @@ namespace fixer::ext2
         }
     }
 
-    void Extension::makeLowerCase(const std::filesystem::directory_entry &)
+    void Extension::makeLowerCase(const std::filesystem::directory_entry & entry)
     {
-        // TODO
+        std::wstring extensionWString(entry.path().extension().wstring());
+        // entry.path().extension().wstring()
+        // If extension is caps, print to console
+        if (extensionWString == L".jpeg")
+        {
+            Ascii::printOnlySupported(entry.path().wstring(), true);
+        }
+        // for(wchar_t & ch : entry.path().extension().wstring())
+        //{
+        //
+        //}
     }
 } // namespace fixer::ext2

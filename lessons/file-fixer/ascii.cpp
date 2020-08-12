@@ -14,59 +14,6 @@
 
 namespace fixer
 {
-
-    // bool Ascii::test()
-    //{
-    //    std::size_t count(0);
-    //
-    //    for (char ch(std::numeric_limits<char>::lowest());; ++ch)
-    //    {
-    //        if (isSupported(ch))
-    //        {
-    //            ++count;
-    //        }
-    //
-    //        if (std::numeric_limits<char>::max() == ch)
-    //        {
-    //            break;
-    //        }
-    //    }
-    //
-    //    // This magic numnber was added up by hand  -zTn 2020-6-1
-    //    const std::size_t supportedCharCount { 98 };
-    //    const bool success(count == supportedCharCount);
-    //
-    //    if (!success)
-    //    {
-    //        std::wcout << L"Error:  "
-    //                   << L"Some chars that were supposed to be supported no longer are, or the "
-    //                      L"other way around."
-    //                   << std::endl;
-    //    }
-    //
-    //    return success;
-    //}
-    //
-    // void Ascii::printAll()
-    //{
-    //    for (char ch(std::numeric_limits<char>::lowest());; ++ch)
-    //    {
-    //        char charToUse { ch };
-    //        if (!isSupported(charToUse))
-    //        {
-    //            charToUse = replace_char_narrow;
-    //        }
-    //
-    //        std::wcout << static_cast<int>(ch) << L" \'" << charToUse << L"\' " << std::boolalpha
-    //                   << isSupported(ch) << L'\n';
-    //
-    //        if (std::numeric_limits<char>::max() == ch)
-    //        {
-    //            break;
-    //        }
-    //    }
-    //}
-
     bool Ascii::isSupported(const char ch)
     {
         if ((ch == '\t') || (ch == '\r') || (ch == '\n'))
@@ -196,13 +143,143 @@ namespace fixer
         wss.imbue(std::locale("")); // this puts commas in big numbers...somehow?
 
         // clang-format off
-             if (size >= 1'000'000'000)  { wss << (size / 1'000'000'000) << "G"; }
-        else if (size >= 1'000'000)      { wss << (size / 1'000'000) << "M"; }
-        else if (size >= 1'000)          { wss << (size / 1'000) << "K"; }
-        else                             { wss << size << "B"; }
+        if (size >= 1'000'000'000) { wss << (size / 1'000'000'000) << "G"; }
+        else if (size >= 1'000'000) { wss << (size / 1'000'000) << "M"; }
+        else if (size >= 1'000) { wss << (size / 1'000) << "K"; }
+        else { wss << size << "B"; }
         // clang-format on
 
         return wss.str();
     }
 
+    bool Ascii::isUpper(const wchar_t & ch) { return ((ch >= L'A') && (ch <= L'Z')); }
+
+    bool Ascii::isLower(const wchar_t & ch) { return ((ch >= L'a') && (ch <= L'z')); }
+
+    wchar_t Ascii::toLower(wchar_t ch)
+    {
+        if (isUpper(ch))
+        {
+            return (ch + 32);
+        }
+        else
+        {
+            return ch;
+        }
+    }
+
+    wchar_t Ascii::toUpper(wchar_t ch)
+    {
+        if (isLower(ch))
+        {
+            return (ch - 32);
+        }
+        else
+        {
+            return ch;
+        }
+    }
+
+    std::wstring Ascii::toLower(std::wstring str)
+    {
+        for (wchar_t & ch : str)
+        {
+            ch = toLower(ch);
+        }
+
+        return str;
+    }
+
+    std::wstring Ascii::toUpper(std::wstring str)
+    {
+        for (wchar_t & ch : str)
+        {
+            ch = toUpper(ch);
+        }
+
+        return str;
+    }
+
+    bool Ascii::testChars()
+    {
+        std::size_t count(0);
+
+        for (char ch(std::numeric_limits<char>::lowest());; ++ch)
+        {
+            if (isSupported(ch))
+            {
+                ++count;
+            }
+
+            if (std::numeric_limits<char>::max() == ch)
+            {
+                break;
+            }
+        }
+
+        // This magic numnber was added up by hand  -zTn 2020-6-1
+        const std::size_t supportedCharCount { 98 };
+        const bool success(count == supportedCharCount);
+
+        if (success)
+        {
+            std::wcout << L"Char test PASS" << L'\n';
+        }
+        else
+        {
+            std::wcout << L"Error:  "
+                       << L"Some chars that were supposed to be supported no longer are, or the "
+                          L"other way around."
+                       << std::endl;
+        }
+
+        return success;
+    }
+
+    void Ascii::printChars()
+    {
+        for (char ch(std::numeric_limits<char>::lowest());; ++ch)
+        {
+            char charToUse { ch };
+            if (!isSupported(charToUse))
+            {
+                charToUse = replace_char_narrow;
+            }
+
+            std::wcout << static_cast<int>(ch) << L" \'" << charToUse << L"\', is_supported= "
+                       << std::boolalpha << isSupported(ch);
+
+            if (isLower(ch))
+            {
+                std::wcout << ", upper='" << toUpper(ch) << "'";
+            }
+            else if (isUpper(ch))
+            {
+                std::wcout << ", lower='" << toLower(ch) << "'";
+            }
+
+            std::wcout << L'\n';
+
+            if (std::numeric_limits<char>::max() == ch)
+            {
+                break;
+            }
+        }
+    }
+
+    bool Ascii::testStrings()
+    {
+        // const std::wstring testSetUpper{ "ABCDEFGHIJKLMNOPQRSTUVWXYZ" };
+        // const std::wstring testSetLower{ "abcdefghijklmnopqrstuvwxyz" };
+        //
+        // std::wcout << L"   " << testSetUpper << L'\n';
+        // for (std::size_t i(0); i < testSetUpper.size(); ++i)
+        //{
+        //    std::wcout <<
+        //}
+        //
+        //
+        // std::wcout << L"   " << testSetLower << L'\n';
+        return false;
+    }
 } // namespace fixer

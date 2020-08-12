@@ -31,9 +31,20 @@ namespace fixer
 
         static std::wstring fileSizeHumanReadable(const std::filesystem::directory_entry & entry);
 
+        static bool isUpper(const wchar_t & ch);
+        static bool isLower(const wchar_t & ch);
+
+        static wchar_t toLower(wchar_t ch);
+        static wchar_t toUpper(wchar_t ch);
+
+        static std::wstring toLower(std::wstring str);
+        static std::wstring toUpper(std::wstring str);
+
         // old test functions not used anymore
-        // static bool test();
-        // static void printAll();
+        static bool testChars();
+        static void printChars();
+
+        static bool testStrings();
 
     private:
         // returns how many chars were NOT unsupported

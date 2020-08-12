@@ -254,11 +254,11 @@ namespace fixer
         try
         {
             const std::size_t unsupportedCharCount { Ascii::countUnsupported(path.wstring()) };
-            if (unsupportedCharCount > 0)
-            {
-                errors.push_back(std::to_wstring(unsupportedCharCount));
-                errors.back() += L" chars_not_supported";
-            }
+            // if (unsupportedCharCount > 0)
+            //{
+            //    errors.push_back(std::to_wstring(unsupportedCharCount));
+            //    errors.back() += L" chars_not_supported";
+            //}
 
             // NOTE:
             //  I know the names look backwards but they are not.

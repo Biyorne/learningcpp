@@ -23,7 +23,7 @@
 int main()
 {
 
-    //  N:/music
+    //  N:/My Stuff/Music
     //  C:/Users/z
     //  C:/Users/z/Desktop/test/1
     //  Z:/
@@ -39,30 +39,32 @@ int main()
     using namespace fixer::util;
     namespace fs = std::filesystem;
 
-    try
-    {
-        ext2::Extension extFixer;
-        extFixer.makeLowerCase(L"C:/Users/z/Desktop/test/1");
-    }
-    catch (const fs::filesystem_error & fsEx)
-    {
-        Ascii::printOnlySupported(L"\nCaught Filesystem Exception Error in main():  what=\"");
-        Ascii::printOnlySupported(Ascii::toWide(fsEx.what()));
-        Ascii::printOnlySupported(L"\".  Bail.", true);
-    }
-    catch (const std::exception & stdEx)
-    {
-        Ascii::printOnlySupported(L"\nCaught Standard Exception Error in main():  what=\"");
-        Ascii::printOnlySupported(Ascii::toWide(stdEx.what()));
-        Ascii::printOnlySupported(L"\".  Bail.", true);
-    }
-    catch (...)
-    {
-        Ascii::printOnlySupported(
-            L"\nCaught Unknown Exception Error in main():  what=\"unknown "
-            L"exception\".  Bail.",
-            true);
-    }
+    Ascii::testChars();
+
+    // try
+    //{
+    //    ext2::Extension extFixer;
+    //    extFixer.makeLowerCase(L"N:/My Stuff/Pictures");
+    //}
+    // catch (const fs::filesystem_error & fsEx)
+    //{
+    //    Ascii::printOnlySupported(L"\nCaught Filesystem Exception Error in main():  what=\"");
+    //    Ascii::printOnlySupported(Ascii::toWide(fsEx.what()));
+    //    Ascii::printOnlySupported(L"\".  Bail.", true);
+    //}
+    // catch (const std::exception & stdEx)
+    //{
+    //    Ascii::printOnlySupported(L"\nCaught Standard Exception Error in main():  what=\"");
+    //    Ascii::printOnlySupported(Ascii::toWide(stdEx.what()));
+    //    Ascii::printOnlySupported(L"\".  Bail.", true);
+    //}
+    // catch (...)
+    //{
+    //    Ascii::printOnlySupported(
+    //        L"\nCaught Unknown Exception Error in main():  what=\"unknown "
+    //        L"exception\".  Bail.",
+    //        true);
+    //}
 
     return EXIT_SUCCESS;
 }
