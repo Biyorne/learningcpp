@@ -7,6 +7,7 @@
 
 #include "ascii.hpp"
 
+#include <cassert>
 #include <codecvt>
 #include <cstdlib>
 #include <iostream>
@@ -84,8 +85,8 @@ namespace fixer
         {
             const wchar_t wideChar { wideStr[i] };
 
-            const char narrowChar { Ascii::toNarrow(wideChar) };
-            if (!Ascii::isSupported(narrowChar))
+            const char narrowChar { toNarrow(wideChar) };
+            if (!isSupported(narrowChar))
             {
                 ++invalidCharCount;
                 wos << replace_char_wide;
@@ -202,6 +203,7 @@ namespace fixer
 
     bool Ascii::testChars()
     {
+        std::wcout << L"Starting Char Case Tests..." << L'\n';
         std::size_t count(0);
 
         for (char ch(std::numeric_limits<char>::lowest());; ++ch)
@@ -219,21 +221,11 @@ namespace fixer
 
         // This magic numnber was added up by hand  -zTn 2020-6-1
         const std::size_t supportedCharCount { 98 };
-        const bool success(count == supportedCharCount);
+        assert(count == supportedCharCount);
 
-        if (success)
-        {
-            std::wcout << L"Char test PASS" << L'\n';
-        }
-        else
-        {
-            std::wcout << L"Error:  "
-                       << L"Some chars that were supposed to be supported no longer are, or the "
-                          L"other way around."
-                       << std::endl;
-        }
+        std::wcout << L"Finished.  All tests PASSED.\n";
 
-        return success;
+        return true;
     }
 
     void Ascii::printChars()
@@ -269,17 +261,68 @@ namespace fixer
 
     bool Ascii::testStrings()
     {
-        // const std::wstring testSetUpper{ "ABCDEFGHIJKLMNOPQRSTUVWXYZ" };
-        // const std::wstring testSetLower{ "abcdefghijklmnopqrstuvwxyz" };
+        std::wcout << L"Starting String Case Tests:";
+
+        // clang-format off
+        const std::wstring testSetLower { L"abcdefghijklmnopqrstuvwxyz__1234567890__~!@#$%^&*()_+-={}[]|\\:\";'<<>,.?/" };
+        const std::wstring testSetUpper { L"ABCDEFGHIJKLMNOPQRSTUVWXYZ__1234567890__~!@#$%^&*()_+-={}[]|\\:\";'<<>,.?/" };
+        // clang-format on
+
         //
-        // std::wcout << L"   " << testSetUpper << L'\n';
-        // for (std::size_t i(0); i < testSetUpper.size(); ++i)
-        //{
-        //    std::wcout <<
-        //}
+        std::wcout << L"\n\t Test lower to upper (char):  " << testSetLower;
+        std::wstring actual {};
+        for (std::size_t i(0); i < testSetUpper.size(); ++i)
+        {
+            const wchar_t upperCh { toUpper(testSetLower.at(i)) };
+            actual += upperCh;
+            assert(upperCh == testSetUpper.at(i));
+        }
+        assert(actual.length() == testSetUpper.length());
         //
+        std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
+        std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
+        std::wcout << L"\n\t\t   Actual:\t " << actual;
+        std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
+        std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
+        std::wcout << L'\n';
+
         //
-        // std::wcout << L"   " << testSetLower << L'\n';
-        return false;
+        std::wcout << L"\n\t Test upper to lower on (char):  " << testSetUpper;
+        actual.clear();
+        for (std::size_t i(0); i < testSetLower.size(); ++i)
+        {
+            const wchar_t lowerCh { toLower(testSetUpper.at(i)) };
+            actual += lowerCh;
+            assert(lowerCh == testSetLower.at(i));
+        }
+        assert(actual.length() == testSetLower.length());
+        //
+        std::wcout << L"\n\t\t Expected:\t " << testSetLower;
+        std::wcout << L"\n\t\t Expected:\t " << testSetLower;
+        std::wcout << L"\n\t\t   Actual:\t " << actual;
+        std::wcout << L"\n\t\t Expected:\t " << testSetLower;
+        std::wcout << L"\n\t\t Expected:\t " << testSetLower;
+        std::wcout << L'\n';
+
+        //
+        std::wcout << L"\n\t Test lower toUpper (string):  " << testSetLower;
+        std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
+        std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
+        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toUpper(testSetLower);
+        std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
+        std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
+        std::wcout << L'\n';
+
+        //
+        std::wcout << L"\n\t Test upper toLower (string):  " << testSetUpper;
+        std::wcout << L"\n\t\t Expected:\t " << testSetLower;
+        std::wcout << L"\n\t\t Expected:\t " << testSetLower;
+        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toLower(testSetUpper);
+        std::wcout << L"\n\t\t Expected:\t " << testSetLower;
+        std::wcout << L"\n\t\t Expected:\t " << testSetLower;
+        std::wcout << L'\n';
+
+        std::wcout << L"\nFinished.  All tests PASSED.\n";
+        return true;
     }
 } // namespace fixer

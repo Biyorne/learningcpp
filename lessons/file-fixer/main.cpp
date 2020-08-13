@@ -40,7 +40,7 @@ int main()
     namespace fs = std::filesystem;
 
     Ascii::testChars();
-
+    Ascii::testStrings();
     // try
     //{
     //    ext2::Extension extFixer;
