@@ -322,6 +322,33 @@ namespace fixer
         std::wcout << L"\n\t\t Expected:\t " << testSetLower;
         std::wcout << L'\n';
 
+        //
+        // clang-format off
+        const std::wstring customStr      { L"Bumble number one-elevent B, flew home to find more than his one and only." };
+        const std::wstring customStrLower { L"bumble number one-elevent b, flew home to find more than his one and only." };
+        const std::wstring customStrUpper { L"BUMBLE NUMBER ONE-ELEVENT B, FLEW HOME TO FIND MORE THAN HIS ONE AND ONLY." };
+        // clang-format on
+
+        //
+        std::wcout << L"\n\t Test toUpper (Specific):  " << customStr;
+        std::wcout << L"\n\t\t Expected:\t " << customStrUpper;
+        std::wcout << L"\n\t\t Expected:\t " << customStrUpper;
+        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toUpper(customStr);
+        std::wcout << L"\n\t\t Expected:\t " << customStrUpper;
+        std::wcout << L"\n\t\t Expected:\t " << customStrUpper;
+        std::wcout << L'\n';
+        assert(Ascii::toUpper(customStr) == customStrUpper);
+
+        //
+        std::wcout << L"\n\t Test toLower (Specific):  " << customStr;
+        std::wcout << L"\n\t\t Expected:\t " << customStrLower;
+        std::wcout << L"\n\t\t Expected:\t " << customStrLower;
+        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toLower(customStr);
+        std::wcout << L"\n\t\t Expected:\t " << customStrLower;
+        std::wcout << L"\n\t\t Expected:\t " << customStrLower;
+        std::wcout << L'\n';
+        assert(Ascii::toLower(customStr) == customStrLower);
+
         std::wcout << L"\nFinished.  All tests PASSED.\n";
         return true;
     }
