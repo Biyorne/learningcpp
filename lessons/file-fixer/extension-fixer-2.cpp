@@ -34,16 +34,34 @@ namespace fixer::ext2
 
     void Extension::makeLowerCase(const std::filesystem::directory_entry & entry)
     {
-        std::wstring extensionWString(entry.path().extension().wstring());
-        // entry.path().extension().wstring()
-        // If extension is caps, print to console
-        if (extensionWString == L".jpeg")
-        {
-            Ascii::printOnlySupported(entry.path().wstring(), true);
-        }
+        using namespace util;
+        namespace fs = std::filesystem;
+
+        // print we are making a change
+        Ascii::printOnlySupported(L"Making extension lower case: \"");
+
+        // get a copy of the WHOLE path, even thought we will ONLY change the extension
+        fs::path pathNew(entry.path());
+        const fs::path pathOrig(pathNew);
+
+        // print which file we are going to change, and add the arrow to make it easy on hte eyes
+        Ascii::printOnlySupported(pathNew.filename().wstring());
+        Ascii::printOnlySupported(L"\"\t --> \"");
+
+        // replace the extensions, but ONLY on the path NOT on the file (not yet...)
+        pathNew.replace_extension(Ascii::toLowerStr(pathNew.extension().wstring()));
+
+        // print the new path (filename only) that should now be lower case
+        Ascii::printOnlySupported(pathNew.wstring());
+        Ascii::printOnlySupported(L"\"", true);
+
+        fs::rename(pathOrig, pathNew);
+        // std::filesystem::rename(
         // for(wchar_t & ch : entry.path().extension().wstring())
         //{
         //
         //}
+
+        //
     }
 } // namespace fixer::ext2

@@ -181,7 +181,7 @@ namespace fixer
         }
     }
 
-    std::wstring Ascii::toLower(std::wstring str)
+    std::wstring Ascii::toLowerStr(std::wstring str)
     {
         for (wchar_t & ch : str)
         {
@@ -191,7 +191,7 @@ namespace fixer
         return str;
     }
 
-    std::wstring Ascii::toUpper(std::wstring str)
+    std::wstring Ascii::toUpperStr(std::wstring str)
     {
         for (wchar_t & ch : str)
         {
@@ -308,7 +308,7 @@ namespace fixer
         std::wcout << L"\n\t Test lower toUpper (string):  " << testSetLower;
         std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
         std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
-        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toUpper(testSetLower);
+        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toUpperStr(testSetLower);
         std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
         std::wcout << L"\n\t\t Expected:\t " << testSetUpper;
         std::wcout << L'\n';
@@ -317,7 +317,7 @@ namespace fixer
         std::wcout << L"\n\t Test upper toLower (string):  " << testSetUpper;
         std::wcout << L"\n\t\t Expected:\t " << testSetLower;
         std::wcout << L"\n\t\t Expected:\t " << testSetLower;
-        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toLower(testSetUpper);
+        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toLowerStr(testSetUpper);
         std::wcout << L"\n\t\t Expected:\t " << testSetLower;
         std::wcout << L"\n\t\t Expected:\t " << testSetLower;
         std::wcout << L'\n';
@@ -333,7 +333,7 @@ namespace fixer
         std::wcout << L"\n\t Test toUpper (Specific):  " << customStr;
         std::wcout << L"\n\t\t Expected:\t " << customStrUpper;
         std::wcout << L"\n\t\t Expected:\t " << customStrUpper;
-        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toUpper(customStr);
+        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toUpperStr(customStr);
         std::wcout << L"\n\t\t Expected:\t " << customStrUpper;
         std::wcout << L"\n\t\t Expected:\t " << customStrUpper;
         std::wcout << L'\n';
@@ -343,7 +343,7 @@ namespace fixer
         std::wcout << L"\n\t Test toLower (Specific):  " << customStr;
         std::wcout << L"\n\t\t Expected:\t " << customStrLower;
         std::wcout << L"\n\t\t Expected:\t " << customStrLower;
-        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toLower(customStr);
+        std::wcout << L"\n\t\t   Actual:\t " << Ascii::toLowerStr(customStr);
         std::wcout << L"\n\t\t Expected:\t " << customStrLower;
         std::wcout << L"\n\t\t Expected:\t " << customStrLower;
         std::wcout << L'\n';

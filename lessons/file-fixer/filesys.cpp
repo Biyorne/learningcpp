@@ -93,7 +93,7 @@ namespace fixer
                     .append(L"\""),
                 true);
 
-            if (!isTypical(TypicalEntry::Diretory, path, result, WillPrint::Errors))
+            if (!isTypical(TypicalEntry::Directory, path, result, WillPrint::Errors))
             {
                 Ascii::printOnlySupported(
                     L"Path given is not a directory, or not an accessible directory.", true);
@@ -345,7 +345,7 @@ namespace fixer
             // Yes, even with the directory_options::skip_permission_denied,
             // the filesystem has all kinds of directories that will still
             // throw access/permissions exceptions.  Aren't filesystems fun?
-            if (entry.is_directory() && (type == TypicalEntry::Diretory))
+            if (entry.is_directory() && (type == TypicalEntry::Directory))
             {
                 fs::directory_iterator iter(path, fs::directory_options::skip_permission_denied);
 

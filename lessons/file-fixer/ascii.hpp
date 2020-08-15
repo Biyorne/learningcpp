@@ -37,8 +37,8 @@ namespace fixer
         static wchar_t toLower(wchar_t ch);
         static wchar_t toUpper(wchar_t ch);
 
-        static std::wstring toLower(std::wstring str);
-        static std::wstring toUpper(std::wstring str);
+        static std::wstring toLowerStr(std::wstring str);
+        static std::wstring toUpperStr(std::wstring str);
 
         // old test functions not used anymore
         static bool testChars();

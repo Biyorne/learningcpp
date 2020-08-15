@@ -17,7 +17,7 @@ namespace fixer
     enum class TypicalEntry
     {
         File,
-        Diretory
+        Directory
     };
 
     //

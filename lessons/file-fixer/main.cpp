@@ -39,32 +39,30 @@ int main()
     using namespace fixer::util;
     namespace fs = std::filesystem;
 
-    Ascii::testChars();
-    Ascii::testStrings();
-    // try
-    //{
-    //    ext2::Extension extFixer;
-    //    extFixer.makeLowerCase(L"N:/My Stuff/Pictures");
-    //}
-    // catch (const fs::filesystem_error & fsEx)
-    //{
-    //    Ascii::printOnlySupported(L"\nCaught Filesystem Exception Error in main():  what=\"");
-    //    Ascii::printOnlySupported(Ascii::toWide(fsEx.what()));
-    //    Ascii::printOnlySupported(L"\".  Bail.", true);
-    //}
-    // catch (const std::exception & stdEx)
-    //{
-    //    Ascii::printOnlySupported(L"\nCaught Standard Exception Error in main():  what=\"");
-    //    Ascii::printOnlySupported(Ascii::toWide(stdEx.what()));
-    //    Ascii::printOnlySupported(L"\".  Bail.", true);
-    //}
-    // catch (...)
-    //{
-    //    Ascii::printOnlySupported(
-    //        L"\nCaught Unknown Exception Error in main():  what=\"unknown "
-    //        L"exception\".  Bail.",
-    //        true);
-    //}
+    try
+    {
+        ext2::Extension extFixer;
+        extFixer.makeLowerCase(L"C:/temp");
+    }
+    catch (const fs::filesystem_error & fsEx)
+    {
+        Ascii::printOnlySupported(L"\nCaught Filesystem Exception Error in main():  what=\"");
+        Ascii::printOnlySupported(Ascii::toWide(fsEx.what()));
+        Ascii::printOnlySupported(L"\".  Bail.", true);
+    }
+    catch (const std::exception & stdEx)
+    {
+        Ascii::printOnlySupported(L"\nCaught Standard Exception Error in main():  what=\"");
+        Ascii::printOnlySupported(Ascii::toWide(stdEx.what()));
+        Ascii::printOnlySupported(L"\".  Bail.", true);
+    }
+    catch (...)
+    {
+        Ascii::printOnlySupported(
+            L"\nCaught Unknown Exception Error in main():  what=\"unknown "
+            L"exception\".  Bail.",
+            true);
+    }
 
     return EXIT_SUCCESS;
 }
