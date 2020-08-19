@@ -10,6 +10,9 @@
 #include "ascii.hpp"
 #include "filesys.hpp"
 
+#include <array>
+#include <map>
+
 namespace fixer::ext2
 {
 
@@ -26,42 +29,69 @@ namespace fixer::ext2
             return;
         }
 
+        std::map<std::wstring, std::size_t> extSkipped;
+        std::map<std::wstring, std::size_t> extChanged;
+
         for (const std::filesystem::directory_entry & entry : finderResult.entries)
         {
-            makeLowerCase(entry);
+            if (makeLowerCase(entry))
+            {
+                extChanged[entry.path().extension().wstring()]++;
+            }
+            else
+            {
+                extSkipped[entry.path().extension().wstring()]++;
+            }
+        }
+
+        // TODO use structured bindings after fixing CMake
+        Ascii::printOnlySupported(L"Changed extensions: ", true);
+        for (const auto & extCountPair : extChanged)
+        {
+            Ascii::printOnlySupported(L"\t ");
+            Ascii::printOnlySupported(extCountPair.first);
+            Ascii::printOnlySupported(L" x");
+            Ascii::printOnlySupported(std::to_wstring(extCountPair.second), true);
+        }
+
+        Ascii::printOnlySupported(L"Unchanged extensions: ", true);
+        for (const auto & extCountPair : extSkipped)
+        {
+            Ascii::printOnlySupported(L"\t ");
+            Ascii::printOnlySupported(extCountPair.first);
+            Ascii::printOnlySupported(L" x");
+            Ascii::printOnlySupported(std::to_wstring(extCountPair.second), true);
         }
     }
 
-    void Extension::makeLowerCase(const std::filesystem::directory_entry & entry)
+    bool Extension::makeLowerCase(const std::filesystem::directory_entry & entry)
     {
         using namespace util;
         namespace fs = std::filesystem;
 
-        // print we are making a change
-        Ascii::printOnlySupported(L"Making extension lower case: \"");
+        const std::array<std::wstring, 6> allowedExtensions
+            = { L".mp3", L".m4a", L".flac", L".wav", L".ogg", L".pcm" };
 
         // get a copy of the WHOLE path, even thought we will ONLY change the extension
-        fs::path pathNew(entry.path());
-        const fs::path pathOrig(pathNew);
+        const fs::path pathOrig(entry.path());
+        fs::path pathNew(pathOrig);
 
-        // print which file we are going to change, and add the arrow to make it easy on hte eyes
-        Ascii::printOnlySupported(pathNew.filename().wstring());
-        Ascii::printOnlySupported(L"\"\t --> \"");
+        const fs::path extensionLower(Ascii::toLower(pathNew.extension().wstring()));
+
+        const auto foundIter(
+            std::find(std::begin(allowedExtensions), std::end(allowedExtensions), extensionLower));
+
+        const bool isInReplacementList { foundIter != std::end(allowedExtensions) };
+
+        if ((pathOrig.extension() == extensionLower) || !isInReplacementList)
+        {
+            return false;
+        }
 
         // replace the extensions, but ONLY on the path NOT on the file (not yet...)
-        pathNew.replace_extension(Ascii::toLowerStr(pathNew.extension().wstring()));
-
-        // print the new path (filename only) that should now be lower case
-        Ascii::printOnlySupported(pathNew.wstring());
-        Ascii::printOnlySupported(L"\"", true);
+        pathNew.replace_extension(extensionLower);
 
         fs::rename(pathOrig, pathNew);
-        // std::filesystem::rename(
-        // for(wchar_t & ch : entry.path().extension().wstring())
-        //{
-        //
-        //}
-
-        //
+        return true;
     }
 } // namespace fixer::ext2

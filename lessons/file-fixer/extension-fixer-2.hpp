@@ -10,7 +10,7 @@ namespace fixer::ext2
     struct Extension
     {
         void makeLowerCase(const std::filesystem::path & directoryPath);
-        void makeLowerCase(const std::filesystem::directory_entry & entry);
+        bool makeLowerCase(const std::filesystem::directory_entry & entry);
     };
 } // namespace fixer::ext2
 

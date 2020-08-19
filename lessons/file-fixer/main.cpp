@@ -42,7 +42,7 @@ int main()
     try
     {
         ext2::Extension extFixer;
-        extFixer.makeLowerCase(L"C:/temp");
+        extFixer.makeLowerCase(L"C:/test-act");
     }
     catch (const fs::filesystem_error & fsEx)
     {
