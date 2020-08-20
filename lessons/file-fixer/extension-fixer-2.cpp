@@ -15,7 +15,6 @@
 
 namespace fixer::ext2
 {
-
     void Extension::makeLowerCase(const std::filesystem::path & path)
     {
         FileSys fileSystemHelper;
@@ -50,7 +49,7 @@ namespace fixer::ext2
         {
             Ascii::printOnlySupported(L"\t ");
             Ascii::printOnlySupported(extCountPair.first);
-            Ascii::printOnlySupported(L" x");
+            Ascii::printOnlySupported(L"\t x");
             Ascii::printOnlySupported(std::to_wstring(extCountPair.second), true);
         }
 
@@ -59,7 +58,7 @@ namespace fixer::ext2
         {
             Ascii::printOnlySupported(L"\t ");
             Ascii::printOnlySupported(extCountPair.first);
-            Ascii::printOnlySupported(L" x");
+            Ascii::printOnlySupported(L"\t x");
             Ascii::printOnlySupported(std::to_wstring(extCountPair.second), true);
         }
     }
@@ -69,14 +68,17 @@ namespace fixer::ext2
         using namespace util;
         namespace fs = std::filesystem;
 
-        const std::array<std::wstring, 6> allowedExtensions
-            = { L".mp3", L".m4a", L".flac", L".wav", L".ogg", L".pcm" };
+        const std::array<std::wstring, 8> allowedExtensions
+            = { L".mp3", L".m4a", L".flac", L".wav", L".ogg", L".pcm", L".jpg", L".jpeg" };
 
         // get a copy of the WHOLE path, even thought we will ONLY change the extension
         const fs::path pathOrig(entry.path());
         fs::path pathNew(pathOrig);
 
-        const fs::path extensionLower(Ascii::toLower(pathNew.extension().wstring()));
+        fs::path extensionLower(Ascii::toLower(pathNew.extension().wstring()));
+
+        fs::path jpegKiller(Ascii::toLower(pathNew));
+        const bool shouldBeKilled(jpegKiller.extension().wstring() == L".jpeg");
 
         const auto foundIter(
             std::find(std::begin(allowedExtensions), std::end(allowedExtensions), extensionLower));
@@ -85,11 +87,22 @@ namespace fixer::ext2
 
         if ((pathOrig.extension() == extensionLower) || !isInReplacementList)
         {
-            return false;
+            if (!shouldBeKilled)
+            {
+                return false;
+            }
         }
 
         // replace the extensions, but ONLY on the path NOT on the file (not yet...)
-        pathNew.replace_extension(extensionLower);
+
+        if (shouldBeKilled)
+        {
+            pathNew.replace_extension(L".jpg");
+        }
+        else
+        {
+            pathNew.replace_extension(extensionLower);
+        }
 
         fs::rename(pathOrig, pathNew);
         return true;
