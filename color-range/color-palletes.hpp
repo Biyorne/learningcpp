@@ -1,9 +1,8 @@
 #ifndef SFUTIL_COLOR_NAMES_HPP_INCLUDED
 #define SFUTIL_COLOR_NAMES_HPP_INCLUDED
 //
-// color-names.hpp
+// color-palletes.hpp
 //
-#include "nameof.hpp"
 #include <string>
 #include <vector>
 
@@ -455,9 +454,9 @@ namespace color
         //  VGA could only use 256 colors at once, but those colors could be selected from a pallet
         //  of 262,144.  Again, I didn't bother making the default 16 color EGA pallet because it's
         //  the same as the "brown tweaked" CGA pallet above.  Note that the repeats of black at
-        //  the end were intentional.  You will have to dig into the history to understand why...  I
-        //  opted to change the last duplicate black into white so that all the pallets in this
-        //  file start with black and end with white.
+        //  the end were intentional.  You will have to dig into the history to understand why...
+        //  I changed the last duplicate black into white so that all the pallets in this file start
+        //  with black and end with white.
         struct vga_256
         {
             // clang-format off
@@ -1782,9 +1781,9 @@ namespace color
         };
 
         // The X11 colors are a constant changing mess, but you can find the current set here:
-        //  gitlab.freedesktop.org/xorg/app/rgb/raw/master/rgb.txt
-        //  Instead of using the list of the day, or some custom minimal list, I opted to create a
-        //  set that included every color from every version I could find.
+        //      gitlab.freedesktop.org/xorg/app/rgb/raw/master/rgb.txt
+        //  Instead of using the list of the day, or some custom minimal list, I opted to create
+        //  a set that included every color from every version I could find.
         struct x11_543
         {
             // clang-format off
@@ -4802,78 +4801,3 @@ namespace color
 } // namespace color
 
 #endif // SFUTIL_COLOR_NAMES_HPP_INCLUDED
-
-/*
-
-640,480,VGA,4:3
-800,600,SVGA,4:3
-1024,768,XGA,4:3
-1152,768,WXGA,3:2
-1152,864,XGA+,4:3
-1280,768,WXGA,5:3
-1280,800,WXGA,16:10
-1280,960,SXVGA,4:3
-1280,1024,SXGA,4:3
-1360,768,WXGA,16:9
-1366,768,WXGAHD,16:9
-1400,1050,SXGA+,4:3
-1440,900,WXGA+,16:10
-1440,960,WXGA+,15:10
-1440,1050,?,1.371
-1440,1080,HDV,4:3
-1600,900,HD+,16:9
-1600,1024,1600SW,25:16
-1600,1050,WSXGA,16:10
-1600,1200,UXGA,4:3
-1600,1280,Sun3,5:4
-1680,1050,WSXGA+,16:10
-1792,1344,?,4:3
-1800,1440,?,5:4
-1856,1392,?,4:3
-1920,1080,1K,9:4
-1920,1200,WUXGA,16:10
-1920,1280,FullHD+,16:10
-1920,1400,TXGA,7:5
-1920,1440,?,21:9
-2000,1280,QXGA,1.56
-2048,1080,DCI2K,19:10
-2048,1152,QXGA,16:9
-2048,1536,2K,4:3
-2160,1440,MSSP3,3:2
-2304,1440,...,8:5
-2560,1080,...,21:9
-2560,1440,WQHD,16:9
-2560,1600,WQXGA,8:5
-2560,1700,CHB_P,3:2
-2560,1800,PIXELC,64:45
-2560,1920,P225F,4:3
-2560,2048,QSXGA,5:4
-2736,1824,MSPRO4,3:2
-2732,2048,iPadPro,4:3
-2840,1536,QXGA,4:3
-2880,900,CWSXGA,16:5
-2880,1800,Retina,16:10
-2880,2100,QSXGA+,4:3
-3000,2000,MsBook,3:2
-3200,1800,WQXGA+,16:9
-3200,2048,WQSXGA,25:16
-3200,2400,QUXGA,4:3
-3840,2160,4K,16:9
-3840,2400,WQUXGA,16:10
-4096,2160,4KHD,16:9
-4096,2304,4K,21:9
-4096,3072,HXGA,4:3
-4500,3000,SurStd,3:2
-5120,2160,5K,21:9
-5120,2700,5K,19:10
-5120,2880,UHD+,16:9
-5120,3200,WHXGA,16:10
-5120,3840,5K,4:3
-5120,4096,HSXGA,5:4
-6400,4096,WHSXGA,25:16
-6400,4800,HUXGA,4:3
-7680,4320,8K_UHD,16:9
-7680,4800,WHUXGA,16:10
-8192,4608,8K,16:9
-
-*/
