@@ -1,5 +1,5 @@
-#ifndef COLOR_GRADS_UTIL_HPP_INCLUDED
-#define COLOR_GRADS_UTIL_HPP_INCLUDED
+#ifndef UTIL_HPP_INCLUDED
+#define UTIL_HPP_INCLUDED
 //
 // util.hpp
 //
@@ -16,12 +16,6 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-
-#ifdef WIN32
-using StdManip_t = std::streamsize;
-#else
-using StdManip_t = int;
-#endif
 
 //
 
@@ -91,7 +85,6 @@ namespace util
     //  * some of the std functions are not constexpr when they could be
     //  * some of the std functions are not noexcept when they could be
     //  * comparing reals is only needs to be simple/fast/less-accurate for games
-
     template <typename T>
     [[nodiscard]] T constexpr abs(const T number) noexcept
     {
@@ -158,8 +151,6 @@ namespace util
         return min(first, min(allOthers...));
     }
 
-    //
-
     // this lib is for simple/innaccurate/game/etc apps, so a simple multiple of epsilon works
     template <typename T>
     constexpr T float_compare_epsilon = (std::numeric_limits<T>::epsilon() * T(10));
@@ -185,7 +176,10 @@ namespace util
             }
             else
             {
-                return !(diffAbs > (max(abs(left), abs(right), T(1)) * float_compare_epsilon<T>));
+                return !(
+                    diffAbs
+                    > (util::max(std::abs(left), std::abs(right), T(1))
+                       * float_compare_epsilon<T>));
             }
         }
     }
@@ -203,44 +197,6 @@ namespace util
     }
 
     //
-
-    template <typename T>
-    [[nodiscard]] constexpr bool isRealZero(const T number)
-    {
-        return isRealClose(number, T(0));
-    }
-
-    template <typename T>
-    [[nodiscard]] constexpr bool isRealZeroOrLess(const T number) noexcept
-    {
-        return ((number < T(0)) || isRealClose(number, T(0)));
-    }
-
-    template <typename T>
-    [[nodiscard]] constexpr bool isRealZeroOrGreater(const T number) noexcept
-    {
-        return ((number > T(0)) || isRealClose(number, T(0)));
-    }
-
-    //
-
-    template <typename T>
-    [[nodiscard]] constexpr bool isRealOne(const T number)
-    {
-        return isRealClose(number, T(1));
-    }
-
-    template <typename T>
-    [[nodiscard]] constexpr bool isRealOneOrLess(const T number) noexcept
-    {
-        return ((number < T(1)) || isRealClose(number, T(1)));
-    }
-
-    template <typename T>
-    [[nodiscard]] constexpr bool isRealOneOrGreater(const T number) noexcept
-    {
-        return ((number > T(1)) || isRealClose(number, T(1)));
-    }
 
     template <typename T, typename U = T>
     [[nodiscard]] constexpr U
@@ -320,24 +276,24 @@ namespace util
         std::vector<sf::Vertex> & verts,
         const sf::Vector2f & pos,
         const sf::Vector2f & size,
-        const sf::Color & clr = sf::Color::Transparent)
+        const sf::Color & color = sf::Color::Transparent)
     {
-        verts.push_back({ pos, clr });
-        verts.push_back({ { (pos.x + size.x), pos.y }, clr });
-        verts.push_back({ (pos + size), clr });
-        verts.push_back({ { pos.x, (pos.y + size.y) }, clr });
+        verts.push_back({ pos, color });
+        verts.push_back({ { (pos.x + size.x), pos.y }, color });
+        verts.push_back({ (pos + size), color });
+        verts.push_back({ { pos.x, (pos.y + size.y) }, color });
     }
 
     inline void appendQuadRect(
         std::vector<sf::Vertex> & verts,
         const sf::FloatRect & rect,
-        const sf::Color & clr = sf::Color::Transparent)
+        const sf::Color & color = sf::Color::Transparent)
     {
         appendQuad(
             verts,
             (sf::Vector2f(rect.left, rect.top) - sf::Vector2f(1.0f, 1.0f)),
             (sf::Vector2f(rect.width, rect.height) + sf::Vector2f(2.0f, 2.0f)),
-            clr);
+            color);
     }
 
     inline void scaleRectInPlace(sf::FloatRect & rect, const sf::Vector2f & scale) noexcept
@@ -428,7 +384,7 @@ namespace util
     //
     // Square Roots Perfect and Near Perfect
     //
-
+    /*
     template <typename T>
     inline bool isPerfectSquare(const T number)
     {
@@ -519,7 +475,7 @@ namespace util
     }
 
     //
-
+    //
     // struct SquaresFinder
     //{
     //    SquaresFinder(const int count, const Squares allowed)
@@ -555,7 +511,8 @@ namespace util
     //
     //    bool is_valid;
     //};
+    */
 
 } // namespace util
 
-#endif // COLOR_GRADS_UTIL_HPP_INCLUDED
+#endif // UTIL_HPP_INCLUDED
