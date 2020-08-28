@@ -5,8 +5,7 @@
 // main.cpp
 //
 #include "ascii.hpp"
-#include "extension-fixer-1.hpp"
-#include "extension-fixer-2.hpp"
+#include "extension-fixer.hpp"
 
 //
 // The File Fixer App
@@ -37,11 +36,12 @@ int main()
 
     using namespace fixer;
     using namespace fixer::util;
+    using namespace fixer::extension;
     namespace fs = std::filesystem;
 
     try
     {
-        ext2::Extension extFixer;
+        Extension extFixer;
         extFixer.makeLowerCase(L"S:/temp");
     }
     catch (const fs::filesystem_error & fsEx)
