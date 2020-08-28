@@ -42,7 +42,8 @@ int main()
     try
     {
         Extension extFixer;
-        extFixer.makeLowerCase(L"S:/temp");
+        // DO NOT USE ON ROOT DIRECTORIES
+        extFixer.makeLowerCase(L"N:/My Stuff/Pictures");
     }
     catch (const fs::filesystem_error & fsEx)
     {
