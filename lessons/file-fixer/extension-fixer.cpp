@@ -137,7 +137,7 @@ namespace fixer::extension
 
         fs::path extensionLower(Ascii::toLower(pathNew.extension().wstring()));
 
-        fs::path jpegKiller(Ascii::toLower(pathNew));
+        fs::path jpegKiller(Ascii::toLower(pathNew.wstring()));
         const bool shouldBeKilled(jpegKiller.extension().wstring() == L".jpeg");
 
         const auto foundIter(
