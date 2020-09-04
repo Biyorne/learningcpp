@@ -7,6 +7,8 @@
 #include "ascii.hpp"
 #include "extension-fixer.hpp"
 
+#include <iostream>
+
 //
 // The File Fixer App
 //  Features:
@@ -19,8 +21,15 @@
 //      Strange chars are shown as '?' and do not crash the app.
 //
 
-int main()
+int main(int argc, char * argv[])
 {
+    const std::vector<std::string> args(argv, (argv + argc));
+
+    if (argc != 2)
+    {
+        std::cout << "Requires path" << std::endl;
+        return EXIT_SUCCESS;
+    }
 
     //  N:/My Stuff/Music
     //  C:/Users/z
@@ -43,7 +52,7 @@ int main()
     {
         Extension extFixer;
         // DO NOT USE ON ROOT DIRECTORIES
-        extFixer.makeLowerCase(L"N:/My Stuff/Pictures");
+        extFixer.makeLowerCase(Ascii::toWide(argv[1]));
     }
     catch (const fs::filesystem_error & fsEx)
     {
