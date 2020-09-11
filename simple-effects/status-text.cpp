@@ -11,7 +11,7 @@ namespace entity
         : m_text("", context.resources.font, 99)
         , m_elapsedTimeSec(0.0f)
         , m_postfix()
-        , m_regionHeightRatio(0.1f)
+        , m_regionHeightRatio(0.03f)
         , m_region(
               0.0f,
               (context.window_size.y * (1.0f - m_regionHeightRatio)),

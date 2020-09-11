@@ -13,62 +13,48 @@
 
 Game::Game()
     : m_window(
-          sf::VideoMode(1024, 768, sf::VideoMode::getDesktopMode().bitsPerPixel), "Simple Effect")
+          sf::VideoMode(1600, 1200, sf::VideoMode::getDesktopMode().bitsPerPixel),
+          "Simple Effects",
+          sf::Style::Default)
     , m_bloomWindow(m_window)
     , m_resources()
     , m_random()
-    , m_audio(m_random, "C:/src/learningcpp/media/sfx")
+    , m_audio(m_random, "media/audio")
     , m_context(m_window, m_random, m_audio, m_resources)
-    , m_willClear(false)
     , m_bgSprite(util::makeTiledSprite(**m_resources.seamless_iter, m_bloomWindow.renderTarget()))
     , m_effects()
     , m_emitter(m_context)
     , m_statusText(m_context)
     , m_simTimeMult(1.0f)
-//, m_quadVerts(sf::Quads)// Color Gradient
-//, m_offScreenTexture()
-//, m_image()
 {
     m_window.setFramerateLimit(60);
-
-    // m_audio.loadAll();
 
     const sf::Vector2f backdropScale(
         m_context.window_size / sf::Vector2f(m_resources.backdrop_texture.getSize()));
 
-    m_audio.load({ "camera-click" });
-
-    // Color Gradient: Colored vertexes that make a rect/quad
-    // m_quadVerts.append(sf::Vertex({ 0.0f, 0.0f }, sf::Color::Red));
-    // m_quadVerts.append(sf::Vertex({ m_context.window_size.x, 0.0f }, sf::Color::Blue));
-    // m_quadVerts.append(sf::Vertex(m_context.window_size, sf::Color::Green));
-    // m_quadVerts.append(sf::Vertex({ 0.0f, m_context.window_size.y }, sf::Color::White));
-    //
-    // const sf::Vector2u sizeU(m_context.window_size);
-    // m_offScreenTexture.create(sizeU.x, sizeU.y);
-    // m_offScreenTexture.clear();
-    // m_offScreenTexture.draw(m_quadVerts);
-    // m_offScreenTexture.display();
-    //
-    // m_image = m_offScreenTexture.getTexture().copyToImage();
+    m_audio.load({ "camera-click", "tap.ogg" });
 
     reset();
 
-    std::cout << "1: Rising Fade\n";
-    std::cout << "2: Follower\n";
-    std::cout << "3: Wall Bouncer\n";
-    std::cout << "4: Toggle Particle Emitter\n";
-    std::cout << "5: Exploder\n";
+    std::cout << "1: Add Rising Fade\n";
+    std::cout << "2: Add Follower\n";
+    std::cout << "3: Add Wall Bouncer\n";
+    std::cout << "4: Toggle Particle Emitter at Mouse Position\n";
+    // std::cout << "5: Exploder\n";
 }
 
 void Game::reset()
 {
     m_audio.stopAll();
-    m_willClear = true;
     m_effects.clear();
     m_emitter.reset();
     m_simTimeMult = 1.0f;
     m_statusText.setPostfix("");
+
+    // start with Particle Emitter
+    m_emitter.toggleEmission({ 590, 620 });
+    m_bloomWindow.isEnabled(true);
+    m_bloomWindow.blurMultipassCount(5);
 }
 
 void Game::run()
@@ -124,18 +110,17 @@ void Game::processEvent(const sf::Event & event)
         if (sf::Keyboard::Escape == event.key.code)
         {
             m_window.close();
+            m_audio.play("tap");
         }
         else if (sf::Keyboard::R == event.key.code)
         {
             reset();
-        }
-        else if (sf::Keyboard::C == event.key.code)
-        {
-            m_willClear = !m_willClear;
+            m_audio.play("tap");
         }
         else if (sf::Keyboard::B == event.key.code)
         {
             m_bloomWindow.isEnabled(!m_bloomWindow.isEnabled());
+            m_audio.play("tap");
         }
         else if (sf::Keyboard::P == event.key.code)
         {
@@ -154,12 +139,59 @@ void Game::processEvent(const sf::Event & event)
         {
             m_bgSprite =
                 util::makeTiledSprite(m_resources.bgTexturePrev(), m_bloomWindow.renderTarget());
+
+            m_audio.play("tap");
         }
         else if (sf::Keyboard::Right == event.key.code)
         {
             m_bgSprite =
                 util::makeTiledSprite(m_resources.bgTextureNext(), m_bloomWindow.renderTarget());
+
+            m_audio.play("tap");
         }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
+        {
+            // Rising Fade
+            m_effects.push_back(std::make_unique<entity::RisingFadeEffect>(
+                m_context, m_resources.particle_texture, 0.1f));
+
+            m_audio.play("tap");
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
+        {
+            // Mouse Follower
+            m_effects.push_back(std::make_unique<entity::MouseFollowerEffect>(
+                m_context, m_resources.rabbit_texture, 0.2f, 1000.0f, 500.0f));
+
+            m_audio.play("tap");
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
+        {
+            // Wall Bouncer
+            m_effects.push_back(std::make_unique<entity::WallBouncerEffect>(
+                m_context, m_resources.warn_texture, sf::Vector2f(200.0f, -200.0f)));
+
+            m_audio.play("tap");
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
+        {
+            // Particle Emitter
+            m_emitter.toggleEmission(m_context.mouse_pos);
+            m_bloomWindow.isEnabled(m_emitter.isEmitting());
+            m_bloomWindow.blurMultipassCount(5);
+            m_audio.play("tap");
+        }
+        // else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
+        //{
+        //    // Exploder
+        //    m_effects.push_back(
+        //        std::make_unique<entity::ExploderEffect>(m_context,
+        //        m_resources.exploder_texture));
+        //
+        //    m_audio.play("tap");
+        //}
+
+        //
     }
     else if (event.type == sf::Event::MouseWheelScrolled)
     {
@@ -167,48 +199,8 @@ void Game::processEvent(const sf::Event & event)
         // On Til's laptop, values are reals around [0.0083, 5.0f]
         const float scrollDelta(event.mouseWheelScroll.delta);
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-        {
-            changeSimTimeOnMouseScroll(scrollDelta);
-        }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-        {
-            changeTiledBgImage(scrollDelta);
-        }
-    }
-    else if (event.type == sf::Event::MouseButtonPressed)
-    {
-        // Rising Fade
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
-        {
-            m_effects.push_back(std::make_unique<entity::RisingFadeEffect>(
-                m_context, m_resources.particle_texture, 0.1f));
-        }
-        // Mouse Follower
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
-        {
-            m_effects.push_back(std::make_unique<entity::MouseFollowerEffect>(
-                m_context, m_resources.rabbit_texture, 0.333f, 10000.0f, 500.0f));
-        }
-        // Wall Bouncer
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
-        {
-            m_effects.push_back(std::make_unique<entity::WallBouncerEffect>(
-                m_context, m_resources.warn_texture, sf::Vector2f(200.0f, -200.0f)));
-        }
-        // Particle Emitter
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
-        {
-            m_emitter.toggleEmission(m_context.mouse_pos);
-            m_bloomWindow.isEnabled(m_emitter.isEmitting());
-            m_bloomWindow.blurMultipassCount(5);
-        }
-        // Exploder
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
-        {
-            m_effects.push_back(
-                std::make_unique<entity::ExploderEffect>(m_context, m_resources.exploder_texture));
-        }
+        changeSimTimeOnMouseScroll(scrollDelta);
+        m_audio.play("tap");
     }
 }
 
@@ -226,10 +218,7 @@ void Game::update(const float frameTimeSec)
 
 void Game::render()
 {
-    if (m_willClear)
-    {
-        m_bloomWindow.clear();
-    }
+    m_bloomWindow.clear();
 
     util::tileTarget(m_bgSprite, m_bloomWindow.renderTarget());
 
@@ -262,8 +251,6 @@ void Game::changeSimTimeOnMouseScroll(const float scrollDelta)
 
     const float simTimePercent(std::round((m_simTimeMult * 100.0f) * 10.0f) / 10.0f);
     ss << std::setw(6) << simTimePercent << "% sim speed:  (" << m_simTimeMult << ')';
-
-    std::cout << ss.str() << std::endl;
 
     m_statusText.setPostfix(ss.str());
 }

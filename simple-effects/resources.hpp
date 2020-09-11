@@ -16,19 +16,19 @@ struct Resources
 
     Resources()
     {
-        // try this music:  "C:/src/learningcpp/media/music/trippy-shpongle.ogg"
-        if (!music.openFromFile(""))
-        {
-            std::cout << "Unable to load music: trippy-shpongle" << std::endl;
-        }
-        else
-        {
-            music.setVolume(10.0f);
-            music.play();
-        }
+        //// try this music:  "C:/src/learningcpp/media/music/trippy-shpongle.ogg"
+        // if (!music.openFromFile(""))
+        //{
+        //    std::cout << "Unable to load music: trippy-shpongle" << std::endl;
+        //}
+        // else
+        //{
+        //    music.setVolume(10.0f);
+        //    music.play();
+        //}
 
         //
-        const std::filesystem::path tileImagePath("C:/src/learningcpp/media/image/seamless");
+        const std::filesystem::path tileImagePath("media/image/background");
 
         for (const std::filesystem::directory_entry & entry :
              std::filesystem::directory_iterator(tileImagePath))
@@ -64,23 +64,22 @@ struct Resources
             seamless_textures.push_back(std::move(textureUPtr));
         }
 
-        std::cout << "loaded this many images: " << seamless_textures.size() << std::endl;
+        std::cout << "loaded this many background images: " << seamless_textures.size()
+                  << std::endl;
 
         seamless_iter = std::begin(seamless_textures);
 
         //
 
-        loadTexture("C:/src/learningcpp/media/image/warning.png", warn_texture);
-        // loadTexture("C:/src/learningcpp/media/image/seamless/wood-dark-thin-1.jpg", bg_texture);
-        loadTexture("C:/src/learningcpp/media/image/rabbit.png", rabbit_texture);
-        loadTexture("C:/src/learningcpp/media/image/carrot.png", carrot_texture);
-        loadTexture("C:/src/learningcpp/media/image/particle/fire-cloud.png", particle_texture);
-        loadTexture("C:/src/learningcpp/media/image/ruby.jpg", exploder_texture);
-        loadTexture("C:/src/learningcpp/media/image/backdrop/effluvium2.jpg", backdrop_texture);
-        loadTexture(
-            "C:/src/learningcpp/media/image/backdrop/effluvium-highlight.png", highlight_texture);
+        loadTexture("media/image/spirit-ring.png", rabbit_texture);
+        loadTexture("media/image/fire-cloud.png", particle_texture);
+        loadTexture("media/image/background/1.jpg", backdrop_texture);
+        loadTexture("media/image/highlight/1.png", highlight_texture);
+        loadTexture("media/image/chicken.png", exploder_texture);
+        loadTexture("media/image/chicken.png", warn_texture);
+        loadTexture("media/image/chicken.png", carrot_texture);
 
-        if (!font.loadFromFile("C:/src/learningcpp/media/font/gentium-plus/gentium-plus.ttf"))
+        if (!font.loadFromFile("media/font/gentium-plus/gentium-plus.ttf"))
         {
             std::cerr << "Unable to load font: gentium-plus.ttf" << std::endl;
         }

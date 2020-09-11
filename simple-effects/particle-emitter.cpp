@@ -40,7 +40,7 @@ namespace entity
     ParticleEmitter::ParticleEmitter(const Context & context)
         : m_particles()
         , m_spawnPos()
-        , m_bgHighlight(context.resources.highlight_texture)
+        , m_bgHighlight() //(context.resources.highlight_texture)
         , m_isEmitting(false)
         , m_elapsedSinceEmitSec(0.0f)
         , m_betweenEmitSec(0.0f)
@@ -82,9 +82,9 @@ namespace entity
 
             // clang-format off
             MoverRatios ratios{
-                BaseRatios_t((1.0f / 3.0f), (8.0f / 5.0f)),
-                BaseRatios_t(1.0f, -0.3f),
-                0.65f };
+                BaseRatios_t(0.5f, 1.3f),
+                BaseRatios_t(1.0f, -0.9f),
+                2.85f };
 
             MoverRanges ranges{0.5f, 0.25f};
             // clang-format on
