@@ -202,6 +202,9 @@ namespace util
     [[nodiscard]] constexpr U
         map(const T number, const T inMin, const T inMax, const U outMin, const U outMax) noexcept
     {
+        static_assert(std::is_arithmetic_v<T>);
+        static_assert(std::is_arithmetic_v<U>);
+
         if (isRealClose(inMin, inMax))
         {
             return outMax;
@@ -215,27 +218,14 @@ namespace util
     [[nodiscard]] constexpr Number_t
         mapRatioTo(const Ratio_t ratio, const Number_t outMin, const Number_t outMax) noexcept
     {
-        static_assert(std::is_arithmetic_v<Number_t>);
-        static_assert(std::is_floating_point_v<Ratio_t>);
-
-        return (
-            outMin
-            + static_cast<Number_t>(
-                ratio * (static_cast<Ratio_t>(outMax) - static_cast<Ratio_t>(outMin))));
+        return map(ratio, Ratio_t(0), Ratio_t(1), outMin, outMax);
     }
 
     template <typename Number_t, typename Ratio_t = float>
     [[nodiscard]] constexpr Ratio_t
         mapToRatio(const Number_t number, const Number_t inMin, const Number_t inMax) noexcept
     {
-        static_assert(std::is_floating_point_v<Ratio_t>);
-
-        if (isRealClose(inMin, inMax))
-        {
-            return Ratio_t(1);
-        }
-
-        return static_cast<Ratio_t>((number - inMin) / (inMax - inMin));
+        return map(number, inMin, inMax, Ratio_t(0), Ratio_t(1));
     }
 
     //

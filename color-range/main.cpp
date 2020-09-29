@@ -95,11 +95,32 @@ int main()
             {
                 if (count > 0)
                 {
-                    --count;
+                    if (count > 1000)
+                    {
+                        count -= 100;
+                    }
+                    else if (count > 500)
+                    {
+                        count -= 50;
+                    }
+                    else
+                    {
+                        --count;
+                    }
+
                     success = createHorizColorGradient(colors, count, windowRect, quadVerts);
 
                     std::cout << "count=" << count << ", success=" << std::boolalpha << success
                               << '\n';
+                }
+            }
+            else if (sf::Keyboard::P == event.key.code)
+            {
+                std::cout << (quadVerts.size() / 4) << " Colors:\n";
+
+                for (std::size_t i(0); i < quadVerts.size(); i += 4)
+                {
+                    std::cout << quadVerts.at(i).color << '\n';
                 }
             }
         }
