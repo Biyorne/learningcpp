@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <iostream>
+#include <string>
 #include <vector>
 
 struct Transition
@@ -25,22 +26,6 @@ struct Stage
     std::size_t id;
     std::string description;
     std::vector<Transition> choices;
-
-    bool isValidChoice(const std::size_t choice) const
-    {
-        return ((choice <= (choices.size())) && (choice != 0));
-    }
-
-    std::size_t changeStage(const std::size_t choice) const
-    {
-        if (!isValidChoice(choice))
-        {
-            std::cout << "Invalid choice, staying here." << std::endl;
-            return id;
-        }
-
-        return choices.at(choice - 1).id;
-    }
 };
 
 int main()
@@ -67,20 +52,22 @@ int main()
             std::cout << "(" << (i + 1) << ") " << jungle.choices.at(i).description << std::endl;
         }
 
-        std::size_t number { '\0' };
+        std::size_t number { jungle.id };
         std::cin >> number;
-        std::cout << "\n\n";
+        --number;
 
-        const std::size_t nextStageId { jungle.changeStage(number) };
-        std::cout << "Transition to stage " << nextStageId << std::endl;
+        if (number < jungle.choices.size())
+        {
+            const std::size_t nextStageId { jungle.choices.at(number).id };
+            std::cout << "Transition to stage " << nextStageId << std::endl;
+        }
+        else
+        {
+            std::cout << "Invalid choice, staying here." << std::endl;
+        }
+
+        std::cout << "\n\n";
     }
 
     return EXIT_SUCCESS;
 }
-
-/*
- *
- * You are int eh jungle.
- * (1) "to go left"
- * (2) "to go right"
- * */
