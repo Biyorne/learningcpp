@@ -40,7 +40,7 @@ int main()
 
     while (true)
     {
-        std::cout << jungle.description << std::endl;
+        std::cout << "\n\n" << jungle.description << std::endl;
 
         if (jungle.choices.empty())
         {
@@ -56,6 +56,16 @@ int main()
         std::cin >> number;
         --number;
 
+        if (!std::cin)
+        {
+            std::cin.clear();
+            std::string line;
+            std::getline(std::cin, line);
+
+            std::cout << "Invalid input \"" << line << "\" -not a number.  Staying here.\n";
+            continue;
+        }
+
         if (number < jungle.choices.size())
         {
             const std::size_t nextStageId { jungle.choices.at(number).id };
@@ -65,8 +75,6 @@ int main()
         {
             std::cout << "Invalid choice, staying here." << std::endl;
         }
-
-        std::cout << "\n\n";
     }
 
     return EXIT_SUCCESS;
