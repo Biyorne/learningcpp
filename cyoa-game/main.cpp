@@ -28,8 +28,45 @@ struct Stage
     std::vector<Transition> choices;
 };
 
+inline std::size_t playStage(const Stage & stage)
+{
+    std::cout << "\n\n" << stage.description << std::endl;
+
+    for (std::size_t i { 0 }; i < stage.choices.size(); ++i)
+    {
+        std::cout << "(" << (i + 1) << ") " << stage.choices.at(i).description << std::endl;
+    }
+
+    std::size_t choice { stage.id };
+    std::cin >> choice;
+    --choice;
+
+    if (!std::cin)
+    {
+        std::cin.clear();
+        std::string line;
+        std::getline(std::cin, line);
+
+        std::cout << "Invalid input \"" << line << "\" -not a choice.  Staying here.\n";
+        return stage.id;
+    }
+
+    if (choice < stage.choices.size())
+    {
+        const std::size_t nextStageId { stage.choices.at(choice).id };
+        std::cout << "Transition to stage " << nextStageId << std::endl;
+        return nextStageId;
+    }
+    else
+    {
+        std::cout << "Invalid choice, staying here." << std::endl;
+        return stage.id;
+    }
+}
+
 int main()
 {
+    // game layout
     const Stage jungle { 0,
                          "You are in a jungle. Do you go:",
                          { Transition { 1, "left" }, Transition { 2, "right" } } };
@@ -38,44 +75,17 @@ int main()
 
     const Stage jungleLose { 2, "You are eaten by a grue. You lose.", {} };
 
-    while (true)
+    const std::vector<Stage> stages = { jungle, jungleWin, jungleLose };
+
+    // game engine
+    std::size_t currentStageId { jungle.id };
+
+    while (!stages.at(currentStageId).choices.empty())
     {
-        std::cout << "\n\n" << jungle.description << std::endl;
-
-        if (jungle.choices.empty())
-        {
-            break;
-        }
-
-        for (std::size_t i { 0 }; i < jungle.choices.size(); ++i)
-        {
-            std::cout << "(" << (i + 1) << ") " << jungle.choices.at(i).description << std::endl;
-        }
-
-        std::size_t number { jungle.id };
-        std::cin >> number;
-        --number;
-
-        if (!std::cin)
-        {
-            std::cin.clear();
-            std::string line;
-            std::getline(std::cin, line);
-
-            std::cout << "Invalid input \"" << line << "\" -not a number.  Staying here.\n";
-            continue;
-        }
-
-        if (number < jungle.choices.size())
-        {
-            const std::size_t nextStageId { jungle.choices.at(number).id };
-            std::cout << "Transition to stage " << nextStageId << std::endl;
-        }
-        else
-        {
-            std::cout << "Invalid choice, staying here." << std::endl;
-        }
+        currentStageId = playStage(stages.at(currentStageId));
     }
+
+    std::cout << stages.at(currentStageId).description << '\n' << "Game Over." << std::endl;
 
     return EXIT_SUCCESS;
 }
