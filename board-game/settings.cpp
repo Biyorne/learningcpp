@@ -9,15 +9,16 @@
 
 namespace boardgame
 {
-    void SimpleLayout::setup(const Map_t & map, const GameConfig & config)
+    void Layout::setup(const Map & map, const GameConfig & config)
     {
         const sf::Vector2f windowSize{ config.windowSize<float>() };
         m_windowBounds = sf::FloatRect({ 0.0f, 0.0f }, windowSize);
 
         m_boardBounds = m_windowBounds;
 
-        m_cellCounts =
-            sf::Vector2i(static_cast<int>(map.front().size()), static_cast<int>(map.size()));
+        m_cellCounts = sf::Vector2i(
+            static_cast<int>(map.m_mapChars.front().size()),
+            static_cast<int>(map.m_mapChars.size()));
 
         M_CHECK_SS(
             ((m_cellCounts.x > 0) && (m_cellCounts.y > 0)),
@@ -68,13 +69,13 @@ namespace boardgame
                                           << ", m_cellCountTotal=" << m_cellCountTotal);
     }
 
-    bool SimpleLayout::isPositionValid(const BoardPos_t & pos) const
+    bool Layout::isPositionValid(const BoardPos_t & pos) const
     {
         return (
             (pos.x >= 0) && (pos.x < m_cellCounts.x) && (pos.y >= 0) && (pos.y < m_cellCounts.y));
     }
 
-    sf::FloatRect SimpleLayout::cellBounds(const BoardPos_t & pos) const
+    sf::FloatRect Layout::cellBounds(const BoardPos_t & pos) const
     {
         M_CHECK_SS(isPositionValid(pos), pos);
 
@@ -85,29 +86,29 @@ namespace boardgame
         return bounds;
     }
 
-    BoardPosOpt_t SimpleLayout::windowPosToBoardPos(const sf::Vector2f windowPos) const
-    {
-        for (const BoardPos_t & boardPos : m_allValidPositions)
-        {
-            if (cellBounds(boardPos).contains(windowPos))
-            {
-                return boardPos;
-            }
-        }
-
-        return std::nullopt;
-    }
+    // BoardPosOpt_t Layout::windowPosToBoardPos(const sf::Vector2f windowPos) const
+    //{
+    //    for (const BoardPos_t & boardPos : m_allValidPositions)
+    //    {
+    //        if (cellBounds(boardPos).contains(windowPos))
+    //        {
+    //            return boardPos;
+    //        }
+    //    }
+    //
+    //    return std::nullopt;
+    //}
 
     //
 
-    void SimpleGameInPlay::reset()
+    void GameInPlay::reset()
     {
         m_score = 0;
         m_isGameOver = false;
         m_didPlayerWin = false;
     }
 
-    int SimpleGameInPlay::scoreAdj(const int adj)
+    int GameInPlay::scoreAdj(const int adj)
     {
         m_score += adj;
 

@@ -5,7 +5,6 @@
 //
 #include "resources.hpp"
 
-#include "board.hpp"
 #include "context.hpp"
 #include "settings.hpp"
 
@@ -20,48 +19,55 @@
 
 namespace boardgame
 {
-    void SimpleMedia::setup(const GameConfig & config)
+    void Media::setup(const GameConfig & config)
     {
-        makeDefaultTexture();
+        makeDefaults();
         load((config.media_dir_path / "font/gentium-plus/gentium-plus.ttf"), m_font);
+
+        const std::size_t imageCount = static_cast<std::size_t>(Piece::Count);
+        m_pieceSprites.resize(imageCount);
+
+        load((config.media_dir_path / "image/rpg-tiles.png"), m_tileTexture);
+
+        for (sf::Sprite & sprite : m_pieceSprites)
+        {
+            sprite.setTexture(m_tileTexture);
+        }
+
+        // keep in sync with enum declaration
+        for (std::size_t i(0); i < imageCount; ++i)
+        {
+            m_pieceSprites.at(i).setTextureRect(pieceToTileRect(static_cast<Piece>(i)));
+            util::scale(m_pieceSprites.at(i), config.mapCellSize());
+        }
+
+        // sprite(Piece::Empty).setColor(sf::Color(10, 35, 105));
+        sprite(Piece::Barrel).setColor(sf::Color(110, 60, 10));
+        sprite(Piece::Stairs).setColor(sf::Color(140, 110, 90));
+        sprite(Piece::Empty) = m_defaultSprite;
     }
 
-    const sf::Font & SimpleMedia::font(const Piece) const { return m_font; }
+    const sf::Font & Media::font(const Piece) const { return m_font; }
 
-    const sf::Texture & SimpleMedia::texture(const Piece piece) const
+    sf::Sprite & Media::sprite(const Piece piece)
     {
         const std::size_t index = static_cast<std::size_t>(piece);
-        if (index < m_textures.size())
+        if (index < m_pieceSprites.size())
         {
-            return *m_textures.at(index);
+            return m_pieceSprites.at(index);
         }
         else
         {
-            return m_defaultTexture;
+            return m_defaultSprite;
         }
     }
 
-    sf::Sprite SimpleMedia::makeDefaultSprite(
-        const Context & context,
-        const Piece piece,
-        const BoardPos_t & boardPos,
-        const sf::Color & color,
-        const bool willSkewToFitExactly) const
-    {
-        sf::Sprite sprite(texture(piece));
-        sprite.setColor(color);
-
-        const sf::FloatRect bounds{ context.layout.cellBounds(boardPos) };
-        util::scaleAndCenterInside(sprite, bounds, willSkewToFitExactly);
-
-        return sprite;
-    }
-
-    void SimpleMedia::makeDefaultTexture()
+    void Media::makeDefaults()
     {
         sf::Image image;
-        image.create(1, 1, sf::Color::White);
+        image.create(1, 1, sf::Color::Transparent);
         m_defaultTexture.loadFromImage(image);
+        m_defaultSprite.setTexture(m_defaultTexture, true);
     }
 
     // void loadImages()

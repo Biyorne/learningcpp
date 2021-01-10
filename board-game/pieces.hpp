@@ -55,13 +55,7 @@ namespace boardgame
       public:
         SimplePiece(Context &, const Piece piece, const BoardPos_t & pos);
         SimplePiece(Context &, const Piece, const BoardPos_t & pos, const sf::Sprite & sprite);
-
-        SimplePiece(
-            Context &,
-            const Piece,
-            const BoardPos_t & pos,
-            const sf::Color & color,
-            const bool willSkewToFitExactly);
+        // SimplePiece(Context &, const Piece, const BoardPos_t & pos, const sf::Color & color);
 
         virtual ~SimplePiece() = default;
 
@@ -88,51 +82,13 @@ namespace boardgame
 
     //
 
-    class FoodPiece : public SimplePiece
-    {
-      public:
-        FoodPiece(Context & context, const BoardPos_t & pos, const Piece piece);
-        virtual ~FoodPiece() = default;
-    };
+    // class FoodPiece : public SimplePiece
+    //{
+    //  public:
+    //    FoodPiece(Context & context, const BoardPos_t & pos, const Piece piece);
+    //    virtual ~FoodPiece() = default;
+    //};
 
-    //
-
-    class WallPiece : public SimplePiece
-    {
-      public:
-        WallPiece(Context & context, const BoardPos_t & pos, const Piece piece);
-        virtual ~WallPiece() = default;
-    };
-
-    //
-
-    class EaterPiece : public SimplePiece
-    {
-      public:
-        EaterPiece(Context & context, const BoardPos_t & pos, const Piece piece);
-        virtual ~EaterPiece() = default;
-
-        void takeTurn(Context &) override;
-
-      private:
-        sf::Keyboard::Key m_direction;
-    };
-
-    //
-
-    struct PosInfo
-    {
-        PosInfo(
-            const Context & context, const sf::Keyboard::Key direction, const BoardPos_t & selfPos);
-
-        bool isOccupied() const;
-        bool isOccupiedBy(const Piece potentialPiece) const;
-        bool isOccupiedButNotBy(const Piece potentialPiece) const;
-
-        sf::Keyboard::Key dir;
-        BoardPos_t pos;
-        Piece piece;
-    };
 } // namespace boardgame
 
 #endif // BOARDGAME_PIECES_HPP_INCLUDED

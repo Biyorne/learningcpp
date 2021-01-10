@@ -1,10 +1,9 @@
-#ifndef BOARDGAME_SIM_CONTEXT_HPP_INCLUDED
-#define BOARDGAME_SIM_CONTEXT_HPP_INCLUDED
+#ifndef BOARDGAME_CONTEXT_HPP_INCLUDED
+#define BOARDGAME_CONTEXT_HPP_INCLUDED
 //
 // context.hpp
 //
-#include <string>
-#include <vector>
+#include "types.hpp"
 
 namespace util
 {
@@ -15,26 +14,22 @@ namespace util
 
 namespace boardgame
 {
-    struct IBoard;
-    struct IMedia;
-    struct IMedia;
-    struct ILayout;
+    class Media;
+    class Layout;
     struct GameConfig;
-    struct IGameInPlay;
-
-    using Map_t = std::vector<std::string>;
+    class GameInPlay;
+    class Map;
 
     //
 
     struct Context
     {
         Context(
-            IGameInPlay & gam,
-            const Map_t & mp,
+            GameInPlay & gam,
+            const Map & mp,
             const GameConfig & conf,
-            const ILayout & lay,
-            const IMedia & med,
-            IBoard & bor,
+            const Layout & lay,
+            const Media & med,
             const util::Random & ran,
             util::SoundPlayer & aud,
             util::AnimationPlayer & ani)
@@ -43,7 +38,6 @@ namespace boardgame
             , config(conf)
             , layout(lay)
             , media(med)
-            , board(bor)
             , random(ran)
             , audio(aud)
             , anim(ani)
@@ -55,16 +49,15 @@ namespace boardgame
         Context & operator=(const Context &) = delete;
         Context & operator=(Context &&) = delete;
 
-        IGameInPlay & game;
-        const Map_t & map;
+        GameInPlay & game;
+        const Map & map;
         const GameConfig & config;
-        const ILayout & layout;
-        const IMedia & media;
-        IBoard & board;
+        const Layout & layout;
+        const Media & media;
         const util::Random & random;
         util::SoundPlayer & audio;
         util::AnimationPlayer & anim;
     };
 } // namespace boardgame
 
-#endif // BOARDGAME_SIM_CONTEXT_HPP_INCLUDED
+#endif // BOARDGAME_CONTEXT_HPP_INCLUDED

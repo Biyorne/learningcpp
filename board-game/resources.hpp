@@ -16,47 +16,19 @@
 namespace boardgame
 {
     struct GameConfig;
-    using BoardPos_t = sf::Vector2i;
 
-    //
-
-    struct IMedia
-    {
-        virtual ~IMedia() = default;
-
-        virtual const sf::Font & font(const Piece) const = 0;
-        virtual const sf::Texture & texture(const Piece) const = 0;
-
-        virtual sf::Sprite makeDefaultSprite(
-            const Context & context,
-            const Piece piece,
-            const BoardPos_t & boardPos,
-            const sf::Color & color,
-            const bool willSkewToFitExactly = false) const = 0;
-    };
-
-    //
-
-    class SimpleMedia : public IMedia
+    class Media
     {
       public:
-        SimpleMedia() = default;
-        virtual ~SimpleMedia() = default;
+        Media() = default;
 
         void setup(const GameConfig & config);
 
-        const sf::Font & font(const Piece) const override;
-        const sf::Texture & texture(const Piece piece) const override;
-
-        sf::Sprite makeDefaultSprite(
-            const Context & context,
-            const Piece piece,
-            const BoardPos_t & boardPos,
-            const sf::Color & color,
-            const bool willSkewToFitExactly) const override;
+        const sf::Font & font(const Piece) const;
+        sf::Sprite & sprite(const Piece);
 
       protected:
-        void makeDefaultTexture();
+        void makeDefaults();
 
         template <typename T>
         void load(const std::filesystem::path & path, T & loadable)
@@ -69,26 +41,14 @@ namespace boardgame
         }
 
       protected:
-        std::vector<std::unique_ptr<sf::Texture>> m_textures;
         sf::Font m_font;
+        std::vector<sf::Sprite> m_pieceSprites;
+        sf::Texture m_tileTexture;
 
         static inline sf::Texture m_defaultTexture;
+        static inline sf::Sprite m_defaultSprite;
     };
 
-    // void loadImages() override
-    // {
-    //     for (std::size_t i(0); i < Piece::Count; ++i)
-    //     {
-    //         const Piece piece = static_cast<Piece>(i);
-    //         m_textures.push_back(std::make_unique<sf::Texture>());
-    //         load(imagePath(piece), *m_textures.back());
-    //     }
-    // }
-
-    // void loadFonts() override
-    //{
-    //    load((m_mediaPath / "font/gentium-plus/gentium-plus.ttf"), m_font);
-    //}
 } // namespace boardgame
 
 #endif // #define BOARDGAME_RESOURCES_HPP_INCLUDED

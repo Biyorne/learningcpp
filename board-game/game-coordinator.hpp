@@ -8,7 +8,7 @@
 #include "board.hpp"
 #include "context.hpp"
 #include "keys.hpp"
-#include "pieces.hpp"
+#include "map.hpp"
 #include "random.hpp"
 #include "resources.hpp"
 #include "settings.hpp"
@@ -25,14 +25,14 @@
 
 namespace boardgame
 {
-    class SimpleGameCoordinator
+    class GameCoordinator
     {
       public:
-        SimpleGameCoordinator();
-        virtual ~SimpleGameCoordinator() = default;
+        GameCoordinator();
+        virtual ~GameCoordinator() = default;
 
-        virtual void reset(const GameConfig & config, const Map_t & map);
-        virtual void switchToMap(const Map_t & map);
+        virtual void reset(const GameConfig & config, const MapChars_t & mapChars);
+        virtual void switchToMap(const Map & map);
         virtual void run();
 
       protected:
@@ -44,10 +44,8 @@ namespace boardgame
         virtual void draw();
         virtual void printFinalStatusToConsole();
 
-        void runFullCheck();
-
       protected:
-        Map_t m_map;
+        Map m_map;
         GameConfig m_config;
         sf::RenderWindow m_window;
 
@@ -55,42 +53,12 @@ namespace boardgame
         util::SoundPlayer m_soundPlayer;
         util::AnimationPlayer m_animationPlayer;
 
-        SimpleLayout m_layout;
-        SimpleMedia m_media;
-        SimpleBoard m_board;
-        SimpleGameInPlay m_game;
+        Layout m_layout;
+        Media m_media;
+        GameInPlay m_game;
         Context m_context;
     };
 
-    //
-
-    class TestingFrenzyGame : public SimpleGameCoordinator
-    {
-      public:
-        TestingFrenzyGame() = default;
-        virtual ~TestingFrenzyGame() = default;
-
-        void reset(const GameConfig & configOld, const Map_t & mapOrig) override;
-
-        static Map_t makeMapOfSize(std::size_t horiz, std::size_t vert);
-        void update(const float elapsedTimeSec) override;
-        void draw() override;
-
-      private:
-        void handleEvent(const sf::Event & event) override;
-        void restartWithNewMapSize();
-        void switchToMap(const Map_t & map) override;
-
-      private:
-        sf::Clock m_mapResizeClock{};
-        float m_mapResizeTimeRemainingSec{ 0.0f };
-        std::ptrdiff_t m_eaterCount{ 0 };
-        std::ptrdiff_t m_foodCount{ 0 };
-        std::ptrdiff_t m_obstacleCount{ 0 };
-        float m_timeUntilPopulationChecks{ 0.0f };
-        sf::Clock m_oneSecondClock{};
-        float m_frameCount{ 0.0f };
-    };
 } // namespace boardgame
 
 #endif // BOARDGAME_GAMECOORDINATOR_HPP_INCLUDED
