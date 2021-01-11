@@ -56,10 +56,10 @@ namespace boardgame
         }
     }
 
-    inline sf::IntRect tileImageToTileRect(const TileImage piece)
+    inline sf::IntRect tileImageToTileRect(const TileImage image)
     {
         // clang-format off
-        switch (piece)
+        switch (image)
         {
             case TileImage::WallBlock:       return sf::IntRect(64,32,32,32);
             case TileImage::WallTopLeft:     return sf::IntRect( 0, 0,32,32);

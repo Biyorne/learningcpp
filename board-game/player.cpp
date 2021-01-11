@@ -10,6 +10,6 @@
 namespace boardgame
 {
 
-    //
+    // void PieceBase::handleEvent(Context &, const sf::Event &) { keys::isArrow }
 
 } // namespace boardgame

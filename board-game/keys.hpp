@@ -3,10 +3,11 @@
 //
 // pieces.hpp
 //
+#include "map.hpp"
+
 #include <cassert>
 #include <optional>
 #include <ostream>
-#include <queue>
 #include <string>
 #include <vector>
 
@@ -15,7 +16,6 @@
 
 namespace boardgame
 {
-    using BoardPos_t = sf::Vector2i;
     using DirKeyOpt_t = std::optional<sf::Keyboard::Key>;
 
     //
@@ -84,9 +84,9 @@ namespace boardgame
             return { not_a_key, not_a_key };
         }
 
-        inline BoardPos_t move(const BoardPos_t & oldPos, const sf::Keyboard::Key dir)
+        inline MapPos_t moveIfDir(const MapPos_t & oldPos, const sf::Keyboard::Key dir)
         {
-            BoardPos_t newPos{ oldPos };
+            MapPos_t newPos{ oldPos };
 
             // clang-format off
             if      (dir == sf::Keyboard::Up)    --newPos.y;

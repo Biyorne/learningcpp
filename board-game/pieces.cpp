@@ -17,36 +17,11 @@
 
 namespace boardgame
 {
-    /*
-    SimplePiece::SimplePiece(Context &, const Piece piece, const BoardPos_t & pos)
-        : m_piece(piece)
-        , m_sprite()
+
+    PieceBase::PieceBase(const MapPos_t & pos, const char mapChar, const bool isObstacle)
+        : m_mapChar(mapChar)
+        , m_isObstacle(isObstacle)
         , m_position(pos)
     {}
-
-    SimplePiece::SimplePiece(
-        Context &, const Piece piece, const BoardPos_t & pos, const sf::Sprite & sprite)
-        : m_piece(piece)
-        , m_sprite(sprite)
-        , m_position(pos)
-    {}
-
-    // SimplePiece::SimplePiece(
-    //    Context & context, const Piece piece, const BoardPos_t & pos, const sf::Color & color)
-    //    : SimplePiece(
-    //          context, piece, pos, context.media.makeDefaultSprite(context, piece, pos, color))
-    //{}
-
-    void SimplePiece::draw(sf::RenderTarget & target, sf::RenderStates states) const
-    {
-        target.draw(m_sprite, states);
-    }
-
-    void SimplePiece::updateAfterMove(Context & context, const BoardPos_t & newPos)
-    {
-        m_position = newPos;
-        util::centerInside(m_sprite, context.layout.cellBounds(position()));
-    }
-    */
 
 } // namespace boardgame

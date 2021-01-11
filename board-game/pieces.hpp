@@ -5,8 +5,9 @@
 //
 //
 #include "context.hpp"
+#include "keys.hpp"
+#include "map.hpp"
 #include "tile-image.hpp"
-#include "util.hpp"
 
 #include <list>
 #include <memory>
@@ -19,76 +20,57 @@
 
 namespace boardgame
 {
-    /*
-    using BoardPos_t = sf::Vector2i;
-    using BoardPosOpt_t = std::optional<BoardPos_t>;
-
-    //
 
     struct IPiece : public sf::Drawable
     {
         virtual ~IPiece() = default;
 
-        virtual Piece piece() const = 0;
-        virtual BoardPos_t position() const = 0;
-        virtual sf::FloatRect bounds() const = 0;
+        virtual char mapChar() const = 0;
+        virtual bool isObstacle() const = 0;
 
-        // should only be called by the Board, and be the only way to change m_position
-        virtual void updateAfterMove(Context &, const BoardPos_t & newPos) = 0;
+        virtual MapPos_t position() const = 0;
+        virtual void move(const sf::Keyboard::Key dir) = 0;
 
-        virtual void takeTurn(Context &) = 0;
-        virtual void update(Context &, const float) = 0;
         virtual void handleEvent(Context &, const sf::Event &) = 0;
-        void draw(sf::RenderTarget &, sf::RenderStates) const = 0;
+        void draw(sf::RenderTarget &, sf::RenderStates) const override = 0;
     };
 
     //
 
-    using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
-    using IPieceUPtr_t = std::unique_ptr<IPiece>;
-    using IPieceUList_t = std::list<IPieceUPtr_t>;
+    // using IPieceOpt_t = std::optional<std::reference_wrapper<IPiece>>;
+    // using IPieceUPtr_t = std::unique_ptr<IPiece>;
 
-    //
-
-    class SimplePiece : public IPiece
+    // ALL pieces must derive from this
+    class PieceBase : public IPiece
     {
       public:
-        SimplePiece(Context &, const Piece piece, const BoardPos_t & pos);
-        SimplePiece(Context &, const Piece, const BoardPos_t & pos, const sf::Sprite & sprite);
-        // SimplePiece(Context &, const Piece, const BoardPos_t & pos, const sf::Color & color);
+        PieceBase(const MapPos_t & pos, const char mapChar = ' ', const bool isObstacle = true);
 
-        virtual ~SimplePiece() = default;
+        virtual ~PieceBase() = default;
 
-        Piece piece() const override { return m_piece; }
-        BoardPos_t position() const override { return m_position; }
-        sf::FloatRect bounds() const override { return m_sprite.getGlobalBounds(); }
+        char mapChar() const override final { return m_mapChar; }
+        bool isObstacle() const override final { return m_isObstacle; }
+        MapPos_t position() const override final { return m_position; }
 
-        // should only be called by the Board, and be the only way to change m_position
-        void updateAfterMove(Context &, const BoardPos_t & newPos) override;
+        // keep this this ONLY way to move pieces, intentionally NOT changing the map!
+        void move(const sf::Keyboard::Key dir) override final
+        {
+            m_position = keys::moveIfDir(m_position, dir);
+        }
 
-        void takeTurn(Context &) override {}
-        void update(Context &, const float) override {}
+        // does nothing by default
         void handleEvent(Context &, const sf::Event &) override {}
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
+
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
 
       protected:
-        Piece m_piece;
-        sf::Sprite m_sprite;
+        char m_mapChar;
+        bool m_isObstacle;
 
       private:
-        // only the move() function should ever change this member
-        BoardPos_t m_position;
+        MapPos_t m_position;
     };
 
-    //
-
-    // class FoodPiece : public SimplePiece
-    //{
-    //  public:
-    //    FoodPiece(Context & context, const BoardPos_t & pos, const Piece piece);
-    //    virtual ~FoodPiece() = default;
-    //};
-    */
 } // namespace boardgame
 
 #endif // BOARDGAME_PIECES_HPP_INCLUDED
