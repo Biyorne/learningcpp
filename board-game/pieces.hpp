@@ -66,6 +66,7 @@ namespace boardgame
       protected:
         char m_mapChar;
         bool m_isObstacle;
+        sf::Sprite sprite;
 
       private:
         MapPos_t m_position;
