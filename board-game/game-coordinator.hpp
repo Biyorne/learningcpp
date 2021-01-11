@@ -13,7 +13,7 @@
 #include "resources.hpp"
 #include "settings.hpp"
 #include "sound-player.hpp"
-#include "types.hpp"
+#include "tile-image.hpp"
 #include "util.hpp"
 
 #include <memory>

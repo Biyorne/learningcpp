@@ -5,7 +5,7 @@
 //
 //
 #include "context.hpp"
-#include "types.hpp"
+#include "tile-image.hpp"
 #include "util.hpp"
 
 #include <list>

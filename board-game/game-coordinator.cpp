@@ -182,7 +182,7 @@ namespace boardgame
         {
             for (const char mapChar : mapLine)
             {
-                sf::Sprite & sprite = m_media.sprite(mapCharToPiece(mapChar));
+                sf::Sprite & sprite = m_media.sprite(mapCharToTileImage(mapChar));
                 sprite.setPosition(pos);
                 m_window.draw(sprite);
 
@@ -200,14 +200,14 @@ namespace boardgame
             char prevMapChar(0);
             for (const char mapChar : mapLine)
             {
-                sf::Sprite & sprite = m_media.sprite(mapCharToPiece(mapChar));
+                sf::Sprite & sprite = m_media.sprite(mapCharToTileImage(mapChar));
                 sprite.setPosition(pos);
                 m_window.draw(sprite);
 
                 // draw horiz wall shadow accents
                 if (('-' == mapChar) && ('-' != prevMapChar))
                 {
-                    sf::Sprite & shadow = m_media.sprite(Piece::WallHorizShadow);
+                    sf::Sprite & shadow = m_media.sprite(TileImage::WallHorizShadow);
                     shadow.setPosition(pos);
                     m_window.draw(shadow);
                 }

@@ -3,7 +3,6 @@
 //
 // context.hpp
 //
-#include "types.hpp"
 
 namespace util
 {

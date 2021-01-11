@@ -5,7 +5,7 @@
 //
 #include "check-macros.hpp"
 #include "context.hpp"
-#include "types.hpp"
+#include "tile-image.hpp"
 
 #include <filesystem>
 
@@ -24,8 +24,8 @@ namespace boardgame
 
         void setup(const GameConfig & config);
 
-        const sf::Font & font(const Piece) const;
-        sf::Sprite & sprite(const Piece);
+        const sf::Font & font() const;
+        sf::Sprite & sprite(const TileImage);
 
       protected:
         void makeDefaults();

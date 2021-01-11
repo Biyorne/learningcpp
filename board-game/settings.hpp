@@ -6,7 +6,7 @@
 #include "check-macros.hpp"
 #include "context.hpp"
 #include "map.hpp"
-#include "types.hpp"
+#include "tile-image.hpp"
 #include "util.hpp"
 
 #include <filesystem>

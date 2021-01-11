@@ -24,7 +24,7 @@ namespace boardgame
         makeDefaults();
         load((config.media_dir_path / "font/gentium-plus/gentium-plus.ttf"), m_font);
 
-        const std::size_t imageCount = static_cast<std::size_t>(Piece::Count);
+        const std::size_t imageCount = static_cast<std::size_t>(TileImage::Count);
         m_pieceSprites.resize(imageCount);
 
         load((config.media_dir_path / "image/rpg-tiles.png"), m_tileTexture);
@@ -37,21 +37,21 @@ namespace boardgame
         // keep in sync with enum declaration
         for (std::size_t i(0); i < imageCount; ++i)
         {
-            m_pieceSprites.at(i).setTextureRect(pieceToTileRect(static_cast<Piece>(i)));
+            m_pieceSprites.at(i).setTextureRect(tileImageToTileRect(static_cast<TileImage>(i)));
             util::scale(m_pieceSprites.at(i), config.mapCellSize());
         }
 
-        sprite(Piece::Door).setColor(sf::Color(160, 130, 100));
-        sprite(Piece::Barrel).setColor(sf::Color(110, 60, 10));
-        sprite(Piece::Stairs).setColor(sf::Color(140, 110, 90));
-        sprite(Piece::Empty) = m_defaultSprite;
+        sprite(TileImage::Door).setColor(sf::Color(160, 130, 100));
+        sprite(TileImage::Barrel).setColor(sf::Color(110, 60, 10));
+        sprite(TileImage::Stairs).setColor(sf::Color(140, 110, 90));
+        sprite(TileImage::Empty) = m_defaultSprite;
     }
 
-    const sf::Font & Media::font(const Piece) const { return m_font; }
+    const sf::Font & Media::font() const { return m_font; }
 
-    sf::Sprite & Media::sprite(const Piece piece)
+    sf::Sprite & Media::sprite(const TileImage image)
     {
-        const std::size_t index = static_cast<std::size_t>(piece);
+        const std::size_t index = static_cast<std::size_t>(image);
         if (index < m_pieceSprites.size())
         {
             return m_pieceSprites.at(index);
@@ -72,7 +72,7 @@ namespace boardgame
 
     // void loadImages()
     // {
-    //     for (std::size_t i(0); i < Piece::Count; ++i)
+    //     for (std::size_t i(0); i < TileImage::Count; ++i)
     //     {
     //         const Piece piece = static_cast<Piece>(i);
     //         m_textures.push_back(std::make_unique<sf::Texture>());
