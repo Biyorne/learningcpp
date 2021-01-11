@@ -41,7 +41,7 @@ namespace boardgame
             util::scale(m_pieceSprites.at(i), config.mapCellSize());
         }
 
-        // sprite(Piece::Empty).setColor(sf::Color(10, 35, 105));
+        sprite(Piece::Door).setColor(sf::Color(160, 130, 100));
         sprite(Piece::Barrel).setColor(sf::Color(110, 60, 10));
         sprite(Piece::Stairs).setColor(sf::Color(140, 110, 90));
         sprite(Piece::Empty) = m_defaultSprite;

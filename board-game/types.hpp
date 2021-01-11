@@ -4,21 +4,16 @@
 // types.hpp
 //
 #include <cstddef>
-#include <string>
-#include <vector>
 
 #include <SFML/Graphics/Rect.hpp>
 
 namespace boardgame
 {
-    using BoardPos_t = sf::Vector2i;
-    using MapChars_t = std::vector<std::string>;
-
     // used to index so keep unsigned
     enum class Piece : std::size_t
     {
         Empty = 0,
-        Floor1 = 1,
+        Floor1,
         Floor2,
         Floor3,
         Floor4,
@@ -33,6 +28,7 @@ namespace boardgame
         Player,
         Stairs,
         Barrel,
+        Door,
         Count
     };
 
@@ -61,9 +57,9 @@ namespace boardgame
             case 'B': return Piece::WallBlock;
             case 'C': return Piece::WallTopLeft;
             case 'T': return Piece::WallTop;
-            case 'H': return Piece::WallHoriz;
+            case '-': return Piece::WallHoriz;
             // skip shadow
-            case 'V': return Piece::WallVert;
+            case '|': return Piece::WallVert;
             case 'p': return Piece::Player;
             case 's': return Piece::Stairs;
             case 'b': return Piece::Barrel;
@@ -73,6 +69,7 @@ namespace boardgame
             case '4': return Piece::Floor4;
             case '5': return Piece::Floor5;
             case '6': return Piece::Floor6;
+            case 'D': return Piece::Door;
             default: return Piece::Empty;
         }
     }
@@ -97,8 +94,9 @@ namespace boardgame
             case Piece::Floor4:          return sf::IntRect( 0,96,32,32);
             case Piece::Floor5:          return sf::IntRect(32,96,32,32);
             case Piece::Floor6:          return sf::IntRect(64,96,32,32);
+            case Piece::Door:            return sf::IntRect(96,96,32,32);
             case Piece::Empty:                 
-            default:                     return sf::IntRect(96,96,32,32);
+            default:                     return sf::IntRect(0,0,0,0);
         }
         // clang-format on
     }

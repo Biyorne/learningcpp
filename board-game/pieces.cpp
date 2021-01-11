@@ -5,7 +5,6 @@
 //
 #include "pieces.hpp"
 
-#include "board.hpp"
 #include "check-macros.hpp"
 #include "context.hpp"
 #include "keys.hpp"
@@ -18,6 +17,7 @@
 
 namespace boardgame
 {
+    /*
     SimplePiece::SimplePiece(Context &, const Piece piece, const BoardPos_t & pos)
         : m_piece(piece)
         , m_sprite()
@@ -47,5 +47,6 @@ namespace boardgame
         m_position = newPos;
         util::centerInside(m_sprite, context.layout.cellBounds(position()));
     }
+    */
 
 } // namespace boardgame

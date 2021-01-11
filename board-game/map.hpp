@@ -5,12 +5,17 @@
 //
 #include "context.hpp"
 #include "random.hpp"
-#include "types.hpp"
 
 #include <string>
+#include <vector>
+
+#include <SFML/Graphics/Rect.hpp>
 
 namespace boardgame
 {
+
+    using MapPos_t = sf::Vector2i;
+    using MapChars_t = std::vector<std::string>;
 
     class Map
     {

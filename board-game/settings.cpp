@@ -26,56 +26,27 @@ namespace boardgame
 
         m_cellCountTotal = static_cast<std::size_t>(m_cellCounts.x * m_cellCounts.y);
 
-        m_cellSize = (util::size(m_windowBounds) / sf::Vector2f(m_cellCounts));
+        m_cellSize = config.mapCellSize();
 
         M_CHECK_SS(
             (!(m_cellSize.x < 1.0f) && !(m_cellSize.y < 1.0f)),
             "m_windowBounds=" << m_windowBounds << ", m_cellCounts=" << m_cellCounts
                               << ", m_cellSize=" << m_cellSize);
 
-        if (config.will_force_square_cells)
-        {
-            m_cellSize.x = std::floor(std::min(m_cellSize.x, m_cellSize.y));
-            m_cellSize.y = m_cellSize.x;
+        const sf::Vector2f actualBoardSize{ sf::Vector2i(m_cellSize) * m_cellCounts };
 
-            M_CHECK_SS(
-                (!(m_cellSize.x < 1.0f) && !(m_cellSize.y < 1.0f)),
-                "m_windowBounds=" << m_windowBounds << ", m_cellCounts=" << m_cellCounts
-                                  << ", m_cellSize=" << m_cellSize);
+        const sf::Vector2f actualBoardPos{ util::center(m_boardBounds) - (actualBoardSize / 2.0f) };
 
-            const sf::Vector2f actualBoardSize{ sf::Vector2i(m_cellSize) * m_cellCounts };
-
-            const sf::Vector2f actualBoardPos{ util::center(m_boardBounds) -
-                                               (actualBoardSize / 2.0f) };
-
-            m_boardBounds = sf::FloatRect(actualBoardPos, actualBoardSize);
-        }
-
-        m_allValidPositions.clear();
-
-        for (int vert(0); vert < m_cellCounts.y; ++vert)
-        {
-            for (int horiz(0); horiz < m_cellCounts.x; ++horiz)
-            {
-                const BoardPos_t pos{ horiz, vert };
-                M_CHECK_SS(isPositionValid(pos), pos);
-                m_allValidPositions.push_back(pos);
-            }
-        }
-
-        M_CHECK_SS(
-            (m_allValidPositions.size() == m_cellCountTotal),
-            "m_allValidPositions.size()=" << m_allValidPositions.size()
-                                          << ", m_cellCountTotal=" << m_cellCountTotal);
+        m_boardBounds = sf::FloatRect(actualBoardPos, actualBoardSize);
     }
 
-    bool Layout::isPositionValid(const BoardPos_t & pos) const
+    bool Layout::isPositionValid(const MapPos_t & pos) const
     {
         return (
             (pos.x >= 0) && (pos.x < m_cellCounts.x) && (pos.y >= 0) && (pos.y < m_cellCounts.y));
     }
 
-    sf::FloatRect Layout::cellBounds(const BoardPos_t & pos) const
+    sf::FloatRect Layout::cellBounds(const MapPos_t & pos) const
     {
         M_CHECK_SS(isPositionValid(pos), pos);
 

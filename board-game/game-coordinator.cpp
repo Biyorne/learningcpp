@@ -134,7 +134,7 @@ namespace boardgame
         }
     }
 
-    bool GameCoordinator::handleExitEvents(const sf::Event & event)
+    bool GameCoordinator::handleExitEvent(const sf::Event & event)
     {
         if (sf::Event::Closed == event.type)
         {
@@ -162,7 +162,7 @@ namespace boardgame
 
     void GameCoordinator::handleEvent(const sf::Event & event)
     {
-        if (GameCoordinator::handleExitEvents(event))
+        if (GameCoordinator::handleExitEvent(event))
         {
             return;
         }
@@ -175,9 +175,9 @@ namespace boardgame
         m_window.clear(m_config.background_color);
 
         const float mapCellDimm{ m_config.mapCellDimm() };
-
+        const sf::Vector2f boardPos{ util::position(m_layout.boardBounds()) };
         // draw draw bottom pieces (floor, etc.)
-        sf::Vector2f pos{ 0.0f, 0.0f };
+        sf::Vector2f pos{ boardPos };
         for (const std::string & mapLine : m_map.m_floorChars)
         {
             for (const char mapChar : mapLine)
@@ -189,25 +189,34 @@ namespace boardgame
                 pos.x += mapCellDimm;
             }
 
-            pos.x = 0.0f;
+            pos.x = boardPos.x;
             pos.y += mapCellDimm;
         }
 
         // draw top pieces (walls, players, items, etc.)
-        pos.x = 0.0f;
-        pos.y = 0.0f;
+        pos = boardPos;
         for (const std::string & mapLine : m_map.m_mapChars)
         {
+            char prevMapChar(0);
             for (const char mapChar : mapLine)
             {
                 sf::Sprite & sprite = m_media.sprite(mapCharToPiece(mapChar));
                 sprite.setPosition(pos);
                 m_window.draw(sprite);
 
+                // draw horiz wall shadow accents
+                if (('-' == mapChar) && ('-' != prevMapChar))
+                {
+                    sf::Sprite & shadow = m_media.sprite(Piece::WallHorizShadow);
+                    shadow.setPosition(pos);
+                    m_window.draw(shadow);
+                }
+
+                prevMapChar = mapChar;
                 pos.x += mapCellDimm;
             }
 
-            pos.x = 0.0f;
+            pos.x = boardPos.x;
             pos.y += mapCellDimm;
         }
 

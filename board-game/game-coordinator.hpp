@@ -5,10 +5,10 @@
 //
 #include "animation-player.hpp"
 #include "bloom-shader.hpp"
-#include "board.hpp"
 #include "context.hpp"
 #include "keys.hpp"
 #include "map.hpp"
+#include "player.hpp"
 #include "random.hpp"
 #include "resources.hpp"
 #include "settings.hpp"
@@ -29,20 +29,19 @@ namespace boardgame
     {
       public:
         GameCoordinator();
-        virtual ~GameCoordinator() = default;
 
-        virtual void reset(const GameConfig & config, const MapChars_t & mapChars);
-        virtual void switchToMap(const Map & map);
-        virtual void run();
+        void reset(const GameConfig & config, const MapChars_t & mapChars);
+        void switchToMap(const Map & map);
+        void run();
 
       protected:
-        virtual void openWindow();
-        virtual void handleEvents();
-        virtual void handleEvent(const sf::Event & event);
-        virtual bool handleExitEvents(const sf::Event & event);
-        virtual void update(const float elapsedTimeSec);
-        virtual void draw();
-        virtual void printFinalStatusToConsole();
+        void openWindow();
+        void handleEvents();
+        void handleEvent(const sf::Event & event);
+        bool handleExitEvent(const sf::Event & event);
+        void update(const float elapsedTimeSec);
+        void draw();
+        void printFinalStatusToConsole();
 
       protected:
         Map m_map;
@@ -56,6 +55,7 @@ namespace boardgame
         Layout m_layout;
         Media m_media;
         GameInPlay m_game;
+        Player m_player;
         Context m_context;
     };
 

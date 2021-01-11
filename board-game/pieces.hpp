@@ -4,7 +4,6 @@
 // pieces.hpp
 //
 //
-#include "board.hpp"
 #include "context.hpp"
 #include "types.hpp"
 #include "util.hpp"
@@ -20,6 +19,7 @@
 
 namespace boardgame
 {
+    /*
     using BoardPos_t = sf::Vector2i;
     using BoardPosOpt_t = std::optional<BoardPos_t>;
 
@@ -88,7 +88,7 @@ namespace boardgame
     //    FoodPiece(Context & context, const BoardPos_t & pos, const Piece piece);
     //    virtual ~FoodPiece() = default;
     //};
-
+    */
 } // namespace boardgame
 
 #endif // BOARDGAME_PIECES_HPP_INCLUDED

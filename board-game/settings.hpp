@@ -29,8 +29,7 @@ namespace boardgame
         unsigned frame_rate_limit{ 60 };
         sf::Color background_color{ sf::Color::Black };
         float between_cells_pad_ratio{ 0.975f };
-        bool will_force_square_cells{ true };
-        float map_cell_size_ratio{ 0.03f };
+        float map_cell_size_ratio{ 0.029f };
 
         template <typename T>
         sf::Vector2<T> windowSize() const
@@ -59,11 +58,9 @@ namespace boardgame
         sf::Vector2i cellCounts() const { return m_cellCounts; }
         std::size_t cellCountTotal() const { return m_cellCountTotal; }
         sf::Vector2f cellSize() const { return m_cellSize; }
-        sf::FloatRect cellBounds(const BoardPos_t & pos) const;
+        sf::FloatRect cellBounds(const MapPos_t & pos) const;
 
-        bool isPositionValid(const BoardPos_t & pos) const;
-
-        const std::vector<BoardPos_t> & allValidPositions() const { return m_allValidPositions; }
+        bool isPositionValid(const MapPos_t & pos) const;
 
         // BoardPosOpt_t windowPosToBoardPos(const sf::Vector2f windowPos) const ;
 
@@ -73,7 +70,6 @@ namespace boardgame
         sf::Vector2i m_cellCounts;
         std::size_t m_cellCountTotal{ 0 };
         sf::Vector2f m_cellSize;
-        std::vector<BoardPos_t> m_allValidPositions;
     };
 
     // All info about a game in progress that can changes during play.
