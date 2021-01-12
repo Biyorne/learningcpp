@@ -467,11 +467,13 @@ namespace util
         anim.sec_elapsed += elapsedTimeSec;
 
         const ImageCache & cache{ *m_imageCaches.at(anim.cache_index) };
-        const float frameCount{ static_cast<float>(cache.frame_count) };
-        const float durationRatio{ (anim.sec_elapsed / anim.config.duration_sec) };
-        const std::size_t newFrameIndex(static_cast<std::size_t>(frameCount * durationRatio));
 
-        if (newFrameIndex > frameCount)
+        const float durationRatio{ (anim.sec_elapsed / anim.config.duration_sec) };
+
+        const std::size_t newFrameIndex(
+            static_cast<std::size_t>(static_cast<float>(cache.frame_count) * durationRatio));
+
+        if (newFrameIndex > cache.frame_count)
         {
             anim.is_playing = false;
             return;

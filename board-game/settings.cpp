@@ -20,7 +20,7 @@ namespace boardgame
             static_cast<int>(map.m_mapChars.front().size()),
             static_cast<int>(map.m_mapChars.size()));
 
-        M_CHECK_SS(
+        M_CHECK_LOG_SS(
             ((m_cellCounts.x > 0) && (m_cellCounts.y > 0)),
             "m_windowBounds=" << m_windowBounds << ", m_cellCounts=" << m_cellCounts);
 
@@ -28,7 +28,7 @@ namespace boardgame
 
         m_cellSize = config.mapCellSize();
 
-        M_CHECK_SS(
+        M_CHECK_LOG_SS(
             (!(m_cellSize.x < 1.0f) && !(m_cellSize.y < 1.0f)),
             "m_windowBounds=" << m_windowBounds << ", m_cellCounts=" << m_cellCounts
                               << ", m_cellSize=" << m_cellSize);
@@ -48,7 +48,7 @@ namespace boardgame
 
     sf::FloatRect Layout::cellBounds(const MapPos_t & pos) const
     {
-        M_CHECK_SS(isPositionValid(pos), pos);
+        M_CHECK_LOG_SS(isPositionValid(pos), pos);
 
         const sf::FloatRect bounds{
             (util::position(m_boardBounds) + (m_cellSize * sf::Vector2f(pos))), m_cellSize

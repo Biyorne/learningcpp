@@ -25,7 +25,7 @@ namespace boardgame
         void setup(const GameConfig & config);
 
         const sf::Font & font() const;
-        sf::Sprite & sprite(const TileImage);
+        const sf::Sprite & sprite(const TileImage) const;
 
       protected:
         void makeDefaults();

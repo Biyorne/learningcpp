@@ -14,9 +14,14 @@
 namespace boardgame
 {
 
-    class Player
+    class Player : public PieceBase
     {
       public:
+        Player(Context & context, const MapPos_t & pos)
+            : PieceBase(context, pos, 'p', false)
+        {}
+
+        void handleEvent(Context &, const sf::Event &) override;
     };
 
 } // namespace boardgame

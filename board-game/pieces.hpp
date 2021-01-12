@@ -16,7 +16,8 @@
 #include <tuple>
 #include <vector>
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Window/Event.hpp>
 
 namespace boardgame
 {
@@ -29,7 +30,9 @@ namespace boardgame
         virtual bool isObstacle() const = 0;
 
         virtual MapPos_t position() const = 0;
-        virtual void move(const sf::Keyboard::Key dir) = 0;
+
+        // does NOT change the map!
+        virtual void move(Context & context, const sf::Keyboard::Key dir) = 0;
 
         virtual void handleEvent(Context &, const sf::Event &) = 0;
         void draw(sf::RenderTarget &, sf::RenderStates) const override = 0;
@@ -44,7 +47,11 @@ namespace boardgame
     class PieceBase : public IPiece
     {
       public:
-        PieceBase(const MapPos_t & pos, const char mapChar = ' ', const bool isObstacle = true);
+        PieceBase(
+            Context & context,
+            const MapPos_t & pos,
+            const char mapChar = '\'',
+            const bool isObstacle = true);
 
         virtual ~PieceBase() = default;
 
@@ -53,20 +60,17 @@ namespace boardgame
         MapPos_t position() const override final { return m_position; }
 
         // keep this this ONLY way to move pieces, intentionally NOT changing the map!
-        void move(const sf::Keyboard::Key dir) override final
-        {
-            m_position = keys::moveIfDir(m_position, dir);
-        }
+        void move(Context & context, const sf::Keyboard::Key dir) override final;
 
         // does nothing by default
         void handleEvent(Context &, const sf::Event &) override {}
 
-        void draw(sf::RenderTarget & target, sf::RenderStates states) const override = 0;
+        void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
 
       protected:
         char m_mapChar;
         bool m_isObstacle;
-        sf::Sprite sprite;
+        sf::Sprite m_sprite;
 
       private:
         MapPos_t m_position;

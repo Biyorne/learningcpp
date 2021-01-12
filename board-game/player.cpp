@@ -5,11 +5,37 @@
 //
 #include "player.hpp"
 
+#include "sound-player.hpp"
+
 //
 
 namespace boardgame
 {
 
-    // void PieceBase::handleEvent(Context &, const sf::Event &) { keys::isArrow }
+    void Player::handleEvent(Context & context, const sf::Event & event)
+    {
+
+        if (sf::Event::KeyPressed != event.type)
+        {
+            return;
+        }
+
+        const sf::Keyboard::Key key{ event.key.code };
+
+        if (keys::isArrow(key))
+        {
+            const MapPos_t newPos{ keys::moveIfDir(position(), key) };
+
+            if (context.map.getChar(newPos) == ' ')
+            {
+                move(context, key);
+                context.audio.play("thock-1-d.ogg");
+            }
+            else
+            {
+                context.audio.play("tap-wood-low.ogg");
+            }
+        }
+    }
 
 } // namespace boardgame

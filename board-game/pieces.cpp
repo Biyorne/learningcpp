@@ -15,13 +15,47 @@
 
 #include <cassert>
 
+#include <SFML/Graphics.hpp>
+
 namespace boardgame
 {
 
-    PieceBase::PieceBase(const MapPos_t & pos, const char mapChar, const bool isObstacle)
+    PieceBase::PieceBase(
+        Context & context, const MapPos_t & pos, const char mapChar, const bool isObstacle)
         : m_mapChar(mapChar)
         , m_isObstacle(isObstacle)
+        , m_sprite(context.media.sprite(mapCharToTileImage(mapChar)))
         , m_position(pos)
-    {}
+    {
+        m_sprite.setPosition(util::position(context.layout.cellBounds(pos)));
+    }
 
+    void PieceBase::move(Context & context, const sf::Keyboard::Key dir)
+    {
+        if (dir == sf::Keyboard::Up)
+        {
+            --m_position.y;
+            m_sprite.move(0.0f, -context.config.mapCellDimm());
+        }
+        else if (dir == sf::Keyboard::Down)
+        {
+            ++m_position.y;
+            m_sprite.move(0.0f, context.config.mapCellDimm());
+        }
+        else if (dir == sf::Keyboard::Left)
+        {
+            --m_position.x;
+            m_sprite.move(-context.config.mapCellDimm(), 0.0f);
+        }
+        else if (dir == sf::Keyboard::Right)
+        {
+            ++m_position.x;
+            m_sprite.move(context.config.mapCellDimm(), 0.0f);
+        }
+    }
+
+    void PieceBase::draw(sf::RenderTarget & target, sf::RenderStates states) const
+    {
+        target.draw(m_sprite, states);
+    }
 } // namespace boardgame

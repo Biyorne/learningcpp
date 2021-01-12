@@ -10,6 +10,8 @@
 #include <memory>
 #include <sstream>
 
+#include <SFML/Graphics.hpp>
+
 namespace boardgame
 {
     GameCoordinator::GameCoordinator()
@@ -22,6 +24,7 @@ namespace boardgame
         , m_layout()
         , m_media()
         , m_game()
+        , m_playerUPtr()
         , m_context(
               m_game,
               m_map,
@@ -36,8 +39,10 @@ namespace boardgame
     void GameCoordinator::reset(const GameConfig & config, const MapChars_t & mapChars)
     {
         m_config = config;
-        M_CHECK_SS(std::filesystem::exists(m_config.media_dir_path), m_config.media_dir_path);
-        M_CHECK_SS(std::filesystem::is_directory(m_config.media_dir_path), m_config.media_dir_path);
+        M_CHECK_LOG_SS(std::filesystem::exists(m_config.media_dir_path), m_config.media_dir_path);
+
+        M_CHECK_LOG_SS(
+            std::filesystem::is_directory(m_config.media_dir_path), m_config.media_dir_path);
 
         m_window.close();
         openWindow();
@@ -49,19 +54,21 @@ namespace boardgame
         m_soundPlayer.volume(75.0f);
 
         m_animationPlayer.stopAll();
-        m_animationPlayer.setMediaPath((m_config.media_dir_path / "animation").string());
+        m_animationPlayer.setMediaPath((m_config.media_dir_path / "anim").string());
 
         m_media.setup(m_config);
 
         m_map.reset(m_context, mapChars);
         switchToMap(m_map);
+
+        m_playerUPtr = std::make_unique<Player>(m_context, MapPos_t{ 4, 0 });
     }
 
     void GameCoordinator::switchToMap(const Map & map)
     {
         m_map = map;
 
-        M_CHECK_SS((!m_map.empty()), "Map is empty.");
+        M_CHECK_LOG_SS((!m_map.empty()), "Map is empty.");
 
         m_layout.setup(m_map, m_config);
         m_game.reset();
@@ -73,7 +80,7 @@ namespace boardgame
 
         m_window.create(m_config.video_mode, m_config.game_name, style);
 
-        M_CHECK_SS(
+        M_CHECK_LOG_SS(
             m_window.isOpen(),
             "Failed to open the window specified: " << m_config.windowSize<int>() << ":"
                                                     << m_config.video_mode.bitsPerPixel);
@@ -144,17 +151,15 @@ namespace boardgame
 
         if (sf::Event::KeyPressed == event.type)
         {
-            if ((sf::Keyboard::Q == event.key.code) || (sf::Keyboard::Escape == event.key.code))
+            const sf::Keyboard::Key key{ event.key.code };
+
+            if ((sf::Keyboard::Q == key) || (sf::Keyboard::Escape == key))
             {
                 m_game.endGame(false);
                 return true;
             }
 
-            // if (sf::Keyboard::R == event.key.code)
-            //{
-            //    reset(m_config, m_map);
-            //    return true;
-            //}
+            m_playerUPtr->handleEvent(m_context, event);
         }
 
         return false;
@@ -182,7 +187,7 @@ namespace boardgame
         {
             for (const char mapChar : mapLine)
             {
-                sf::Sprite & sprite = m_media.sprite(mapCharToTileImage(mapChar));
+                sf::Sprite sprite = m_media.sprite(mapCharToTileImage(mapChar));
                 sprite.setPosition(pos);
                 m_window.draw(sprite);
 
@@ -200,14 +205,14 @@ namespace boardgame
             char prevMapChar(0);
             for (const char mapChar : mapLine)
             {
-                sf::Sprite & sprite = m_media.sprite(mapCharToTileImage(mapChar));
+                sf::Sprite sprite = m_media.sprite(mapCharToTileImage(mapChar));
                 sprite.setPosition(pos);
                 m_window.draw(sprite);
 
                 // draw horiz wall shadow accents
                 if (('-' == mapChar) && ('-' != prevMapChar))
                 {
-                    sf::Sprite & shadow = m_media.sprite(TileImage::WallHorizShadow);
+                    sf::Sprite shadow = m_media.sprite(TileImage::WallHorizShadow);
                     shadow.setPosition(pos);
                     m_window.draw(shadow);
                 }
@@ -219,6 +224,8 @@ namespace boardgame
             pos.x = boardPos.x;
             pos.y += mapCellDimm;
         }
+
+        m_window.draw(*m_playerUPtr);
 
         m_window.display();
     }

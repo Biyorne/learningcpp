@@ -18,9 +18,8 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 
 namespace boardgame
@@ -55,7 +54,7 @@ namespace boardgame
         Layout m_layout;
         Media m_media;
         GameInPlay m_game;
-        Player m_player;
+        std::unique_ptr<Player> m_playerUPtr;
         Context m_context;
     };
 

@@ -27,7 +27,7 @@ namespace boardgame
         const std::size_t imageCount = static_cast<std::size_t>(TileImage::Count);
         m_pieceSprites.resize(imageCount);
 
-        load((config.media_dir_path / "image/rpg-tiles.png"), m_tileTexture);
+        load((config.media_dir_path / "image/tiles.png"), m_tileTexture);
 
         for (sf::Sprite & sprite : m_pieceSprites)
         {
@@ -41,15 +41,18 @@ namespace boardgame
             util::scale(m_pieceSprites.at(i), config.mapCellSize());
         }
 
-        sprite(TileImage::Door).setColor(sf::Color(160, 130, 100));
-        sprite(TileImage::Barrel).setColor(sf::Color(110, 60, 10));
-        sprite(TileImage::Stairs).setColor(sf::Color(140, 110, 90));
-        sprite(TileImage::Empty) = m_defaultSprite;
+        m_pieceSprites.at(static_cast<std::size_t>(TileImage::Door))
+            .setColor(sf::Color(160, 130, 100));
+        m_pieceSprites.at(static_cast<std::size_t>(TileImage::Barrel))
+            .setColor(sf::Color(110, 60, 10));
+        m_pieceSprites.at(static_cast<std::size_t>(TileImage::Stairs))
+            .setColor(sf::Color(140, 110, 90));
+        m_pieceSprites.at(static_cast<std::size_t>(TileImage::Empty)) = m_defaultSprite;
     }
 
     const sf::Font & Media::font() const { return m_font; }
 
-    sf::Sprite & Media::sprite(const TileImage image)
+    const sf::Sprite & Media::sprite(const TileImage image) const
     {
         const std::size_t index = static_cast<std::size_t>(image);
         if (index < m_pieceSprites.size())
