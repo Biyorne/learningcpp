@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project("boardgame" VERSION 0.5.0 LANGUAGES CXX)
+project("castlecrawl" VERSION 0.5.0 LANGUAGES CXX)
 
 
 file(GLOB source_files *.?pp)
@@ -68,6 +68,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         -Wno-padded
         -Wno-unused-command-line-argument
         -Wno-weak-vtables
+        -Wno-poison-system-directories
         -Woverloaded-virtual
         -Wcast-align
         -Wformat=2)

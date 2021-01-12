@@ -5,6 +5,8 @@
 //
 #include "map.hpp"
 
+#include "random.hpp"
+
 //
 
 namespace castlecrawl
