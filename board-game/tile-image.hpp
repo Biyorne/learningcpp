@@ -1,5 +1,5 @@
-#ifndef BOARDGAME_TYPES_HPP_INCLUDED
-#define BOARDGAME_TYPES_HPP_INCLUDED
+#ifndef CASTLECRAWL_TILEIMAGE_HPP_INCLUDED
+#define CASTLECRAWL_TILEIMAGE_HPP_INCLUDED
 //
 // tile-image.hpp
 //
@@ -7,7 +7,7 @@
 
 #include <SFML/Graphics/Rect.hpp>
 
-namespace boardgame
+namespace castlecrawl
 {
     // used to index so keep unsigned
     enum class TileImage : std::size_t
@@ -78,10 +78,11 @@ namespace boardgame
             case TileImage::Floor6:          return sf::IntRect(64,96,32,32);
             case TileImage::Door:            return sf::IntRect(96,96,32,32);
             case TileImage::Empty:                 
+            case TileImage::Count:
             default:                         return sf::IntRect(0,0,0,0);
         }
         // clang-format on
     }
 
-} // namespace boardgame
-#endif // #define BOARDGAME_TYPES_HPP_INCLUDED
+} // namespace castlecrawl
+#endif // #define CASTLECRAWL_TILEIMAGE_HPP_INCLUDED

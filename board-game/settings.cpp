@@ -7,7 +7,7 @@
 
 #include "context.hpp"
 
-namespace boardgame
+namespace castlecrawl
 {
     void Layout::setup(const Map & map, const GameConfig & config)
     {
@@ -90,4 +90,4 @@ namespace boardgame
 
         return m_score;
     }
-} // namespace boardgame
+} // namespace castlecrawl

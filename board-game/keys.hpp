@@ -1,7 +1,7 @@
-#ifndef BOARDGAME_KEYS_HPP_INCLUDED
-#define BOARDGAME_KEYS_HPP_INCLUDED
+#ifndef CASTLECRAWL_KEYS_HPP_INCLUDED
+#define CASTLECRAWL_KEYS_HPP_INCLUDED
 //
-// pieces.hpp
+// keys.hpp
 //
 #include "map.hpp"
 
@@ -14,7 +14,7 @@
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
 
-namespace boardgame
+namespace castlecrawl
 {
     using DirKeyOpt_t = std::optional<sf::Keyboard::Key>;
 
@@ -159,6 +159,6 @@ namespace boardgame
             return std::nullopt;
         }
     } // namespace keys
-} // namespace boardgame
+} // namespace castlecrawl
 
-#endif // BOARDGAME_KEYS_HPP_INCLUDED
+#endif // CASTLECRAWL_KEYS_HPP_INCLUDED

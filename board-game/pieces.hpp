@@ -1,5 +1,5 @@
-#ifndef BOARDGAME_PIECES_HPP_INCLUDED
-#define BOARDGAME_PIECES_HPP_INCLUDED
+#ifndef CASTLECRAWL_PIECES_HPP_INCLUDED
+#define CASTLECRAWL_PIECES_HPP_INCLUDED
 //
 // pieces.hpp
 //
@@ -19,7 +19,7 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Window/Event.hpp>
 
-namespace boardgame
+namespace castlecrawl
 {
 
     struct IPiece : public sf::Drawable
@@ -76,6 +76,6 @@ namespace boardgame
         MapPos_t m_position;
     };
 
-} // namespace boardgame
+} // namespace castlecrawl
 
-#endif // BOARDGAME_PIECES_HPP_INCLUDED
+#endif // CASTLECRAWL_PIECES_HPP_INCLUDED

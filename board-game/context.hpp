@@ -1,5 +1,5 @@
-#ifndef BOARDGAME_CONTEXT_HPP_INCLUDED
-#define BOARDGAME_CONTEXT_HPP_INCLUDED
+#ifndef CASTLECRAWL_CONTEXT_HPP_INCLUDED
+#define CASTLECRAWL_CONTEXT_HPP_INCLUDED
 //
 // context.hpp
 //
@@ -11,7 +11,7 @@ namespace util
     class AnimationPlayer;
 } // namespace util
 
-namespace boardgame
+namespace castlecrawl
 {
     class Media;
     class Layout;
@@ -57,6 +57,6 @@ namespace boardgame
         util::SoundPlayer & audio;
         util::AnimationPlayer & anim;
     };
-} // namespace boardgame
+} // namespace castlecrawl
 
-#endif // BOARDGAME_CONTEXT_HPP_INCLUDED
+#endif // CASTLECRAWL_CONTEXT_HPP_INCLUDED

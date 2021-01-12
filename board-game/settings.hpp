@@ -1,5 +1,5 @@
-#ifndef BOARDGAME_SETTINGS_HPP_INCLUDED
-#define BOARDGAME_SETTINGS_HPP_INCLUDED
+#ifndef CASTLECRAWL_SETTINGS_HPP_INCLUDED
+#define CASTLECRAWL_SETTINGS_HPP_INCLUDED
 //
 // settings.hpp
 //
@@ -16,7 +16,7 @@
 
 #include <SFML/Graphics.hpp>
 
-namespace boardgame
+namespace castlecrawl
 {
     // All settings about the game that must be set before...well before everything else.
     // No need for an interface class since this will be const in Context.
@@ -108,6 +108,6 @@ namespace boardgame
         bool m_didPlayerWin{ false };
     };
 
-} // namespace boardgame
+} // namespace castlecrawl
 
-#endif // BOARDGAME_SETTINGS_HPP_INCLUDED
+#endif // CASTLECRAWL_SETTINGS_HPP_INCLUDED

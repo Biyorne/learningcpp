@@ -10,7 +10,7 @@
 int main(const int argc, const char * const argv[])
 {
 
-    using namespace boardgame;
+    using namespace castlecrawl;
 
     try
     {

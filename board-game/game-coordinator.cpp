@@ -12,7 +12,7 @@
 
 #include <SFML/Graphics.hpp>
 
-namespace boardgame
+namespace castlecrawl
 {
     GameCoordinator::GameCoordinator()
         : m_map()
@@ -80,10 +80,12 @@ namespace boardgame
 
         m_window.create(m_config.video_mode, m_config.game_name, style);
 
+        std::cout << "Game Window: " << m_config.windowSize<int>() << " at "
+                  << m_config.video_mode.bitsPerPixel << "bits per pixel." << std::endl;
+
         M_CHECK_LOG_SS(
             m_window.isOpen(),
-            "Failed to open the window specified: " << m_config.windowSize<int>() << ":"
-                                                    << m_config.video_mode.bitsPerPixel);
+            "Failed to make and open the graphics window.  (sf::RenderWindow::isOpen() == false)");
 
         // verify the window size is what was specified/expected,
         // otherwise all the size/positions calculations will be wrong
@@ -101,6 +103,11 @@ namespace boardgame
         m_config.video_mode.width = windowActualSize.x;
         m_config.video_mode.height = windowActualSize.y;
         m_config.video_mode.bitsPerPixel = m_window.getSettings().depthBits;
+        using namespace util;
+        std::cout << "Game Window Cells: width_ratio=" << m_config.map_cell_size_ratio
+                  << ", pixels=" << m_config.mapCellDimm()
+                  << ", grid=" << (m_config.windowSize<float>() / m_config.mapCellSize())
+                  << std::endl;
     }
 
     void GameCoordinator::run()
@@ -230,4 +237,4 @@ namespace boardgame
         m_window.display();
     }
 
-} // namespace boardgame
+} // namespace castlecrawl

@@ -1,5 +1,5 @@
-#ifndef BOARDGAME_GAMECOORDINATOR_HPP_INCLUDED
-#define BOARDGAME_GAMECOORDINATOR_HPP_INCLUDED
+#ifndef CASTLECRAWL_GAMECOORDINATOR_HPP_INCLUDED
+#define CASTLECRAWL_GAMECOORDINATOR_HPP_INCLUDED
 //
 // game-coordinator.hpp
 //
@@ -22,7 +22,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 
-namespace boardgame
+namespace castlecrawl
 {
     class GameCoordinator
     {
@@ -58,6 +58,6 @@ namespace boardgame
         Context m_context;
     };
 
-} // namespace boardgame
+} // namespace castlecrawl
 
-#endif // BOARDGAME_GAMECOORDINATOR_HPP_INCLUDED
+#endif // CASTLECRAWL_GAMECOORDINATOR_HPP_INCLUDED

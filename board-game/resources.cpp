@@ -17,7 +17,7 @@
 
 //
 
-namespace boardgame
+namespace castlecrawl
 {
     void Media::setup(const GameConfig & config)
     {
@@ -87,4 +87,4 @@ namespace boardgame
     //{
     //    load((m_mediaPath / "font/gentium-plus/gentium-plus.ttf"), m_font);
     //}
-} // namespace boardgame
+} // namespace castlecrawl

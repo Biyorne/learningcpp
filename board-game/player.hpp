@@ -1,5 +1,5 @@
-#ifndef BOARDGAME_PLAYER_HPP_INCLUDED
-#define BOARDGAME_PLAYER_HPP_INCLUDED
+#ifndef CASTLECRAWL_PLAYER_HPP_INCLUDED
+#define CASTLECRAWL_PLAYER_HPP_INCLUDED
 //
 // player.hpp
 //
@@ -11,7 +11,7 @@
 
 //
 
-namespace boardgame
+namespace castlecrawl
 {
 
     class Player : public PieceBase
@@ -24,6 +24,6 @@ namespace boardgame
         void handleEvent(Context &, const sf::Event &) override;
     };
 
-} // namespace boardgame
+} // namespace castlecrawl
 
-#endif // BOARDGAME_PLAYER_HPP_INCLUDED
+#endif // CASTLECRAWL_PLAYER_HPP_INCLUDED

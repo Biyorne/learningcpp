@@ -1,7 +1,7 @@
 // This is an open source non-commercial project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 //
-// meth-head.cpp
+// pieces.cpp
 //
 #include "pieces.hpp"
 
@@ -17,7 +17,7 @@
 
 #include <SFML/Graphics.hpp>
 
-namespace boardgame
+namespace castlecrawl
 {
 
     PieceBase::PieceBase(
@@ -58,4 +58,4 @@ namespace boardgame
     {
         target.draw(m_sprite, states);
     }
-} // namespace boardgame
+} // namespace castlecrawl

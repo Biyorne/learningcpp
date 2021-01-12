@@ -1,7 +1,7 @@
-#ifndef BOARDGAME_RESOURCES_HPP_INCLUDED
-#define BOARDGAME_RESOURCES_HPP_INCLUDED
+#ifndef CASTLECRAWL_RESOURCES_HPP_INCLUDED
+#define CASTLECRAWL_RESOURCES_HPP_INCLUDED
 //
-// media.hpp
+// resources.hpp
 //
 #include "check-macros.hpp"
 #include "context.hpp"
@@ -13,7 +13,7 @@
 
 //
 
-namespace boardgame
+namespace castlecrawl
 {
     struct GameConfig;
 
@@ -49,6 +49,6 @@ namespace boardgame
         static inline sf::Sprite m_defaultSprite;
     };
 
-} // namespace boardgame
+} // namespace castlecrawl
 
-#endif // #define BOARDGAME_RESOURCES_HPP_INCLUDED
+#endif // #define CASTLECRAWL_RESOURCES_HPP_INCLUDED

@@ -1,5 +1,5 @@
-#ifndef BOARDGAME_UTIL_HPP_INCLUDED
-#define BOARDGAME_UTIL_HPP_INCLUDED
+#ifndef CASTLECRAWL_UTIL_HPP_INCLUDED
+#define CASTLECRAWL_UTIL_HPP_INCLUDED
 //
 // util.hpp
 //
@@ -933,4 +933,4 @@ namespace util
     };
 } // namespace util
 
-#endif // BOARDGAME_UTIL_HPP_INCLUDED
+#endif // CASTLECRAWL_UTIL_HPP_INCLUDED

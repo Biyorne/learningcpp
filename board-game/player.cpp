@@ -1,7 +1,7 @@
 // This is an open source non-commercial project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 //
-// board.cpp
+// player.cpp
 //
 #include "player.hpp"
 
@@ -9,7 +9,7 @@
 
 //
 
-namespace boardgame
+namespace castlecrawl
 {
 
     void Player::handleEvent(Context & context, const sf::Event & event)
@@ -29,7 +29,7 @@ namespace boardgame
             if (context.map.getChar(newPos) == ' ')
             {
                 move(context, key);
-                context.audio.play("thock-1-d.ogg");
+                context.audio.play("thock-1.ogg");
             }
             else
             {
@@ -38,4 +38,4 @@ namespace boardgame
         }
     }
 
-} // namespace boardgame
+} // namespace castlecrawl
