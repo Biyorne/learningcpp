@@ -16,7 +16,7 @@
 namespace color_range
 {
 
-    using Diff_t = std::int32_t;
+    using Diff_t = std::int_fast32_t;
 
     // color value diffs
 
@@ -29,7 +29,7 @@ namespace color_range
     template <typename T = Diff_t>
     [[nodiscard]] constexpr T diffAbs(const sf::Uint8 left, const sf::Uint8 right) noexcept
     {
-        return std::abs(diff<T>(left, right));
+        return util::abs(diff<T>(left, right));
     }
 
     [[nodiscard]] inline constexpr float
@@ -190,6 +190,8 @@ namespace color_range
     //  computationally expensive, such as CIE-Lab/Luv.  But, uh, the HSL and Hsla are
     //  still here for some reason.
     //
+    //  So not a real color space, just a handy re-arranged RGB for color picking.
+    //
     struct Hsla
     {
         Hsla() = default;
@@ -285,7 +287,7 @@ namespace color_range
 
             if (a < 255)
             {
-                ss << ',' << int(a);
+                ss << ',' << Diff_t(a);
             }
 
             ss << ']';
@@ -349,13 +351,70 @@ namespace color_range
 
             return static_cast<sf::Uint8>(result);
         }
-    }; // namespace Hsla
+    };
 
     inline std::ostream & operator<<(std::ostream & os, const Hsla & hsl)
     {
         os << hsl.toString();
         return os;
     }
+
+    //
+    // Brightness
+    //   These are all estimates that are flawed when it comes to bright reds
+    //   which they all say are darker than they really are.  Luminosity is
+    //   the best but slow, while my WeightedMean is far faster and nearly
+    //   identical.
+    //
+    namespace brightness
+    {
+
+        // not very good, HSL is for humans picking colors, but better than nothing
+        inline float Hsl(const sf::Color & color) { return Hsla(color).l; }
+
+        // my own version, nearly identical to Luminosity
+        inline float WeightedMean(const sf::Color & color)
+        {
+            const float red { static_cast<float>(color.r) };
+            const float green { static_cast<float>(color.g) };
+            const float blue { static_cast<float>(color.b) };
+
+            const float redFactor { 0.2126f * red * red };
+            const float greenFactor { 0.7152f * green * green };
+            const float blueFactor { 0.0722f * blue * blue };
+
+            return (redFactor + greenFactor + blueFactor);
+        }
+
+        // from https://www.w3.org/TR/AERT/#color-contrast,
+        // better than HSL but has glaring problems with bright reds
+        inline float W3Perceived(const sf::Color & color)
+        {
+            const float red { static_cast<float>(color.r) };
+            const float green { static_cast<float>(color.g) };
+            const float blue { static_cast<float>(color.b) };
+
+            const float redFactor { 0.299f * red };
+            const float greenFactor { 0.587f * green };
+            const float blueFactor { 0.114f * blue };
+
+            return (redFactor + greenFactor + blueFactor) / 1000.0f;
+        }
+
+        // from ?, the best I've found so far
+        inline float Luminosity(const sf::Color & color)
+        {
+            const float redRatio { static_cast<float>(color.r) / 255.0f };
+            const float greenRatio { static_cast<float>(color.g) / 255.0f };
+            const float blueRatio { static_cast<float>(color.b) / 255.0f };
+
+            const float redFactor { 0.2126f * std::powf(redRatio, 2.2f) };
+            const float greenFactor { 0.7152f * std::powf(greenRatio, 2.2f) };
+            const float blueFactor { 0.0722f * std::powf(blueRatio, 2.2f) };
+
+            return (redFactor + greenFactor + blueFactor);
+        }
+    } // namespace brightness
 
     //
     // helper stuff
@@ -461,34 +520,6 @@ namespace color_range
     {
         return ratioFromClamped((ratio - std::floor(ratio)), container);
     }
-
-    inline float brightnessAverage(const sf::Color & color)
-    {
-        const float red { static_cast<float>(color.r) };
-        const float green { static_cast<float>(color.g) };
-        const float blue { static_cast<float>(color.b) };
-
-        const float redFactor { 0.299f * red * red };
-        const float greenFactor { 0.587f * green * green };
-        const float blueFactor { 0.114f * blue * blue };
-
-        return std::sqrt(redFactor + greenFactor + blueFactor) / 255.0f;
-    }
-
-    inline float luminosityRatio(const sf::Color & color)
-    {
-        const float redRatio { static_cast<float>(color.r) / 255.0f };
-        const float greenRatio { static_cast<float>(color.g) / 255.0f };
-        const float blueRatio { static_cast<float>(color.b) / 255.0f };
-
-        const float redFactor { 0.2126f * std::pow(redRatio, 2.2f) };
-        const float greenFactor { 0.7152f * std::pow(greenRatio, 2.2f) };
-        const float blueFactor { 0.0722f * std::pow(blueRatio, 2.2f) };
-
-        return (redFactor + greenFactor + blueFactor);
-    }
-
-    inline float brightnessHslRatio(const sf::Color & color) { return Hsla(color).l; }
 
     //
     // Random Colors
@@ -759,190 +790,3 @@ namespace color_range
 } // namespace color_range
 
 #endif // COLOR_RANGE_HPP_INCLUDED
-
-//
-// ITU-R=International Telecommunication Union RadioCommunication Sector
-//
-/*
-// ITU-R.601  (also CCIR.601 / Rec.601 / BT.601)  (year 1982)
-//  The good old standard for encoding interlaced analog video signals as digital video.
-//  Includes 525-line encoding at 60 Hz, and 625-line encoding at 50 Hz signals.
-//      RGB Luma coefficients (Y’): R=0.299R, G=0.5870G, B=0.1140B
-//
-// ITU-R.709  (also Rec.709 / BT.709)  (year 1990)
-//  Created for widescreen (16:9) high-definition television.
-//  NOTE:  Rec.709 and sRGB share the same primary chromaticities and white-point
-//  chromaticity, but sRGB is explicitly for display's with gamma 2.2.
-//      RGB Luma coefficients (Y’):  R=0.2126, G=0.7152, B=0.0722
-//
-// ITU-R.2020 (also Rec.2020 / BT.2020)  (year 2012)
-//  Created for UHDTV with standard dynamic range (SDR) and wide color gamut (WCG).
-//      RGB Luma coefficients (Y’): R=0.2627, G=0.678, B=0.0593
-//
-// ITU-R.2100 (also Rec.2100 / BT.2100)  (year 2016)
-//  Created for high dynamic range (HDR) formats for both HDTV 1080p and 4K/8K UHDTV
-//  resolutions that uses different transfer functions for HDR, but...
-//      RGB Luma coefficients (Y’):  USES SAME COLOR PRIMARIES AS REC.2020.
-*/
-
-//
-// XYZ (Tristimulus) Reference values of a perfect reflecting diffuser
-//
-/*
-    namespace xyz
-    {
-        struct ReferenceValues
-        {
-            std::string_view observer;
-            std::string_view description;
-
-            // CIE 1931 2degrees
-            float x2;
-            float y2;
-            float z2;
-
-            // CIE 1964 10degrees
-            float x10;
-            float y10;
-            float z10;
-        };
-
-        // clang-format off
-        //
-        //constexpr ReferenceValues A{    "A",   "Incandescent/Tungsten", 109.850f,
-   100.000f,  35.585f,    111.144f, 100.000f,  35.200f };
-        //constexpr ReferenceValues B{    "B",   "Old Direct Sunlight At
-   Noon",          99.0927f, 100.000f,  85.313f,     99.178f, 100.000f,  84.3493f};
-        //constexpr ReferenceValues C{    "C",   "Old
-   Daylight",                         98.074f,  100.000f, 118.232f,     97.285f, 100.000f,
-   116.145f };
-        //constexpr ReferenceValues D50{  "D50", "ICC Profile
-   PCS",                      96.422f,  100.000f,  82.521f,     96.720f, 100.000f,  81.427f };
-        //constexpr ReferenceValues D55{  "D55", "Midmorning
-   Daylight",                  95.682f,  100.000f,  92.149f,     95.799f, 100.000f,  90.926f };
-        //constexpr ReferenceValues D65{  "D65",
-   "Daylight/sRGB/AdobeRGB",               95.047f,  100.000f, 108.883f,     94.811f, 100.000f,
-   107.304f };
-        //constexpr ReferenceValues D75{  "D75", "North Sky
-   Daylight",                   94.972f,  100.000f, 122.638f,     94.416f, 100.000f, 120.641f };
-        //constexpr ReferenceValues E{    "E",   "Equal Energy", 100.000f,  100.000f, 100.000f,
-   100.000f, 100.000f, 100.000f };
-        //constexpr ReferenceValues F1{   "F1",  "Daylight
-   Fluorescent",                 92.834f,  100.000f, 103.665f,     94.791f, 100.000f, 103.191f
-   };
-        //constexpr ReferenceValues F2{   "F2",  "Cool
-   Fluorescent",                     99.187f,  100.000f,  67.395f,    103.280f,
-   100.000f,  69.026f };
-        //constexpr ReferenceValues F3{   "F3",  "White Fluorescent", 103.754f,
-   100.000f,  49.861f,    108.968f, 100.000f,  51.965f };
-        //constexpr ReferenceValues F4{   "F4",  "Warm White Fluorescent", 109.147f,
-   100.000f,  38.813f,    114.961f, 100.000f,  40.963f };
-        //constexpr ReferenceValues F5{   "F5",  "Daylight
-   Fluorescent",                 90.872f,  100.000f,  98.723f,     93.369f, 100.000f,  98.636f
-   };
-        //constexpr ReferenceValues F6{   "F6",  "Lite White
-   Fluorescent",               97.309f,  100.000f,  60.191f,    102.148f, 100.000f,  62.074f };
-        //constexpr ReferenceValues F7{   "F7",  "Daylight Fluorescent/D65
-   Simulator",   95.044f,  100.000f, 108.755f,     95.792f, 100.000f, 107.687f };
-        //constexpr ReferenceValues F8{   "F8",  "Sylvania F40/D50
-   Simulator",           96.413f,  100.000f,  82.333f,     97.115f, 100.000f,  81.135f };
-        //constexpr ReferenceValues F9{   "F9",  "Cool White Fluorescent", 100.365f,
-   100.000f,  67.868f,    102.116f, 100.000f,  67.826f };
-        //constexpr ReferenceValues F10{  "F10", "Ultralume 50/Philips
-   TL85",            96.174f,  100.000f,  81.712f,     99.001f, 100.000f,  83.134f };
-        //constexpr ReferenceValues F11{  "F11", "Ultralume 40/Philips TL84", 100.966f,
-   100.000f,  64.370f,    103.866f, 100.000f,  65.627f };
-        //constexpr ReferenceValues F12{  "F12", "Ultralume 30/Philips TL83", 108.046f,
-   100.000f,  39.228f,    111.428f, 100.000f,  40.353f };
-        //
-        //
-        // Converting
-        // RGB -> CIE.XYZ.Rec.709 with D65 white point:
-        // 0.412453 & 0.357580 & 0.180423
-        // 0.212671 & 0.715160 & 0.072169
-        // 0.019334 & 0.119193 & 0.950227
-        //...and back again
-        // 3.240479 & -1.53715 & -0.498535
-        // -0.969256 & 1.875991 & 0.041556
-        // 0.055648 & -0.204043 & 1.057311
-        //
-        // clang-format on
-
-        struct Xyza
-        {
-            Xyza() = default;
-
-            explicit Xyza(const sf::Color & color)
-                : x((0.412453f * color.r) + (0.35758f * color.g) + (0.180423f * color.b))
-                , y((0.212671f * color.r) + (0.71516f * color.g) + (0.072169f * color.b))
-                , z((0.019334f * color.r) + (0.119193f * color.g) + (0.950227f * color.b))
-                , a(color.a)
-            { }
-
-            // sf::Color sfColor() const {}
-
-            std::string toString() const
-            {
-                std::ostringstream ss;
-
-                ss << '[' << x << ',' << y << ',' << z;
-
-                if (a < 255)
-                {
-                    ss << ',' << int(a);
-                }
-
-                ss << ']';
-                return ss.str();
-            }
-
-            float x { 0.0f };
-            float y { 0.0f };
-            float z { 0.0f };
-            sf::Uint8 a { 255 }; // same as sf::Color.a (transparent=0, opaque=255)
-        };
-    } // namespace xyz
-    */
-
-//
-// CIE
-//
-/*
-    namespace cie
-    {
-        struct Laba
-        {
-            explicit Laba(const sf::Color & color)
-                : l()
-                , a()
-                , b()
-                , alpha(color.a)
-            {
-                // Reference-X, Y and Z refer to specific illuminants and observers.
-                // Common reference values are available below in this same page.
-                //
-                // var_X = X / Reference - X
-                // var_Y = Y / Reference - Y
-                // var_Z = Z / Reference - Z
-                //
-                // if (var_X > 0.008856) var_X = var_X ^ (1 / 3)
-                // else                    var_X = (7.787 * var_X) + (16 / 116)
-                //
-                // if (var_Y > 0.008856) var_Y = var_Y ^ (1 / 3)
-                // else                    var_Y = (7.787 * var_Y) + (16 / 116)
-                //
-                // if (var_Z > 0.008856) var_Z = var_Z ^ (1 / 3)
-                // else                    var_Z = (7.787 * var_Z) + (16 / 116)
-                //
-                // CIE - L * = (116 * var_Y) - 16
-                // CIE - a * = 500 * (var_X - var_Y)
-                // CIE - b * = 200 * (var_Y - var_Z)
-            }
-
-            float l { 0.0f };
-            float a { 0.0f };
-            float b { 0.0f };
-            sf::Uint8 alpha { 255 }; // same as sf::Color.a (transparent=0, opaque=255)
-        };
-    } // namespace cie
-    */
