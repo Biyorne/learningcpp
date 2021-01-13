@@ -1,0 +1,40 @@
+
+
+		Air
+	Lightning	Ice  
+Fire 				Water
+	Magma		?Shard/Poison/Plant
+		Earth
+
+
+item sets
+gold is in
+finding items/spells reveals/unlocks them for purchase to help ease death
+play with focus on melee or magic or both
+lots of people to find and talk to
+traps
+Stats:
+	Physical
+	Mental
+	Social
+	Luck?
+No mana.  If you have/know a spell you can cast it.  Gems/pickups required?
+Item screen will show locations for left/right hand etc and a collection for misc
+
+
+
+
+
+
+---
+No leveling player but what about experience?  Without it, what determines loot value?  Depth?
+experience?
+stat number range?
+Luck as a stat?
+story?
+gold or coins?
+resolutions supported
+traps in doors and loot but what about positional?
+what about gems/shards/pickups that bigger spells require to prevent using big spells too early/often?
+
+
