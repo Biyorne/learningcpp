@@ -3,13 +3,7 @@
 //
 // player.hpp
 //
-#include "context.hpp"
-#include "map.hpp"
 #include "pieces.hpp"
-
-#include <SFML/Window/Event.hpp>
-
-//
 
 namespace castlecrawl
 {
@@ -17,10 +11,7 @@ namespace castlecrawl
     class Player : public PieceBase
     {
       public:
-        Player(Context & context, const MapPos_t & pos)
-            : PieceBase(context, pos, 'p', false)
-        {}
-
+        Player(Context & context, const MapPos_t & pos);
         void handleEvent(Context &, const sf::Event &) override;
     };
 

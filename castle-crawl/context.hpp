@@ -13,11 +13,11 @@ namespace util
 
 namespace castlecrawl
 {
+    class Map;
     class Media;
     class Layout;
-    struct GameConfig;
     class GameInPlay;
-    class Map;
+    struct GameConfig;
 
     //
 
@@ -25,7 +25,7 @@ namespace castlecrawl
     {
         Context(
             GameInPlay & gam,
-            const Map & mp,
+            Map & mp,
             const GameConfig & conf,
             const Layout & lay,
             const Media & med,
@@ -49,7 +49,7 @@ namespace castlecrawl
         Context & operator=(Context &&) = delete;
 
         GameInPlay & game;
-        const Map & map;
+        Map & map;
         const GameConfig & config;
         const Layout & layout;
         const Media & media;

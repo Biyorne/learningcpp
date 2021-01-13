@@ -54,7 +54,8 @@ namespace castlecrawl
             case 'p': return TileImage::Player;
             case 's': return TileImage::Stairs;
             case 'b': return TileImage::Barrel;
-            case 'D': return TileImage::Door;
+            case 'D': return TileImage::Door; // door can be upper or lower case
+            case 'd': return TileImage::Door;
             case '0': return TileImage::Wood1;
             case '1': return TileImage::Wood2;
             case '2': return TileImage::Wood3;

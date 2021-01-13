@@ -16,7 +16,7 @@
 namespace castlecrawl
 {
 
-    void Map::reset(Context & context, const MapChars_t & mapChars)
+    void Map::reset(const Context & context, const MapChars_t & mapChars)
     {
         m_mapChars = mapChars;
         m_floorChars = mapChars;
@@ -59,7 +59,7 @@ namespace castlecrawl
         }
     }
 
-    void Map::randomizeFloorTiles(Context & context)
+    void Map::randomizeFloorTiles(const Context & context)
     {
         for (std::string & str : m_floorChars)
         {

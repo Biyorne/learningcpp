@@ -3,33 +3,27 @@
 //
 // settings.hpp
 //
-#include "check-macros.hpp"
 #include "context.hpp"
-#include "map.hpp"
+#include "map-types.hpp"
 #include "tile-image.hpp"
 #include "util.hpp"
 
-#include <filesystem>
-#include <limits>
 #include <string>
 #include <vector>
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Color.hpp>
+#include <SFML/Graphics/Rect.hpp>
+#include <SFML/Window/VideoMode.hpp>
 
 namespace castlecrawl
 {
+    class Map;
+
     // All settings about the game that must be set before...well before everything else.
     // No need for an interface class since this will be const in Context.
     struct GameConfig
     {
-        std::string game_name{ "game" };
-        std::filesystem::path media_dir_path{ std::filesystem::current_path() / "media" };
-        sf::VideoMode video_mode{ sf::VideoMode::getDesktopMode() };
-        bool is_fullscreen{ true };
-        unsigned frame_rate_limit{ 60 };
-        sf::Color background_color{ sf::Color::Black };
-        float between_cells_pad_ratio{ 0.975f };
-        float map_cell_size_ratio{ 0.024f };
+        GameConfig();
 
         template <typename T>
         sf::Vector2<T> windowSize() const
@@ -39,8 +33,17 @@ namespace castlecrawl
         }
 
         float mapCellDimm() const { return (map_cell_size_ratio * windowSize<float>().x); }
-
         sf::Vector2f mapCellSize() const { return sf::Vector2f(mapCellDimm(), mapCellDimm()); }
+
+        //
+        std::string game_name;
+        std::filesystem::path media_dir_path;
+        sf::VideoMode video_mode;
+        bool is_fullscreen;
+        unsigned frame_rate_limit;
+        sf::Color background_color;
+        float between_cells_pad_ratio;
+        float map_cell_size_ratio;
     };
 
     // Everything about the window that can only be calculated once BOTH the window is open and the

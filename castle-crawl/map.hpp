@@ -4,22 +4,21 @@
 // map.hpp
 //
 #include "context.hpp"
+#include "map-types.hpp"
 
-#include <string>
-#include <vector>
-
-#include <SFML/Graphics/Rect.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
 
 namespace castlecrawl
 {
 
-    using MapPos_t = sf::Vector2i;
-    using MapChars_t = std::vector<std::string>;
-
     class Map
     {
       public:
+        //
+        void reset(const Context & context, const MapChars_t & mapChars);
+        void randomizeFloorTiles(const Context & context);
+        void addWallCorners();
+
         //
         MapPos_t size() const;
         bool empty() const { return !((size().x > 0) && (size().y > 0)); }
@@ -37,15 +36,10 @@ namespace castlecrawl
         void setChar(const int x, const int y, const char newChar);
 
         //
-        void reset(Context & context, const MapChars_t & mapChars);
-        void randomizeFloorTiles(Context & context);
-        void addWallCorners();
-
-        //
         void draw(Context &, sf::RenderTarget &, sf::RenderStates) const;
         void drawChars(Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
 
-        // private:
+      private:
         MapChars_t m_mapChars;
         MapChars_t m_floorChars;
     };

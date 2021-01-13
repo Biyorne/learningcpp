@@ -409,7 +409,7 @@ namespace util
             const std::string heightStr(name.substr(xIndex + 1));
 
             const int width(std::stoi(widthStr));
-            const int height((heightStr.empty()) ? width : std::stoi(heightStr));
+            const int height((heightStr.empty()) ? width : std::stoi(heightStr)); //-V537
 
             return { animName, sf::Vector2i(width, height) };
         }

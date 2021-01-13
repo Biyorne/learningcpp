@@ -3,18 +3,9 @@
 //
 // pieces.hpp
 //
-//
 #include "context.hpp"
-#include "keys.hpp"
-#include "map.hpp"
+#include "map-types.hpp"
 #include "tile-image.hpp"
-
-#include <list>
-#include <memory>
-#include <optional>
-#include <string>
-#include <tuple>
-#include <vector>
 
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Window/Event.hpp>

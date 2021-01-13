@@ -5,12 +5,16 @@
 //
 #include "player.hpp"
 
+#include "keys.hpp"
 #include "sound-player.hpp"
 
 //
 
 namespace castlecrawl
 {
+    Player::Player(Context & context, const MapPos_t & pos)
+        : PieceBase(context, pos, 'p', false)
+    {}
 
     void Player::handleEvent(Context & context, const sf::Event & event)
     {

@@ -5,10 +5,25 @@
 //
 #include "settings.hpp"
 
+#include "check-macros.hpp"
 #include "context.hpp"
+#include "map.hpp"
+
+#include <filesystem>
 
 namespace castlecrawl
 {
+    GameConfig::GameConfig()
+        : game_name{ "game" }
+        , media_dir_path{ std::filesystem::current_path() / "media" }
+        , video_mode{ sf::VideoMode::getDesktopMode() }
+        , is_fullscreen{ true }
+        , frame_rate_limit{ 60 }
+        , background_color{ sf::Color::Black }
+        , between_cells_pad_ratio{ 0.975f }
+        , map_cell_size_ratio{ 0.024f }
+    {}
+
     void Layout::setup(const Map & map, const GameConfig & config)
     {
         const sf::Vector2f windowSize{ config.windowSize<float>() };
@@ -16,9 +31,7 @@ namespace castlecrawl
 
         m_boardBounds = m_windowBounds;
 
-        m_cellCounts = sf::Vector2i(
-            static_cast<int>(map.m_mapChars.front().size()),
-            static_cast<int>(map.m_mapChars.size()));
+        m_cellCounts = map.size();
 
         M_CHECK_LOG_SS(
             ((m_cellCounts.x > 0) && (m_cellCounts.y > 0)),
@@ -34,7 +47,6 @@ namespace castlecrawl
                               << ", m_cellSize=" << m_cellSize);
 
         const sf::Vector2f actualBoardSize{ sf::Vector2i(m_cellSize) * m_cellCounts };
-
         const sf::Vector2f actualBoardPos{ util::center(m_boardBounds) - (actualBoardSize / 2.0f) };
 
         m_boardBounds = sf::FloatRect(actualBoardPos, actualBoardSize);
