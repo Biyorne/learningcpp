@@ -6,7 +6,6 @@
 #include "pieces.hpp"
 
 #include "check-macros.hpp"
-#include "context.hpp"
 #include "keys.hpp"
 #include "random.hpp"
 #include "resources.hpp"
@@ -20,13 +19,21 @@
 namespace castlecrawl
 {
 
-    PieceBase::PieceBase(
+    PieceBase::PieceBase()
+        : m_mapChar{ '\'' }
+        , m_isObstacle{ true }
+        , m_sprite{}
+        , m_position{ 0, 0 }
+    {}
+
+    void PieceBase::reset(
         Context & context, const MapPos_t & pos, const char mapChar, const bool isObstacle)
-        : m_mapChar(mapChar)
-        , m_isObstacle(isObstacle)
-        , m_sprite(context.media.sprite(mapCharToTileImage(mapChar)))
-        , m_position(pos)
     {
+        m_mapChar = mapChar;
+        m_isObstacle = isObstacle;
+        m_sprite = context.media.sprite(mapCharToTileImage(mapChar));
+        m_position = pos;
+
         m_sprite.setPosition(util::position(context.layout.cellBounds(pos)));
     }
 

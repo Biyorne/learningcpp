@@ -7,6 +7,7 @@
 #include "map-types.hpp"
 #include "tile-image.hpp"
 
+#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Window/Event.hpp>
 
@@ -38,11 +39,7 @@ namespace castlecrawl
     class PieceBase : public IPiece
     {
       public:
-        PieceBase(
-            Context & context,
-            const MapPos_t & pos,
-            const char mapChar = '\'',
-            const bool isObstacle = true);
+        PieceBase();
 
         virtual ~PieceBase() = default;
 
@@ -57,6 +54,10 @@ namespace castlecrawl
         void handleEvent(Context &, const sf::Event &) override {}
 
         void draw(sf::RenderTarget & target, sf::RenderStates states) const override;
+
+      protected:
+        void reset(
+            Context & context, const MapPos_t & pos, const char mapChar, const bool isObstacle);
 
       protected:
         char m_mapChar;

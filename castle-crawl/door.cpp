@@ -9,8 +9,9 @@
 
 namespace castlecrawl
 {
-    Door::Door(Context & context, const MapPos_t & pos)
-        : PieceBase(context, pos, 'D', true)
-    {}
+    void Door::reset(Context & context, const MapPos_t & pos)
+    {
+        PieceBase::reset(context, pos, 'D', true);
+    }
 
 } // namespace castlecrawl

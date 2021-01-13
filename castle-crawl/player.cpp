@@ -12,13 +12,13 @@
 
 namespace castlecrawl
 {
-    Player::Player(Context & context, const MapPos_t & pos)
-        : PieceBase(context, pos, 'p', false)
-    {}
+    void Player::reset(Context & context, const MapPos_t & pos)
+    {
+        PieceBase::reset(context, pos, 'p', false);
+    }
 
     void Player::handleEvent(Context & context, const sf::Event & event)
     {
-
         if (sf::Event::KeyPressed != event.type)
         {
             return;

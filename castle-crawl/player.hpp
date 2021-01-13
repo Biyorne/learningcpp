@@ -11,7 +11,7 @@ namespace castlecrawl
     class Player : public PieceBase
     {
       public:
-        Player(Context & context, const MapPos_t & pos);
+        void reset(Context & context, const MapPos_t & pos);
         void handleEvent(Context &, const sf::Event &) override;
     };
 

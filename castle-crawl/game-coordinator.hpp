@@ -5,6 +5,7 @@
 //
 #include "animation-player.hpp"
 #include "bloom-shader.hpp"
+#include "board.hpp"
 #include "context.hpp"
 #include "keys.hpp"
 #include "map.hpp"
@@ -54,7 +55,7 @@ namespace castlecrawl
         Layout m_layout;
         Media m_media;
         GameInPlay m_game;
-        std::unique_ptr<Player> m_playerUPtr;
+        Board m_board;
         Context m_context;
     };
 

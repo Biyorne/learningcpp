@@ -24,10 +24,11 @@ namespace castlecrawl
         , m_layout()
         , m_media()
         , m_game()
-        , m_playerUPtr()
+        , m_board()
         , m_context(
               m_game,
               m_map,
+              m_board,
               m_config,
               m_layout,
               m_media,
@@ -61,7 +62,7 @@ namespace castlecrawl
         m_map.reset(m_context, mapChars);
         switchToMap(m_map);
 
-        m_playerUPtr = std::make_unique<Player>(m_context, MapPos_t{ 4, 0 });
+        m_board.player.reset(m_context, MapPos_t{ 4, 0 });
     }
 
     void GameCoordinator::switchToMap(const Map & map)
@@ -166,7 +167,7 @@ namespace castlecrawl
                 return true;
             }
 
-            m_playerUPtr->handleEvent(m_context, event);
+            m_board.player.handleEvent(m_context, event);
         }
 
         return false;
@@ -190,7 +191,7 @@ namespace castlecrawl
         m_map.draw(m_context, m_window, {});
 
         // draw all other pieces
-        m_window.draw(*m_playerUPtr);
+        m_window.draw(m_board);
 
         m_window.display();
     }

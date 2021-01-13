@@ -9,13 +9,10 @@
 
 namespace castlecrawl
 {
-    using MapPos_t = sf::Vector2i;
-    struct Context;
-
     class Door : public PieceBase
     {
       public:
-        Door(Context & context, const MapPos_t & pos);
+        void reset(Context & context, const MapPos_t & pos);
 
         bool isLocked() const { return isObstacle(); }
         void isLocked(const bool isLocked) { m_isObstacle = isLocked; }

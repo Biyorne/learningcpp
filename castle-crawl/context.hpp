@@ -17,6 +17,7 @@ namespace castlecrawl
     class Media;
     class Layout;
     class GameInPlay;
+    struct Board;
     struct GameConfig;
 
     //
@@ -26,7 +27,8 @@ namespace castlecrawl
         Context(
             GameInPlay & gam,
             Map & mp,
-            const GameConfig & conf,
+            Board & bor,
+            const GameConfig & con,
             const Layout & lay,
             const Media & med,
             const util::Random & ran,
@@ -34,7 +36,8 @@ namespace castlecrawl
             util::AnimationPlayer & ani)
             : game(gam)
             , map(mp)
-            , config(conf)
+            , board(bor)
+            , config(con)
             , layout(lay)
             , media(med)
             , random(ran)
@@ -50,6 +53,7 @@ namespace castlecrawl
 
         GameInPlay & game;
         Map & map;
+        Board & board;
         const GameConfig & config;
         const Layout & layout;
         const Media & media;
