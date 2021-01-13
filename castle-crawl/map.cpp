@@ -6,7 +6,11 @@
 #include "map.hpp"
 
 #include "random.hpp"
+#include "resources.hpp"
+#include "settings.hpp"
+#include "util.hpp"
 
+#include <SFML/Graphics.hpp>
 //
 
 namespace castlecrawl
@@ -63,7 +67,7 @@ namespace castlecrawl
             {
                 if ('`' != ch)
                 {
-                    ch = '0' + context.random.fromTo<char>(1, 6);
+                    ch = '6' + context.random.fromTo<char>(0, 5);
                 }
             }
         }
@@ -148,6 +152,50 @@ namespace castlecrawl
                     }
                 }
             }
+        }
+    }
+
+    void Map::draw(Context & context, sf::RenderTarget & target, sf::RenderStates states) const
+    {
+        drawChars(context, target, states, m_floorChars);
+        drawChars(context, target, states, m_mapChars);
+    }
+
+    void Map::drawChars(
+        Context & context,
+        sf::RenderTarget & target,
+        sf::RenderStates states,
+        const MapChars_t & mapChars) const
+    {
+        sf::Sprite tileSprite = context.media.sprite(TileImage::Empty);
+        sf::Sprite shadowSprite = context.media.sprite(TileImage::WallHorizShadow);
+
+        const float mapCellDimm{ context.config.mapCellDimm() };
+        const sf::Vector2f boardPos{ util::position(context.layout.boardBounds()) };
+        sf::Vector2f pos{ boardPos };
+
+        for (const std::string & mapLine : mapChars)
+        {
+            char prevMapChar(0);
+            for (const char mapChar : mapLine)
+            {
+                tileSprite = context.media.sprite(mapCharToTileImage(mapChar));
+                tileSprite.setPosition(pos);
+                target.draw(tileSprite, states);
+
+                // draw horiz wall shadow accents
+                if (('-' == mapChar) && ('-' != prevMapChar))
+                {
+                    shadowSprite.setPosition(pos);
+                    target.draw(shadowSprite, states);
+                }
+
+                prevMapChar = mapChar;
+                pos.x += mapCellDimm;
+            }
+
+            pos.x = boardPos.x;
+            pos.y += mapCellDimm;
         }
     }
 

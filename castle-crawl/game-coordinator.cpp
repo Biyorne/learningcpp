@@ -186,52 +186,10 @@ namespace castlecrawl
     {
         m_window.clear(m_config.background_color);
 
-        const float mapCellDimm{ m_config.mapCellDimm() };
-        const sf::Vector2f boardPos{ util::position(m_layout.boardBounds()) };
-        // draw draw bottom pieces (floor, etc.)
-        sf::Vector2f pos{ boardPos };
-        for (const std::string & mapLine : m_map.m_floorChars)
-        {
-            for (const char mapChar : mapLine)
-            {
-                sf::Sprite sprite = m_media.sprite(mapCharToTileImage(mapChar));
-                sprite.setPosition(pos);
-                m_window.draw(sprite);
+        // draw floor and wall tiles
+        m_map.draw(m_context, m_window, {});
 
-                pos.x += mapCellDimm;
-            }
-
-            pos.x = boardPos.x;
-            pos.y += mapCellDimm;
-        }
-
-        // draw top pieces (walls, players, items, etc.)
-        pos = boardPos;
-        for (const std::string & mapLine : m_map.m_mapChars)
-        {
-            char prevMapChar(0);
-            for (const char mapChar : mapLine)
-            {
-                sf::Sprite sprite = m_media.sprite(mapCharToTileImage(mapChar));
-                sprite.setPosition(pos);
-                m_window.draw(sprite);
-
-                // draw horiz wall shadow accents
-                if (('-' == mapChar) && ('-' != prevMapChar))
-                {
-                    sf::Sprite shadow = m_media.sprite(TileImage::WallHorizShadow);
-                    shadow.setPosition(pos);
-                    m_window.draw(shadow);
-                }
-
-                prevMapChar = mapChar;
-                pos.x += mapCellDimm;
-            }
-
-            pos.x = boardPos.x;
-            pos.y += mapCellDimm;
-        }
-
+        // draw all other pieces
         m_window.draw(*m_playerUPtr);
 
         m_window.display();

@@ -29,7 +29,7 @@ namespace castlecrawl
         unsigned frame_rate_limit{ 60 };
         sf::Color background_color{ sf::Color::Black };
         float between_cells_pad_ratio{ 0.975f };
-        float map_cell_size_ratio{ 0.029f };
+        float map_cell_size_ratio{ 0.024f };
 
         template <typename T>
         sf::Vector2<T> windowSize() const

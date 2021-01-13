@@ -13,12 +13,21 @@ namespace castlecrawl
     enum class TileImage : std::size_t
     {
         Empty = 0,
-        Floor1,
-        Floor2,
-        Floor3,
-        Floor4,
-        Floor5,
-        Floor6,
+        Wood1,
+        Wood2,
+        Wood3,
+        Wood4,
+        Wood5,
+        Wood6,
+        Stone1,
+        Stone2,
+        Stone3,
+        Stone4,
+        Stone5,
+        Stone6,
+        Lava1,
+        Lava2,
+        Water,
         WallBlock,
         WallTopLeft,
         WallTop,
@@ -45,13 +54,22 @@ namespace castlecrawl
             case 'p': return TileImage::Player;
             case 's': return TileImage::Stairs;
             case 'b': return TileImage::Barrel;
-            case '1': return TileImage::Floor1;
-            case '2': return TileImage::Floor2;
-            case '3': return TileImage::Floor3;
-            case '4': return TileImage::Floor4;
-            case '5': return TileImage::Floor5;
-            case '6': return TileImage::Floor6;
             case 'D': return TileImage::Door;
+            case '0': return TileImage::Wood1;
+            case '1': return TileImage::Wood2;
+            case '2': return TileImage::Wood3;
+            case '3': return TileImage::Wood4;
+            case '4': return TileImage::Wood5;
+            case '5': return TileImage::Wood6;
+            case '6': return TileImage::Stone1;
+            case '7': return TileImage::Stone2;
+            case '8': return TileImage::Stone3;
+            case '9': return TileImage::Stone4;
+            case ':': return TileImage::Stone5;
+            case ';': return TileImage::Stone6;
+            case 'L': return TileImage::Lava1;
+            case 'l': return TileImage::Lava2;
+            case 'W': return TileImage::Water;
             default: return TileImage::Empty;
         }
     }
@@ -70,13 +88,26 @@ namespace castlecrawl
             case TileImage::Player:          return sf::IntRect(96,32,32,32);
             case TileImage::Stairs:          return sf::IntRect(96,64,32,32);
             case TileImage::Barrel:          return sf::IntRect(96, 0,32,32);
-            case TileImage::Floor1:          return sf::IntRect( 0,64,32,32);
-            case TileImage::Floor2:          return sf::IntRect(32,64,32,32);
-            case TileImage::Floor3:          return sf::IntRect(64,64,32,32);
-            case TileImage::Floor4:          return sf::IntRect( 0,96,32,32);
-            case TileImage::Floor5:          return sf::IntRect(32,96,32,32);
-            case TileImage::Floor6:          return sf::IntRect(64,96,32,32);
             case TileImage::Door:            return sf::IntRect(96,96,32,32);
+            //
+            case TileImage::Wood1:           return sf::IntRect( 0,64,32,32);
+            case TileImage::Wood2:           return sf::IntRect(32,64,32,32);
+            case TileImage::Wood3:           return sf::IntRect(64,64,32,32);
+            case TileImage::Wood4:           return sf::IntRect( 0,96,32,32);
+            case TileImage::Wood5:           return sf::IntRect(32,96,32,32);
+            case TileImage::Wood6:           return sf::IntRect(64,96,32,32);
+            //
+            case TileImage::Stone1:          return sf::IntRect( 0,128,32,32);
+            case TileImage::Stone2:          return sf::IntRect(32,128,32,32);
+            case TileImage::Stone3:          return sf::IntRect(64,128,32,32);
+            case TileImage::Stone4:          return sf::IntRect( 0,160,32,32);
+            case TileImage::Stone5:          return sf::IntRect(32,160,32,32);
+            case TileImage::Stone6:          return sf::IntRect(64,160,32,32);
+            //
+            case TileImage::Lava1:           return sf::IntRect( 0,192,32,32);
+            case TileImage::Lava2:           return sf::IntRect(32,192,32,32);
+            case TileImage::Water:           return sf::IntRect(64,192,32,32);
+            //
             case TileImage::Empty:                 
             case TileImage::Count:
             default:                         return sf::IntRect(0,0,0,0);

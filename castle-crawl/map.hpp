@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <SFML/Graphics/Rect.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
 
 namespace castlecrawl
 {
@@ -39,6 +40,10 @@ namespace castlecrawl
         void reset(Context & context, const MapChars_t & mapChars);
         void randomizeFloorTiles(Context & context);
         void addWallCorners();
+
+        //
+        void draw(Context &, sf::RenderTarget &, sf::RenderStates) const;
+        void drawChars(Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
 
         // private:
         MapChars_t m_mapChars;

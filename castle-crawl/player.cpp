@@ -29,7 +29,7 @@ namespace castlecrawl
             if (context.map.getChar(newPos) == ' ')
             {
                 move(context, key);
-                context.audio.play("thock-1.ogg");
+                context.audio.play("tick-on-2.ogg");
             }
             else
             {
