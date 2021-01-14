@@ -4,9 +4,9 @@
 // game-coordinator.hpp
 //
 #include "animation-player.hpp"
-#include "bloom-shader.hpp"
 #include "board.hpp"
 #include "context.hpp"
+#include "frames-per-sec.hpp"
 #include "keys.hpp"
 #include "map.hpp"
 #include "player.hpp"
@@ -15,7 +15,6 @@
 #include "settings.hpp"
 #include "sound-player.hpp"
 #include "tile-image.hpp"
-#include "util.hpp"
 
 #include <memory>
 #include <string>
@@ -42,26 +41,22 @@ namespace castlecrawl
         void update(const float elapsedTimeSec);
         void draw();
         void printFinalStatusToConsole();
-        void handleFps();
 
       protected:
-        Map m_map;
-        GameConfig m_config;
         sf::RenderWindow m_window;
+        FramesPerSecond m_fps;
 
         util::Random m_random;
         util::SoundPlayer m_soundPlayer;
         util::AnimationPlayer m_animationPlayer;
 
-        Layout m_layout;
+        Map m_map;
         Media m_media;
-        GameInPlay m_game;
         Board m_board;
+        Layout m_layout;
+        GameInPlay m_game;
+        GameConfig m_config;
         Context m_context;
-
-        sf::Clock m_fpsClock;
-        float m_fpsFrameCounter;
-        sf::Text m_fpsText;
     };
 
 } // namespace castlecrawl

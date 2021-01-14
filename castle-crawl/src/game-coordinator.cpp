@@ -5,6 +5,8 @@
 //
 #include "game-coordinator.hpp"
 
+#include "util.hpp"
+
 #include <algorithm>
 #include <filesystem>
 #include <iostream>
@@ -16,16 +18,17 @@
 namespace castlecrawl
 {
     GameCoordinator::GameCoordinator()
-        : m_map()
-        , m_config()
-        , m_window()
+        : m_window()
+        , m_fps()
         , m_random()
         , m_soundPlayer(m_random)
         , m_animationPlayer(m_random)
-        , m_layout()
+        , m_map()
         , m_media()
-        , m_game()
         , m_board()
+        , m_layout()
+        , m_game()
+        , m_config()
         , m_context(
               m_game,
               m_map,
@@ -36,9 +39,6 @@ namespace castlecrawl
               m_random,
               m_soundPlayer,
               m_animationPlayer)
-        , m_fpsClock()
-        , m_fpsFrameCounter(0.0f)
-        , m_fpsText()
     {}
 
     void GameCoordinator::reset(const GameConfig & config, const MapChars_t & mapChars)
@@ -63,18 +63,12 @@ namespace castlecrawl
 
         m_media.setup(m_config);
 
+        m_fps.reset(m_context);
+
         m_map.reset(m_context, mapChars);
         switchToMap(m_map);
 
         m_board.player.reset(m_context, MapPos_t{ 4, 0 });
-
-        m_fpsText.setFont(m_media.font());
-        m_fpsText.setFillColor(sf::Color(120, 120, 140));
-
-        util::scaleAndCenterInside(
-            m_fpsText, sf::FloatRect({ 0.0f, 0.0f }, { 1000.0, m_config.mapCellSize().y }));
-
-        m_fpsText.setPosition(0.0f, 0.0f);
     }
 
     void GameCoordinator::switchToMap(const Map & map)
@@ -124,8 +118,6 @@ namespace castlecrawl
 
     void GameCoordinator::run()
     {
-        m_fpsClock.restart();
-
         sf::Clock frameClock;
 
         while (m_window.isOpen() && !m_game.isGameOver())
@@ -133,7 +125,6 @@ namespace castlecrawl
             handleEvents();
             update(frameClock.restart().asSeconds());
             draw();
-            handleFps();
         }
 
         printFinalStatusToConsole();
@@ -195,7 +186,7 @@ namespace castlecrawl
         }
     }
 
-    void GameCoordinator::update(const float) {}
+    void GameCoordinator::update(const float) { m_fps.update(); }
 
     void GameCoordinator::draw()
     {
@@ -207,25 +198,9 @@ namespace castlecrawl
         // draw all other pieces
         m_window.draw(m_board);
 
-        m_window.draw(m_fpsText);
+        m_window.draw(m_fps);
 
         m_window.display();
-    }
-
-    void GameCoordinator::handleFps()
-    {
-        m_fpsFrameCounter += 1.0f;
-        const float elapsedSec = m_fpsClock.getElapsedTime().asSeconds();
-
-        if (elapsedSec > 1.0f)
-        {
-            const int fps = static_cast<int>(m_fpsFrameCounter / elapsedSec);
-
-            m_fpsText.setString("FPS:" + std::to_string(fps));
-
-            m_fpsClock.restart();
-            m_fpsFrameCounter = 0.0f;
-        }
     }
 
 } // namespace castlecrawl
