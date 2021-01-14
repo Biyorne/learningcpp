@@ -36,6 +36,8 @@ namespace castlecrawl
               m_random,
               m_soundPlayer,
               m_animationPlayer)
+        , m_fpsClock()
+        , m_fpsFrameCounter(0.0f)
     {}
 
     void GameCoordinator::reset(const GameConfig & config, const MapChars_t & mapChars)
@@ -113,6 +115,8 @@ namespace castlecrawl
 
     void GameCoordinator::run()
     {
+        m_fpsClock.restart();
+
         sf::Clock frameClock;
 
         while (m_window.isOpen() && !m_game.isGameOver())
@@ -120,6 +124,7 @@ namespace castlecrawl
             handleEvents();
             update(frameClock.restart().asSeconds());
             draw();
+            handleFps();
         }
 
         printFinalStatusToConsole();
@@ -194,6 +199,20 @@ namespace castlecrawl
         m_window.draw(m_board);
 
         m_window.display();
+    }
+
+    void GameCoordinator::handleFps()
+    {
+        m_fpsFrameCounter += 1.0f;
+        const float elapsedSec = m_fpsClock.getElapsedTime().asSeconds();
+
+        if (elapsedSec > 1.0f)
+        {
+            std::cout << (m_fpsFrameCounter / elapsedSec) << "fps\n";
+
+            m_fpsClock.restart();
+            m_fpsFrameCounter = 0.0f;
+        }
     }
 
 } // namespace castlecrawl

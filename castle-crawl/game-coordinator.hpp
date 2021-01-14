@@ -42,6 +42,7 @@ namespace castlecrawl
         void update(const float elapsedTimeSec);
         void draw();
         void printFinalStatusToConsole();
+        void handleFps();
 
       protected:
         Map m_map;
@@ -57,6 +58,9 @@ namespace castlecrawl
         GameInPlay m_game;
         Board m_board;
         Context m_context;
+
+        sf::Clock m_fpsClock;
+        float m_fpsFrameCounter;
     };
 
 } // namespace castlecrawl
