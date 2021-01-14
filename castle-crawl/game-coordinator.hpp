@@ -61,6 +61,7 @@ namespace castlecrawl
 
         sf::Clock m_fpsClock;
         float m_fpsFrameCounter;
+        sf::Text m_fpsText;
     };
 
 } // namespace castlecrawl

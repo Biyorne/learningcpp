@@ -38,6 +38,7 @@ namespace castlecrawl
               m_animationPlayer)
         , m_fpsClock()
         , m_fpsFrameCounter(0.0f)
+        , m_fpsText()
     {}
 
     void GameCoordinator::reset(const GameConfig & config, const MapChars_t & mapChars)
@@ -66,6 +67,14 @@ namespace castlecrawl
         switchToMap(m_map);
 
         m_board.player.reset(m_context, MapPos_t{ 4, 0 });
+
+        m_fpsText.setFont(m_media.font());
+        m_fpsText.setFillColor(sf::Color(120, 120, 140));
+
+        util::scaleAndCenterInside(
+            m_fpsText, sf::FloatRect({ 0.0f, 0.0f }, { 1000.0, m_config.mapCellSize().y }));
+
+        m_fpsText.setPosition(0.0f, 0.0f);
     }
 
     void GameCoordinator::switchToMap(const Map & map)
@@ -198,6 +207,8 @@ namespace castlecrawl
         // draw all other pieces
         m_window.draw(m_board);
 
+        m_window.draw(m_fpsText);
+
         m_window.display();
     }
 
@@ -208,7 +219,9 @@ namespace castlecrawl
 
         if (elapsedSec > 1.0f)
         {
-            std::cout << (m_fpsFrameCounter / elapsedSec) << "fps\n";
+            const int fps = static_cast<int>(m_fpsFrameCounter / elapsedSec);
+
+            m_fpsText.setString("FPS:" + std::to_string(fps));
 
             m_fpsClock.restart();
             m_fpsFrameCounter = 0.0f;
