@@ -68,8 +68,8 @@ namespace castlecrawl
             case '9': return TileImage::Stone4;
             case ':': return TileImage::Stone5;
             case ';': return TileImage::Stone6;
-            case 'L': return TileImage::Lava1;
-            case 'l': return TileImage::Lava2;
+            case 'l': return TileImage::Lava1;
+            case 'L': return TileImage::Lava2;
             case 'W': return TileImage::Water;
             default: return TileImage::Empty;
         }

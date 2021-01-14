@@ -19,16 +19,18 @@ namespace castlecrawl
     void Map::reset(const Context & context, const MapChars_t & mapChars)
     {
         m_mapChars = mapChars;
-        m_floorChars = mapChars;
-        randomizeFloorTiles(context);
+        addWalls();
         addWallCorners();
+
+        m_floorChars = m_mapChars;
+        randomizeFloorTiles(context);
     }
 
     char Map::getChar(const MapPos_t & pos) const
     {
         if (empty() || !isPosValid(pos))
         {
-            return '\'';
+            return '.';
         }
         else
         {
@@ -65,7 +67,7 @@ namespace castlecrawl
         {
             for (char & ch : str)
             {
-                if ('`' != ch)
+                if ('.' != ch)
                 {
                     ch = '6' + context.random.fromTo<char>(0, 5);
                 }
@@ -98,8 +100,6 @@ namespace castlecrawl
                 const char left{ getChar(x - 1, y) };
                 const char right{ getChar(x + 1, y) };
 
-                // std::size_t vertWallCount{ 0 };
-
                 if (ch == '|')
                 {
                     if ((left == '-') || (right == '-'))
@@ -107,12 +107,12 @@ namespace castlecrawl
                         setChar(x, y, 'B');
                     }
 
-                    if ((down == '|') && ((up == ' ') || (up == '\'')))
+                    if ((down == '|') && ((up == ' ') || (up == '.')))
                     {
                         setChar(x, y, 'B');
                     }
 
-                    if ((up == '|') && ((down == ' ') || (down == '\'')))
+                    if ((up == '|') && ((down == ' ') || (down == '.')))
                     {
                         setChar(x, y, 'B');
                     }
@@ -124,12 +124,12 @@ namespace castlecrawl
                         setChar(x, y, 'B');
                     }
 
-                    if ((left == '-') && ((right == ' ') || (right == '\'')))
+                    if ((left == '-') && ((right == ' ') || (right == '.')))
                     {
                         setChar(x, y, 'B');
                     }
 
-                    if ((right == '-') && ((left == ' ') || (left == '\'')))
+                    if ((right == '-') && ((left == ' ') || (left == '.')))
                     {
                         setChar(x, y, 'B');
                     }
@@ -150,6 +150,60 @@ namespace castlecrawl
                     {
                         setChar(x, y, 'T');
                     }
+                }
+            }
+        }
+    }
+
+    void Map::addWalls()
+    {
+        if (empty())
+        {
+            return;
+        }
+
+        auto isNotObs = [](const char ch) { return ((ch != '.') && (ch != '|') && (ch != '-')); };
+
+        const MapPos_t mapSize(size());
+
+        for (int y(0); y < mapSize.y; ++y)
+        {
+            for (int x(0); x < mapSize.x; ++x)
+            {
+                const char ch{ getChar(x, y) };
+
+                if (ch != '.')
+                {
+                    continue;
+                }
+
+                // check all four sides
+                const char up{ getChar(x, y - 1) };
+                const char down{ getChar(x, y + 1) };
+                const char left{ getChar(x - 1, y) };
+                const char right{ getChar(x + 1, y) };
+
+                if (isNotObs(left) || isNotObs(right))
+                {
+                    setChar(x, y, '|');
+                    continue;
+                }
+                else if (isNotObs(up) || isNotObs(down))
+                {
+                    setChar(x, y, '-');
+                    continue;
+                }
+
+                // check all four corners
+                const char tl{ getChar(x - 1, y - 1) };
+                const char tr{ getChar(x + 1, y - 1) };
+                const char bl{ getChar(x - 1, y + 1) };
+                const char br{ getChar(x + 1, y + 1) };
+
+                if (isNotObs(tl) || isNotObs(tr) || isNotObs(bl) || isNotObs(br))
+                {
+                    setChar(x, y, '|'); // '-' works here too
+                    continue;
                 }
             }
         }

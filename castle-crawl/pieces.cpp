@@ -20,7 +20,7 @@ namespace castlecrawl
 {
 
     PieceBase::PieceBase()
-        : m_mapChar{ '\'' }
+        : m_mapChar{ '.' }
         , m_isObstacle{ true }
         , m_sprite{}
         , m_position{ 0, 0 }

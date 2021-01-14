@@ -18,6 +18,7 @@ namespace castlecrawl
         void reset(const Context & context, const MapChars_t & mapChars);
         void randomizeFloorTiles(const Context & context);
         void addWallCorners();
+        void addWalls();
 
         //
         MapPos_t size() const;

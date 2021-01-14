@@ -6,6 +6,7 @@
 #include "game-coordinator.hpp"
 
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -68,7 +69,6 @@ namespace castlecrawl
     void GameCoordinator::switchToMap(const Map & map)
     {
         m_map = map;
-
         M_CHECK_LOG_SS((!m_map.empty()), "Map is empty.");
 
         m_layout.setup(m_map, m_config);

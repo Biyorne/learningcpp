@@ -3,7 +3,7 @@
 		Air
 	Lightning	Ice  
 Fire 				Water
-	Magma		?Shard/Poison/Plant
+	Magma		?Shard/Poison/Plant/Mud
 		Earth
 
 
