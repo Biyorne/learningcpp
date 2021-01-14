@@ -15,10 +15,11 @@ namespace castlecrawl
     {
       public:
         //
-        void reset(const Context & context, const MapChars_t & mapChars);
+        void reset(Context & context, const MapChars_t & mapChars);
         void addWalls();
         void addWallCorners();
         void randomizeFloorTiles(const Context & context);
+        void makeDoors(Context &);
 
         //
         MapPos_t size() const;

@@ -15,8 +15,6 @@
 
 #include <SFML/Graphics.hpp>
 
-//
-
 namespace castlecrawl
 {
     void Media::setup(const GameConfig & config)

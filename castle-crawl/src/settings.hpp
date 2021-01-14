@@ -25,14 +25,18 @@ namespace castlecrawl
     {
         GameConfig();
 
-        template <typename T>
+        template <typename T = float>
         sf::Vector2<T> windowSize() const
         {
             return sf::Vector2<T>{ static_cast<T>(video_mode.width),
                                    static_cast<T>(video_mode.height) };
         }
 
-        float mapCellDimm() const { return (map_cell_size_ratio * windowSize<float>().x); }
+        float mapCellDimm() const
+        {
+            return std::floor(map_cell_size_ratio * windowSize<float>().x);
+        }
+
         sf::Vector2f mapCellSize() const { return sf::Vector2f(mapCellDimm(), mapCellDimm()); }
 
         //
@@ -53,7 +57,7 @@ namespace castlecrawl
       public:
         Layout() = default;
 
-        void setup(const Map & map, const GameConfig & config);
+        void reset(const sf::Vector2i & mapSize, const GameConfig & config);
 
         sf::Vector2f windowSize() const { return util::size(m_windowBounds); }
         sf::FloatRect windowBounds() const { return m_windowBounds; }

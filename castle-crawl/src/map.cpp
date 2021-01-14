@@ -5,18 +5,19 @@
 //
 #include "map.hpp"
 
+#include "board.hpp"
+#include "door.hpp"
 #include "random.hpp"
 #include "resources.hpp"
 #include "settings.hpp"
 #include "util.hpp"
 
 #include <SFML/Graphics.hpp>
-//
 
 namespace castlecrawl
 {
 
-    void Map::reset(const Context & context, const MapChars_t & mapChars)
+    void Map::reset(Context & context, const MapChars_t & mapChars)
     {
         m_mapChars = mapChars;
         addWalls();
@@ -24,6 +25,8 @@ namespace castlecrawl
 
         m_floorChars = m_mapChars;
         randomizeFloorTiles(context);
+
+        makeDoors(context);
     }
 
     char Map::getChar(const MapPos_t & pos) const
@@ -250,6 +253,40 @@ namespace castlecrawl
 
             pos.x = boardPos.x;
             pos.y += mapCellDimm;
+        }
+    }
+
+    void Map::makeDoors(Context & context)
+    {
+        context.board.doors.clear();
+
+        if (empty())
+        {
+            return;
+        }
+
+        const MapPos_t mapSize(size());
+
+        for (int y(0); y < mapSize.y; ++y)
+        {
+            for (int x(0); x < mapSize.x; ++x)
+            {
+                const MapPos_t mapPos{ x, y };
+                const char ch{ getChar(mapPos) };
+
+                if ((ch != 'D') && (ch != 'd'))
+                {
+                    continue;
+                }
+
+                // remove from char map
+                setChar(x, y, ' ');
+
+                // add piece to board
+                Door door;
+                door.reset(context, mapPos, (ch == 'D'));
+                context.board.doors.push_back(door);
+            }
         }
     }
 

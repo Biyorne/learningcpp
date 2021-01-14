@@ -5,10 +5,10 @@
 //
 #include "player.hpp"
 
+#include "board.hpp"
+#include "door.hpp"
 #include "keys.hpp"
 #include "sound-player.hpp"
-
-//
 
 namespace castlecrawl
 {
@@ -30,15 +30,34 @@ namespace castlecrawl
         {
             const MapPos_t newPos{ keys::moveIfDir(position(), key) };
 
-            if (context.map.getChar(newPos) == ' ')
-            {
-                move(context, key);
-                context.audio.play("tick-on-2.ogg");
-            }
-            else
+            if (context.map.getChar(newPos) != ' ')
             {
                 context.audio.play("tap-wood-low.ogg");
+                return;
             }
+
+            for (const Door & door : context.board.doors)
+            {
+                if (door.position() != newPos)
+                {
+                    continue;
+                }
+
+                if (door.isLocked())
+                {
+                    context.audio.play("locked.ogg");
+                    return;
+                }
+                else
+                {
+                    move(context, key);
+                    context.audio.play("door-open.ogg");
+                    return;
+                }
+            }
+
+            move(context, key);
+            context.audio.play("tick-on-2.ogg");
         }
     }
 

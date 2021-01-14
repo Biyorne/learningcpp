@@ -24,14 +24,14 @@ namespace castlecrawl
         , map_cell_size_ratio{ 0.024f }
     {}
 
-    void Layout::setup(const Map & map, const GameConfig & config)
+    void Layout::reset(const sf::Vector2i & mapSize, const GameConfig & config)
     {
         const sf::Vector2f windowSize{ config.windowSize<float>() };
         m_windowBounds = sf::FloatRect({ 0.0f, 0.0f }, windowSize);
 
         m_boardBounds = m_windowBounds;
 
-        m_cellCounts = map.size();
+        m_cellCounts = mapSize;
 
         M_CHECK_LOG_SS(
             ((m_cellCounts.x > 0) && (m_cellCounts.y > 0)),

@@ -43,6 +43,8 @@ namespace castlecrawl
 
     void GameCoordinator::reset(const GameConfig & config, const MapChars_t & mapChars)
     {
+        m_game.reset();
+
         m_config = config;
         M_CHECK_LOG_SS(std::filesystem::exists(m_config.media_dir_path), m_config.media_dir_path);
 
@@ -52,6 +54,12 @@ namespace castlecrawl
         m_window.close();
         openWindow();
         m_window.setFramerateLimit(m_config.frame_rate_limit);
+        m_window.setKeyRepeatEnabled(false);
+
+        m_layout.reset(
+            sf::Vector2i{ static_cast<int>(mapChars.front().size()),
+                          static_cast<int>(mapChars.size()) },
+            m_config);
 
         m_soundPlayer.volume(0.0f);
         m_soundPlayer.stopAll();
@@ -65,19 +73,15 @@ namespace castlecrawl
 
         m_fps.reset(m_context);
 
-        m_map.reset(m_context, mapChars);
-        switchToMap(m_map);
-
         m_board.player.reset(m_context, MapPos_t{ 4, 0 });
+
+        switchToMap(mapChars);
     }
 
-    void GameCoordinator::switchToMap(const Map & map)
+    void GameCoordinator::switchToMap(const MapChars_t & mapChars)
     {
-        m_map = map;
+        m_map.reset(m_context, mapChars);
         M_CHECK_LOG_SS((!m_map.empty()), "Map is empty.");
-
-        m_layout.setup(m_map, m_config);
-        m_game.reset();
     }
 
     void GameCoordinator::openWindow()
@@ -109,7 +113,7 @@ namespace castlecrawl
         m_config.video_mode.width = windowActualSize.x;
         m_config.video_mode.height = windowActualSize.y;
         m_config.video_mode.bitsPerPixel = m_window.getSettings().depthBits;
-        using namespace util;
+
         std::cout << "Game Window Cells: width_ratio=" << m_config.map_cell_size_ratio
                   << ", pixels=" << m_config.mapCellDimm()
                   << ", grid=" << (m_config.windowSize<float>() / m_config.mapCellSize())

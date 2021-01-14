@@ -28,7 +28,7 @@ namespace castlecrawl
         util::scaleAndCenterInside(
             m_text, sf::FloatRect({ 0.0f, 0.0f }, { 1000.0, context.config.mapCellSize().y }));
 
-        m_text.setPosition(0.0f, 0.0f);
+        m_text.setPosition(0.0f, (context.config.windowSize().y - context.config.mapCellSize().y));
 
         m_clock.restart();
     }

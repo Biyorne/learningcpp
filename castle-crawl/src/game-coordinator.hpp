@@ -30,7 +30,7 @@ namespace castlecrawl
         GameCoordinator();
 
         void reset(const GameConfig & config, const MapChars_t & mapChars);
-        void switchToMap(const Map & map);
+        void switchToMap(const MapChars_t & mapChars);
         void run();
 
       protected:
