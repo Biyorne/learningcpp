@@ -25,7 +25,7 @@ namespace castlecrawl
         const std::size_t imageCount = static_cast<std::size_t>(TileImage::Count);
         m_pieceSprites.resize(imageCount);
 
-        load((config.media_dir_path / "image/tiles.png"), m_tileTexture);
+        load((config.media_dir_path / "image/tile.png"), m_tileTexture);
 
         for (sf::Sprite & sprite : m_pieceSprites)
         {

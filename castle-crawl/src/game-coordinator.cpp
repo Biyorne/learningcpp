@@ -80,7 +80,7 @@ namespace castlecrawl
 
         m_board.player.reset(m_context, MapPos_t{ 4, 0 });
 
-        switchToMap({ { 0, 0 }, m_context.map_name, { 14, 5 } });
+        switchToMap({ { 0, 0 }, m_context.map_name, { 4, 2 } });
     }
 
     void GameCoordinator::switchToMap(const MapLink & link)
