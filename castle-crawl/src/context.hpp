@@ -31,7 +31,7 @@ namespace castlecrawl
             Maps & mps,
             Board & bor,
             const GameConfig & con,
-            const Layout & lay,
+            Layout & lay,
             const Media & med,
             const util::Random & ran,
             util::SoundPlayer & aud,
@@ -62,7 +62,7 @@ namespace castlecrawl
         Maps & maps;
         Board & board;
         const GameConfig & config;
-        const Layout & layout;
+        Layout & layout;
         const Media & media;
         const util::Random & random;
         util::SoundPlayer & audio;

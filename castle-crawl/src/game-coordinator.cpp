@@ -80,12 +80,13 @@ namespace castlecrawl
 
         m_board.player.reset(m_context, MapPos_t{ 4, 0 });
 
-        switchToMap({ { 0, 0 }, m_context.map_name, { 1, 8 } });
+        switchToMap({ { 0, 0 }, m_context.map_name, { 14, 5 } });
     }
 
     void GameCoordinator::switchToMap(const MapLink & link)
     {
         m_context.map_name = link.to_name;
+        m_layout.reset(m_context.map().size(), m_config);
         m_context.map().load(m_context);
         m_board.player.reset(m_context, link.to_pos);
         M_CHECK_LOG_SS((!m_context.map().empty()), "Map is empty after load().");

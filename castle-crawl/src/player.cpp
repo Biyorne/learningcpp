@@ -6,8 +6,10 @@
 #include "player.hpp"
 
 #include "board.hpp"
+#include "check-macros.hpp"
 #include "door.hpp"
 #include "keys.hpp"
+#include "settings.hpp"
 #include "sound-player.hpp"
 
 namespace castlecrawl
@@ -35,7 +37,12 @@ namespace castlecrawl
                 if (link.from_pos == newPos)
                 {
                     context.map_name = link.to_name;
+                    context.layout.reset(context.map().size(), context.config);
                     context.map().load(context);
+
+                    M_CHECK_LOG_SS(
+                        (!context.map().empty()), "Map is empty after load:" << link.to_name);
+
                     context.board.player.reset(context, link.to_pos);
                     return;
                 }
