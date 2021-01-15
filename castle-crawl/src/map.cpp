@@ -16,18 +16,30 @@
 
 namespace castlecrawl
 {
+    Map::Map()
+        : m_chars()
+        , m_floorChars(false)
+        , m_links()
+    {}
 
-    void Map::reset(Context & context, const MapChars_t & mapChars)
+    Map::Map(
+        const Context & context,
+        const bool isFloorStone,
+        const MapChars_t & chars,
+        const MapLinks_t & links)
+        : m_isFloorStone(isFloorStone)
+        , m_chars(chars)
+        , m_floorChars()
+        , m_links(links)
     {
-        m_mapChars = mapChars;
         addWalls();
         addWallCorners();
 
-        m_floorChars = m_mapChars;
+        m_floorChars = m_chars;
         randomizeFloorTiles(context);
-
-        makeDoors(context);
     }
+
+    void Map::load(Context & context) { makeDoors(context); }
 
     char Map::getChar(const MapPos_t & pos) const
     {
@@ -37,7 +49,7 @@ namespace castlecrawl
         }
         else
         {
-            return m_mapChars[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)];
+            return m_chars[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)];
         }
     }
 
@@ -48,19 +60,18 @@ namespace castlecrawl
             return;
         }
 
-        m_mapChars[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] = newChar;
+        m_chars[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] = newChar;
     }
 
     MapPos_t Map::size() const
     {
-        if (m_mapChars.empty())
+        if (m_chars.empty())
         {
             return { 0, 0 };
         }
         else
         {
-            return { static_cast<int>(m_mapChars.front().size()),
-                     static_cast<int>(m_mapChars.size()) };
+            return { static_cast<int>(m_chars.front().size()), static_cast<int>(m_chars.size()) };
         }
     }
 
@@ -72,7 +83,16 @@ namespace castlecrawl
             {
                 if ('.' != ch)
                 {
-                    ch = '6' + context.random.fromTo<char>(0, 5);
+                    if (m_isFloorStone)
+                    {
+                        ch = '6';
+                    }
+                    else
+                    {
+                        ch = '0';
+                    }
+
+                    ch += context.random.fromTo<char>(0, 5);
                 }
             }
         }
@@ -215,7 +235,7 @@ namespace castlecrawl
     void Map::draw(Context & context, sf::RenderTarget & target, sf::RenderStates states) const
     {
         drawChars(context, target, states, m_floorChars);
-        drawChars(context, target, states, m_mapChars);
+        drawChars(context, target, states, m_chars);
     }
 
     void Map::drawChars(
@@ -278,9 +298,6 @@ namespace castlecrawl
                 {
                     continue;
                 }
-
-                // remove from char map
-                setChar(x, y, ' ');
 
                 // add piece to board
                 Door door;

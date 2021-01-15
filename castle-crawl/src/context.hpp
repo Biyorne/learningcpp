@@ -3,6 +3,7 @@
 //
 // context.hpp
 //
+#include <string>
 
 namespace util
 {
@@ -14,6 +15,7 @@ namespace util
 namespace castlecrawl
 {
     class Map;
+    class Maps;
     class Media;
     class Layout;
     class GameInPlay;
@@ -26,16 +28,17 @@ namespace castlecrawl
     {
         Context(
             GameInPlay & gam,
-            Map & mp,
+            Maps & mps,
             Board & bor,
             const GameConfig & con,
             const Layout & lay,
             const Media & med,
             const util::Random & ran,
             util::SoundPlayer & aud,
-            util::AnimationPlayer & ani)
+            util::AnimationPlayer & ani,
+            const std::string & mapName)
             : game(gam)
-            , map(mp)
+            , maps(mps)
             , board(bor)
             , config(con)
             , layout(lay)
@@ -43,6 +46,7 @@ namespace castlecrawl
             , random(ran)
             , audio(aud)
             , anim(ani)
+            , map_name(mapName)
         {}
 
         Context(const Context &) = delete;
@@ -51,8 +55,11 @@ namespace castlecrawl
         Context & operator=(const Context &) = delete;
         Context & operator=(Context &&) = delete;
 
+        Map & map();
+        const Map & map() const;
+
         GameInPlay & game;
-        Map & map;
+        Maps & maps;
         Board & board;
         const GameConfig & config;
         const Layout & layout;
@@ -60,6 +67,7 @@ namespace castlecrawl
         const util::Random & random;
         util::SoundPlayer & audio;
         util::AnimationPlayer & anim;
+        std::string map_name;
     };
 } // namespace castlecrawl
 

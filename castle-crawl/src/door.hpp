@@ -5,8 +5,6 @@
 //
 #include "pieces.hpp"
 
-//
-
 namespace castlecrawl
 {
     class Door : public PieceBase

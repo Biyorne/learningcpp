@@ -28,9 +28,22 @@ namespace castlecrawl
 
         if (keys::isArrow(key))
         {
-            const MapPos_t newPos{ keys::moveIfDir(position(), key) };
+            const MapPos_t newPos = keys::moveIfDir(position(), key);
 
-            if (context.map.getChar(newPos) != ' ')
+            for (const MapLink & link : context.map().links())
+            {
+                if (link.from_pos == newPos)
+                {
+                    context.map_name = link.to_name;
+                    context.map().load(context);
+                    context.board.player.reset(context, link.to_pos);
+                    return;
+                }
+            }
+
+            const char newChar = context.map().getChar(newPos);
+
+            if ((newChar != ' ') && (newChar != 'D') && (newChar != 'd'))
             {
                 context.audio.play("tap-wood-low.ogg");
                 return;

@@ -8,7 +8,7 @@
 #include "context.hpp"
 #include "frames-per-sec.hpp"
 #include "keys.hpp"
-#include "map.hpp"
+#include "maps.hpp"
 #include "player.hpp"
 #include "random.hpp"
 #include "resources.hpp"
@@ -29,8 +29,7 @@ namespace castlecrawl
       public:
         GameCoordinator();
 
-        void reset(const GameConfig & config, const MapChars_t & mapChars);
-        void switchToMap(const MapChars_t & mapChars);
+        void reset(const GameConfig & config);
         void run();
 
       protected:
@@ -41,6 +40,7 @@ namespace castlecrawl
         void update(const float elapsedTimeSec);
         void draw();
         void printFinalStatusToConsole();
+        void switchToMap(const MapLink & link);
 
       protected:
         sf::RenderWindow m_window;
@@ -50,7 +50,7 @@ namespace castlecrawl
         util::SoundPlayer m_soundPlayer;
         util::AnimationPlayer m_animationPlayer;
 
-        Map m_map;
+        Maps m_maps;
         Media m_media;
         Board m_board;
         Layout m_layout;

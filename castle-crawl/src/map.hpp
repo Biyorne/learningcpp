@@ -6,6 +6,9 @@
 #include "context.hpp"
 #include "map-types.hpp"
 
+#include <map>
+#include <vector>
+
 #include <SFML/Graphics/RenderTarget.hpp>
 
 namespace castlecrawl
@@ -14,14 +17,11 @@ namespace castlecrawl
     class Map
     {
       public:
-        //
-        void reset(Context & context, const MapChars_t & mapChars);
-        void addWalls();
-        void addWallCorners();
-        void randomizeFloorTiles(const Context & context);
-        void makeDoors(Context &);
+        Map();
+        Map(const Context &, const bool isFloorStone, const MapChars_t &, const MapLinks_t &);
 
-        //
+        void load(Context & context);
+
         MapPos_t size() const;
         bool empty() const { return !((size().x > 0) && (size().y > 0)); }
 
@@ -32,19 +32,30 @@ namespace castlecrawl
 
         bool isPosValid(const int x, const int y) const { return isPosValid(MapPos_t{ x, y }); }
 
-        //
         char getChar(const MapPos_t & pos) const;
         char getChar(const int x, const int y) const { return getChar(MapPos_t{ x, y }); }
         void setChar(const int x, const int y, const char newChar);
 
-        //
         void draw(Context &, sf::RenderTarget &, sf::RenderStates) const;
         void drawChars(Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
 
+        const MapLinks_t & links() const { return m_links; }
+
       private:
-        MapChars_t m_mapChars;
+        void addWalls();
+        void addWallCorners();
+        void randomizeFloorTiles(const Context & context);
+        void makeDoors(Context &);
+
+      private:
+        bool m_isFloorStone;
+        MapChars_t m_chars;
         MapChars_t m_floorChars;
+        MapLinks_t m_links;
     };
+
+    using NameMapPair_t = std::pair<std::string, Map>;
+    using Maps_t = std::map<std::string, Map>;
 
 } // namespace castlecrawl
 

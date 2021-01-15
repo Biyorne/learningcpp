@@ -23,7 +23,7 @@ namespace castlecrawl
         , m_random()
         , m_soundPlayer(m_random)
         , m_animationPlayer(m_random)
-        , m_map()
+        , m_maps()
         , m_media()
         , m_board()
         , m_layout()
@@ -31,17 +31,18 @@ namespace castlecrawl
         , m_config()
         , m_context(
               m_game,
-              m_map,
+              m_maps,
               m_board,
               m_config,
               m_layout,
               m_media,
               m_random,
               m_soundPlayer,
-              m_animationPlayer)
+              m_animationPlayer,
+              "level-1-entry-hall")
     {}
 
-    void GameCoordinator::reset(const GameConfig & config, const MapChars_t & mapChars)
+    void GameCoordinator::reset(const GameConfig & config)
     {
         m_game.reset();
 
@@ -51,15 +52,19 @@ namespace castlecrawl
         M_CHECK_LOG_SS(
             std::filesystem::is_directory(m_config.media_dir_path), m_config.media_dir_path);
 
+        //
+        m_maps.load(m_context); // only needs random from context so using context here is okay
+
+        M_CHECK_LOG_SS(
+            !m_context.map().empty(),
+            "Could not find/load first map! (name=\"" << m_context.map_name << "\")");
+
         m_window.close();
         openWindow();
         m_window.setFramerateLimit(m_config.frame_rate_limit);
         m_window.setKeyRepeatEnabled(false);
 
-        m_layout.reset(
-            sf::Vector2i{ static_cast<int>(mapChars.front().size()),
-                          static_cast<int>(mapChars.size()) },
-            m_config);
+        m_layout.reset(m_context.map().size(), m_config);
 
         m_soundPlayer.volume(0.0f);
         m_soundPlayer.stopAll();
@@ -75,13 +80,15 @@ namespace castlecrawl
 
         m_board.player.reset(m_context, MapPos_t{ 4, 0 });
 
-        switchToMap(mapChars);
+        switchToMap({ { 0, 0 }, m_context.map_name, { 1, 8 } });
     }
 
-    void GameCoordinator::switchToMap(const MapChars_t & mapChars)
+    void GameCoordinator::switchToMap(const MapLink & link)
     {
-        m_map.reset(m_context, mapChars);
-        M_CHECK_LOG_SS((!m_map.empty()), "Map is empty.");
+        m_context.map_name = link.to_name;
+        m_context.map().load(m_context);
+        m_board.player.reset(m_context, link.to_pos);
+        M_CHECK_LOG_SS((!m_context.map().empty()), "Map is empty after load().");
     }
 
     void GameCoordinator::openWindow()
@@ -197,7 +204,7 @@ namespace castlecrawl
         m_window.clear(m_config.background_color);
 
         // draw floor and wall tiles
-        m_map.draw(m_context, m_window, {});
+        m_context.map().draw(m_context, m_window, {});
 
         // draw all other pieces
         m_window.draw(m_board);
