@@ -19,7 +19,12 @@ int main(const int argc, const char * const argv[])
         if (argc > 1)
         {
             config.media_dir_path = std::filesystem::path{ argv[1] };
+
+            std::cout << "Custom media path found on the command line: \"" << config.media_dir_path
+                      << "\"" << std::endl;
         }
+        config.video_mode.width = 1920;
+        config.video_mode.height = 1080;
 
         //
         GameCoordinator game;

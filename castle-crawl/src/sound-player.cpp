@@ -31,6 +31,12 @@ namespace util
         m_soundEffects.clear();
     }
 
+    void SoundPlayer::setMediaPath(const std::string & pathStr)
+    {
+        m_pathStr = pathStr;
+        std::cerr << "SoundPlayer::setMediaPath(\"" << m_pathStr << "\")" << std::endl;
+    }
+
     void SoundPlayer::play(const std::string & name, const float pitch)
     {
         if (m_volume < 1.0f)
@@ -123,11 +129,16 @@ namespace util
     {
         if (name.empty())
         {
+            std::cerr << "SoundPlayer::load("
+                         ") called with an empty name."
+                      << std::endl;
+
             return false;
         }
 
         if (!findCacheIndexesByName(name).empty())
         {
+            std::cout << "SoundPlayer::load(\"" << name << "\") but already loaded." << std::endl;
             return true;
         }
 
@@ -201,6 +212,11 @@ namespace util
         std::filesystem::path path(m_pathStr);
         if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path))
         {
+            std::cout << "SoundPlayer::loadFiles(\"" << nameMustMatch
+                      << "\") called with invalid path=\"" << path
+                      << "\", switching to current path=\"" << std::filesystem::current_path()
+                      << "\"" << std::endl;
+
             path = std::filesystem::current_path();
         }
 

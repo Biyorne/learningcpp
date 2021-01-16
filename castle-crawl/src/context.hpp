@@ -37,8 +37,7 @@ namespace castlecrawl
             const Media & med,
             const util::Random & ran,
             util::SoundPlayer & aud,
-            util::AnimationPlayer & ani,
-            const std::string & mapName)
+            util::AnimationPlayer & ani)
             : game(gam)
             , maps(mps)
             , board(bor)
@@ -48,7 +47,7 @@ namespace castlecrawl
             , random(ran)
             , audio(aud)
             , anim(ani)
-            , map_name(mapName)
+            , map_name()
         {}
 
         Context(const Context &) = delete;

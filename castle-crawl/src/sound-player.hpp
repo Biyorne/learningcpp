@@ -21,7 +21,7 @@ namespace util
 
         void reset();
 
-        void setMediaPath(const std::string & pathStr) { m_pathStr = pathStr; }
+        void setMediaPath(const std::string & pathStr);
 
         void play(const std::string & name, const float pitch = 1.0f);
 

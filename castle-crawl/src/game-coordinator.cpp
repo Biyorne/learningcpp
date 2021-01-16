@@ -38,25 +38,24 @@ namespace castlecrawl
               m_media,
               m_random,
               m_soundPlayer,
-              m_animationPlayer,
-              "")
+              m_animationPlayer)
     {}
 
     void GameCoordinator::initializeSubsystems(const GameConfig & config)
     {
         m_game.reset();
 
-        m_soundPlayer.volume(0.0f);
-        m_soundPlayer.stopAll();
-        m_soundPlayer.setMediaPath((m_config.media_dir_path / "sfx").string());
-        m_soundPlayer.volume(75.0f);
-
-        m_animationPlayer.stopAll();
-        m_animationPlayer.setMediaPath((m_config.media_dir_path / "anim").string());
-
         m_config = config;
         M_CHECK_SS(std::filesystem::exists(m_config.media_dir_path), m_config.media_dir_path);
         M_CHECK_SS(std::filesystem::is_directory(m_config.media_dir_path), m_config.media_dir_path);
+
+        // this can change m_config so call this right after m_config is set
+        openWindow();
+
+        m_soundPlayer.setMediaPath((m_config.media_dir_path / "sfx").string());
+        m_soundPlayer.volume(75.0f);
+
+        m_animationPlayer.setMediaPath((m_config.media_dir_path / "anim").string());
 
         m_media.load(m_config, m_soundPlayer);
 
@@ -91,12 +90,13 @@ namespace castlecrawl
 
         const sf::Vector2u windowActualSize{ m_window.getSize() };
 
-        M_CHECK_SS(
-            (windowActualSize == windowExpectedSize),
-            "Failed to create a window at the resolution specified: "
-                << windowExpectedSize
-                << ".  Strangely, a window did open, just at a different resolution: "
-                << windowActualSize << ".  So...meh.  Let's just run with it.");
+        if (windowActualSize != windowExpectedSize)
+        {
+            std::cout << "Failed to create a window at the resolution specified: "
+                      << windowExpectedSize
+                      << ".  Strangely, a window did open, just at a different resolution: "
+                      << windowActualSize << ".  So...meh.  Let's just run with it." << std::endl;
+        }
 
         m_config.video_mode.width = windowActualSize.x;
         m_config.video_mode.height = windowActualSize.y;
@@ -112,12 +112,9 @@ namespace castlecrawl
     {
         initializeSubsystems(config);
 
-        openWindow();
-
         m_fps.reset(m_context);
 
         sf::Clock frameClock;
-
         while (m_window.isOpen() && !m_game.isGameOver())
         {
             handleEvents();
