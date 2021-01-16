@@ -12,11 +12,7 @@ namespace castlecrawl
 
     void Board::draw(sf::RenderTarget & target, sf::RenderStates states) const
     {
-        // for (const Door & door : doors)
-        //{
-        //    target.draw(door, states);
-        //}
-
+        // Don't draw doors (they are drawn by the character map)
         target.draw(player, states);
     }
 } // namespace castlecrawl

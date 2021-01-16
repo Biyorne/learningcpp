@@ -25,8 +25,8 @@ namespace castlecrawl
         Stone4,
         Stone5,
         Stone6,
-        Lava1,
-        Lava2,
+        Black,
+        Lava,
         Water,
         WallBlock,
         WallTopLeft,
@@ -35,7 +35,6 @@ namespace castlecrawl
         WallHorizShadow,
         WallVert,
         Player,
-        Stairs,
         Barrel,
         Door,
         Count
@@ -52,7 +51,6 @@ namespace castlecrawl
             // skip shadow
             case '|': return TileImage::WallVert;
             case 'p': return TileImage::Player;
-            case 's': return TileImage::Stairs;
             case 'b': return TileImage::Barrel;
             case 'D': return TileImage::Door; // door can be upper or lower case
             case 'd': return TileImage::Door;
@@ -68,8 +66,7 @@ namespace castlecrawl
             case '9': return TileImage::Stone4;
             case ':': return TileImage::Stone5;
             case ';': return TileImage::Stone6;
-            case 'l': return TileImage::Lava1;
-            case 'L': return TileImage::Lava2;
+            case 'l': return TileImage::Lava;
             case 'W': return TileImage::Water;
             default: return TileImage::Empty;
         }
@@ -87,7 +84,6 @@ namespace castlecrawl
             case TileImage::WallHorizShadow: return sf::IntRect(32,32,32,32);
             case TileImage::WallVert:        return sf::IntRect( 0,32,32,32);
             case TileImage::Player:          return sf::IntRect(96,32,32,32);
-            case TileImage::Stairs:          return sf::IntRect(96,64,32,32);
             case TileImage::Barrel:          return sf::IntRect(96, 0,32,32);
             case TileImage::Door:            return sf::IntRect(96,96,32,32);
             //
@@ -105,8 +101,8 @@ namespace castlecrawl
             case TileImage::Stone5:          return sf::IntRect(32,160,32,32);
             case TileImage::Stone6:          return sf::IntRect(64,160,32,32);
             //
-            case TileImage::Lava1:           return sf::IntRect( 0,192,32,32);
-            case TileImage::Lava2:           return sf::IntRect(32,192,32,32);
+            case TileImage::Black:           return sf::IntRect( 0,192,32,32);
+            case TileImage::Lava:            return sf::IntRect(32,192,32,32);
             case TileImage::Water:           return sf::IntRect(64,192,32,32);
             //
             case TileImage::Empty:                 

@@ -62,7 +62,7 @@ namespace castlecrawl
         // depends only on m_random only so passing context here is safe TODO
         m_maps.load(m_context);
 
-        m_context.switchToMap({ { 0, 0 }, "level-1-entry-hall", { 4, 2 } });
+        m_context.switchToMap({ { 0, 0 }, "level-1-entry-hall", { 5, 2 } });
     }
 
     void GameCoordinator::openWindow()

@@ -51,9 +51,6 @@ namespace castlecrawl
         m_tileSprites.at(static_cast<std::size_t>(TileImage::Barrel))
             .setColor(sf::Color(110, 60, 10));
 
-        m_tileSprites.at(static_cast<std::size_t>(TileImage::Stairs))
-            .setColor(sf::Color(140, 110, 90));
-
         m_tileSprites.at(static_cast<std::size_t>(TileImage::Empty)) = m_defaultSprite;
     }
 

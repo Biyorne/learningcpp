@@ -39,6 +39,9 @@ namespace castlecrawl
         void draw(Context &, sf::RenderTarget &, sf::RenderStates) const;
         void drawChars(Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
 
+        void drawBorderChars(
+            Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
+
         const MapLinks_t & links() const { return m_links; }
 
       private:

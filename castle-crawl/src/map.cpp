@@ -235,6 +235,7 @@ namespace castlecrawl
     void Map::draw(Context & context, sf::RenderTarget & target, sf::RenderStates states) const
     {
         drawChars(context, target, states, m_floorChars);
+        drawBorderChars(context, target, states, m_floorChars);
         drawChars(context, target, states, m_chars);
     }
 
@@ -246,6 +247,7 @@ namespace castlecrawl
     {
         sf::Sprite tileSprite = context.media.sprite(TileImage::Empty);
         sf::Sprite shadowSprite = context.media.sprite(TileImage::WallHorizShadow);
+        sf::Sprite blackSprite = context.media.sprite(TileImage::Black);
 
         const float mapCellDimm{ context.config.mapCellDimm() };
         const sf::Vector2f boardPos{ util::position(context.layout.boardBounds()) };
@@ -268,6 +270,44 @@ namespace castlecrawl
                 }
 
                 prevMapChar = mapChar;
+                pos.x += mapCellDimm;
+            }
+
+            pos.x = boardPos.x;
+            pos.y += mapCellDimm;
+        }
+    }
+
+    void Map::drawBorderChars(
+        Context & context,
+        sf::RenderTarget & target,
+        sf::RenderStates states,
+        const MapChars_t & mapChars) const
+    {
+        sf::Sprite sprite = context.media.sprite(TileImage::Black);
+
+        sprite.scale(1.5f, 1.5f);
+
+        const float mapCellDimm{ context.config.mapCellDimm() };
+        const sf::Vector2f boardPos{ util::position(context.layout.boardBounds()) };
+
+        const float overlapDimm{ mapCellDimm * 0.25f };
+        const sf::Vector2f overlap{ overlapDimm, overlapDimm };
+
+        sf::Vector2f pos{ boardPos };
+
+        for (const std::string & mapLine : mapChars)
+        {
+            for (const char mapChar : mapLine)
+            {
+                if (mapChar == '.')
+                {
+                    sprite.setPosition(pos);
+                    sprite.move(-overlapDimm, -overlapDimm);
+
+                    target.draw(sprite, states);
+                }
+
                 pos.x += mapCellDimm;
             }
 
