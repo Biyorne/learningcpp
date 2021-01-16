@@ -20,15 +20,15 @@ namespace castlecrawl
     GameCoordinator::GameCoordinator()
         : m_window()
         , m_fps()
-        , m_random()
-        , m_soundPlayer(m_random)
-        , m_animationPlayer(m_random)
         , m_maps()
         , m_media()
         , m_board()
         , m_layout()
         , m_game()
         , m_config()
+        , m_random()
+        , m_soundPlayer(m_random)
+        , m_animationPlayer(m_random)
         , m_context(
               m_game,
               m_maps,
@@ -39,32 +39,12 @@ namespace castlecrawl
               m_random,
               m_soundPlayer,
               m_animationPlayer,
-              "level-1-entry-hall")
+              "")
     {}
 
-    void GameCoordinator::reset(const GameConfig & config)
+    void GameCoordinator::initializeSubsystems(const GameConfig & config)
     {
         m_game.reset();
-
-        m_config = config;
-        M_CHECK_LOG_SS(std::filesystem::exists(m_config.media_dir_path), m_config.media_dir_path);
-
-        M_CHECK_LOG_SS(
-            std::filesystem::is_directory(m_config.media_dir_path), m_config.media_dir_path);
-
-        //
-        m_maps.load(m_context); // only needs random from context so using context here is okay
-
-        M_CHECK_LOG_SS(
-            !m_context.map().empty(),
-            "Could not find/load first map! (name=\"" << m_context.map_name << "\")");
-
-        m_window.close();
-        openWindow();
-        m_window.setFramerateLimit(m_config.frame_rate_limit);
-        m_window.setKeyRepeatEnabled(false);
-
-        m_layout.reset(m_context.map().size(), m_config);
 
         m_soundPlayer.volume(0.0f);
         m_soundPlayer.stopAll();
@@ -74,34 +54,34 @@ namespace castlecrawl
         m_animationPlayer.stopAll();
         m_animationPlayer.setMediaPath((m_config.media_dir_path / "anim").string());
 
-        m_media.setup(m_config);
+        m_config = config;
+        M_CHECK_SS(std::filesystem::exists(m_config.media_dir_path), m_config.media_dir_path);
+        M_CHECK_SS(std::filesystem::is_directory(m_config.media_dir_path), m_config.media_dir_path);
 
-        m_fps.reset(m_context);
+        m_media.load(m_config, m_soundPlayer);
 
-        m_board.player.reset(m_context, MapPos_t{ 4, 0 });
+        // depends only on m_random only so passing context here is safe TODO
+        m_maps.load(m_context);
 
-        switchToMap({ { 0, 0 }, m_context.map_name, { 4, 2 } });
-    }
-
-    void GameCoordinator::switchToMap(const MapLink & link)
-    {
-        m_context.map_name = link.to_name;
-        m_layout.reset(m_context.map().size(), m_config);
-        m_context.map().load(m_context);
-        m_board.player.reset(m_context, link.to_pos);
-        M_CHECK_LOG_SS((!m_context.map().empty()), "Map is empty after load().");
+        m_context.switchToMap({ { 0, 0 }, "level-1-entry-hall", { 4, 2 } });
     }
 
     void GameCoordinator::openWindow()
     {
+        m_window.close();
+
         const auto style{ (m_config.is_fullscreen) ? sf::Style::Fullscreen : sf::Style::Default };
 
         m_window.create(m_config.video_mode, m_config.game_name, style);
 
-        std::cout << "Game Window: " << m_config.windowSize<int>() << " at "
-                  << m_config.video_mode.bitsPerPixel << "bits per pixel." << std::endl;
+        m_window.setFramerateLimit(m_config.frame_rate_limit);
+        m_window.setKeyRepeatEnabled(false);
 
-        M_CHECK_LOG_SS(
+        std::cout << "Game Window: " << m_config.windowSize<int>() << " at "
+                  << m_config.video_mode.bitsPerPixel << "bits per pixel and a "
+                  << m_config.frame_rate_limit << " fps limit." << std::endl;
+
+        M_CHECK_SS(
             m_window.isOpen(),
             "Failed to make and open the graphics window.  (sf::RenderWindow::isOpen() == false)");
 
@@ -111,7 +91,7 @@ namespace castlecrawl
 
         const sf::Vector2u windowActualSize{ m_window.getSize() };
 
-        M_CHECK_LOG_SS(
+        M_CHECK_SS(
             (windowActualSize == windowExpectedSize),
             "Failed to create a window at the resolution specified: "
                 << windowExpectedSize
@@ -128,8 +108,14 @@ namespace castlecrawl
                   << std::endl;
     }
 
-    void GameCoordinator::run()
+    void GameCoordinator::run(const GameConfig & config)
     {
+        initializeSubsystems(config);
+
+        openWindow();
+
+        m_fps.reset(m_context);
+
         sf::Clock frameClock;
 
         while (m_window.isOpen() && !m_game.isGameOver())

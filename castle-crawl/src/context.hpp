@@ -19,7 +19,9 @@ namespace castlecrawl
     class Media;
     class Layout;
     class GameInPlay;
+
     struct Board;
+    struct MapLink;
     struct GameConfig;
 
     //
@@ -55,9 +57,7 @@ namespace castlecrawl
         Context & operator=(const Context &) = delete;
         Context & operator=(Context &&) = delete;
 
-        Map & map();
-        const Map & map() const;
-
+        // subsystem references
         GameInPlay & game;
         Maps & maps;
         Board & board;
@@ -67,6 +67,12 @@ namespace castlecrawl
         const util::Random & random;
         util::SoundPlayer & audio;
         util::AnimationPlayer & anim;
+
+        // map handlers
+        Map & map();
+        const Map & map() const;
+        void switchToMap(const MapLink & link);
+
         std::string map_name;
     };
 } // namespace castlecrawl

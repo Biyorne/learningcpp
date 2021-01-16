@@ -56,47 +56,6 @@
 
 //
 
-#define M_CHECK_LOG_SS(exp, streamable_extra_info)                                  \
-    {                                                                               \
-        if (!(exp))                                                                 \
-        {                                                                           \
-            M_MAKE_DESCRIPTION_STR_SS((exp), "M_CHECK_LOG", streamable_extra_info); \
-            M_LOG(_m_desc_str);                                                     \
-        }                                                                           \
-    }
-
-#define M_CHECK_LOG(exp) M_CHECK_LOG_SS((exp), "");
-
-//
-
-#define M_CHECK_THROW_SS(exp, streamable_extra_info)                                  \
-    {                                                                                 \
-        if (!(exp))                                                                   \
-        {                                                                             \
-            M_MAKE_DESCRIPTION_STR_SS((exp), "M_CHECK_THROW", streamable_extra_info); \
-            M_LOG(_m_desc_str);                                                       \
-            throw std::runtime_error(_m_desc_str);                                    \
-        }                                                                             \
-    }
-
-#define M_CHECK_THROW(exp) M_CHECK_THROW_SS((exp), "");
-
-//
-
-#define M_CHECK_ASSERT_SS(exp, streamable_extra_info)                                  \
-    {                                                                                  \
-        if (!(exp))                                                                    \
-        {                                                                              \
-            M_MAKE_DESCRIPTION_STR_SS((exp), "M_CHECK_ASSERT", streamable_extra_info); \
-            M_LOG(_m_desc_str);                                                        \
-            assert((exp));                                                             \
-        }                                                                              \
-    }
-
-#define M_CHECK_ASSERT(exp) M_CHECK_ASSERT_SS((exp), "");
-
-//
-
 #define M_CHECK_SS(exp, streamable_extra_info)                                  \
     {                                                                           \
         if (!(exp))                                                             \
@@ -107,19 +66,15 @@
         }                                                                       \
     }
 
-#define M_CHECK(exp) M_CHECK_SS(exp, "");
+#define M_CHECK(exp) M_CHECK_SS((exp), "");
+
+//
 
 #else // defined(M_DISABLE_ALL_CHECK_MACROS)
 
 #define M_LOG(streamable_message) ;
 #define M_MAKE_DESCRIPTION_STR_SS(exp, macro_name, streamable_extra_info) ;
 #define M_MAKE_DESCRIPTION_STR(exp, macro_name) ;
-#define M_CHECK_LOG_SS(exp, streamable_extra_info) ;
-#define M_CHECK_LOG(exp) ;
-#define M_CHECK_THROW_SS(exp, streamable_extra_info) ;
-#define M_CHECK_THROW(exp) ;
-#define M_CHECK_ASSERT_SS(exp, streamable_extra_info) ;
-#define M_CHECK_ASSERT(exp) ;
 #define M_CHECK_SS(exp, streamable_extra_info) ;
 #define M_CHECK(exp) ;
 

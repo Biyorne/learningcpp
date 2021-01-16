@@ -23,8 +23,7 @@ int main(const int argc, const char * const argv[])
 
         //
         GameCoordinator game;
-        game.reset(config);
-        game.run();
+        game.run(config);
     }
     catch (const std::exception & ex)
     {

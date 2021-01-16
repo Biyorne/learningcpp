@@ -29,10 +29,10 @@ namespace castlecrawl
       public:
         GameCoordinator();
 
-        void reset(const GameConfig & config);
-        void run();
+        void run(const GameConfig & config);
 
       protected:
+        void initializeSubsystems(const GameConfig & config);
         void openWindow();
         void handleEvents();
         void handleEvent(const sf::Event & event);
@@ -40,22 +40,23 @@ namespace castlecrawl
         void update(const float elapsedTimeSec);
         void draw();
         void printFinalStatusToConsole();
-        void switchToMap(const MapLink & link);
 
       protected:
         sf::RenderWindow m_window;
         FramesPerSecond m_fps;
 
-        util::Random m_random;
-        util::SoundPlayer m_soundPlayer;
-        util::AnimationPlayer m_animationPlayer;
-
+        // subsystems
         Maps m_maps;
         Media m_media;
         Board m_board;
         Layout m_layout;
         GameInPlay m_game;
         GameConfig m_config;
+        util::Random m_random;
+        util::SoundPlayer m_soundPlayer;
+        util::AnimationPlayer m_animationPlayer;
+
+        // subsystems reference wrapper
         Context m_context;
     };
 
