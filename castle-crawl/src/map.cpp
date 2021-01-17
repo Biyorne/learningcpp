@@ -17,7 +17,8 @@
 namespace castlecrawl
 {
     Map::Map()
-        : m_chars()
+        : m_isFloorStone(false)
+        , m_chars()
         , m_floorChars(false)
         , m_links()
     {}
@@ -237,6 +238,7 @@ namespace castlecrawl
         drawChars(context, target, states, m_floorChars);
         drawBorderChars(context, target, states, m_floorChars);
         drawChars(context, target, states, m_chars);
+        drawStoneTransitionChars(context, target, states);
     }
 
     void Map::drawChars(
@@ -305,6 +307,105 @@ namespace castlecrawl
                     sprite.setPosition(pos);
                     sprite.move(-overlapDimm, -overlapDimm);
 
+                    target.draw(sprite, states);
+                }
+
+                pos.x += mapCellDimm;
+            }
+
+            pos.x = boardPos.x;
+            pos.y += mapCellDimm;
+        }
+    }
+
+    void Map::drawStoneTransitionChars(
+        Context & context, sf::RenderTarget & target, sf::RenderStates states) const
+    {
+        if (empty())
+        {
+            return;
+        }
+
+        auto notLiq = [](const char ch) { return ((ch != 'l') && (ch != 'w')); };
+
+        sf::Sprite sprite = context.media.sprite(TileImage::Empty);
+
+        const float mapCellDimm{ context.config.mapCellDimm() };
+        const sf::Vector2f boardPos{ util::position(context.layout.boardBounds()) };
+        sf::Vector2f pos{ boardPos };
+
+        const MapPos_t mapSize(size());
+        for (int y(0); y < mapSize.y; ++y)
+        {
+            for (int x(0); x < mapSize.x; ++x)
+            {
+                const char ch{ getChar(x, y) };
+
+                if (notLiq(ch))
+                {
+                    pos.x += mapCellDimm;
+                    continue;
+                }
+
+                // check all four sides
+                const char up{ getChar(x, y - 1) };
+                const char down{ getChar(x, y + 1) };
+                const char left{ getChar(x - 1, y) };
+                const char right{ getChar(x + 1, y) };
+
+                if (notLiq(up) && notLiq(left))
+                {
+                    sprite = context.media.sprite(TileImage::StoneTopLft);
+                    sprite.setPosition(pos);
+                    target.draw(sprite, states);
+                }
+
+                if (notLiq(up) && notLiq(right))
+                {
+                    sprite = context.media.sprite(TileImage::StoneTopRgt);
+                    sprite.setPosition(pos);
+                    target.draw(sprite, states);
+                }
+
+                if (notLiq(down) && notLiq(left))
+                {
+                    sprite = context.media.sprite(TileImage::StoneBotLft);
+                    sprite.setPosition(pos);
+                    target.draw(sprite, states);
+                }
+
+                if (notLiq(down) && notLiq(right))
+                {
+                    sprite = context.media.sprite(TileImage::StoneBotRgt);
+                    sprite.setPosition(pos);
+                    target.draw(sprite, states);
+                }
+
+                if (notLiq(up))
+                {
+                    sprite = context.media.sprite(TileImage::StoneTop);
+                    sprite.setPosition(pos);
+                    target.draw(sprite, states);
+                }
+
+                if (notLiq(down))
+                {
+                    sprite = context.media.sprite(TileImage::StoneBot);
+                    sprite.setPosition(pos);
+                    target.draw(sprite, states);
+                }
+
+                if (notLiq(left))
+                {
+                    sprite = context.media.sprite(TileImage::StoneLft);
+                    sprite.setPosition(pos);
+                    target.draw(sprite, states);
+                }
+
+                if (notLiq(right))
+                {
+                    sprite = context.media.sprite(TileImage::StoneRgt);
+                    sprite.setPosition(pos);
                     target.draw(sprite, states);
                 }
 

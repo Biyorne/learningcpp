@@ -46,7 +46,6 @@ namespace castlecrawl
         bool is_fullscreen;
         unsigned frame_rate_limit;
         sf::Color background_color;
-        float between_cells_pad_ratio;
         float map_cell_size_ratio;
     };
 

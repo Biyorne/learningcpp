@@ -37,6 +37,14 @@ namespace castlecrawl
         Player,
         Barrel,
         Door,
+        StoneTopLft,
+        StoneTop,
+        StoneTopRgt,
+        StoneLft,
+        StoneRgt,
+        StoneBotLft,
+        StoneBot,
+        StoneBotRgt,
         Count
     };
 
@@ -67,7 +75,7 @@ namespace castlecrawl
             case ':': return TileImage::Stone5;
             case ';': return TileImage::Stone6;
             case 'l': return TileImage::Lava;
-            case 'W': return TileImage::Water;
+            case 'w': return TileImage::Water;
             default: return TileImage::Empty;
         }
     }
@@ -100,6 +108,15 @@ namespace castlecrawl
             case TileImage::Stone4:          return sf::IntRect( 0,160,32,32);
             case TileImage::Stone5:          return sf::IntRect(32,160,32,32);
             case TileImage::Stone6:          return sf::IntRect(64,160,32,32);
+            //
+            case TileImage::StoneTopLft:     return sf::IntRect( 96,128,32,32);
+            case TileImage::StoneTop:        return sf::IntRect(128,128,32,32);
+            case TileImage::StoneTopRgt:     return sf::IntRect(160,128,32,32);
+            case TileImage::StoneLft:        return sf::IntRect( 96,160,32,32);
+            case TileImage::StoneRgt:        return sf::IntRect(192,160,32,32);
+            case TileImage::StoneBotLft:     return sf::IntRect( 96,192,32,32);
+            case TileImage::StoneBot:        return sf::IntRect(128,192,32,32);
+            case TileImage::StoneBotRgt:     return sf::IntRect(160,192,32,32);
             //
             case TileImage::Black:           return sf::IntRect( 0,192,32,32);
             case TileImage::Lava:            return sf::IntRect(32,192,32,32);
