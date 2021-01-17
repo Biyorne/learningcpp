@@ -1,14 +1,14 @@
 #ifndef CASTLECRAWL_PLAYER_HPP_INCLUDED
 #define CASTLECRAWL_PLAYER_HPP_INCLUDED
 //
-// player.hpp
+// player-piece.hpp
 //
 #include "pieces.hpp"
 
 namespace castlecrawl
 {
 
-    class Player : public PieceBase
+    class PlayerPiece : public PieceBase
     {
       public:
         void reset(Context & context, const MapPos_t & pos);

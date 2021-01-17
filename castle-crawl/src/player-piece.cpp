@@ -1,25 +1,25 @@
 // This is an open source non-commercial project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 //
-// player.cpp
+// player-piece.cpp
 //
-#include "player.hpp"
+#include "player-piece.hpp"
 
 #include "board.hpp"
 #include "check-macros.hpp"
-#include "door.hpp"
+#include "door-piece.hpp"
 #include "keys.hpp"
 #include "settings.hpp"
 #include "sound-player.hpp"
 
 namespace castlecrawl
 {
-    void Player::reset(Context & context, const MapPos_t & pos)
+    void PlayerPiece::reset(Context & context, const MapPos_t & pos)
     {
         PieceBase::reset(context, pos, 'p', false);
     }
 
-    void Player::handleEvent(Context & context, const sf::Event & event)
+    void PlayerPiece::handleEvent(Context & context, const sf::Event & event)
     {
         if (sf::Event::KeyPressed != event.type)
         {
@@ -49,7 +49,7 @@ namespace castlecrawl
                 return;
             }
 
-            for (const Door & door : context.board.doors)
+            for (const DoorPiece & door : context.board.doors)
             {
                 if (door.position() != newPos)
                 {

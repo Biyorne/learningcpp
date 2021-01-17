@@ -7,7 +7,7 @@
 
 namespace castlecrawl
 {
-    class Door : public PieceBase
+    class DoorPiece : public PieceBase
     {
       public:
         void reset(Context & context, const MapPos_t & pos, const bool isLocked);

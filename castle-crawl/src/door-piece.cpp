@@ -3,11 +3,11 @@
 //
 // door.cpp
 //
-#include "door.hpp"
+#include "door-piece.hpp"
 
 namespace castlecrawl
 {
-    void Door::reset(Context & context, const MapPos_t & pos, const bool isLocked)
+    void DoorPiece::reset(Context & context, const MapPos_t & pos, const bool isLocked)
     {
         PieceBase::reset(context, pos, 'D', isLocked);
     }

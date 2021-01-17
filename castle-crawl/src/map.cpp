@@ -6,7 +6,7 @@
 #include "map.hpp"
 
 #include "board.hpp"
-#include "door.hpp"
+#include "door-piece.hpp"
 #include "random.hpp"
 #include "resources.hpp"
 #include "settings.hpp"
@@ -441,7 +441,7 @@ namespace castlecrawl
                 }
 
                 // add piece to board
-                Door door;
+                DoorPiece door;
                 door.reset(context, mapPos, (ch == 'D'));
                 context.board.doors.push_back(door);
             }

@@ -9,7 +9,7 @@
 #include "frames-per-sec.hpp"
 #include "keys.hpp"
 #include "maps.hpp"
-#include "player.hpp"
+#include "player-piece.hpp"
 #include "random.hpp"
 #include "resources.hpp"
 #include "settings.hpp"

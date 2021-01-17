@@ -3,8 +3,8 @@
 //
 // board.hpp
 //
-#include "door.hpp"
-#include "player.hpp"
+#include "door-piece.hpp"
+#include "player-piece.hpp"
 
 #include <memory>
 #include <vector>
@@ -15,8 +15,8 @@ namespace castlecrawl
 {
     struct Board : public sf::Drawable
     {
-        Player player;
-        std::vector<Door> doors;
+        PlayerPiece player;
+        std::vector<DoorPiece> doors;
 
         void draw(sf::RenderTarget &, sf::RenderStates) const override;
     };
