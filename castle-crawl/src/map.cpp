@@ -285,7 +285,7 @@ namespace castlecrawl
         const MapChars_t & mapChars) const
     {
         sf::Sprite sprite = context.media.sprite(TileImage::Black);
-
+        sprite.setColor(context.config.background_color);
         sprite.scale(1.5f, 1.5f);
 
         const float mapCellDimm{ context.config.mapCellDimm() };

@@ -92,10 +92,9 @@ namespace castlecrawl
 
         if (windowActualSize != windowExpectedSize)
         {
-            std::cout << "Failed to create a window at the resolution specified: "
-                      << windowExpectedSize
-                      << ".  Strangely, a window did open, just at a different resolution: "
-                      << windowActualSize << ".  So...meh.  Let's just run with it." << std::endl;
+            std::cout << "Failed to create a window at " << windowExpectedSize
+                      << ", but strangely, a window did open at " << windowActualSize
+                      << ".  So...meh." << std::endl;
         }
 
         m_config.video_mode.width = windowActualSize.x;
@@ -194,6 +193,14 @@ namespace castlecrawl
         m_window.draw(m_board);
 
         m_window.draw(m_fps);
+
+        sf::RectangleShape rs;
+        rs.setPosition(1.0f, 1.0f);
+        rs.setSize(m_config.windowSize() - sf::Vector2f{ 2.0f, 2.0f });
+        rs.setFillColor(sf::Color::Transparent);
+        rs.setOutlineThickness(1.0f);
+        rs.setOutlineColor(sf::Color(80, 80, 80));
+        m_window.draw(rs);
 
         m_window.display();
     }

@@ -19,8 +19,7 @@ namespace castlecrawl
         , video_mode{ sf::VideoMode::getDesktopMode() }
         , is_fullscreen{ true }
         , frame_rate_limit{ 0 }
-        , background_color{ sf::Color::Black }
-        , between_cells_pad_ratio{ 0.975f }
+        , background_color{ sf::Color(17, 14, 14) }
         , map_cell_size_ratio{ 0.024f }
     {}
 
