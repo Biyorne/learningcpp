@@ -18,8 +18,9 @@
 namespace castlecrawl
 {
     GameCoordinator::GameCoordinator()
-        : m_window()
-        , m_fps()
+        : m_fps()
+        , m_window()
+        , m_windowOutline()
         , m_maps()
         , m_media()
         , m_board()
@@ -63,6 +64,12 @@ namespace castlecrawl
         m_maps.load(m_context);
 
         m_context.switchToMap({ { 0, 0 }, "level-1-entry-hall", { 5, 2 } });
+
+        m_windowOutline.setPosition(1.0f, 1.0f);
+        m_windowOutline.setSize(m_config.windowSize() - sf::Vector2f{ 2.0f, 2.0f });
+        m_windowOutline.setFillColor(sf::Color::Transparent);
+        m_windowOutline.setOutlineThickness(1.0f);
+        m_windowOutline.setOutlineColor(sf::Color(80, 80, 80));
     }
 
     void GameCoordinator::openWindow()
@@ -198,13 +205,7 @@ namespace castlecrawl
 
         m_window.draw(m_fps);
 
-        sf::RectangleShape rs;
-        rs.setPosition(1.0f, 1.0f);
-        rs.setSize(m_config.windowSize() - sf::Vector2f{ 2.0f, 2.0f });
-        rs.setFillColor(sf::Color::Transparent);
-        rs.setOutlineThickness(1.0f);
-        rs.setOutlineColor(sf::Color(80, 80, 80));
-        m_window.draw(rs);
+        m_window.draw(m_windowOutline);
 
         m_window.draw(m_animationPlayer);
 

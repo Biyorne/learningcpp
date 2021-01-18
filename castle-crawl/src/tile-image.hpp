@@ -38,6 +38,8 @@ namespace castlecrawl
         Barrel,
         Door,
         Coffin,
+        StairUp,
+        StairDown,
         StoneTopLft,
         StoneTop,
         StoneTopRgt,
@@ -64,6 +66,8 @@ namespace castlecrawl
             case 'D': return TileImage::Door; // door can be upper or lower case
             case 'd': return TileImage::Door;
             case 'c': return TileImage::Coffin;
+            case 'S': return TileImage::StairUp;
+            case 's': return TileImage::StairDown;
             case '0': return TileImage::Wood1;
             case '1': return TileImage::Wood2;
             case '2': return TileImage::Wood3;
@@ -87,16 +91,18 @@ namespace castlecrawl
         // clang-format off
         switch (image)
         {
-            case TileImage::WallBlock:       return sf::IntRect(64,32,32,32);
-            case TileImage::WallTopLeft:     return sf::IntRect( 0, 0,32,32);
-            case TileImage::WallTop:         return sf::IntRect(64, 0,32,32);
-            case TileImage::WallHoriz:       return sf::IntRect(32, 0,32,32);
-            case TileImage::WallHorizShadow: return sf::IntRect(32,32,32,32);
-            case TileImage::WallVert:        return sf::IntRect( 0,32,32,32);
-            case TileImage::Player:          return sf::IntRect(96,32,32,32);
-            case TileImage::Barrel:          return sf::IntRect(96, 0,32,32);
-            case TileImage::Door:            return sf::IntRect(96,96,32,32);
-            case TileImage::Coffin:          return sf::IntRect(96,64,32,32);
+            case TileImage::WallBlock:       return sf::IntRect( 64,32,32,32);
+            case TileImage::WallTopLeft:     return sf::IntRect(  0, 0,32,32);
+            case TileImage::WallTop:         return sf::IntRect( 64, 0,32,32);
+            case TileImage::WallHoriz:       return sf::IntRect( 32, 0,32,32);
+            case TileImage::WallHorizShadow: return sf::IntRect( 32,32,32,32);
+            case TileImage::WallVert:        return sf::IntRect(  0,32,32,32);
+            case TileImage::Player:          return sf::IntRect( 96,32,32,32);
+            case TileImage::Barrel:          return sf::IntRect( 96, 0,32,32);
+            case TileImage::Door:            return sf::IntRect( 96,96,32,32);
+            case TileImage::Coffin:          return sf::IntRect( 96,64,32,32);
+            case TileImage::StairUp:         return sf::IntRect(128, 0,32,32);
+            case TileImage::StairDown:       return sf::IntRect(128,32,32,32);
             //
             case TileImage::Wood1:           return sf::IntRect( 0,64,32,32);
             case TileImage::Wood2:           return sf::IntRect(32,64,32,32);

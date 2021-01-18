@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 
+#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 
@@ -42,8 +43,9 @@ namespace castlecrawl
         void printFinalStatusToConsole();
 
       protected:
-        sf::RenderWindow m_window;
         FramesPerSecond m_fps;
+        sf::RenderWindow m_window;
+        sf::RectangleShape m_windowOutline;
 
         // subsystems
         Maps m_maps;

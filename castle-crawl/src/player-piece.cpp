@@ -71,6 +71,13 @@ namespace castlecrawl
         {
             if (link.from_pos == newPos)
             {
+                const char currentChar = context.map().getChar(position());
+
+                if ((currentChar == 'S') || (currentChar == 's'))
+                {
+                    context.audio.play("stairs.ogg");
+                }
+
                 context.switchToMap(link);
                 return;
             }
@@ -78,7 +85,8 @@ namespace castlecrawl
 
         const char newChar = context.map().getChar(newPos);
 
-        if ((newChar != ' ') && (newChar != 'D') && (newChar != 'd'))
+        if ((newChar != ' ') && (newChar != 'D') && (newChar != 'd') && (newChar != 'S') &&
+            (newChar != 's'))
         {
             context.audio.play("tap-wood-low.ogg");
             return;

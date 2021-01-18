@@ -16,9 +16,9 @@ namespace castlecrawl
     struct MapLink
     {
         MapLink(
-            const MapPos_t fromPos = { 0, 0 },
-            const std::string toName = "",
-            const MapPos_t toPos = { 0, 0 })
+            const MapPos_t & fromPos = { 0, 0 },
+            const std::string & toName = "",
+            const MapPos_t & toPos = { 0, 0 })
             : from_pos(fromPos)
             , to_name(toName)
             , to_pos(toPos)

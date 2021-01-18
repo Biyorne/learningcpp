@@ -23,7 +23,7 @@ namespace castlecrawl
     void FramesPerSecond::reset(const Context & context)
     {
         m_text.setFont(context.media.font());
-        m_text.setFillColor(sf::Color(120, 120, 140));
+        m_text.setFillColor(sf::Color(150, 150, 170));
 
         util::scaleAndCenterInside(
             m_text, sf::FloatRect({ 0.0f, 0.0f }, { 1000.0, context.config.mapCellSize().y }));
