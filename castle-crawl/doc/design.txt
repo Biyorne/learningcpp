@@ -3,7 +3,7 @@
 		Air
 	Lightning	Ice  
 Fire 				Water
-	Magma		?Shard/Poison/Plant/Mud
+	Magma		Poison
 		Earth
 
 
@@ -14,12 +14,16 @@ play with focus on melee or magic or both
 lots of people to find and talk to
 traps
 Stats:
-	Physical
+	Physical	1-100
 	Mental
 	Social
-	Luck?
+	Luck
 No mana.  If you have/know a spell you can cast it.  Gems/pickups required?
 Item screen will show locations for left/right hand etc and a collection for misc
+mana crystals that bigger spells require to prevent using big spells too early/often
+
+
+
 
 
 
@@ -27,17 +31,7 @@ Item screen will show locations for left/right hand etc and a collection for mis
 
 
 ---
-No leveling player but what about experience?  Without it, what determines loot value?  Depth?
-experience?
-stat number range?
-Luck as a stat?
 story?
-gold or coins?
-resolutions supported
-traps in doors and loot but what about positional?
-what about gems/shards/pickups that bigger spells require to prevent using big spells too early/often?
-
-
 
 
 
