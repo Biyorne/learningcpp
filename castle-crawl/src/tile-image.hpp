@@ -37,6 +37,7 @@ namespace castlecrawl
         Player,
         Barrel,
         Door,
+        Coffin,
         StoneTopLft,
         StoneTop,
         StoneTopRgt,
@@ -62,6 +63,7 @@ namespace castlecrawl
             case 'b': return TileImage::Barrel;
             case 'D': return TileImage::Door; // door can be upper or lower case
             case 'd': return TileImage::Door;
+            case 'c': return TileImage::Coffin;
             case '0': return TileImage::Wood1;
             case '1': return TileImage::Wood2;
             case '2': return TileImage::Wood3;
@@ -94,6 +96,7 @@ namespace castlecrawl
             case TileImage::Player:          return sf::IntRect(96,32,32,32);
             case TileImage::Barrel:          return sf::IntRect(96, 0,32,32);
             case TileImage::Door:            return sf::IntRect(96,96,32,32);
+            case TileImage::Coffin:          return sf::IntRect(96,64,32,32);
             //
             case TileImage::Wood1:           return sf::IntRect( 0,64,32,32);
             case TileImage::Wood2:           return sf::IntRect(32,64,32,32);
