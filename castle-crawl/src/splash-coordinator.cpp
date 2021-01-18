@@ -28,6 +28,7 @@ namespace castlecrawl
     void SplashCoordinator::loadAll(const GameConfig & config)
     {
         m_config = config;
+
         M_CHECK_SS(std::filesystem::exists(m_config.media_dir_path), m_config.media_dir_path);
         M_CHECK_SS(std::filesystem::is_directory(m_config.media_dir_path), m_config.media_dir_path);
 

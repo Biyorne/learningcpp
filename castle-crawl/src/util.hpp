@@ -521,7 +521,7 @@ namespace util
             }
         }
 
-        setOriginToPosition(thing);
+        // setOriginToPosition(thing);
     }
 
     template <typename T>
