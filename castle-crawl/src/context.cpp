@@ -20,16 +20,15 @@ namespace castlecrawl
     void Context::switchToMap(const MapLink & link)
     {
         const std::string fromMapName = map_name;
-
         map_name = link.to_name;
-        layout.reset(map().size(), config);
-        map().load(*this);
 
         M_CHECK_SS(
             (!map().empty()),
             "Map is empty after load() in Context::switchToMap: from=\""
                 << fromMapName << "\" to " << link.to_pos << " in \"" << link.to_name << "\"");
 
+        layout.reset(map().size(), config);
+        map().load(*this);
         board.player.reset(*this, link.to_pos);
     }
 

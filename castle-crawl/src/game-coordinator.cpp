@@ -63,7 +63,7 @@ namespace castlecrawl
         // depends only on m_random only so passing context here is safe TODO
         m_maps.load(m_context);
 
-        m_context.switchToMap({ { 0, 0 }, "level-1-entry-hall", { 5, 2 } });
+        m_context.switchToMap({ { 0, 0 }, "level-1-first-room", { 5, 2 } });
 
         m_windowOutline.setPosition(1.0f, 1.0f);
         m_windowOutline.setSize(m_config.windowSize() - sf::Vector2f{ 2.0f, 2.0f });
