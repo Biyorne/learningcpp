@@ -5,6 +5,7 @@
 //
 #include "player-piece.hpp"
 
+#include "animation-player.hpp"
 #include "board.hpp"
 #include "check-macros.hpp"
 #include "door-piece.hpp"
@@ -30,48 +31,68 @@ namespace castlecrawl
 
         if (keys::isArrow(key))
         {
-            const MapPos_t newPos = keys::moveIfDir(position(), key);
+            handleArrowKey(context, key);
+        }
 
-            for (const MapLink & link : context.map().links())
+        // TODO REMOVE TEMP ANIMATION TEST
+        if (sf::Keyboard::A == key)
+        {
+            util::AnimConfig config(1.0f, sf::Color::Cyan, sf::BlendAdd);
+
+            sf::FloatRect rect = context.layout.cellBounds(position());
+            const float cellDimm{ context.config.mapCellDimm() };
+            rect.left -= (cellDimm * 0.25f);
+            rect.top -= (cellDimm * 0.25f);
+            rect.width *= 1.5f;
+            rect.height *= 1.5f;
+
+            context.anim.play("sparkle-burst", rect, config);
+        }
+    }
+
+    void PlayerPiece::handleArrowKey(Context & context, const sf::Keyboard::Key arrowKey)
+    {
+        const MapPos_t newPos = keys::moveIfDir(position(), arrowKey);
+
+        for (const MapLink & link : context.map().links())
+        {
+            if (link.from_pos == newPos)
             {
-                if (link.from_pos == newPos)
-                {
-                    context.switchToMap(link);
-                    return;
-                }
-            }
-
-            const char newChar = context.map().getChar(newPos);
-
-            if ((newChar != ' ') && (newChar != 'D') && (newChar != 'd'))
-            {
-                context.audio.play("tap-wood-low.ogg");
+                context.switchToMap(link);
                 return;
             }
+        }
 
-            for (const DoorPiece & door : context.board.doors)
+        const char newChar = context.map().getChar(newPos);
+
+        if ((newChar != ' ') && (newChar != 'D') && (newChar != 'd'))
+        {
+            context.audio.play("tap-wood-low.ogg");
+            return;
+        }
+
+        for (const DoorPiece & door : context.board.doors)
+        {
+            if (door.position() != newPos)
             {
-                if (door.position() != newPos)
-                {
-                    continue;
-                }
-
-                if (door.isLocked())
-                {
-                    context.audio.play("locked.ogg");
-                    return;
-                }
-                else
-                {
-                    move(context, key);
-                    context.audio.play("door-open.ogg");
-                    return;
-                }
+                continue;
             }
 
-            move(context, key);
-            context.audio.play("tick-on-2.ogg");
+            if (door.isLocked())
+            {
+                context.audio.play("locked.ogg");
+                return;
+            }
+            else
+            {
+                move(context, arrowKey);
+                context.audio.play("door-open.ogg");
+                return;
+            }
         }
+
+        move(context, arrowKey);
+        context.audio.play("tick-on-2.ogg");
     }
 
 } // namespace castlecrawl

@@ -180,7 +180,11 @@ namespace castlecrawl
         }
     }
 
-    void GameCoordinator::update(const float) { m_fps.update(); }
+    void GameCoordinator::update(const float elapsedSec)
+    {
+        m_animationPlayer.update(elapsedSec);
+        m_fps.update();
+    }
 
     void GameCoordinator::draw()
     {
@@ -201,6 +205,8 @@ namespace castlecrawl
         rs.setOutlineThickness(1.0f);
         rs.setOutlineColor(sf::Color(80, 80, 80));
         m_window.draw(rs);
+
+        m_window.draw(m_animationPlayer);
 
         m_window.display();
     }
