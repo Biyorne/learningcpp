@@ -35,9 +35,9 @@ namespace castlecrawl
         }
 
         // TODO REMOVE TEMP ANIMATION TEST
-        if (sf::Keyboard::A == key)
+        if (sf::Keyboard::Num1 == key)
         {
-            util::AnimConfig config(1.0f, sf::Color::Cyan, sf::BlendAdd);
+            util::AnimConfig config(1.0f, sf::Color(150, 255, 255), sf::BlendAdd);
 
             sf::FloatRect rect = context.layout.cellBounds(position());
             const float cellDimm{ context.config.mapCellDimm() };
@@ -47,6 +47,19 @@ namespace castlecrawl
             rect.height *= 1.5f;
 
             context.anim.play("sparkle-burst", rect, config);
+        }
+        else if (sf::Keyboard::Num2 == key)
+        {
+            util::AnimConfig config(1.0f, sf::Color(255, 255, 150), sf::BlendAdd);
+
+            sf::FloatRect rect = context.layout.cellBounds(position());
+            const float cellDimm{ context.config.mapCellDimm() };
+            rect.left -= (cellDimm * 1.0f);
+            rect.top -= (cellDimm * 1.0f);
+            rect.width *= 3.0f;
+            rect.height *= 3.0f;
+
+            context.anim.play("star-flash", rect, config);
         }
     }
 
