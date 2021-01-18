@@ -4,6 +4,8 @@
 // main.cpp
 //
 #include "game-coordinator.hpp"
+#include "settings.hpp"
+#include "splash-coordinator.hpp"
 
 #include <cstddef>
 
@@ -14,6 +16,7 @@ int main(const int argc, const char * const argv[])
 
     try
     {
+
         //
         GameConfig config;
         if (argc > 1)
@@ -23,8 +26,9 @@ int main(const int argc, const char * const argv[])
             std::cout << "Custom media path found on the command line: " << config.media_dir_path
                       << std::endl;
         }
-        config.video_mode.width = 1920;
-        config.video_mode.height = 1080;
+
+        SplashCoordinator splash;
+        splash.run(config);
 
         //
         GameCoordinator game;

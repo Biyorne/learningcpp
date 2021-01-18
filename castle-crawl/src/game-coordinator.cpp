@@ -174,6 +174,7 @@ namespace castlecrawl
             }
 
             m_board.player.handleEvent(m_context, event);
+            return true;
         }
 
         return false;
