@@ -31,11 +31,7 @@ namespace util
         m_soundEffects.clear();
     }
 
-    void SoundPlayer::setMediaPath(const std::string & pathStr)
-    {
-        m_pathStr = pathStr;
-        std::cerr << "SoundPlayer::setMediaPath(\"" << m_pathStr << "\")" << std::endl;
-    }
+    void SoundPlayer::setMediaPath(const std::string & pathStr) { m_pathStr = pathStr; }
 
     void SoundPlayer::play(const std::string & name, const float pitch)
     {

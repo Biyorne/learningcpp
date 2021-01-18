@@ -70,6 +70,8 @@ namespace castlecrawl
         m_windowOutline.setFillColor(sf::Color::Transparent);
         m_windowOutline.setOutlineThickness(1.0f);
         m_windowOutline.setOutlineColor(sf::Color(80, 80, 80));
+
+        m_fps.reset(m_context);
     }
 
     void GameCoordinator::openWindow()
@@ -117,8 +119,6 @@ namespace castlecrawl
     void GameCoordinator::run(const GameConfig & config)
     {
         initializeSubsystems(config);
-
-        m_fps.reset(m_context);
 
         sf::Clock frameClock;
         while (m_window.isOpen() && !m_game.isGameOver())
@@ -197,17 +197,11 @@ namespace castlecrawl
     {
         m_window.clear(m_config.background_color);
 
-        // draw floor and wall tiles
         m_context.map().draw(m_context, m_window, {});
-
-        // draw all other pieces
         m_window.draw(m_board);
-
-        m_window.draw(m_fps);
-
         m_window.draw(m_windowOutline);
-
         m_window.draw(m_animationPlayer);
+        m_window.draw(m_fps);
 
         m_window.display();
     }
