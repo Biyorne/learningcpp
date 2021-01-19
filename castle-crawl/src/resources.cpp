@@ -42,7 +42,7 @@ namespace castlecrawl
         for (std::size_t i(0); i < imageCount; ++i)
         {
             m_tileSprites.at(i).setTextureRect(tileImageToTileRect(static_cast<TileImage>(i)));
-            util::scale(m_tileSprites.at(i), config.mapCellSize());
+            util::fit(m_tileSprites.at(i), config.mapCellSize());
         }
 
         m_tileSprites.at(static_cast<std::size_t>(TileImage::Door))

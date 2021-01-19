@@ -386,7 +386,7 @@ namespace util
 
         setAnimationFrame(anim, 0);
 
-        util::scaleAndCenterInside(anim.sprite, bounds);
+        util::fitAndCenterInside(anim.sprite, bounds);
         anim.sprite.setColor(anim.config.color);
     }
 

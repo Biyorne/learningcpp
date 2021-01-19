@@ -1,5 +1,5 @@
-#ifndef CASTLECRAWL_UTIL_HPP_INCLUDED
-#define CASTLECRAWL_UTIL_HPP_INCLUDED
+#ifndef SNAKE_UTIL_HPP_INCLUDED
+#define SNAKE_UTIL_HPP_INCLUDED
 //
 // util.hpp
 //
@@ -28,7 +28,214 @@ constexpr std::ptrdiff_t operator"" _pd(unsigned long long number)
 
 namespace util
 {
-    inline const std::string colorToString(const sf::Color & C)
+    //
+    // abs(), min(a,b,c), max(a,b,c)
+    //
+    // These functions are written here by hand instead of using std because:
+    //  * std min/max cannot take more than one arg
+    //  * <cmath>'s abs() does not use templates
+    //  * some of the std functions are not constexpr when they could be
+    //  * some of the std functions are not noexcept when they could be
+    //  * comparing reals is only needs to be simple/fast/less-accurate for games
+    template <typename T>
+    [[nodiscard]] T constexpr abs(const T number) noexcept
+    {
+        static_assert(std::is_arithmetic_v<T>);
+
+        if constexpr (std::is_unsigned_v<T>)
+        {
+            return number;
+        }
+        else
+        {
+            if (number < T(0))
+            {
+                return -number;
+            }
+            else
+            {
+                return number;
+            }
+        }
+    }
+
+    //
+
+    template <typename T>
+    [[nodiscard]] constexpr T max(const T left, const T right) noexcept
+    {
+        static_assert(std::is_arithmetic_v<T>);
+
+        if (left < right)
+        {
+            return right;
+        }
+        else
+        {
+            return left;
+        }
+    }
+
+    template <typename T, typename... Ts>
+    [[nodiscard]] constexpr T max(const T first, const Ts... allOthers) noexcept
+    {
+        return max(first, max(allOthers...));
+    }
+
+    template <typename T>
+    [[nodiscard]] constexpr T min(const T left, const T right) noexcept
+    {
+        static_assert(std::is_arithmetic_v<T>);
+
+        if (left < right)
+        {
+            return left;
+        }
+        else
+        {
+            return right;
+        }
+    }
+
+    template <typename T, typename... Ts>
+    [[nodiscard]] constexpr T min(const T first, const Ts... allOthers) noexcept
+    {
+        return min(first, min(allOthers...));
+    }
+
+    // this lib is for simple/innaccurate/game/etc apps, so a simple multiple of epsilon works
+    template <typename T>
+    constexpr T float_compare_epsilon = (std::numeric_limits<T>::epsilon() * T(10));
+
+    //
+    // isRealClose()
+    //
+
+    template <typename T>
+    [[nodiscard]] constexpr bool isRealClose(const T left, const T right) noexcept
+    {
+        static_assert(std::is_arithmetic_v<T>);
+
+        if constexpr (std::is_integral_v<T>)
+        {
+            return (left == right);
+        }
+        else
+        {
+            const T diffAbs{ abs(right - left) };
+
+            if (diffAbs < T(1))
+            {
+                return (diffAbs < float_compare_epsilon<T>);
+            }
+            else
+            {
+                const T maxForEpsilon{ max(abs(left), abs(right), T(1)) };
+                return (diffAbs < (maxForEpsilon * float_compare_epsilon<T>));
+            }
+        }
+    }
+
+    template <typename T>
+    [[nodiscard]] constexpr bool isRealCloseOrLess(const T number, const T comparedTo) noexcept
+    {
+        return ((number < comparedTo) || isRealClose(number, comparedTo));
+    }
+
+    template <typename T>
+    [[nodiscard]] constexpr bool isRealCloseOrGreater(const T number, const T comparedTo) noexcept
+    {
+        return ((number > comparedTo) || isRealClose(number, comparedTo));
+    }
+
+    //
+    // map()
+    //
+
+    template <typename T, typename U = T>
+    [[nodiscard]] constexpr U
+        map(const T number, const T inMin, const T inMax, const U outMin, const U outMax) noexcept
+    {
+        if (isRealClose(inMin, inMax))
+        {
+            return outMax;
+        }
+
+        return (outMin + static_cast<U>(((number - inMin) * (outMax - outMin)) / (inMax - inMin)));
+    }
+
+    // assumes ratio is [0,1]
+    template <typename Ratio_t, typename Number_t>
+    [[nodiscard]] constexpr Number_t
+        mapRatioTo(const Ratio_t ratio, const Number_t outMin, const Number_t outMax) noexcept
+    {
+        static_assert(std::is_arithmetic_v<Number_t>);
+        static_assert(std::is_floating_point_v<Ratio_t>);
+
+        return (
+            outMin + static_cast<Number_t>(
+                         ratio * (static_cast<Ratio_t>(outMax) - static_cast<Ratio_t>(outMin))));
+    }
+
+    template <typename Number_t, typename Ratio_t = float>
+    [[nodiscard]] constexpr Ratio_t
+        mapToRatio(const Number_t number, const Number_t inMin, const Number_t inMax) noexcept
+    {
+        static_assert(std::is_floating_point_v<Ratio_t>);
+
+        if (isRealClose(inMin, inMax))
+        {
+            return Ratio_t(1);
+        }
+
+        return static_cast<Ratio_t>((number - inMin) / (inMax - inMin));
+    }
+
+    inline constexpr sf::Uint8 mapRatioToColorValue(const float ratio)
+    {
+        return map(std::clamp(ratio, 0.0f, 1.0f), 0.0f, 1.0f, sf::Uint8(0), sf::Uint8(255));
+    }
+
+    constexpr std::size_t verts_per_quad{ 4 };
+
+    template <typename Container_t>
+    [[nodiscard]] inline std::string containerToString(
+        const Container_t & container,
+        const std::string & separator = ",",
+        const std::string & wrap = {})
+    {
+        std::ostringstream ss;
+
+        const auto iterBegin{ std::begin(container) };
+        for (auto iter(iterBegin); std::end(container) != iter; ++iter)
+        {
+            if (iterBegin != iter)
+            {
+                ss << separator;
+            }
+
+            ss << *iter;
+        }
+
+        const std::string content{ ss.str() };
+
+        if (content.empty())
+        {
+            return "";
+        }
+        else
+        {
+            const std::string wrapFront{ (wrap.size() >= 1) ? std::string(1, wrap[0])
+                                                            : std::string() };
+
+            const std::string wrapBack{ (wrap.size() >= 2) ? std::string(1, wrap[1])
+                                                           : std::string() };
+
+            return (wrapFront + content + wrapBack);
+        }
+    };
+
+    [[nodiscard]] inline const std::string colorToString(const sf::Color & C)
     {
         std::string str;
         str.reserve(16);
@@ -108,6 +315,12 @@ namespace sf
     }
 
     template <typename T>
+    [[nodiscard]] bool operator<=(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
+    {
+        return ((left == right) || (left < right));
+    }
+
+    template <typename T>
     [[nodiscard]] sf::Vector2<T>
         operator*(const sf::Vector2<T> & left, const sf::Vector2<T> & right)
     {
@@ -121,6 +334,18 @@ namespace sf
         return { (numerator.x / denominator.x), (numerator.y / denominator.y) };
     }
 
+    //
+
+    template <typename T>
+    [[nodiscard]] bool operator<(const sf::Rect<T> & r1, const sf::Rect<T> & r2)
+    {
+        return (
+            std::tie(r1.top, r1.left, r1.width, r1.height) <
+            std::tie(r2.top, r2.left, r2.width, r2.height));
+    }
+
+    //
+
     template <typename T>
     std::ostream & operator<<(std::ostream & os, const sf::Vector2<T> & vec)
     {
@@ -131,7 +356,7 @@ namespace sf
     template <typename T>
     std::ostream & operator<<(std::ostream & os, const sf::Rect<T> & rect)
     {
-        os << '(' << rect.left << ',' << rect.top << '_' << rect.width << 'x' << rect.height << ')';
+        os << '(' << rect.left << ',' << rect.top << '/' << rect.width << 'x' << rect.height << ')';
         return os;
     }
 
@@ -148,21 +373,126 @@ namespace sf
 
         return os;
     }
+
+    inline std::ostream & operator<<(std::ostream & os, const sf::VideoMode & vm)
+    {
+        os << "(" << vm.width << "x" << vm.height << ":" << vm.bitsPerPixel << "bpp";
+
+        if (!vm.isValid())
+        {
+            os << "(sfml says this mode is invalid)";
+        }
+
+        os << ")";
+
+        return os;
+    }
 } // namespace sf
 
 //
 
 namespace util
 {
-    constexpr const std::size_t verts_per_quad{ 4 };
+    template <typename T>
+    void sortThenUnique(T & container)
+    {
+        std::sort(std::begin(container), std::end(container));
+
+        container.erase(
+            std::unique(std::begin(container), std::end(container)), std::end(container));
+    }
+
+    [[nodiscard]] inline std::string makeSupportedVideoModesString(
+        const bool willSkipDiffBitsPerPixel = false, const std::string & separator = "\n")
+    {
+        const unsigned int desktopBitsPerPixel{ sf::VideoMode::getDesktopMode().bitsPerPixel };
+
+        std::vector<sf::VideoMode> videoModes{ sf::VideoMode::getFullscreenModes() };
+        std::reverse(std::begin(videoModes), std::end(videoModes));
+
+        const std::size_t modeCountOrig{ videoModes.size() };
+
+        std::size_t count{ 0 };
+        std::ostringstream ss;
+        for (const sf::VideoMode & vm : videoModes)
+        {
+            if (willSkipDiffBitsPerPixel && (vm.bitsPerPixel != desktopBitsPerPixel))
+            {
+                continue;
+            }
+
+            if (count > 0)
+            {
+                ss << separator;
+            }
+
+            ss << vm;
+            ++count;
+        }
+
+        const std::size_t modeCountReturned{ count };
+
+        ss << separator << "(total_supported=" << modeCountOrig << ")";
+        ss << separator << "(total_listed=" << modeCountReturned << ")";
+
+        return ss.str();
+    }
 
     // bit hacking
+
+    template <typename T, typename U>
+    static constexpr bool isBitSet(const T bits, const U toCheck) noexcept
+    {
+        static_assert(
+            (std::is_unsigned_v<T>) ||
+            (std::is_enum_v<T> && std::is_unsigned_v<typename std::underlying_type_t<T>>));
+
+        static_assert(!std::is_same_v<std::remove_cv<T>, bool>);
+
+        static_assert(std::is_arithmetic_v<U>);
+        static_assert(!std::is_same_v<std::remove_cv<U>, bool>);
+
+        if (toCheck < 0)
+        {
+            return false;
+        }
+
+        return ((bits & static_cast<T>(toCheck)) != 0);
+    }
+
+    template <typename T, typename U>
+    static constexpr void setBit(T & bits, const U toSet) noexcept
+    {
+        static_assert(
+            (std::is_unsigned_v<T>) ||
+            (std::is_enum_v<T> && std::is_unsigned_v<std::underlying_type_t<T>>));
+
+        static_assert(!std::is_same_v<std::remove_cv<T>, bool>);
+
+        static_assert(std::is_arithmetic_v<U>);
+        static_assert(!std::is_same_v<std::remove_cv<U>, bool>);
+
+        if (toSet < 0)
+        {
+            return;
+        }
+
+        bits |= static_cast<T>(toSet);
+    }
+
+    template <typename T, typename U>
+    static constexpr T setBitCopy(const T & bits, const U toSet) noexcept
+    {
+        T copy{ bits };
+        setBit(copy, toSet);
+        return copy;
+    }
 
     // Counting High Bits
     //  Peter Wegner's Method, which was also discovered independently by Derrick Lehmer in 1964.
     //  This method goes through as many iterations as there are set bits.
     template <typename T>
-    std::size_t countHighBits(T number)
+    [[nodiscard]] std::size_t countHighBits(T number) noexcept
     {
         static_assert(std::is_unsigned_v<T>);
         static_assert(!std::is_same_v<std::remove_cv<T>, bool>);
@@ -326,20 +656,62 @@ namespace util
         thing.setOrigin(positionLocal(thing));
     }
 
-    template <typename Output_t, typename Input_t>
-    Output_t makeMultOf(const Input_t startingNumber, const Output_t mult)
+    template <typename T>
+    void makeEven(T number, const bool willAdd)
     {
-        static_assert(std::is_integral_v<Output_t>);
+        static_assert(std::is_integral_v<T>);
 
-        Output_t result{ static_cast<Output_t>(startingNumber) };
-
-        while ((result % mult) != 0)
+        if ((number % 2) != 0)
         {
-            ++result;
+            if (willAdd)
+            {
+                ++number;
+            }
+            else
+            {
+                --number;
+            }
         }
+    }
 
-        return result;
-    };
+    template <typename T>
+    T makeEvenCopy(const T number, const bool willAdd)
+    {
+        static_assert(std::is_integral_v<T>);
+        T copy{ number };
+        makeEven(copy, willAdd);
+        return copy;
+    }
+
+    // template <typename Output_t, typename Input_t>
+    // Output_t makeMultOf(const Input_t startingNumber, const Output_t mult, const bool willAdd)
+    //{
+    //    static_assert(std::is_integral_v<Output_t>);
+    //
+    //    Output_t result{ static_cast<Output_t>(startingNumber) };
+    //
+    //    while ((result % mult) != 0)
+    //    {
+    //        if (willAdd)
+    //        {
+    //            ++result;
+    //        }
+    //        else
+    //        {
+    //            if (result > 2)
+    //            {
+    //                --result;
+    //            }
+    //            else
+    //            {
+    //                result = 2;
+    //                break;
+    //            }
+    //        }
+    //    }
+    //
+    //    return result;
+    //};
 
     template <typename Output_t, typename Input_t>
     sf::Vector2<Output_t>
@@ -491,11 +863,27 @@ namespace util
         return after;
     }
 
+    inline void adjRectInPlace(sf::FloatRect & rect, const float amount) noexcept
+    {
+        rect.left += amount;
+        rect.top += amount;
+        rect.width -= (amount * 2.0f);
+        rect.height -= (amount * 2.0f);
+    }
+
+    [[nodiscard]] inline sf::FloatRect
+        adjRectInPlaceCopy(const sf::FloatRect & before, const float amount) noexcept
+    {
+        sf::FloatRect after(before);
+        adjRectInPlace(after, amount);
+        return after;
+    }
+
     // re-sizing (scaling), centering, and all while maintaining origins
 
-    // does NOT change the shape
+    // without changing the shape
     template <typename T>
-    void scale(T & thing, const sf::Vector2f & size, const bool willSkewToFitExactly = false)
+    void fit(T & thing, const sf::Vector2f & size)
     {
         // skip if source size is zero (or close) to avoid dividing by zero below
         const sf::FloatRect localBounds{ thing.getLocalBounds() };
@@ -504,36 +892,31 @@ namespace util
             return;
         }
 
-        const sf::Vector2f scaleExact{ (size.x / localBounds.width),
-                                       (size.y / localBounds.height) };
+        const float scaleHoriz{ size.x / localBounds.width };
+        thing.setScale(scaleHoriz, scaleHoriz);
 
-        if (willSkewToFitExactly)
+        if (thing.getGlobalBounds().height > size.y)
         {
-            thing.setScale(scaleExact);
-        }
-        else
-        {
-            thing.setScale(scaleExact.x, scaleExact.x);
-
-            if (thing.getGlobalBounds().height > size.y)
-            {
-                thing.setScale(scaleExact.y, scaleExact.y);
-            }
+            const float scaleVert{ size.y / localBounds.height };
+            thing.setScale(scaleVert, scaleVert);
         }
 
-        // setOriginToPosition(thing);
+        if constexpr (std::is_same_v<std::remove_cv_t<T>, sf::Text>)
+        {
+            setOriginToPosition(thing);
+        }
     }
 
     template <typename T>
-    void scale(T & thing, const sf::FloatRect & rect, const bool willSkewToFitExactly = false)
+    void fit(T & thing, const sf::FloatRect & rect)
     {
-        scale(thing, { rect.width, rect.height }, willSkewToFitExactly);
+        fit(thing, { rect.width, rect.height });
     }
 
     template <typename T>
-    void scale(T & thing, const float newScale, const bool willSkewToFitExactly = false)
+    void fit(T & thing, const float newScale)
     {
-        scale(thing, { newScale, newScale }, willSkewToFitExactly);
+        fit(thing, { newScale, newScale });
     }
 
     template <typename T>
@@ -543,18 +926,9 @@ namespace util
     }
 
     template <typename T>
-    void scaleAndCenterInside(
-        T & thing, const sf::FloatRect & rect, const bool willSkewToFitExactly = false)
+    void fitAndCenterInside(T & thing, const sf::FloatRect & rect)
     {
-        scale(thing, rect, willSkewToFitExactly);
-        centerInside(thing, rect);
-    }
-
-    template <typename T>
-    void skewAndCenterInside(
-        T & thing, const sf::FloatRect & rect, const bool willSkewToFitExactly = false)
-    {
-        skew(thing, rect, willSkewToFitExactly);
+        fit(thing, rect);
         centerInside(thing, rect);
     }
 
@@ -643,11 +1017,25 @@ namespace util
         target.draw(makeRectangleVerts(rect, color));
     }
 
-    [[nodiscard]] inline sf::RectangleShape
-        makeRectangleShape(const sf::FloatRect & rect, const sf::Color & color = sf::Color::White)
+    [[nodiscard]] inline sf::RectangleShape makeRectangleShape(
+        const sf::FloatRect & rect,
+        const bool willColorFill = false,
+        const sf::Color & color = sf::Color::White)
     {
         sf::RectangleShape rs;
-        rs.setFillColor(color);
+
+        rs.setOutlineThickness(1.0f);
+        rs.setOutlineColor(color);
+
+        if (willColorFill)
+        {
+            rs.setFillColor(color);
+        }
+        else
+        {
+            rs.setFillColor(sf::Color::Transparent);
+        }
+
         rs.setPosition(position(rect));
         rs.setSize(size(rect));
         return rs;
@@ -656,9 +1044,10 @@ namespace util
     inline void drawRectangleShape(
         sf::RenderTarget & target,
         const sf::FloatRect & rect,
+        const bool willColorFill = false,
         const sf::Color & color = sf::Color::White)
     {
-        target.draw(makeRectangleShape(rect, color));
+        target.draw(makeRectangleShape(rect, willColorFill, color));
     }
 
     [[nodiscard]] inline sf::CircleShape makeCircleShape(
@@ -714,6 +1103,21 @@ namespace util
         }
 
         return va;
+    }
+
+    inline sf::VertexArray makeLines(
+        const std::initializer_list<sf::Vector2f> & initListPoints,
+        const sf::Color & color = sf::Color::White)
+    {
+        std::vector<sf::Vector2f> points;
+        points.reserve(initListPoints.size());
+
+        for (const sf::Vector2f & point : points)
+        {
+            points.push_back(point);
+        }
+
+        return makeLines(points, color);
     }
 
     inline void drawlines(
@@ -931,6 +1335,68 @@ namespace util
         std::filesystem::path path;
         std::string error_message;
     };
+
+    // percent stuff
+
+    template <typename T, typename U = T>
+    [[nodiscard]] float calcPercent(const T num, const U den, const std::size_t afterDotCount = 1)
+    {
+        static_assert(std::is_arithmetic_v<T>);
+        static_assert(!std::is_same_v<std::remove_cv_t<T>, bool>);
+
+        static_assert(std::is_arithmetic_v<U>);
+        static_assert(!std::is_same_v<std::remove_cv_t<U>, bool>);
+
+        if (!(den > U{ 0 }))
+        {
+            return 0.0f;
+        }
+
+        long double result{ (static_cast<long double>(num) / static_cast<long double>(den)) };
+        result *= 100.0L;
+
+        if (afterDotCount > 0)
+        {
+            const long double afterDotMult{ 10.0L * static_cast<long double>(afterDotCount) };
+            if (afterDotMult > 0.0L)
+            {
+                result *= afterDotMult;
+                result = std::round(result);
+                result /= afterDotMult;
+            }
+        }
+
+        return static_cast<float>(result);
+    }
+
+    template <typename T, typename U = T>
+    [[nodiscard]] std::string makePercentString(
+        const T num,
+        const U den,
+        const std::string & prefix = {},
+        const std::string & postfix = {},
+        const std::size_t afterDotCount = 1,
+        const std::string & wrap = "()")
+    {
+        std::ostringstream ss;
+
+        if (!wrap.empty())
+        {
+            ss << wrap.front();
+        }
+
+        ss << prefix;
+        ss << calcPercent<T, U>(num, den, afterDotCount);
+        ss << '%';
+        ss << postfix;
+
+        if (!wrap.empty())
+        {
+            ss << wrap.back();
+        }
+
+        return ss.str();
+    }
 } // namespace util
 
-#endif // CASTLECRAWL_UTIL_HPP_INCLUDED
+#endif // SNAKE_UTIL_HPP_INCLUDED

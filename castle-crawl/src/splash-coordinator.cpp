@@ -42,7 +42,7 @@ namespace castlecrawl
 
         m_sprite.setTexture(m_texture);
 
-        util::scale(m_sprite, (m_config.windowSize() * 0.5f));
+        util::fit(m_sprite, (m_config.windowSize() * 0.5f));
         util::centerInside(m_sprite, sf::FloatRect({ 0.0f, 0.0f }, m_config.windowSize()));
     }
 
