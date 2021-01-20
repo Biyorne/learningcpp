@@ -36,13 +36,14 @@ namespace castlecrawl
         char getChar(const int x, const int y) const { return getChar(MapPos_t{ x, y }); }
         void setChar(const int x, const int y, const char newChar);
 
-        void draw(Context &, sf::RenderTarget &, sf::RenderStates) const;
-        void drawChars(Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
+        void draw(const Context &, sf::RenderTarget &, sf::RenderStates) const;
+        void drawChars(
+            const Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
 
         void drawBorderChars(
-            Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
+            const Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
 
-        void drawStoneTransitionChars(Context &, sf::RenderTarget &, sf::RenderStates) const;
+        void drawStoneTransitionChars(const Context &, sf::RenderTarget &, sf::RenderStates) const;
 
         const MapLinks_t & links() const { return m_links; }
 

@@ -18,9 +18,7 @@
 namespace castlecrawl
 {
     GameCoordinator::GameCoordinator()
-        : m_fps()
-        , m_window()
-        , m_windowOutline()
+        : m_window()
         , m_maps()
         , m_media()
         , m_board()
@@ -37,6 +35,7 @@ namespace castlecrawl
               m_config,
               m_layout,
               m_media,
+              m_stateMachine,
               m_random,
               m_soundPlayer,
               m_animationPlayer)
@@ -65,13 +64,7 @@ namespace castlecrawl
 
         m_context.switchToMap({ { 0, 0 }, "level-1-first-room", { 5, 2 } });
 
-        m_windowOutline.setPosition(1.0f, 1.0f);
-        m_windowOutline.setSize(m_config.windowSize() - sf::Vector2f{ 2.0f, 2.0f });
-        m_windowOutline.setFillColor(sf::Color::Transparent);
-        m_windowOutline.setOutlineThickness(1.0f);
-        m_windowOutline.setOutlineColor(sf::Color(80, 80, 80));
-
-        m_fps.reset(m_context);
+        m_stateMachine.setChangePending(State::Play);
     }
 
     void GameCoordinator::openWindow()
@@ -126,24 +119,8 @@ namespace castlecrawl
             handleEvents();
             update(frameClock.restart().asSeconds());
             draw();
+            m_stateMachine.changeIfPending(m_context);
         }
-
-        printFinalStatusToConsole();
-    }
-
-    void GameCoordinator::printFinalStatusToConsole()
-    {
-        if (m_game.isGameOver())
-        {
-            std::cout << "Game Over.   You " << ((m_game.didPlayerWin()) ? "WON!" : "LOST  (loser)")
-                      << std::endl;
-        }
-        else
-        {
-            std::cout << "Application shutdown before game was over." << std::endl;
-        }
-
-        std::cout << "Final score = " << m_game.score() << std::endl;
     }
 
     void GameCoordinator::handleEvents()
@@ -151,59 +128,27 @@ namespace castlecrawl
         sf::Event event;
         while (m_window.isOpen() && !m_game.isGameOver() && m_window.pollEvent(event))
         {
-            handleEvent(event);
-        }
-    }
-
-    bool GameCoordinator::handleExitEvent(const sf::Event & event)
-    {
-        if (sf::Event::Closed == event.type)
-        {
-            m_window.close();
-            return true;
-        }
-
-        if (sf::Event::KeyPressed == event.type)
-        {
-            const sf::Keyboard::Key key{ event.key.code };
-
-            if ((sf::Keyboard::Q == key) || (sf::Keyboard::Escape == key))
+            if (sf::Event::Closed == event.type)
             {
-                m_game.endGame(false);
-                return true;
+                std::cout << "Player closed the window.  Quitting." << std::endl;
+                m_window.close();
+                m_stateMachine.setChangePending(State::Quit);
+                return;
             }
 
-            m_board.player.handleEvent(m_context, event);
-            return true;
-        }
-
-        return false;
-    }
-
-    void GameCoordinator::handleEvent(const sf::Event & event)
-    {
-        if (GameCoordinator::handleExitEvent(event))
-        {
-            return;
+            m_stateMachine.state().handleEvent(m_context, event);
         }
     }
 
-    void GameCoordinator::update(const float elapsedSec)
+    void GameCoordinator::update(const float frameTimeSec)
     {
-        m_animationPlayer.update(elapsedSec);
-        m_fps.update();
+        m_stateMachine.state().update(m_context, frameTimeSec);
     }
 
     void GameCoordinator::draw()
     {
-        m_window.clear(m_config.background_color);
-
-        m_context.map().draw(m_context, m_window, {});
-        m_window.draw(m_board);
-        m_window.draw(m_windowOutline);
-        m_window.draw(m_animationPlayer);
-        m_window.draw(m_fps);
-
+        m_window.clear();
+        m_stateMachine.state().draw(m_context, m_window, sf::RenderStates());
         m_window.display();
     }
 

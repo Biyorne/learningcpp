@@ -233,7 +233,8 @@ namespace castlecrawl
         }
     }
 
-    void Map::draw(Context & context, sf::RenderTarget & target, sf::RenderStates states) const
+    void
+        Map::draw(const Context & context, sf::RenderTarget & target, sf::RenderStates states) const
     {
         drawChars(context, target, states, m_floorChars);
         drawBorderChars(context, target, states, m_floorChars);
@@ -242,7 +243,7 @@ namespace castlecrawl
     }
 
     void Map::drawChars(
-        Context & context,
+        const Context & context,
         sf::RenderTarget & target,
         sf::RenderStates states,
         const MapChars_t & mapChars) const
@@ -281,7 +282,7 @@ namespace castlecrawl
     }
 
     void Map::drawBorderChars(
-        Context & context,
+        const Context & context,
         sf::RenderTarget & target,
         sf::RenderStates states,
         const MapChars_t & mapChars) const
@@ -319,7 +320,7 @@ namespace castlecrawl
     }
 
     void Map::drawStoneTransitionChars(
-        Context & context, sf::RenderTarget & target, sf::RenderStates states) const
+        const Context & context, sf::RenderTarget & target, sf::RenderStates states) const
     {
         if (empty())
         {

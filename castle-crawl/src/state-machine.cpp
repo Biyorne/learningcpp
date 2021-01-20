@@ -1,0 +1,53 @@
+// This is an open source non-commercial project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+//
+// state-machine.cpp
+//
+#include "state-machine.hpp"
+
+#include "context.hpp"
+#include "state-play.hpp"
+
+#include <iostream>
+
+namespace castlecrawl
+{
+
+    StateMachine::StateMachine()
+        : m_stateUPtr()
+        , m_changePendingOpt(State::Init)
+    {
+        m_stateUPtr = std::make_unique<StateInit>();
+        m_changePendingOpt = m_stateUPtr->state();
+    }
+
+    void StateMachine::changeIfPending(Context & context)
+    {
+        if (!m_changePendingOpt)
+        {
+            return;
+        }
+
+        m_stateUPtr->onExit(context);
+
+        m_stateUPtr = makeState(context, m_changePendingOpt.value());
+        m_changePendingOpt = std::nullopt;
+
+        m_stateUPtr->onEnter(context);
+    }
+
+    IStateUPtr_t StateMachine::makeState(Context & context, const State state)
+    {
+        // clang-format off
+        switch (state)
+        {
+            case State::Init:   { return std::make_unique<StateInit>();          }
+            case State::Splash: { return std::make_unique<StateSplash>(context); }
+            case State::Play:   { return std::make_unique<StatePlay>(context);   }
+            case State::Quit:
+            default:            { return std::make_unique<StateQuit>(context);   }
+        };
+        // clang-format on
+    }
+
+} // namespace castlecrawl

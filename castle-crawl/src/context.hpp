@@ -19,6 +19,7 @@ namespace castlecrawl
     class Media;
     class Layout;
     class GameInPlay;
+    class StateMachine;
 
     struct Board;
     struct MapLink;
@@ -35,6 +36,7 @@ namespace castlecrawl
             const GameConfig & con,
             Layout & lay,
             const Media & med,
+            StateMachine & sta,
             const util::Random & ran,
             util::SoundPlayer & aud,
             util::AnimationPlayer & ani)
@@ -44,6 +46,7 @@ namespace castlecrawl
             , config(con)
             , layout(lay)
             , media(med)
+            , state(sta)
             , random(ran)
             , audio(aud)
             , anim(ani)
@@ -63,6 +66,7 @@ namespace castlecrawl
         const GameConfig & config;
         Layout & layout;
         const Media & media;
+        StateMachine & state;
         const util::Random & random;
         util::SoundPlayer & audio;
         util::AnimationPlayer & anim;

@@ -6,7 +6,6 @@
 #include "animation-player.hpp"
 #include "board.hpp"
 #include "context.hpp"
-#include "frames-per-sec.hpp"
 #include "keys.hpp"
 #include "maps.hpp"
 #include "player-piece.hpp"
@@ -14,6 +13,7 @@
 #include "resources.hpp"
 #include "settings.hpp"
 #include "sound-player.hpp"
+#include "state-machine.hpp"
 #include "tile-image.hpp"
 
 #include <memory>
@@ -36,16 +36,11 @@ namespace castlecrawl
         void initializeSubsystems(const GameConfig & config);
         void openWindow();
         void handleEvents();
-        void handleEvent(const sf::Event & event);
-        bool handleExitEvent(const sf::Event & event);
         void update(const float elapsedTimeSec);
         void draw();
-        void printFinalStatusToConsole();
 
       protected:
-        FramesPerSecond m_fps;
         sf::RenderWindow m_window;
-        sf::RectangleShape m_windowOutline;
 
         // subsystems
         Maps m_maps;
@@ -54,6 +49,7 @@ namespace castlecrawl
         Layout m_layout;
         GameInPlay m_game;
         GameConfig m_config;
+        StateMachine m_stateMachine;
         util::Random m_random;
         util::SoundPlayer m_soundPlayer;
         util::AnimationPlayer m_animationPlayer;
