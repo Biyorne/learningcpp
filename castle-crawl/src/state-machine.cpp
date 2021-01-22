@@ -38,16 +38,22 @@ namespace castlecrawl
 
     IStateUPtr_t StateMachine::makeState(Context & context, const State state)
     {
-        // clang-format off
+
         switch (state)
         {
+            // clang-format off
             case State::Init:   { return std::make_unique<StateInit>();          }
             case State::Splash: { return std::make_unique<StateSplash>(context); }
             case State::Play:   { return std::make_unique<StatePlay>(context);   }
-            case State::Quit:
-            default:            { return std::make_unique<StateQuit>(context);   }
+            case State::Quit:   { return std::make_unique<StateQuit>(context);   }
+                // clang-format on
+            default: {
+                std::cerr << "StateMachine::makeState(\"" << state
+                          << "\") not handled in switch.  Bail." << std::endl;
+
+                return std::make_unique<StateQuit>(context);
+            }
         };
-        // clang-format on
     }
 
 } // namespace castlecrawl

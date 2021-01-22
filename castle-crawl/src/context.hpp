@@ -51,6 +51,7 @@ namespace castlecrawl
             , audio(aud)
             , anim(ani)
             , map_name()
+            , popup_message()
         {}
 
         Context(const Context &) = delete;
@@ -77,6 +78,7 @@ namespace castlecrawl
         void switchToMap(const MapLink & link);
 
         std::string map_name;
+        std::string popup_message;
     };
 } // namespace castlecrawl
 

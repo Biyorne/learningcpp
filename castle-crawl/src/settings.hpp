@@ -32,6 +32,12 @@ namespace castlecrawl
                                    static_cast<T>(video_mode.height) };
         }
 
+        template <typename T = float>
+        sf::Rect<T> windowRect() const
+        {
+            return sf::Rect<T>{ { 0, 0 }, windowSize<T>() };
+        }
+
         float mapCellDimm() const
         {
             return std::floor(map_cell_size_ratio * windowSize<float>().x);
