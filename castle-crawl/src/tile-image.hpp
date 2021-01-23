@@ -122,7 +122,7 @@ namespace castlecrawl
             case TileImage::StoneTop:        return sf::IntRect(128,128,32,32);
             case TileImage::StoneTopRgt:     return sf::IntRect(160,128,32,32);
             case TileImage::StoneLft:        return sf::IntRect( 96,160,32,32);
-            case TileImage::StoneRgt:        return sf::IntRect(192,160,32,32);
+            case TileImage::StoneRgt:        return sf::IntRect(160,160,32,32);
             case TileImage::StoneBotLft:     return sf::IntRect( 96,192,32,32);
             case TileImage::StoneBot:        return sf::IntRect(128,192,32,32);
             case TileImage::StoneBotRgt:     return sf::IntRect(160,192,32,32);
