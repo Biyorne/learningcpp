@@ -77,6 +77,10 @@ namespace castlecrawl
                 {
                     context.audio.play("stairs.ogg");
                 }
+                else
+                {
+                    context.audio.play("tick-on-2.ogg");
+                }
 
                 context.switchToMap(link);
                 return;
