@@ -35,6 +35,7 @@ namespace castlecrawl
 
         const sf::Font & font() const;
         const sf::Sprite & sprite(const TileImage) const;
+        const sf::Texture & tileTexture() const { return m_tileTexture; }
 
       protected:
         void makeDefaults();

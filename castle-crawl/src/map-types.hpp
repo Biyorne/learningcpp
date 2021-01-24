@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <SFML/Graphics/Rect.hpp>
+#include <SFML/Graphics/Vertex.hpp>
 
 namespace castlecrawl
 {
@@ -31,6 +32,7 @@ namespace castlecrawl
 
     using MapLinks_t = std::vector<MapLink>;
 
+    using VertVec_t = std::vector<sf::Vertex>;
 } // namespace castlecrawl
 
 #endif // CASTLECRAWL_MAPTYPES_HPP_INCLUDED

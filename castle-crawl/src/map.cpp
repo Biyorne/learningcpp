@@ -21,6 +21,11 @@ namespace castlecrawl
         , m_chars()
         , m_floorChars(false)
         , m_links()
+        , m_floorVerts()
+        , m_borderVerts()
+        , m_wallVerts()
+        , m_transVerts()
+
     {}
 
     Map::Map(
@@ -32,6 +37,10 @@ namespace castlecrawl
         , m_chars(chars)
         , m_floorChars()
         , m_links(links)
+        , m_floorVerts()
+        , m_borderVerts()
+        , m_wallVerts()
+        , m_transVerts()
     {
         addWalls();
         addWallCorners();
@@ -40,7 +49,25 @@ namespace castlecrawl
         randomizeFloorTiles(context);
     }
 
-    void Map::load(Context & context) { makeDoors(context); }
+    void Map::load(Context & context)
+    {
+        makeDoors(context);
+
+        m_floorVerts.clear();
+        m_borderVerts.clear();
+        m_wallVerts.clear();
+        m_transVerts.clear();
+
+        m_floorVerts.reserve(4000);
+        m_borderVerts.reserve(4000);
+        m_wallVerts.reserve(4000);
+        m_transVerts.reserve(4000);
+
+        makeVerts(context, m_floorChars, m_floorVerts);
+        makeBorderVerts(context, m_floorChars, m_borderVerts);
+        makeVerts(context, m_chars, m_wallVerts);
+        makeStoneTransitionVerts(context, m_transVerts);
+    }
 
     char Map::getChar(const MapPos_t & pos) const
     {
@@ -236,21 +263,34 @@ namespace castlecrawl
     void
         Map::draw(const Context & context, sf::RenderTarget & target, sf::RenderStates states) const
     {
-        drawChars(context, target, states, m_floorChars);
-        drawBorderChars(context, target, states, m_floorChars);
-        drawChars(context, target, states, m_chars);
-        drawStoneTransitionChars(context, target, states);
+        states.texture = &context.media.tileTexture();
+
+        if (!m_floorVerts.empty())
+        {
+            target.draw(&m_floorVerts[0], m_floorVerts.size(), sf::Quads, states);
+        }
+
+        if (!m_borderVerts.empty())
+        {
+            // do not use states because these verts have no texture
+            target.draw(&m_borderVerts[0], m_borderVerts.size(), sf::Quads);
+        }
+
+        if (!m_wallVerts.empty())
+        {
+            target.draw(&m_wallVerts[0], m_wallVerts.size(), sf::Quads, states);
+        }
+
+        if (!m_transVerts.empty())
+        {
+            target.draw(&m_transVerts[0], m_transVerts.size(), sf::Quads, states);
+        }
     }
 
-    void Map::drawChars(
-        const Context & context,
-        sf::RenderTarget & target,
-        sf::RenderStates states,
-        const MapChars_t & mapChars) const
+    void Map::makeVerts(const Context & context, const MapChars_t & mapChars, VertVec_t & verts)
     {
         sf::Sprite tileSprite = context.media.sprite(TileImage::Empty);
         sf::Sprite shadowSprite = context.media.sprite(TileImage::WallHorizShadow);
-        sf::Sprite blackSprite = context.media.sprite(TileImage::Black);
 
         const float mapCellDimm{ context.config.mapCellDimm() };
         const sf::Vector2f boardPos{ util::position(context.layout.boardBounds()) };
@@ -263,13 +303,17 @@ namespace castlecrawl
             {
                 tileSprite = context.media.sprite(mapCharToTileImage(mapChar));
                 tileSprite.setPosition(pos);
-                target.draw(tileSprite, states);
+
+                util::appendQuadVerts(
+                    tileSprite.getGlobalBounds(), tileSprite.getTextureRect(), verts);
 
                 // draw horiz wall shadow accents
                 if (('-' == mapChar) && ('-' != prevMapChar))
                 {
                     shadowSprite.setPosition(pos);
-                    target.draw(shadowSprite, states);
+
+                    util::appendQuadVerts(
+                        shadowSprite.getGlobalBounds(), shadowSprite.getTextureRect(), verts);
                 }
 
                 prevMapChar = mapChar;
@@ -281,11 +325,8 @@ namespace castlecrawl
         }
     }
 
-    void Map::drawBorderChars(
-        const Context & context,
-        sf::RenderTarget & target,
-        sf::RenderStates states,
-        const MapChars_t & mapChars) const
+    void Map::makeBorderVerts(
+        const Context & context, const MapChars_t & mapChars, VertVec_t & verts)
     {
         sf::Sprite sprite = context.media.sprite(TileImage::Black);
         sprite.setColor(context.config.background_color);
@@ -308,7 +349,8 @@ namespace castlecrawl
                     sprite.setPosition(pos);
                     sprite.move(-overlapDimm, -overlapDimm);
 
-                    target.draw(sprite, states);
+                    util::appendQuadVerts(
+                        sprite.getGlobalBounds(), verts, context.config.background_color);
                 }
 
                 pos.x += mapCellDimm;
@@ -319,8 +361,7 @@ namespace castlecrawl
         }
     }
 
-    void Map::drawStoneTransitionChars(
-        const Context & context, sf::RenderTarget & target, sf::RenderStates states) const
+    void Map::makeStoneTransitionVerts(const Context & context, VertVec_t & verts)
     {
         if (empty())
         {
@@ -358,56 +399,56 @@ namespace castlecrawl
                 {
                     sprite = context.media.sprite(TileImage::StoneTopLft);
                     sprite.setPosition(pos);
-                    target.draw(sprite, states);
+                    util::appendQuadVerts(sprite.getGlobalBounds(), sprite.getTextureRect(), verts);
                 }
 
                 if (notLiq(up) && notLiq(right))
                 {
                     sprite = context.media.sprite(TileImage::StoneTopRgt);
                     sprite.setPosition(pos);
-                    target.draw(sprite, states);
+                    util::appendQuadVerts(sprite.getGlobalBounds(), sprite.getTextureRect(), verts);
                 }
 
                 if (notLiq(down) && notLiq(left))
                 {
                     sprite = context.media.sprite(TileImage::StoneBotLft);
                     sprite.setPosition(pos);
-                    target.draw(sprite, states);
+                    util::appendQuadVerts(sprite.getGlobalBounds(), sprite.getTextureRect(), verts);
                 }
 
                 if (notLiq(down) && notLiq(right))
                 {
                     sprite = context.media.sprite(TileImage::StoneBotRgt);
                     sprite.setPosition(pos);
-                    target.draw(sprite, states);
+                    util::appendQuadVerts(sprite.getGlobalBounds(), sprite.getTextureRect(), verts);
                 }
 
                 if (notLiq(up))
                 {
                     sprite = context.media.sprite(TileImage::StoneTop);
                     sprite.setPosition(pos);
-                    target.draw(sprite, states);
+                    util::appendQuadVerts(sprite.getGlobalBounds(), sprite.getTextureRect(), verts);
                 }
 
                 if (notLiq(down))
                 {
                     sprite = context.media.sprite(TileImage::StoneBot);
                     sprite.setPosition(pos);
-                    target.draw(sprite, states);
+                    util::appendQuadVerts(sprite.getGlobalBounds(), sprite.getTextureRect(), verts);
                 }
 
                 if (notLiq(left))
                 {
                     sprite = context.media.sprite(TileImage::StoneLft);
                     sprite.setPosition(pos);
-                    target.draw(sprite, states);
+                    util::appendQuadVerts(sprite.getGlobalBounds(), sprite.getTextureRect(), verts);
                 }
 
                 if (notLiq(right))
                 {
                     sprite = context.media.sprite(TileImage::StoneRgt);
                     sprite.setPosition(pos);
-                    target.draw(sprite, states);
+                    util::appendQuadVerts(sprite.getGlobalBounds(), sprite.getTextureRect(), verts);
                 }
 
                 pos.x += mapCellDimm;

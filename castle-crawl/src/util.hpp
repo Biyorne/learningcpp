@@ -683,36 +683,6 @@ namespace util
         return copy;
     }
 
-    // template <typename Output_t, typename Input_t>
-    // Output_t makeMultOf(const Input_t startingNumber, const Output_t mult, const bool willAdd)
-    //{
-    //    static_assert(std::is_integral_v<Output_t>);
-    //
-    //    Output_t result{ static_cast<Output_t>(startingNumber) };
-    //
-    //    while ((result % mult) != 0)
-    //    {
-    //        if (willAdd)
-    //        {
-    //            ++result;
-    //        }
-    //        else
-    //        {
-    //            if (result > 2)
-    //            {
-    //                --result;
-    //            }
-    //            else
-    //            {
-    //                result = 2;
-    //                break;
-    //            }
-    //        }
-    //    }
-    //
-    //    return result;
-    //};
-
     template <typename Output_t, typename Input_t>
     sf::Vector2<Output_t>
         makeVector2MultOf(const sf::Vector2<Input_t> & before, const sf::Vector2<Output_t> & mults)
@@ -997,6 +967,35 @@ namespace util
         const sf::Color & color = sf::Color::Transparent)
     {
         appendQuadVerts(position(rect), size(rect), verts, color);
+    }
+
+    template <typename Container_t>
+    void appendQuadVerts(
+        const sf::FloatRect & rect, const sf::IntRect & textureCoordinates, Container_t & verts)
+    {
+        appendQuadVerts(rect, verts);
+
+        std::size_t index{ 0 };
+        if constexpr (std::is_same_v<std::remove_cv_t<Container_t>, sf::VertexArray>)
+        {
+            index = verts.getVertexCount();
+        }
+        else
+        {
+            index = verts.size();
+        }
+
+        index -= 4;
+
+        const sf::Vector2f pos{ util::position(textureCoordinates) };
+        const sf::Vector2f size{ util::size(textureCoordinates) };
+
+        // clang-format off
+        verts[index + 0].texCoords = pos;
+        verts[index + 1].texCoords = sf::Vector2f((pos.x + size.x),  pos.y          );
+        verts[index + 2].texCoords = sf::Vector2f((pos.x + size.x), (pos.y + size.y));
+        verts[index + 3].texCoords = sf::Vector2f( pos.x          , (pos.y + size.y));
+        // clang-format on
     }
 
     // slow running but handy debugging shapes

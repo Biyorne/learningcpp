@@ -37,13 +37,6 @@ namespace castlecrawl
         void setChar(const int x, const int y, const char newChar);
 
         void draw(const Context &, sf::RenderTarget &, sf::RenderStates) const;
-        void drawChars(
-            const Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
-
-        void drawBorderChars(
-            const Context &, sf::RenderTarget &, sf::RenderStates, const MapChars_t &) const;
-
-        void drawStoneTransitionChars(const Context &, sf::RenderTarget &, sf::RenderStates) const;
 
         const MapLinks_t & links() const { return m_links; }
 
@@ -53,11 +46,21 @@ namespace castlecrawl
         void randomizeFloorTiles(const Context & context);
         void makeDoors(Context &);
 
+        static void makeBorderVerts(const Context & context, const MapChars_t &, VertVec_t &);
+        void makeStoneTransitionVerts(const Context &, VertVec_t &);
+        static void makeVerts(const Context &, const MapChars_t &, VertVec_t &);
+
       private:
         bool m_isFloorStone;
+
         MapChars_t m_chars;
         MapChars_t m_floorChars;
         MapLinks_t m_links;
+
+        VertVec_t m_floorVerts;
+        VertVec_t m_borderVerts;
+        VertVec_t m_wallVerts;
+        VertVec_t m_transVerts;
     };
 
     using NameMapPair_t = std::pair<std::string, Map>;
