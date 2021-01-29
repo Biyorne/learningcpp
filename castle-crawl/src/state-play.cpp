@@ -26,7 +26,7 @@ namespace castlecrawl
         , m_windowOutline()
     {
         m_windowOutline.setPosition(1.0f, 1.0f);
-        m_windowOutline.setSize(context.config.windowSize() - sf::Vector2f{ 2.0f, 2.0f });
+        m_windowOutline.setSize(context.layout.windowSize() - sf::Vector2f{ 2.0f, 2.0f });
         m_windowOutline.setFillColor(sf::Color::Transparent);
         m_windowOutline.setOutlineThickness(1.0f);
         m_windowOutline.setOutlineColor(sf::Color(80, 80, 80));

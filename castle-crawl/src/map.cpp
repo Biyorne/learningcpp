@@ -292,7 +292,7 @@ namespace castlecrawl
         sf::Sprite tileSprite = context.media.sprite(TileImage::Empty);
         sf::Sprite shadowSprite = context.media.sprite(TileImage::WallHorizShadow);
 
-        const float mapCellDimm{ context.config.mapCellDimm() };
+        const float mapCellDimm{ context.layout.mapCellDimm() };
         const sf::Vector2f boardPos{ util::position(context.layout.boardBounds()) };
         sf::Vector2f pos{ boardPos };
 
@@ -332,7 +332,7 @@ namespace castlecrawl
         sprite.setColor(context.config.background_color);
         sprite.scale(1.5f, 1.5f);
 
-        const float mapCellDimm{ context.config.mapCellDimm() };
+        const float mapCellDimm{ context.layout.mapCellDimm() };
         const sf::Vector2f boardPos{ util::position(context.layout.boardBounds()) };
 
         const float overlapDimm{ mapCellDimm * 0.25f };
@@ -372,7 +372,7 @@ namespace castlecrawl
 
         sf::Sprite sprite = context.media.sprite(TileImage::Empty);
 
-        const float mapCellDimm{ context.config.mapCellDimm() };
+        const float mapCellDimm{ context.layout.mapCellDimm() };
         const sf::Vector2f boardPos{ util::position(context.layout.boardBounds()) };
         sf::Vector2f pos{ boardPos };
 

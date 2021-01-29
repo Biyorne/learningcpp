@@ -42,22 +42,22 @@ namespace castlecrawl
         if (dir == sf::Keyboard::Up)
         {
             --m_position.y;
-            m_sprite.move(0.0f, -context.config.mapCellDimm());
+            m_sprite.move(0.0f, -context.layout.mapCellDimm());
         }
         else if (dir == sf::Keyboard::Down)
         {
             ++m_position.y;
-            m_sprite.move(0.0f, context.config.mapCellDimm());
+            m_sprite.move(0.0f, context.layout.mapCellDimm());
         }
         else if (dir == sf::Keyboard::Left)
         {
             --m_position.x;
-            m_sprite.move(-context.config.mapCellDimm(), 0.0f);
+            m_sprite.move(-context.layout.mapCellDimm(), 0.0f);
         }
         else if (dir == sf::Keyboard::Right)
         {
             ++m_position.x;
-            m_sprite.move(context.config.mapCellDimm(), 0.0f);
+            m_sprite.move(context.layout.mapCellDimm(), 0.0f);
         }
     }
 

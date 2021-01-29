@@ -35,6 +35,8 @@ namespace castlecrawl
         // this can change m_config so call this right after m_config is set
         openWindow();
 
+        m_layout.setupWindow(m_config);
+
         const bool loadSuccess =
             m_texture.loadFromFile((m_config.media_dir_path / "image" / "splash.png").string());
 
@@ -42,8 +44,8 @@ namespace castlecrawl
 
         m_sprite.setTexture(m_texture);
 
-        util::fit(m_sprite, (m_config.windowSize() * 0.5f));
-        util::centerInside(m_sprite, sf::FloatRect({ 0.0f, 0.0f }, m_config.windowSize()));
+        util::fit(m_sprite, (m_layout.windowSize() * 0.5f));
+        util::centerInside(m_sprite, sf::FloatRect({ 0.0f, 0.0f }, m_layout.windowSize()));
     }
 
     void SplashCoordinator::openWindow()

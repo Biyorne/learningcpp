@@ -27,7 +27,7 @@ namespace castlecrawl
             "Map is empty after load() in Context::switchToMap: from=\""
                 << fromMapName << "\" to " << link.to_pos << " in \"" << link.to_name << "\"");
 
-        layout.reset(map().size(), config);
+        layout.setupBoard(map().size());
         map().load(*this);
         board.player.reset(*this, link.to_pos);
     }

@@ -25,13 +25,14 @@ namespace util
 namespace castlecrawl
 {
     struct GameConfig;
+    class Layout;
 
     class Media
     {
       public:
         Media() = default;
 
-        void load(const GameConfig &, util::SoundPlayer &);
+        void load(const GameConfig &, const Layout &, util::SoundPlayer &);
 
         const sf::Font & font() const;
         const sf::Sprite & sprite(const TileImage) const;
@@ -40,7 +41,7 @@ namespace castlecrawl
       protected:
         void makeDefaults();
         void loadSoundEffects(util::SoundPlayer &);
-        void loadTileSprites(const GameConfig & config);
+        void loadTileSprites(const GameConfig & config, const Layout &);
 
         template <typename T>
         void load(const std::filesystem::path & path, T & loadable)

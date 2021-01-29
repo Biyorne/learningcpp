@@ -40,7 +40,7 @@ namespace castlecrawl
             util::AnimConfig config(1.0f, sf::Color(150, 255, 255), sf::BlendAdd);
 
             sf::FloatRect rect = context.layout.cellBounds(position());
-            const float cellDimm{ context.config.mapCellDimm() };
+            const float cellDimm{ context.layout.mapCellDimm() };
             rect.left -= (cellDimm * 0.25f);
             rect.top -= (cellDimm * 0.25f);
             rect.width *= 1.5f;
@@ -53,7 +53,7 @@ namespace castlecrawl
             util::AnimConfig config(1.0f, sf::Color(255, 255, 150), sf::BlendAdd);
 
             sf::FloatRect rect = context.layout.cellBounds(position());
-            const float cellDimm{ context.config.mapCellDimm() };
+            const float cellDimm{ context.layout.mapCellDimm() };
             rect.left -= (cellDimm * 1.0f);
             rect.top -= (cellDimm * 1.0f);
             rect.width *= 3.0f;

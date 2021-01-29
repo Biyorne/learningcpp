@@ -15,10 +15,10 @@ namespace castlecrawl
       public:
         SplashCoordinator();
 
-        void run(const GameConfig & config);
+        void run(const GameConfig &);
 
       protected:
-        void loadAll(const GameConfig & config);
+        void loadAll(const GameConfig &);
         void openWindow();
         void handleEvents();
         void handleEvent(const sf::Event & event);
@@ -30,6 +30,7 @@ namespace castlecrawl
         sf::Texture m_texture;
         sf::Sprite m_sprite;
         GameConfig m_config;
+        Layout m_layout;
     };
 
 } // namespace castlecrawl

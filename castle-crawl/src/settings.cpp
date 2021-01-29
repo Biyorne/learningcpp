@@ -23,30 +23,29 @@ namespace castlecrawl
         , map_cell_size_ratio{ 0.024f }
     {}
 
-    void Layout::reset(const sf::Vector2i & mapSize, const GameConfig & config)
+    void Layout::setupWindow(const GameConfig & config)
     {
-        const sf::Vector2f windowSize{ config.windowSize<float>() };
+        const sf::Vector2f windowSize{ sf::Vector2u{ config.video_mode.width,
+                                                     config.video_mode.height } };
+
         m_windowBounds = sf::FloatRect({ 0.0f, 0.0f }, windowSize);
 
-        m_boardBounds = m_windowBounds;
+        const float cellDimm = std::floor(config.map_cell_size_ratio * windowSize.x);
 
+        m_cellSize.x = cellDimm;
+        m_cellSize.y = cellDimm;
+    }
+
+    void Layout::setupBoard(const sf::Vector2i & mapSize)
+    {
         m_cellCounts = mapSize;
-
-        M_CHECK_SS(
-            ((m_cellCounts.x > 0) && (m_cellCounts.y > 0)),
-            "m_windowBounds=" << m_windowBounds << ", m_cellCounts=" << m_cellCounts);
 
         m_cellCountTotal = static_cast<std::size_t>(m_cellCounts.x * m_cellCounts.y);
 
-        m_cellSize = config.mapCellSize();
-
-        M_CHECK_SS(
-            (!(m_cellSize.x < 1.0f) && !(m_cellSize.y < 1.0f)),
-            "m_windowBounds=" << m_windowBounds << ", m_cellCounts=" << m_cellCounts
-                              << ", m_cellSize=" << m_cellSize);
-
         const sf::Vector2f actualBoardSize{ sf::Vector2i(m_cellSize) * m_cellCounts };
-        const sf::Vector2f actualBoardPos{ util::center(m_boardBounds) - (actualBoardSize / 2.0f) };
+
+        const sf::Vector2f actualBoardPos{ util::center(m_windowBounds) -
+                                           (actualBoardSize / 2.0f) };
 
         m_boardBounds = sf::FloatRect(actualBoardPos, actualBoardSize);
     }

@@ -26,9 +26,9 @@ namespace castlecrawl
         m_text.setFillColor(sf::Color(150, 150, 170));
 
         util::fitAndCenterInside(
-            m_text, sf::FloatRect({ 0.0f, 0.0f }, { 1000.0, context.config.mapCellSize().y }));
+            m_text, sf::FloatRect({ 0.0f, 0.0f }, { 1000.0, context.layout.mapCellSize().y }));
 
-        m_text.setPosition(0.0f, (context.config.windowSize().y - context.config.mapCellSize().y));
+        m_text.setPosition(0.0f, (context.layout.windowSize().y - context.layout.mapCellSize().y));
 
         m_clock.restart();
     }

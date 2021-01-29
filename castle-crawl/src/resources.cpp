@@ -17,16 +17,16 @@
 
 namespace castlecrawl
 {
-    void Media::load(const GameConfig & config, util::SoundPlayer & audio)
+    void Media::load(const GameConfig & config, const Layout & layout, util::SoundPlayer & audio)
     {
         makeDefaults();
         load((config.media_dir_path / "font/gentium-plus/gentium-plus.ttf"), m_font);
 
-        loadTileSprites(config);
+        loadTileSprites(config, layout);
         loadSoundEffects(audio);
     }
 
-    void Media::loadTileSprites(const GameConfig & config)
+    void Media::loadTileSprites(const GameConfig & config, const Layout & layout)
     {
         const std::size_t imageCount = static_cast<std::size_t>(TileImage::Count);
         m_tileSprites.resize(imageCount);
@@ -42,7 +42,7 @@ namespace castlecrawl
         for (std::size_t i(0); i < imageCount; ++i)
         {
             m_tileSprites.at(i).setTextureRect(tileImageToTileRect(static_cast<TileImage>(i)));
-            util::fit(m_tileSprites.at(i), config.mapCellSize());
+            util::fit(m_tileSprites.at(i), layout.mapCellSize());
         }
 
         m_tileSprites.at(static_cast<std::size_t>(TileImage::Door))

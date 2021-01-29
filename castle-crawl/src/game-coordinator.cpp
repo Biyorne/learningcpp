@@ -49,7 +49,7 @@ namespace castlecrawl
         M_CHECK_SS(std::filesystem::exists(m_config.media_dir_path), m_config.media_dir_path);
         M_CHECK_SS(std::filesystem::is_directory(m_config.media_dir_path), m_config.media_dir_path);
 
-        // this can change m_config so call this right after m_config is set
+        // this can change m_config and m_layout so call this right after m_config is set
         openWindow();
 
         m_soundPlayer.setMediaPath((m_config.media_dir_path / "sfx").string());
@@ -57,7 +57,7 @@ namespace castlecrawl
 
         m_animationPlayer.setMediaPath((m_config.media_dir_path / "anim").string());
 
-        m_media.load(m_config, m_soundPlayer);
+        m_media.load(m_config, m_layout, m_soundPlayer);
 
         // depends only on m_random only so passing context here is safe TODO
         m_maps.load(m_context);
@@ -78,19 +78,20 @@ namespace castlecrawl
         m_window.setFramerateLimit(m_config.frame_rate_limit);
         m_window.setKeyRepeatEnabled(false);
 
-        std::cout << "Game Window: " << m_config.windowSize<int>() << " at "
+        // verify the window size is what was specified/expected,
+        // otherwise all the size/positions calculations will be wrong
+        const sf::Vector2u windowExpectedSize{ m_config.video_mode.width,
+                                               m_config.video_mode.height };
+
+        const sf::Vector2u windowActualSize{ m_window.getSize() };
+
+        std::cout << "Game Window: " << windowExpectedSize << " at "
                   << m_config.video_mode.bitsPerPixel << "bits per pixel and a "
                   << m_config.frame_rate_limit << " fps limit." << std::endl;
 
         M_CHECK_SS(
             m_window.isOpen(),
             "Failed to make and open the graphics window.  (sf::RenderWindow::isOpen() == false)");
-
-        // verify the window size is what was specified/expected,
-        // otherwise all the size/positions calculations will be wrong
-        const sf::Vector2u windowExpectedSize{ m_config.windowSize<unsigned>() };
-
-        const sf::Vector2u windowActualSize{ m_window.getSize() };
 
         if (windowActualSize != windowExpectedSize)
         {
@@ -103,10 +104,11 @@ namespace castlecrawl
         m_config.video_mode.height = windowActualSize.y;
         m_config.video_mode.bitsPerPixel = m_window.getSettings().depthBits;
 
+        m_layout.setupWindow(m_config);
+
         std::cout << "Game Window Cells: width_ratio=" << m_config.map_cell_size_ratio
-                  << ", pixels=" << m_config.mapCellDimm()
-                  << ", grid=" << (m_config.windowSize<float>() / m_config.mapCellSize())
-                  << std::endl;
+                  << ", pixels=" << m_layout.mapCellDimm()
+                  << ", grid=" << (m_layout.windowSize() / m_layout.mapCellSize()) << std::endl;
     }
 
     void GameCoordinator::run(const GameConfig & config)
