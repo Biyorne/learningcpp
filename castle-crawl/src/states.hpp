@@ -52,7 +52,7 @@ namespace castlecrawl
 
         virtual State state() const = 0;
         virtual void update(Context &, const float elapsedSec) = 0;
-        virtual bool handleEvent(Context & context, const sf::Event & event) = 0;
+        virtual void handleEvent(Context & context, const sf::Event & event) = 0;
         virtual void draw(const Context &, sf::RenderTarget &, const sf::RenderStates &) const = 0;
         virtual void onEnter(Context &) = 0;
         virtual void onExit(Context &) = 0;
@@ -79,7 +79,7 @@ namespace castlecrawl
         State state() const final { return m_state; }
 
         void update(Context &, const float) override {}
-        bool handleEvent(Context &, const sf::Event &) override { return false; }
+        void handleEvent(Context &, const sf::Event &) override {}
         void draw(const Context &, sf::RenderTarget &, const sf::RenderStates &) const override {}
         void onEnter(Context &) override {}
         void onExit(Context &) override {}
@@ -106,15 +106,6 @@ namespace castlecrawl
         {}
 
         void onEnter(Context & context) override;
-    };
-
-    //
-    class StateSplash : public StateBase
-    {
-      public:
-        StateSplash(Context &)
-            : StateBase(State::Splash)
-        {}
     };
 
 } // namespace castlecrawl

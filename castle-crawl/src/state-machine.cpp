@@ -7,6 +7,7 @@
 
 #include "context.hpp"
 #include "state-play.hpp"
+#include "state-splash.hpp"
 
 #include <iostream>
 
@@ -38,12 +39,11 @@ namespace castlecrawl
 
     IStateUPtr_t StateMachine::makeState(Context & context, const State state)
     {
-
         switch (state)
         {
             // clang-format off
             case State::Init:   { return std::make_unique<StateInit>();          }
-            case State::Splash: { return std::make_unique<StateSplash>(context); }
+            case State::Splash: { return std::make_unique<StateSplash>(); }
             case State::Play:   { return std::make_unique<StatePlay>(context);   }
             case State::Quit:   { return std::make_unique<StateQuit>(context);   }
                 // clang-format on

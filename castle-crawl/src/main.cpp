@@ -5,7 +5,6 @@
 //
 #include "game-coordinator.hpp"
 #include "settings.hpp"
-#include "splash-coordinator.hpp"
 
 #include <cstddef>
 
@@ -27,10 +26,6 @@ int main(const int argc, const char * const argv[])
                       << std::endl;
         }
 
-        SplashCoordinator splash;
-        splash.run(config);
-
-        //
         GameCoordinator game;
         game.run(config);
     }

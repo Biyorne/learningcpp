@@ -40,24 +40,22 @@ namespace castlecrawl
         m_fps.update();
     }
 
-    bool StatePlay::handleEvent(Context & context, const sf::Event & event)
+    void StatePlay::handleEvent(Context & context, const sf::Event & event)
     {
         // all that remain are keystrokes
         if (sf::Event::KeyPressed != event.type)
         {
-            return false;
+            return;
         }
 
         if ((sf::Keyboard::Escape == event.key.code) || (sf::Keyboard::Q == event.key.code))
         {
             std::cout << "Player pressed 'Q' or 'Escape'.  Quitting." << std::endl;
             context.state.setChangePending(State::Quit);
-            return true;
+            return;
         }
 
         context.board.player.handleEvent(context, event);
-
-        return context.state.isChangePending();
     }
 
     void StatePlay::draw(

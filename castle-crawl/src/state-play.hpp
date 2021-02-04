@@ -23,7 +23,7 @@ namespace castlecrawl
         StatePlay(Context & context);
 
         void update(Context &, const float frameTimeSec) override;
-        bool handleEvent(Context & context, const sf::Event & event) override;
+        void handleEvent(Context & context, const sf::Event & event) override;
         void draw(const Context &, sf::RenderTarget &, const sf::RenderStates &) const override;
 
       private:

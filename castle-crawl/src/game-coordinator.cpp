@@ -64,7 +64,7 @@ namespace castlecrawl
 
         m_context.switchToMap({ { 0, 0 }, "level-1-first-room", { 5, 3 } });
 
-        m_stateMachine.setChangePending(State::Play);
+        m_stateMachine.setChangePending(State::Splash);
     }
 
     void GameCoordinator::openWindow()
