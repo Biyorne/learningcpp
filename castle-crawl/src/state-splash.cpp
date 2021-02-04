@@ -50,7 +50,7 @@ namespace castlecrawl
     void StateSplash::draw(
         const Context &, sf::RenderTarget & target, const sf::RenderStates & states) const
     {
-        target.draw(m_sprite);
+        target.draw(m_sprite, states);
     }
 
 } // namespace castlecrawl
