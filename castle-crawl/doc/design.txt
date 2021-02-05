@@ -3,12 +3,12 @@
 		Air
 	Lightning	Ice  
 Fire 				Water
-	Magma		Poison
+	Magma		Rot
 		Earth
 
 
 item sets
-gold is in
+gold not coins
 finding items/spells reveals/unlocks them for purchase to help ease death
 play with focus on melee or magic or both
 lots of people to find and talk to
@@ -20,25 +20,88 @@ Stats:
 	Luck
 No mana.  If you have/know a spell you can cast it.  Gems/pickups required?
 Item screen will show locations for left/right hand etc and a collection for misc
-mana crystals that bigger spells require to prevent using big spells too early/often
-
-
-
-
-
-
+mana/power crystals that bigger spells require to prevent using big spells/specials too early/often
 
 
 
 ---
-story?
+name
+
+Fireball
+Ignite (insert clothing item)
+
+Melt Weapon/Armor
+The floor is lava
+
+Sandstorm
+Fissure
+
+Disintegrate
+Poison Dart
+
+Water Jet
+Heal
+
+Hail Storm
+Freeze
+
+Suffocate
+Invisible/Vanish
+
+Thunderclap
+Lightning Bolt
+
+---
+Power Crystal (Move later)
+Healing Potion
+Wall Chicken
+Attribute Increase Potion
+Rabbit's Foot
+Four-Leaf Clover
+Rat juju
+Nerdy Glasses
+
+
+---
+
+---
+
+story
+You are a young adventurer who traveled to the town of Thornberry, that lies under the shadow of the towering Castle Mirador.  People in the city are mysteriously disappearing and the mayor calls for heroes.  You volunteer but are tricked and banished to rot in Castle Mirador’s dungeon labyrinth.  None have ever returned.
 
 
 
 --
+(Change to One/Two handed versions of each melee weapon)
+
+name               price   weight     damage       hands            descriptionClaymore           500,    1200,      10 - 16,     two-handed,      large two-handed broadsword with forward tilting crossguardsLongsword          180,     750,       6 - 10,     one-handed,      one-handed sword
+
+Sickle              50,     350,       3 -  6,     one-handed,      short one-handed curved bladeScythe             200,     400,       7 - 10,     two-handed,      long shaft of wood with a crossing steel blade
+
+Handaxe             10,     500,       3 -  6,     one-handed,      one-handed chopping axe not even intended for battleWaraxe             600,    2000,      12 - 18,     two-handed,      two-handed double-edged heavy axe used in combat and ceremonyMace               550,    1050,       9 - 13,     two-handed,      short handled bashing clubWarhammer          600,    2000,      12 - 18,     two-handed,      large heavy ceremonial club
+Longbow            200,     450,       8 - 13,     two-handed,      bow that extends the full height of the archer and curves inwardCrossbow           300,     650,       10- 15,     two-handed,      wooden construct with a pull string that fires metal bolts
+
+Spear               85,     200,       4 -  8,     one-handed,      long shaft with a pointed tipPartisan           220,     700,       8 - 10,     two-handed,      very long thrusting spear with side flanges for blocking
+
+Halberd            250,     750,       9 - 13,     two-handed,      very long thrusting spear with an axe protruding from the side
+
+Staff               10,     300,       1 -  6,     two-handed,      long thin shaft
+Dagger              25,     115,       2 -  4,     one-handed,      slightly curved blade with a handle
 
 
-name               price   weight     damage       hands            descriptionClaymore           500,    1200,      10 - 16,     two-handed,      large two-handed broadsword with forward tilting crossguardsLongsword          300,    1000,       8 - 14,     two-handed,      large two-handed swordFlamberg           400,     800,      10 - 15,     one-handed,      longer one-handed sword with a wavy bladeKnightly Sword     180,     750,       6 - 12,     two-handed,      larger one-handed sword with a fuller and cruciform hiltBroadsword         180,     750,       6 - 10,     one-handed,      broad one-handed sword with a basket hiltFalcata            100,     700,       7 -  8,     one-handed,      one-handed single-edged forward-sloping swordSaber              160,     725,       5 - 10,     one-handed,      one-handed single-edged curved blade with a large hand guardCutlass            100,     500,       4 -  6,     one-handed,      shorter one-handed single-edged broad sabre with a slightly curved blade and a solid cupped guardRapier             130,     450,       5 -  9,     one-handed,      one-handed double-edged long-bladed sword with a protective guardGladius             70,     450,       4 -  8,     one-handed,      broad one-handed double-edged short-bladed sword with a protective guardShortsword          50,     400,       3 -  7,     one-handed,      sword shorter than the length of an armHandaxe             10,     500,       1 -  3,     one-handed,      one-handed chopping axe not even intended for battleSickle              50,     350,       3 -  6,     one-handed,      short one-handed curved bladeBattleaxe          350,    1200,       8 - 16,     two-handed,      two-handed double-edged heavy axeWaraxe             600,    2000,      12 - 18,     two-handed,      two-handed double-edged heavy axe used in combat and ceremonySpiked Club        200,    1000,       6 - 12,     one-handed,      spiked weight at the end of a handleMaul               500,     900,       8 - 14,     two-handed,      long handled wedged hammerMace               550,    1050,       9 - 13,     two-handed,      short handled bashing clubWarhammer          600,    2000,      12 - 18,     two-handed,      large heavy ceremonial clubBullwhip           60,      100,       1 -  4,     one-handed,      sturdy leather whipFlail              110,     600,       5 - 10,     two-handed,      two-handed long stick handle with a shorter stick attached with soft leatherMace And Chain     225,     800,       8 - 12,     one-handed,      short stick with a chain connecting a spiked endBlowpipe           150,     200,       1 -  3,     two-handed,      wooden pipe with a collection of poisoned tipped dartsSling               25,      75,       2 -  5,     two-handed,      length of leather with a pouch for throwing stonesLongbow            200,     450,       8 - 13,     two-handed,      bow that extends the full height of the archer and curves inwardShortbow           100,     250,       4 -  9,     two-handed,      smaller inward curving bow.Composite Bow      450,     650,       9 - 16,     two-handed,      smaller bow made from animal horn with ends that curve outwardCrossbow           300,     650,       10- 15,     two-handed,      wooden construct with a pull string that fires metal boltsSpear               85,     200,       4 -  8,     two-handed,      long shaft with a pointed tipShortSpear          50,     125,       3 -  7,     two-handed,      short shaft with a pointed tipScythe             200,     400,       7 - 10,     two-handed,      long shaft of wood with a crossing steel bladePike               135,     400,       5 -  9,     two-handed,      very long thrusting spearPartisan           220,     700,       8 - 10,     two-handed,      very long thrusting spear with side flanges for blockingHalberd            250,     750,       9 - 13,     two-handed,      very long thrusting spear with an axe protruding from the sideStaff               10,     300,       1 -  6,     two-handed,      long thin shaftKnife               15,     85,        2 -  3,     one-handed,      short blade with a handleDagger              25,     115,       4 -  5,     one-handed,      slightly curved blade with a handle
 
+--
+(Armor, assign numbers, weight/physical requirements)
+Off-Hand:
+Buckler
+Kite
+Tower
 
+Helm
+Chest
+Gauntlets
+Pants
+Boots
+Cape/Cloak
+(cloth, leather, scale, chain, plate)
 
