@@ -24,7 +24,7 @@ namespace castlecrawl
     struct Board;
     struct MapLink;
     struct GameConfig;
-
+    struct PopupManager;
     //
 
     struct Context
@@ -37,6 +37,7 @@ namespace castlecrawl
             Layout & lay,
             const Media & med,
             StateMachine & sta,
+            PopupManager & pop,
             const util::Random & ran,
             util::SoundPlayer & aud,
             util::AnimationPlayer & ani)
@@ -47,11 +48,11 @@ namespace castlecrawl
             , layout(lay)
             , media(med)
             , state(sta)
+            , popup(pop)
             , random(ran)
             , audio(aud)
             , anim(ani)
             , map_name()
-            , popup_message()
         {}
 
         Context(const Context &) = delete;
@@ -68,6 +69,7 @@ namespace castlecrawl
         Layout & layout;
         const Media & media;
         StateMachine & state;
+        PopupManager & popup;
         const util::Random & random;
         util::SoundPlayer & audio;
         util::AnimationPlayer & anim;
@@ -78,7 +80,6 @@ namespace castlecrawl
         void switchToMap(const MapLink & link);
 
         std::string map_name;
-        std::string popup_message;
     };
 } // namespace castlecrawl
 

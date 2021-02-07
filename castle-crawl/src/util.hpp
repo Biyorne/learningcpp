@@ -1104,21 +1104,6 @@ namespace util
         return va;
     }
 
-    inline sf::VertexArray makeLines(
-        const std::initializer_list<sf::Vector2f> & initListPoints,
-        const sf::Color & color = sf::Color::White)
-    {
-        std::vector<sf::Vector2f> points;
-        points.reserve(initListPoints.size());
-
-        for (const sf::Vector2f & point : points)
-        {
-            points.push_back(point);
-        }
-
-        return makeLines(points, color);
-    }
-
     inline void drawlines(
         sf::RenderTarget & target,
         const std::vector<sf::Vector2f> & points,

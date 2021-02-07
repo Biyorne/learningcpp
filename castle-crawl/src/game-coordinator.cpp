@@ -25,6 +25,8 @@ namespace castlecrawl
         , m_layout()
         , m_game()
         , m_config()
+        , m_stateMachine()
+        , m_popupManager()
         , m_random()
         , m_soundPlayer(m_random)
         , m_animationPlayer(m_random)
@@ -36,6 +38,7 @@ namespace castlecrawl
               m_layout,
               m_media,
               m_stateMachine,
+              m_popupManager,
               m_random,
               m_soundPlayer,
               m_animationPlayer)

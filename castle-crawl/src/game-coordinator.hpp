@@ -9,6 +9,7 @@
 #include "keys.hpp"
 #include "maps.hpp"
 #include "player-piece.hpp"
+#include "popup-manager.hpp"
 #include "random.hpp"
 #include "resources.hpp"
 #include "settings.hpp"
@@ -50,6 +51,7 @@ namespace castlecrawl
         GameInPlay m_game;
         GameConfig m_config;
         StateMachine m_stateMachine;
+        PopupManager m_popupManager;
         util::Random m_random;
         util::SoundPlayer m_soundPlayer;
         util::AnimationPlayer m_animationPlayer;

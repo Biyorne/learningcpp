@@ -19,6 +19,7 @@ namespace castlecrawl
         Init = 0,
         Splash,
         Play,
+        Popup,
         Quit,
     };
 
@@ -32,6 +33,7 @@ namespace castlecrawl
         {
             case State::Init: return "Init";
             case State::Splash: return "Splash";
+            case State::Popup: return "Popup";
             case State::Play: return "Play";
             case State::Quit: return "Quit";
             default: return "";
@@ -53,7 +55,7 @@ namespace castlecrawl
         virtual State state() const = 0;
         virtual void update(Context &, const float elapsedSec) = 0;
         virtual void handleEvent(Context & context, const sf::Event & event) = 0;
-        virtual void draw(const Context &, sf::RenderTarget &, const sf::RenderStates &) const = 0;
+        virtual void draw(const Context &, sf::RenderTarget &, sf::RenderStates) const = 0;
         virtual void onEnter(Context &) = 0;
         virtual void onExit(Context &) = 0;
     };
@@ -80,7 +82,7 @@ namespace castlecrawl
 
         void update(Context &, const float) override {}
         void handleEvent(Context &, const sf::Event &) override {}
-        void draw(const Context &, sf::RenderTarget &, const sf::RenderStates &) const override {}
+        void draw(const Context &, sf::RenderTarget &, sf::RenderStates) const override {}
         void onEnter(Context &) override {}
         void onExit(Context &) override {}
 

@@ -9,6 +9,7 @@
 #include "board.hpp"
 #include "context.hpp"
 #include "map.hpp"
+#include "popup-manager.hpp"
 #include "resources.hpp"
 #include "settings.hpp"
 #include "state-machine.hpp"
@@ -55,11 +56,18 @@ namespace castlecrawl
             return;
         }
 
+        if (sf::Keyboard::P == event.key.code)
+        {
+            context.popup.setup(context, "All your bases are belong to us.");
+            context.state.setChangePending(State::Popup);
+            return;
+        }
+
         context.board.player.handleEvent(context, event);
     }
 
     void StatePlay::draw(
-        const Context & context, sf::RenderTarget & target, const sf::RenderStates & states) const
+        const Context & context, sf::RenderTarget & target, sf::RenderStates states) const
     {
         target.clear(context.config.background_color);
         context.map().draw(context, target, states);

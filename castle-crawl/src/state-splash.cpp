@@ -113,8 +113,8 @@ namespace castlecrawl
                 break;
             }
 
-            default:
-            case Timing::LongWait: {
+            case Timing::LongWait:
+            default: {
                 if (m_clock.getElapsedTime().asSeconds() > 3.5f)
                 {
                     m_timing = Timing::FirstStrike;
@@ -126,8 +126,8 @@ namespace castlecrawl
         }
     }
 
-    void StateSplash::draw(
-        const Context &, sf::RenderTarget & target, const sf::RenderStates & states) const
+    void
+        StateSplash::draw(const Context &, sf::RenderTarget & target, sf::RenderStates states) const
     {
         target.draw(m_sprite, states);
 

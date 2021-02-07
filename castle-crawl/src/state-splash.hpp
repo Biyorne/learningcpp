@@ -18,7 +18,7 @@ namespace castlecrawl
       protected:
         void update(Context &, const float) override;
         void handleEvent(Context &, const sf::Event &) override;
-        void draw(const Context &, sf::RenderTarget &, const sf::RenderStates &) const override;
+        void draw(const Context &, sf::RenderTarget &, sf::RenderStates) const override;
         void onEnter(Context &) override;
 
       protected:
