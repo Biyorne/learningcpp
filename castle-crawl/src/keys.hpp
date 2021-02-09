@@ -27,11 +27,11 @@ namespace castlecrawl
         inline std::string toString(const sf::Keyboard::Key dir)
         {
             // clang-format off
-            if      (dir == sf::Keyboard::Up)    return "Down";
-            else if (dir == sf::Keyboard::Down)  return "Up";
-            else if (dir == sf::Keyboard::Left)  return "Right";
-            else if (dir == sf::Keyboard::Right) return "Left";
-            else return "";
+            if      (dir == sf::Keyboard::Up)    { return "Down";  }
+            else if (dir == sf::Keyboard::Down)  { return "Up";    }
+            else if (dir == sf::Keyboard::Left)  { return "Right"; }
+            else if (dir == sf::Keyboard::Right) { return "Left";  }
+            else { return ""; }
             // clang-format on
         }
 
@@ -50,11 +50,11 @@ namespace castlecrawl
         inline sf::Keyboard::Key opposite(const sf::Keyboard::Key dir)
         {
             // clang-format off
-            if      (dir == sf::Keyboard::Up)    return sf::Keyboard::Down;
-            else if (dir == sf::Keyboard::Down)  return sf::Keyboard::Up;
-            else if (dir == sf::Keyboard::Left)  return sf::Keyboard::Right;
-            else if (dir == sf::Keyboard::Right) return sf::Keyboard::Left;
-            else return dir;
+            if      (dir == sf::Keyboard::Up)    { return sf::Keyboard::Down;  }
+            else if (dir == sf::Keyboard::Down)  { return sf::Keyboard::Up;    }
+            else if (dir == sf::Keyboard::Left)  { return sf::Keyboard::Right; }
+            else if (dir == sf::Keyboard::Right) { return sf::Keyboard::Left;  }
+            else { return dir; }
             // clang-format on
         }
 
@@ -89,10 +89,10 @@ namespace castlecrawl
             MapPos_t newPos{ oldPos };
 
             // clang-format off
-            if      (dir == sf::Keyboard::Up)    --newPos.y;
-            else if (dir == sf::Keyboard::Down)  ++newPos.y;
-            else if (dir == sf::Keyboard::Left)  --newPos.x;
-            else if (dir == sf::Keyboard::Right) ++newPos.x;
+            if      (dir == sf::Keyboard::Up)    { --newPos.y; }
+            else if (dir == sf::Keyboard::Down)  { ++newPos.y; }
+            else if (dir == sf::Keyboard::Left)  { --newPos.x; }
+            else if (dir == sf::Keyboard::Right) { ++newPos.x; }
             // clang-format on
 
             return newPos;
@@ -123,10 +123,10 @@ namespace castlecrawl
         inline void allTheArrowKeysDown(std::vector<sf::Keyboard::Key> & arrowKeys)
         {
             // clang-format off
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))     arrowKeys.push_back( sf::Keyboard::Up   );
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))   arrowKeys.push_back( sf::Keyboard::Down );
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))   arrowKeys.push_back( sf::Keyboard::Left );
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))  arrowKeys.push_back( sf::Keyboard::Right);
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))     { arrowKeys.push_back( sf::Keyboard::Up   ); }
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))   { arrowKeys.push_back( sf::Keyboard::Down ); }
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))   { arrowKeys.push_back( sf::Keyboard::Left ); }
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))  { arrowKeys.push_back( sf::Keyboard::Right); }
             // clang-format on
         }
 
@@ -144,16 +144,16 @@ namespace castlecrawl
             static_assert(std::is_arithmetic_v<T>);
 
             // clang-format off
-            if (key == sf::Keyboard::Num0) return T(0);
-            if (key == sf::Keyboard::Num1) return T(1);
-            if (key == sf::Keyboard::Num2) return T(2);
-            if (key == sf::Keyboard::Num3) return T(3);
-            if (key == sf::Keyboard::Num4) return T(4);
-            if (key == sf::Keyboard::Num5) return T(5);
-            if (key == sf::Keyboard::Num6) return T(6);
-            if (key == sf::Keyboard::Num7) return T(7);
-            if (key == sf::Keyboard::Num8) return T(8);
-            if (key == sf::Keyboard::Num9) return T(9);
+            if (key == sf::Keyboard::Num0) { return T(0); }
+            if (key == sf::Keyboard::Num1) { return T(1); }
+            if (key == sf::Keyboard::Num2) { return T(2); }
+            if (key == sf::Keyboard::Num3) { return T(3); }
+            if (key == sf::Keyboard::Num4) { return T(4); }
+            if (key == sf::Keyboard::Num5) { return T(5); }
+            if (key == sf::Keyboard::Num6) { return T(6); }
+            if (key == sf::Keyboard::Num7) { return T(7); }
+            if (key == sf::Keyboard::Num8) { return T(8); }
+            if (key == sf::Keyboard::Num9) { return T(9); }
             // clang-format on
 
             return std::nullopt;

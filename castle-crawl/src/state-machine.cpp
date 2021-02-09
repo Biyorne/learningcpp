@@ -50,7 +50,7 @@ namespace castlecrawl
             case State::Quit:   { return std::make_unique<StateQuit>(context);  }
                 // clang-format on
             default: {
-                std::cerr << "StateMachine::makeState(\"" << state
+                std::cerr << "ERROR:  StateMachine::makeState(\"" << state
                           << "\") not handled in switch.  Bail." << std::endl;
 
                 return std::make_unique<StateQuit>(context);
