@@ -69,7 +69,7 @@ namespace castlecrawl
         StateBase(const State state);
 
       public:
-        virtual ~StateBase() = default;
+        virtual ~StateBase() override = default;
 
         // prevent all copy and assignment
         StateBase(const StateBase &) = delete;

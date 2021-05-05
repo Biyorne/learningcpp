@@ -16,7 +16,7 @@ namespace castlecrawl
 
     struct IPiece : public sf::Drawable
     {
-        virtual ~IPiece() = default;
+        virtual ~IPiece() override = default;
 
         virtual char mapChar() const = 0;
         virtual bool isObstacle() const = 0;
@@ -41,7 +41,7 @@ namespace castlecrawl
       public:
         PieceBase();
 
-        virtual ~PieceBase() = default;
+        virtual ~PieceBase() override = default;
 
         char mapChar() const override final { return m_mapChar; }
         bool isObstacle() const override final { return m_isObstacle; }

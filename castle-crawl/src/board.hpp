@@ -6,7 +6,6 @@
 #include "door-piece.hpp"
 #include "player-piece.hpp"
 
-#include <memory>
 #include <vector>
 
 #include <SFML/Graphics/RenderTarget.hpp>
