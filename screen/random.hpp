@@ -1,61 +1,70 @@
-#ifndef RANDOM_HPP_INCLUDED
-#define RANDOM_HPP_INCLUDED
+#ifndef SFUTIL_RANDOM_HPP_INCLUDED
+#define SFUTIL_RANDOM_HPP_INCLUDED
 //
 // random.hpp
 //
-#include <initializer_list>
-#include <iostream>
+#include "util.hpp"
+
+#include <algorithm>
+#include <cstdlib>
 #include <limits>
 #include <random>
 #include <stdexcept>
-#include <string>
 
 namespace util
 {
+    //
     class Random
     {
-      public:
+    public:
         Random()
-            : Random(std::random_device{}())
-        {}
-
-        explicit Random(const std::random_device::result_type seed)
-            : m_engine()
+            : m_warmupSkipCount(123456)
+            , m_seed(std::random_device()())
+            , m_engine()
         {
-            std::seed_seq seedSequence{ seed };
+            std::seed_seq seedSequence { m_seed };
             m_engine.seed(seedSequence);
-
-            // Warm-up-skipping is good standard practice when working with PRNGs, but the Mersenne
-            // Twister is notoriously predictable in the beginning.  This is especially true when
-            // you don't provide a good (full sized) seed, which I am not because I want the ease of
-            // troubleshooting games. Anything from thousands to hundreds-thousands works fine here.
-            m_engine.discard(123456);
+            m_engine.discard(m_warmupSkipCount);
         }
+
+        std::random_device::result_type seed() const noexcept { return m_seed; }
+
+        unsigned long long warmupSkipCount() const noexcept { return m_warmupSkipCount; }
 
         template <typename T>
         T fromTo(const T from, const T to) const
         {
             static_assert(std::is_arithmetic_v<T>);
+            static_assert(!std::is_same_v<std::remove_cv<T>, bool>);
 
             if (to < from)
             {
                 return fromTo(to, from);
             }
 
-            if constexpr (std::is_floating_point_v<T>)
+            if (isRealClose(from, to))
+            {
+                return from;
+            }
+
+            if constexpr (std::is_integral_v<T>)
+            {
+                // std::uniform_int_distribution does not support single-byte types (chars)
+                if constexpr (1 == sizeof(T))
+                {
+                    return static_cast<T>(fromTo(static_cast<int>(from), static_cast<int>(to)));
+                }
+                else
+                {
+                    std::uniform_int_distribution<T> distribution(from, to);
+                    return distribution(m_engine);
+                }
+            }
+            else
             {
                 std::uniform_real_distribution<T> distribution(
                     from, std::nextafter(to, std::numeric_limits<T>::max()));
 
-                return distribution(m_engine);
-            }
-            else if constexpr (sizeof(T) == 1)
-            {
-                return static_cast<T>(fromTo<int>(static_cast<int>(from), static_cast<int>(to)));
-            }
-            else
-            {
-                std::uniform_int_distribution<T> distribution(from, to);
                 return distribution(m_engine);
             }
         }
@@ -66,69 +75,78 @@ namespace util
             return fromTo(T(0), to);
         }
 
-        template <typename T = float>
-        T ratio() const
+        template <typename T>
+        T zeroToOneLessThan(const T to) const
         {
-            return zeroTo(T(1));
+            return zeroTo(to - 1);
         }
+
+        inline bool boolean() const { return (zeroTo(1) == 1); }
 
         template <typename T>
-        std::size_t index(const T size) const
+        T ofType() const
         {
-            if (size <= 1)
+            if constexpr (std::is_signed_v<T>)
             {
-                return 0;
+                if (boolean())
+                {
+                    return fromTo(std::numeric_limits<T>::lowest(), T(0));
+                }
+                else
+                {
+                    return fromTo(T(0), std::numeric_limits<T>::max());
+                }
             }
-
-            return static_cast<std::size_t>(zeroTo(size - T(1)));
+            else
+            {
+                return fromTo(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max());
+            }
         }
 
+        // returns [0, size-1]
         template <typename T>
-        std::size_t indexFrom(const T & container) const
+        std::size_t index(const T & container) const
         {
-            if (container.size() == 0)
+            if (0 == container.size())
             {
-                std::string message;
-                message += "Random::index(container) but that container.size() == 0!";
-                throw std::runtime_error(message);
+                throw std::runtime_error("Random::index() but container.size()==0.");
             }
 
-            return index(container.size());
+            return zeroToOneLessThan(container.size());
         }
 
-        inline bool boolean() const { return (zeroTo(1) == 0); }
-
-        template <typename Iter_t>
-        auto & from(Iter_t first, const Iter_t last) const
+        template <typename Iterator_t>
+        auto & from(Iterator_t begin, const Iterator_t end) const
         {
-            if (last == first)
+            if (end == begin)
             {
-                std::string message;
-                message += "Random::from() but the container was empty!";
-                throw std::runtime_error(message);
+                throw std::runtime_error("Random::from(begin, end) but begin==end.");
             }
 
-            const auto offset{ zeroTo(std::distance(first, last) - 1) };
-            std::advance(first, static_cast<std::ptrdiff_t>(offset));
-            return *first;
+            return fromIterAndSize(begin, std::distance(begin, end));
         }
 
         template <typename T>
         auto & from(T & container) const
         {
-            return from(std::begin(container), std::end(container));
+            if (0 == container.size())
+            {
+                throw std::runtime_error("Random::from(container) but container.size()==0.");
+            }
+
+            return fromIterAndSize(std::begin(container), container.size());
         }
 
         template <typename T>
-        const T & from(const std::initializer_list<T> & list) const
+        const T & from(const std::initializer_list<T> initList) const
         {
-            return from(std::begin(list), std::end(list));
+            return fromIterAndSize(std::begin(initList), initList.size());
         }
 
-        template <typename Iter_t>
-        void shuffle(const Iter_t first, const Iter_t last) const
+        template <typename Iterator_t>
+        void shuffle(const Iterator_t begin, const Iterator_t end) const
         {
-            std::shuffle(first, last, m_engine);
+            std::shuffle(begin, end, m_engine);
         }
 
         template <typename T>
@@ -137,9 +155,31 @@ namespace util
             shuffle(std::begin(container), std::end(container));
         }
 
-      private:
+    private:
+        template <typename Iterator_t>
+        auto & fromIterAndSize(Iterator_t iter, const std::size_t size) const
+        {
+            if (0 == size)
+            {
+                throw std::runtime_error("Random::fromIterAndSize(iter, size) but size==0.");
+            }
+
+            std::advance(iter, zeroToOneLessThan(size));
+            return *iter;
+        }
+
+    private:
+        // the first few numbers generated by mt19937 are easily predictable if the seed is bad, so
+        // skip them warmup is also just a good practice when working with PRNGs anything from
+        // thousands to millions will work fine
+        unsigned long long m_warmupSkipCount;
+
+        // this is kept so that the seed can be printed or logged for replay testing
+        std::random_device::result_type m_seed;
+
         mutable std::mt19937 m_engine;
     };
+
 } // namespace util
 
-#endif // RANDOM_HPP_INCLUDED
+#endif // SFUTIL_RANDOM_HPP_INCLUDED

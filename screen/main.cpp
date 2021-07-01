@@ -1,5 +1,7 @@
 #include "bloom-shader.hpp"
+#include "color-range.hpp"
 #include "random.hpp"
+#include "slider-color.hpp"
 
 #include <iostream>
 
@@ -7,6 +9,8 @@
 
 int main()
 {
+    util::Random random;
+
     sf::RenderWindow window(sf::VideoMode(2880, 1800), "Screen", sf::Style::Fullscreen);
 
     util::BloomEffectHelper bloomWindow(window);
@@ -28,8 +32,19 @@ int main()
 
     float letterSpacing = 1.0f;
 
+    util::ColorSlider bgColorSlider(
+        sf::Color::Black,
+        colors::random(random),
+        random.fromTo(0.1f, 1.5f),
+        util::WillOscillate::No,
+        util::WillAutoStart::Yes);
+
+    sf::Clock frameClock;
+
     while (window.isOpen())
     {
+        const float frameTimeSec = frameClock.restart().asSeconds();
+
         sf::Event event;
         while (window.pollEvent(event))
         {
@@ -47,7 +62,22 @@ int main()
             }
         }
 
-        bloomWindow.clear();
+        const bool IS_BG_COLOR_CHANGING = bgColorSlider.updateAndReturnIsMoving(frameTimeSec);
+
+        if (!IS_BG_COLOR_CHANGING)
+        {
+            std::cout << "changing color" << std::endl;
+            const auto CURRENT_COLOR = bgColorSlider.value();
+
+            bgColorSlider = util::ColorSlider(
+                CURRENT_COLOR,
+                colors::random(random),
+                random.fromTo(0.1f, 1.5f),
+                util::WillOscillate::No,
+                util::WillAutoStart::Yes);
+        }
+
+        bloomWindow.clear(bgColorSlider.value());
 
         bloomWindow.draw(text);
         letterSpacing *= 1.001f;

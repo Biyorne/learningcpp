@@ -52,20 +52,15 @@ namespace util
 
         virtual ~SliderZeroToOne() = default;
 
-        SliderZeroToOne(const SliderZeroToOne &) = default;
-        SliderZeroToOne(SliderZeroToOne &&) = default;
-        SliderZeroToOne & operator=(const SliderZeroToOne &) = default;
-        SliderZeroToOne & operator=(SliderZeroToOne &&) = default;
+        float from() const { return 0.0f; }
+        float to() const { return 1.0f; }
+        float value() const { return value_; }
+        float speed() const { return speed_; }
+        bool isStopped() const { return isStopped_; }
+        bool isMoving() const { return !isStopped(); }
+        void stop() { isStopped_ = true; }
 
-        float From() const { return 0.0f; }
-        float To() const { return 1.0f; }
-        float Value() const { return value_; }
-        float Speed() const { return speed_; }
-        bool IsStopped() const { return isStopped_; }
-        bool IsMoving() const { return !IsStopped(); }
-        void Stop() { isStopped_ = true; }
-
-        float Update(const float ADJUSTMENT)
+        float update(const float ADJUSTMENT)
         {
             if (!isStopped_)
             {
@@ -80,7 +75,7 @@ namespace util
                 {
                     radians_ = radiansTo_;
                     value_ = 1.0f;
-                    Stop();
+                    stop();
                 }
                 else
                 {
@@ -107,7 +102,7 @@ namespace util
     // will be logged.  FROM>TO is supported and not considered an error, however, FROM==TO is
     // not supported and is considered an error that will cause Stop() to be called and an error
     // to be logged.
-    template <typename T, typename = std::enable_if_t<are_arithmetic_nobool_v<T>>>
+    template <typename T>
     class SliderFromTo
     {
       public:
@@ -134,11 +129,6 @@ namespace util
             , value_(FROM)
             , sliderZeroToOne_(speed_)
         {
-            SliderValidators::SpeedShouldNotBeNegative(
-                isStopped_, SPEED, M_TEMP_FILE_FUNC_LINE_STR_MAKER);
-
-            SliderValidators::FromTo(isStopped_, FROM, TO, M_TEMP_FILE_FUNC_LINE_STR_MAKER);
-
             if (isStopped_)
             {
                 sliderZeroToOne_.Stop();
@@ -147,18 +137,13 @@ namespace util
 
         virtual ~SliderFromTo() = default;
 
-        SliderFromTo(const SliderFromTo &) = default;
-        SliderFromTo(SliderFromTo &&) = default;
-        SliderFromTo & operator=(const SliderFromTo &) = default;
-        SliderFromTo & operator=(SliderFromTo &&) = default;
-
-        T From() const { return from_; }
-        T To() const { return to_; }
-        T Value() const { return value_; }
-        float Speed() const { return speed_; }
-        bool IsStopped() const { return isStopped_; }
-        bool IsMoving() const { return !IsStopped(); }
-        void Stop() { isStopped_ = true; }
+        T from() const { return from_; }
+        T to() const { return to_; }
+        T value() const { return value_; }
+        float speed() const { return speed_; }
+        bool isStopped() const { return isStopped_; }
+        bool isMoving() const { return !isStopped(); }
+        void stop() { isStopped_ = true; }
 
         T Update(const float ADJUSTMENT)
         {
@@ -215,7 +200,7 @@ namespace util
             , value_(0)
             , sliderFromTo_()
         {
-            Setup(FROM, TO, SPEED, FROM, M_TEMP_FILE_FUNC_LINE_STR_MAKER);
+            setup(FROM, TO, SPEED, FROM);
         }
 
         // Use this constructor if you want to specify the starting value.
@@ -227,31 +212,26 @@ namespace util
             , value_(0)
             , sliderFromTo_()
         {
-            Setup(FROM, TO, SPEED, START_AT, M_TEMP_FILE_FUNC_LINE_STR_MAKER);
+            setup(FROM, TO, SPEED, START_AT);
         }
 
         virtual ~SliderOscillator() = default;
 
-        SliderOscillator(const SliderOscillator &) = default;
-        SliderOscillator(SliderOscillator &&) = default;
-        SliderOscillator & operator=(const SliderOscillator &) = default;
-        SliderOscillator & operator=(SliderOscillator &&) = default;
+        T from() const { return from_; }
+        T to() const { return to_; }
+        float speed() const { return speed_; }
+        T value() const { return value_; }
+        bool isStopped() const { return isStopped_; }
+        bool isMoving() const { return !isStopped(); }
+        void stop() { isStopped_ = true; }
 
-        T From() const { return from_; }
-        T To() const { return to_; }
-        float Speed() const { return speed_; }
-        T Value() const { return value_; }
-        bool IsStopped() const { return isStopped_; }
-        bool IsMoving() const { return !IsStopped(); }
-        void Stop() { isStopped_ = true; }
-
-        T Update(const float ADJUSTMENT)
+        T update(const float ADJUSTMENT)
         {
             if (!isStopped_)
             {
-                value_ = sliderFromTo_.Update(ADJUSTMENT);
+                value_ = sliderFromTo_.update(ADJUSTMENT);
 
-                if (sliderFromTo_.IsStopped())
+                if (sliderFromTo_.isStopped())
                 {
                     // restart the slave slider targeting the end opposite what was just reached.
                     //
@@ -260,7 +240,7 @@ namespace util
                     // which might have started with a custom START_AT, meaning that
                     // sliderFromTo_.From() might not be the same as from_, so we can't use
                     // sliderFromTo_.From() here.
-                    if (IsRealClose(sliderFromTo_.To(), to_))
+                    if (isRealClose(sliderFromTo_.To(), to_))
                     {
                         sliderFromTo_ = SliderFromTo<T>(to_, from_, speed_);
                     }
@@ -275,24 +255,14 @@ namespace util
         }
 
       private:
-        void Setup(
-            const T FROM,
-            const T TO,
-            const float SPEED,
-            const T START_AT_ORIG,
-            const std::string & FILE_FUNC_LINE_STR)
+        void setup(const T FROM, const T TO, const float SPEED, const T START_AT_ORIG)
         {
-            SliderValidators::FromTo(isStopped_, FROM, TO, FILE_FUNC_LINE_STR);
-
-            SliderValidators::SpeedShouldNotBeNegative(isStopped_, SPEED, FILE_FUNC_LINE_STR);
-
-            value_ = SliderValidators::StartAtClamp(
-                Min(FROM, TO), Max(FROM, TO), START_AT_ORIG, FILE_FUNC_LINE_STR);
+            value_ = std::clamp(START_AT_ORIG, min(FROM, TO), max(FROM, TO));
 
             if (false == isStopped_)
             {
                 // If StartAtClamp() set value_ to TO then start reversed
-                if (IsRealClose(value_, TO))
+                if (isRealClose(value_, TO))
                 {
                     sliderFromTo_ = SliderFromTo<T>(to_, from_, speed_);
                 }
@@ -350,10 +320,7 @@ namespace util
             const auto [RANDOM_VALUE_TO_START_AT, RANDOM_VALUE_OF_FIRST_TARGET] =
                 RandomStartAndTargetValue(VALUE_MIN, VALUE_MAX);
 
-            Setup(
-                RANDOM_VALUE_TO_START_AT,
-                RANDOM_VALUE_OF_FIRST_TARGET,
-                M_TEMP_FILE_FUNC_LINE_STR_MAKER);
+            setup(RANDOM_VALUE_TO_START_AT, RANDOM_VALUE_OF_FIRST_TARGET);
         }
 
         // This constructor to set a specific starting value and target.
@@ -373,40 +340,35 @@ namespace util
             , speed_(SPEED_MIN)
             , sliderFromTo_()
         {
-            Setup(VALUE_TO_START_AT, VALUE_OF_FIRST_TARGET, M_TEMP_FILE_FUNC_LINE_STR_MAKER);
+            setup(VALUE_TO_START_AT, VALUE_OF_FIRST_TARGET);
         }
 
         virtual ~SliderDrift() = default;
 
-        SliderDrift(const SliderDrift &) = default;
-        SliderDrift(SliderDrift &&) = default;
-        SliderDrift & operator=(const SliderDrift &) = default;
-        SliderDrift & operator=(SliderDrift &&) = default;
+        T valueMin() const { return valueMin_; }
+        T valueMax() const { return valueMax_; }
+        T value() const { return value_; }
 
-        T ValueMin() const { return valueMin_; }
-        T ValueMax() const { return valueMax_; }
-        T Value() const { return value_; }
+        float speedMin() const { return speedMin_; }
+        float speedMax() const { return speedMax_; }
+        float speed() const { return speed_; }
 
-        float SpeedMin() const { return speedMin_; }
-        float SpeedMax() const { return speedMax_; }
-        float Speed() const { return speed_; }
+        bool isStopped() const { return isStopped_; }
+        bool isMoving() const { return !isStopped(); }
+        void stop() { isStopped_ = true; }
 
-        bool IsStopped() const { return isStopped_; }
-        bool IsMoving() const { return !IsStopped(); }
-        void Stop() { isStopped_ = true; }
-
-        T Update(const float ADJUSTMENT)
+        T update(const float ADJUSTMENT)
         {
             if (!isStopped_)
             {
-                value_ = sliderFromTo_.Update(ADJUSTMENT);
+                value_ = sliderFromTo_.update(ADJUSTMENT);
 
-                if (sliderFromTo_.IsStopped())
+                if (sliderFromTo_.isStopped())
                 {
                     sliderFromTo_ = SliderFromTo<T>(
                         value_,
-                        RandomValueWithinIntervalThatIsNot(valueMin_, valueMax_, value_),
-                        RandomSpeed());
+                        randomValueWithinIntervalThatIsNot(valueMin_, valueMax_, value_),
+                        randomSpeed());
                 }
             }
 
@@ -414,19 +376,19 @@ namespace util
         }
 
       private:
-        float RandomSpeed()
+        float randomSpeed()
         {
-            if (IsRealClose(speedMin_, speedMax_))
+            if (isRealClose(speedMin_, speedMax_))
             {
                 return speedMin_;
             }
             else
             {
-                return Random(Min(speedMin_, speedMax_), Max(speedMin_, speedMax_));
+                return util::Random(min(speedMin_, speedMax_), max(speedMin_, speedMax_));
             }
         }
 
-        T RandomValueWithinIntervalThatIsNot(
+        T randomValueWithinIntervalThatIsNot(
             const T MIN_ORIG, const T MAX_ORIG, const T VALUE_TO_AVOID_ORIG) const
         {
             // convert to doubles because there is no random<T> yet...
@@ -434,10 +396,10 @@ namespace util
             const double MAX_DOUBLE{ static_cast<double>(Max(MIN_ORIG, MAX_ORIG)) };
             const T RANDOM_VALUE{ static_cast<T>(Random(MIN_DOUBLE, MAX_DOUBLE)) };
 
-            if (IsRealClose(RANDOM_VALUE, VALUE_TO_AVOID_ORIG))
+            if (isRealClose(RANDOM_VALUE, VALUE_TO_AVOID_ORIG))
             {
                 // if RANDOM_VALUE=VALUE_TO_AVOID then pick either the min or max
-                if (IsRealClose(MIN_ORIG, VALUE_TO_AVOID_ORIG))
+                if (isRealClose(MIN_ORIG, VALUE_TO_AVOID_ORIG))
                 {
                     return MAX_ORIG;
                 }
@@ -453,42 +415,29 @@ namespace util
         }
 
         // returns (RANDOM_VALUE_TO_START_AT, RANDOM_VALUE_OF_TARGET)
-        const std::tuple<T, T> RandomStartAndTargetValue(const T MIN_ORIG, const T MAX_ORIG)
+        const std::tuple<T, T> randomStartAndTargetValue(const T MIN_ORIG, const T MAX_ORIG)
         {
             const T MIN_FINAL{ Min(MIN_ORIG, MAX_ORIG) };
             const T MAX_FINAL{ Max(MIN_ORIG, MAX_ORIG) };
 
-            const auto RANDOM_VALUE_TO_START_AT{ RandomValueWithinIntervalThatIsNot(
+            const auto RANDOM_VALUE_TO_START_AT{ randomValueWithinIntervalThatIsNot(
                 MIN_FINAL, MAX_FINAL, MIN_FINAL) };
 
-            const auto RANDOM_VALUE_OF_TARGET{ RandomValueWithinIntervalThatIsNot(
+            const auto RANDOM_VALUE_OF_TARGET{ randomValueWithinIntervalThatIsNot(
                 MIN_FINAL, MAX_FINAL, RANDOM_VALUE_TO_START_AT) };
 
             return std::make_tuple(RANDOM_VALUE_TO_START_AT, RANDOM_VALUE_OF_TARGET);
         }
 
-        void Setup(
-            const T VALUE_TO_START_AT_ORIG,
-            const T VALUE_OF_FIRST_TARGET_ORIG,
-            const std::string & FILE_FUNC_LINE_STR)
+        void setup(const T VALUE_TO_START_AT, const T VALUE_OF_FIRST_TARGET)
         {
-            const auto [VALUE_TO_START_AT_FINAL, VALUE_OF_FIRST_TARGET_FINAL] =
-                SliderValidators::Drift(
-                    isStopped_,
-                    valueMin_,
-                    valueMax_,
-                    VALUE_TO_START_AT_ORIG,
-                    VALUE_OF_FIRST_TARGET_ORIG,
-                    FILE_FUNC_LINE_STR);
+            value_ = VALUE_TO_START_AT;
 
-            value_ = VALUE_TO_START_AT_FINAL;
-
-            speed_ = RandomSpeed();
+            speed_ = randomSpeed();
 
             if (false == isStopped_)
             {
-                sliderFromTo_ =
-                    SliderFromTo<T>(VALUE_TO_START_AT_FINAL, VALUE_OF_FIRST_TARGET_FINAL, speed_);
+                sliderFromTo_ = SliderFromTo<T>(VALUE_TO_START_AT, VALUE_OF_FIRST_TARGET, speed_);
             }
         }
 
