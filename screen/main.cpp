@@ -2,16 +2,49 @@
 #include "color-range.hpp"
 #include "random.hpp"
 #include "slider-color.hpp"
+#include "slider-position.hpp"
 
 #include <iostream>
 
 #include <SFML/Graphics.hpp>
 
+//
+sf::Vector2f randomWindowPos(const util::Random & random, const sf::RenderWindow & window)
+{
+    return { static_cast<float>(random.zeroTo(window.getSize().x)),
+             static_cast<float>(random.zeroTo(window.getSize().y)) };
+}
+
+//
+util::ColorSlider makeBgColorSlider(const util::Random & random, const sf::Color & startColor)
+{
+    return util::ColorSlider(
+        startColor,
+        colors::random(random),
+        random.fromTo(0.1f, 1.5f),
+        util::WillOscillate::No,
+        util::WillAutoStart::Yes);
+}
+
+//
+util::PosSlider makeTextPosSlider(
+    const util::Random & random, const sf::RenderWindow & window, const sf::Vector2f & startPos)
+{
+    return util::PosSlider(
+        startPos,
+        randomWindowPos(random, window),
+        random.fromTo(1.0f, 5.0f),
+        util::WillOscillate::No,
+        util::WillAutoStart::Yes);
+}
+
+//
 int main()
 {
     util::Random random;
 
-    sf::RenderWindow window(sf::VideoMode(2880, 1800), "Screen", sf::Style::Fullscreen);
+    sf::RenderWindow window(sf::VideoMode(1600, 1200), "Screen", sf::Style::Fullscreen);
+    window.setFramerateLimit(60);
 
     util::BloomEffectHelper bloomWindow(window);
     bloomWindow.isEnabled(true);
@@ -29,15 +62,13 @@ int main()
 
     sf::Text text("Hello SFML", font, 90);
     text.setPosition(100.0f, 100.0f);
+    util::setOriginToCenter(text);
 
     float letterSpacing = 1.0f;
 
-    util::ColorSlider bgColorSlider(
-        sf::Color::Black,
-        colors::random(random),
-        random.fromTo(0.1f, 1.5f),
-        util::WillOscillate::No,
-        util::WillAutoStart::Yes);
+    util::ColorSlider bgColorSlider = makeBgColorSlider(random, sf::Color::Black);
+
+    util::PosSlider textPositionSlider = makeTextPosSlider(random, window, {});
 
     sf::Clock frameClock;
 
@@ -62,28 +93,25 @@ int main()
             }
         }
 
-        const bool IS_BG_COLOR_CHANGING = bgColorSlider.updateAndReturnIsMoving(frameTimeSec);
-
-        if (!IS_BG_COLOR_CHANGING)
+        // background color
+        if (!bgColorSlider.updateAndReturnIsMoving(frameTimeSec))
         {
-            std::cout << "changing color" << std::endl;
-            const auto CURRENT_COLOR = bgColorSlider.value();
-
-            bgColorSlider = util::ColorSlider(
-                CURRENT_COLOR,
-                colors::random(random),
-                random.fromTo(0.1f, 1.5f),
-                util::WillOscillate::No,
-                util::WillAutoStart::Yes);
+            bgColorSlider = makeBgColorSlider(random, bgColorSlider.value());
         }
 
-        bloomWindow.clear(bgColorSlider.value());
+        // text position
+        if (!textPositionSlider.updateAndReturnIsMoving(frameTimeSec))
+        {
+            textPositionSlider = makeTextPosSlider(random, window, textPositionSlider.value());
+        }
+        text.setPosition(textPositionSlider.value());
 
+        // text
+        // letterSpacing *= 1.001f;
+        // text.setLetterSpacing(letterSpacing);
+
+        // bloomWindow.clear(bgColorSlider.value());
         bloomWindow.draw(text);
-        letterSpacing *= 1.001f;
-        text.setLetterSpacing(letterSpacing);
-        text.move(0.1f, 0.0f);
-
         bloomWindow.display();
     }
 
