@@ -79,12 +79,6 @@ float randomTextSpeed(const Context & context) { return context.random.fromTo(0.
 float randomLineSpeed(const Context & context) { return context.random.fromTo(0.1f, 2.0f); }
 
 //
-ScreenSlider makeRandomPosSlider(const Context & context, const sf::Vector2f & startPos)
-{
-    return ScreenSlider(startPos, randomWindowPos(context), context.random.fromTo(1.0f, 2.0f));
-}
-
-//
 int main()
 {
     Context context;
@@ -108,17 +102,25 @@ int main()
     std::vector<ScreenSlider> linePosSliders;
     for (std::size_t i(0); i < (lineCount * 2); ++i)
     {
-        linePosSliders.push_back(makeRandomPosSlider(context, {}));
+        linePosSliders.push_back(
+            ScreenSlider({}, randomWindowPos(context), randomLineSpeed(context)));
     }
 
     std::vector<sf::Vertex> lineVerts;
     lineVerts.resize(lineCount * 2);
 
+    util::ColorSlider lineColorSlider(
+        sf::Color::White,
+        sf::Color::Black,
+        context.random.fromTo(0.1f, 1.5f),
+        util::WillOscillate::Yes,
+        util::WillAutoStart::Yes);
+
     sf::Clock frameClock;
 
     while (context.window.isOpen())
     {
-        const float frameTimeSec = frameClock.restart().asSeconds();
+        const float FRAME_TIME_SEC = frameClock.restart().asSeconds();
 
         sf::Event event;
         while (context.window.pollEvent(event))
@@ -138,22 +140,25 @@ int main()
         }
 
         // background color
-        if (!bgColorSlider.updateAndReturnIsMoving(frameTimeSec))
+        if (!bgColorSlider.updateAndReturnIsMoving(FRAME_TIME_SEC))
         {
             bgColorSlider = makeBgColorSlider(context, bgColorSlider.value());
         }
 
         // text position
         textPositionSlider.updateAndLoopIfStopped(
-            frameTimeSec, randomWindowPos(context), randomTextSpeed(context));
+            FRAME_TIME_SEC, randomWindowPos(context), randomTextSpeed(context));
 
         text.setPosition(textPositionSlider.value());
+
+        // line color
+        const sf::Color LINE_COLOR = lineColorSlider.updateAndReturnValue(FRAME_TIME_SEC);
 
         // lines end-point positions
         for (std::size_t i(0); i < (lineCount * 2); ++i)
         {
             linePosSliders[i].updateAndLoopIfStopped(
-                frameTimeSec, randomWindowPos(context), randomLineSpeed(context));
+                FRAME_TIME_SEC, randomWindowPos(context), randomLineSpeed(context));
 
             lineVerts[i].color = bgColorSlider.value();
             lineVerts[i].position = linePosSliders[i].value();
@@ -161,9 +166,9 @@ int main()
             ++i;
 
             linePosSliders[i].updateAndLoopIfStopped(
-                frameTimeSec, randomWindowPos(context), randomLineSpeed(context));
+                FRAME_TIME_SEC, randomWindowPos(context), randomLineSpeed(context));
 
-            lineVerts[i].color = sf::Color::White;
+            lineVerts[i].color = LINE_COLOR;
             lineVerts[i].position = linePosSliders[i].value();
         }
 
