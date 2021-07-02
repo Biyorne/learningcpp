@@ -71,7 +71,7 @@ namespace util
         void setFromImpl() override { value_ = from_; }
         void setToImpl() override { value_ = to_; }
 
-      private:
+      protected:
         bool isEqual(const sf::Vector2f & LHS, const sf::Vector2f & RHS) const
         {
             return (isRealClose(LHS.x, RHS.x) && isRealClose(LHS.y, RHS.y));

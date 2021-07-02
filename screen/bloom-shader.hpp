@@ -357,6 +357,15 @@ void main()\
             renderTarget().draw(toDraw, states);
         }
 
+        void draw(
+            sf::Vertex * firstVert,
+            const std::size_t vertCount,
+            const sf::PrimitiveType type,
+            const sf::RenderStates & states = {})
+        {
+            renderTarget().draw(firstVert, vertCount, type, states);
+        }
+
         void display()
         {
             if (m_isEnabled)

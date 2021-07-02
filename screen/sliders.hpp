@@ -56,6 +56,7 @@ namespace util
         float to() const { return 1.0f; }
         float value() const { return value_; }
         float speed() const { return speed_; }
+        void speed(const float NEW_SPEED) { speed_ = NEW_SPEED; }
         bool isStopped() const { return isStopped_; }
         bool isMoving() const { return !isStopped(); }
         void stop() { isStopped_ = true; }

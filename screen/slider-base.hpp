@@ -87,6 +87,13 @@ namespace util
         virtual ~SliderBase() = default;
 
         float speed() const { return speed_; }
+
+        void speed(const float NEW_SPEED)
+        {
+            speed_ = NEW_SPEED;
+            sliderZeroToOne_.speed(NEW_SPEED);
+        }
+
         std::size_t cycleCount() const { return cycleCount_; }
         std::size_t cycleCountLimit() const { return cycleCountLimit_; }
 
