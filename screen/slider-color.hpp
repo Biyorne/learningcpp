@@ -79,7 +79,7 @@ namespace util
         void setFromImpl() override { value_ = from_; }
         void setToImpl() override { value_ = to_; }
 
-      private:
+      protected:
         sf::Color from_;
         sf::Color to_;
         sf::Color value_;

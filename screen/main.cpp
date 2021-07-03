@@ -16,6 +16,7 @@ struct Context
         : random()
         , window(sf::VideoMode(1600, 1200), "Screen", sf::Style::Fullscreen)
         , bloomWindow(window)
+        , lineType(sf::Lines)
     {
         window.setFramerateLimit(60);
 
@@ -31,20 +32,43 @@ struct Context
     util::Random random;
     sf::RenderWindow window;
     util::BloomEffectHelper bloomWindow;
+    sf::PrimitiveType lineType;
 };
 
 //
-class ScreenSlider : public util::PosSlider
+class PositionCycler : public util::PosSlider
 {
   public:
-    ScreenSlider(const sf::Vector2f & FROM, const sf::Vector2f & TO, const float SPEED)
+    PositionCycler(const sf::Vector2f & FROM, const sf::Vector2f & TO, const float SPEED)
         : PosSlider(FROM, TO, SPEED, util::WillOscillate::No, util::WillAutoStart::Yes, 0)
     {}
 
-    virtual ~ScreenSlider() = default;
+    virtual ~PositionCycler() = default;
 
     void updateAndLoopIfStopped(
         const float FRAME_TIME_SEC, const sf::Vector2f & TO, const float SPEED)
+    {
+        if (!updateAndReturnIsMoving(FRAME_TIME_SEC))
+        {
+            from_ = to_;
+            to_ = TO;
+            speed(SPEED);
+            resetFrom();
+        }
+    }
+};
+
+//
+class ColorCycler : public util::ColorSlider
+{
+  public:
+    ColorCycler(const sf::Color & FROM, const sf::Color & TO, const float SPEED)
+        : ColorSlider(FROM, TO, SPEED, util::WillOscillate::No, util::WillAutoStart::Yes, 0)
+    {}
+
+    virtual ~ColorCycler() = default;
+
+    void updateAndLoopIfStopped(const float FRAME_TIME_SEC, const sf::Color & TO, const float SPEED)
     {
         if (!updateAndReturnIsMoving(FRAME_TIME_SEC))
         {
@@ -64,19 +88,10 @@ sf::Vector2f randomWindowPos(const Context & context)
 }
 
 //
-util::ColorSlider makeBgColorSlider(const Context & context, const sf::Color & startColor)
-{
-    return util::ColorSlider(
-        startColor,
-        colors::random(context.random),
-        context.random.fromTo(0.1f, 1.5f),
-        util::WillOscillate::No,
-        util::WillAutoStart::Yes);
-}
-
-//
+float randomBgColorSpeed(const Context & context) { return context.random.fromTo(0.1f, 1.5f); }
 float randomTextSpeed(const Context & context) { return context.random.fromTo(0.5f, 1.75f); }
 float randomLineSpeed(const Context & context) { return context.random.fromTo(0.1f, 2.0f); }
+float randomLineColorSpeed(const Context & context) { return context.random.fromTo(0.1f, 1.0f); }
 
 //
 int main()
@@ -91,19 +106,22 @@ int main()
     }
 
     sf::Text text("Hello SFML", font, 90);
-    text.setPosition(100.0f, 100.0f);
     util::setOriginToCenter(text);
 
-    util::ColorSlider bgColorSlider = makeBgColorSlider(context, sf::Color::Black);
+    //
+    ColorCycler bgColorCycler(
+        sf::Color::Black, colors::random(context.random), randomBgColorSpeed(context));
 
-    ScreenSlider textPositionSlider({}, randomWindowPos(context), randomTextSpeed(context));
+    //
+    PositionCycler textPositionCycler({}, randomWindowPos(context), randomTextSpeed(context));
 
+    //
     const std::size_t lineCount = 100;
-    std::vector<ScreenSlider> linePosSliders;
+    std::vector<PositionCycler> linePosCyclers;
     for (std::size_t i(0); i < (lineCount * 2); ++i)
     {
-        linePosSliders.push_back(
-            ScreenSlider({}, randomWindowPos(context), randomLineSpeed(context)));
+        linePosCyclers.push_back(
+            PositionCycler({}, randomWindowPos(context), randomLineSpeed(context)));
     }
 
     std::vector<sf::Vertex> lineVerts;
@@ -112,7 +130,7 @@ int main()
     util::ColorSlider lineColorSlider(
         sf::Color::White,
         sf::Color::Black,
-        context.random.fromTo(0.1f, 1.5f),
+        randomLineColorSpeed(context),
         util::WillOscillate::Yes,
         util::WillAutoStart::Yes);
 
@@ -140,16 +158,14 @@ int main()
         }
 
         // background color
-        if (!bgColorSlider.updateAndReturnIsMoving(FRAME_TIME_SEC))
-        {
-            bgColorSlider = makeBgColorSlider(context, bgColorSlider.value());
-        }
+        bgColorCycler.updateAndLoopIfStopped(
+            FRAME_TIME_SEC, colors::random(context.random), randomBgColorSpeed(context));
 
         // text position
-        textPositionSlider.updateAndLoopIfStopped(
+        textPositionCycler.updateAndLoopIfStopped(
             FRAME_TIME_SEC, randomWindowPos(context), randomTextSpeed(context));
 
-        text.setPosition(textPositionSlider.value());
+        text.setPosition(textPositionCycler.value());
 
         // line color
         const sf::Color LINE_COLOR = lineColorSlider.updateAndReturnValue(FRAME_TIME_SEC);
@@ -157,24 +173,36 @@ int main()
         // lines end-point positions
         for (std::size_t i(0); i < (lineCount * 2); ++i)
         {
-            linePosSliders[i].updateAndLoopIfStopped(
+            linePosCyclers[i].updateAndLoopIfStopped(
                 FRAME_TIME_SEC, randomWindowPos(context), randomLineSpeed(context));
 
-            lineVerts[i].color = bgColorSlider.value();
-            lineVerts[i].position = linePosSliders[i].value();
+            lineVerts[i].position = linePosCyclers[i].value();
+            lineVerts[i].color = LINE_COLOR;
 
             ++i;
 
-            linePosSliders[i].updateAndLoopIfStopped(
+            linePosCyclers[i].updateAndLoopIfStopped(
                 FRAME_TIME_SEC, randomWindowPos(context), randomLineSpeed(context));
 
-            lineVerts[i].color = LINE_COLOR;
-            lineVerts[i].position = linePosSliders[i].value();
+            lineVerts[i].position = linePosCyclers[i].value();
+            lineVerts[i].color = bgColorCycler.value();
         }
 
-        context.bloomWindow.clear(bgColorSlider.value());
+        for (std::size_t i(0); i < (lineCount * 2); i += 2)
+        {
+            if (i < lineCount)
+            {
+                lineVerts[i].position.y = 0.0f;
+            }
+            else
+            {
+                lineVerts[i].position.y = static_cast<float>(context.window.getSize().y);
+            }
+        }
+
+        context.bloomWindow.clear(bgColorCycler.value());
+        context.bloomWindow.draw(&lineVerts[0], lineVerts.size(), sf::Lines);
         context.bloomWindow.draw(text);
-        context.bloomWindow.draw(&lineVerts[0], lineVerts.size(), sf::LineStrip);
         context.bloomWindow.display();
     }
 
