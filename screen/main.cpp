@@ -213,17 +213,17 @@ int main()
             lineVerts[i].color = bgColorCycler.value();
         }
 
-        // for (std::size_t i(0); i < (lineCount * 2); i += 2)
-        //{
-        //    if (i < lineCount)
-        //    {
-        //        lineVerts[i].position.y = 0.0f;
-        //    }
-        //    else
-        //    {
-        //        lineVerts[i].position.y = static_cast<float>(context.window.getSize().y);
-        //    }
-        //}
+        for (std::size_t i(0); i < (lineCount * 2); i += 2)
+        {
+            if (i < lineCount)
+            {
+                lineVerts[i].position.y = 0.0f;
+            }
+            else
+            {
+                lineVerts[i].position.y = static_cast<float>(context.window.getSize().y);
+            }
+        }
 
         // draw
         context.bloomWindow.clear(context.frameBgColor);
