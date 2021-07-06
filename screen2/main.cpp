@@ -131,7 +131,7 @@ class BackgroundFader
         , bgIndex(0)
         , fgIndex(0)
         , colorSlider()
-        , delayTimerSec(context.random.fromTo(1.0f, 1.1f))
+        , delayTimerSec(context.random.fromTo(1.0f, 10.f))
     {}
 
     void update(Context & context)
@@ -144,7 +144,7 @@ class BackgroundFader
             if (colorSlider.isAtTo())
             {
                 isFading = false;
-                delayTimerSec = context.random.fromTo(1.0f, 1.1f);
+                delayTimerSec = context.random.fromTo(1.0f, 10.f);
             }
         }
         else
@@ -217,12 +217,12 @@ int main()
 
         for (Swirl & swirl : swirls)
         {
-            swirl.update(context.frameTimeSec);
-
             if (!swirl.isAlive())
             {
                 swirl = Swirl(context);
             }
+
+            swirl.update(context.frameTimeSec);
         }
 
         // draw
