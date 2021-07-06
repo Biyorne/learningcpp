@@ -1,5 +1,5 @@
-#include "bloom-shader.hpp"
 #include "random.hpp"
+#include "slider-color.hpp"
 
 #include <iostream>
 #include <vector>
@@ -11,25 +11,61 @@ struct Context
 {
     Context()
         : random()
-        , window(sf::VideoMode(1600, 1200), "Screen", sf::Style::Fullscreen)
-        , bloomWindow(window)
+        , window(sf::VideoMode(1920, 1080), "Screen", sf::Style::Fullscreen)
+        , windowSize(static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y))
+        , windowRect({}, windowSize)
         , frameTimeSec(0.0f)
+        , bgTextures(4, sf::Texture())
+        , bgSprites(bgTextures.size(), sf::Sprite())
+        , swirlTextures(8, sf::Texture())
     {
         window.setFramerateLimit(60);
 
-        bloomWindow.isEnabled(true);
-        bloomWindow.blurMultipassCount(5);
-        if (!bloomWindow.isEnabled())
+        // load background images
+        bgTextures.at(0).loadFromFile("image/paper-1.png");
+        bgTextures.at(1).loadFromFile("image/paper-2.jpg");
+        bgTextures.at(2).loadFromFile("image/paper-3.jpg");
+        bgTextures.at(3).loadFromFile("image/paper-4.jpg");
+
+        // setup backgrouond images
+        for (std::size_t i(0); i < bgSprites.size(); ++i)
         {
-            std::cerr << "Bloom effect not supported on this video card.  Bail." << std::endl;
-            window.close();
+            bgTextures.at(i).setSmooth(true);
+
+            bgSprites.at(i).setTexture(bgTextures[i]);
+
+            const float scaleX{ windowSize.x / bgSprites.at(i).getGlobalBounds().width };
+            const float scaleY{ windowSize.y / bgSprites.at(i).getGlobalBounds().height };
+            bgSprites.at(i).setScale(scaleX, scaleY);
+        }
+
+        // load swirl textures
+        swirlTextures.at(0).loadFromFile("image/swirl-1.png");
+        swirlTextures.at(1).loadFromFile("image/swirl-2.png");
+        swirlTextures.at(2).loadFromFile("image/swirl-3.png");
+        swirlTextures.at(3).loadFromFile("image/swirl-4.png");
+        swirlTextures.at(4).loadFromFile("image/swirl-5.png");
+        swirlTextures.at(5).loadFromFile("image/swirl-6.png");
+        swirlTextures.at(6).loadFromFile("image/swirl-7.png");
+        swirlTextures.at(7).loadFromFile("image/swirl-8.png");
+
+        for (sf::Texture & texture : swirlTextures)
+        {
+            texture.setSmooth(true);
         }
     }
 
     util::Random random;
+
     sf::RenderWindow window;
-    util::BloomEffectHelper bloomWindow;
+    sf::Vector2f windowSize;
+    sf::FloatRect windowRect;
+
     float frameTimeSec;
+
+    std::vector<sf::Texture> bgTextures;
+    std::vector<sf::Sprite> bgSprites;
+    std::vector<sf::Texture> swirlTextures;
 };
 
 //
@@ -40,6 +76,41 @@ sf::Vector2f randomWindowPos(const Context & context)
 }
 
 //
+class Swirl
+{
+  public:
+    Swirl(const Context & context)
+        : sprite(context.random.from(context.swirlTextures))
+        , colorSlider(
+              sf::Color::Transparent,
+              sf::Color(255, 255, 255, context.random.fromTo<sf::Uint8>(64, 128)),
+              context.random.fromTo(0.75f, 3.0f),
+              util::WillOscillate::Yes,
+              util::WillAutoStart::Yes,
+              1)
+        , spinSpeed(context.random.fromTo(0.5f, 5.0f))
+    {
+        util::setOriginToCenter(sprite);
+        sprite.setPosition(randomWindowPos(context));
+        sprite.setColor(colorSlider.value());
+    }
+
+    void update(const float FRAME_TIME_SEC)
+    {
+        sprite.rotate(spinSpeed);
+
+        colorSlider.update(FRAME_TIME_SEC);
+        sprite.setColor(colorSlider.value());
+    }
+
+    bool isAlive() { return (colorSlider.isMoving()); }
+
+    sf::Sprite sprite;
+    util::ColorSlider colorSlider;
+    float spinSpeed;
+};
+
+//
 void HandleEvents(Context & context);
 
 //
@@ -47,18 +118,43 @@ int main()
 {
     Context context;
 
-    sf::Clock frameClock;
+    std::vector<Swirl> swirls;
+    for (std::size_t i(0); i < 50; ++i)
+    {
+        swirls.push_back(Swirl(context));
+    }
 
+    sf::Clock frameClock;
     while (context.window.isOpen())
     {
         context.frameTimeSec = frameClock.restart().asSeconds();
 
         HandleEvents(context);
 
-        // draw
-        context.bloomWindow.clear();
+        // update
+        for (Swirl & swirl : swirls)
+        {
+            swirl.update(context.frameTimeSec);
 
-        context.bloomWindow.display();
+            if (!swirl.isAlive())
+            {
+                swirl = Swirl(context);
+            }
+        }
+
+        // draw
+        context.window.clear();
+        context.window.draw(context.bgSprites[1]);
+
+        for (Swirl & swirl : swirls)
+        {
+            if (swirl.isAlive())
+            {
+                context.window.draw(swirl.sprite);
+            }
+        }
+
+        context.window.display();
     }
 
     return EXIT_SUCCESS;
