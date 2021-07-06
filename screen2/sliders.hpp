@@ -123,8 +123,8 @@ namespace util
             : isStopped_(false)
             , from_(FROM)
             , to_(TO)
-            , max_(Max(FROM, TO))
-            , min_(Min(FROM, TO))
+            , max_(util::max(FROM, TO))
+            , min_(util::min(FROM, TO))
             , diff_(static_cast<float>(TO - FROM))
             , speed_(SPEED)
             , value_(FROM)
@@ -132,7 +132,7 @@ namespace util
         {
             if (isStopped_)
             {
-                sliderZeroToOne_.Stop();
+                sliderZeroToOne_.stop();
             }
         }
 
@@ -150,10 +150,10 @@ namespace util
         {
             if (!isStopped_)
             {
-                const float RATIO{ sliderZeroToOne_.Update(ADJUSTMENT) };
+                const float RATIO{ sliderZeroToOne_.update(ADJUSTMENT) };
                 value_ = static_cast<T>(static_cast<float>(from_) + (diff_ * RATIO));
                 value_ = std::clamp(value_, min_, max_);
-                isStopped_ = sliderZeroToOne_.IsStopped();
+                isStopped_ = sliderZeroToOne_.isStopped();
             }
 
             return value_;

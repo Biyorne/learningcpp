@@ -89,10 +89,15 @@ class Swirl
               util::WillAutoStart::Yes,
               1)
         , spinSpeed(context.random.fromTo(0.5f, 5.0f))
+        , scaleSlider(
+              context.random.fromTo(0.001f, 0.01f),
+              context.random.fromTo(1.0f, 6.0f),
+              context.random.fromTo(0.25f, 1.5f))
     {
         util::setOriginToCenter(sprite);
         sprite.setPosition(randomWindowPos(context));
         sprite.setColor(colorSlider.value());
+        sprite.setScale(scaleSlider.value(), scaleSlider.value());
     }
 
     void update(const float FRAME_TIME_SEC)
@@ -101,13 +106,87 @@ class Swirl
 
         colorSlider.update(FRAME_TIME_SEC);
         sprite.setColor(colorSlider.value());
+
+        scaleSlider.Update(FRAME_TIME_SEC);
+        sprite.setScale(scaleSlider.value(), scaleSlider.value());
     }
 
     bool isAlive() { return (colorSlider.isMoving()); }
 
+    void draw(sf::RenderWindow & window) { window.draw(sprite); }
+
+  private:
     sf::Sprite sprite;
     util::ColorSlider colorSlider;
     float spinSpeed;
+    util::SliderFromTo<float> scaleSlider;
+};
+
+//
+class BackgroundFader
+{
+  public:
+    BackgroundFader(const Context & context)
+        : isFading(false)
+        , bgIndex(0)
+        , fgIndex(0)
+        , colorSlider()
+        , delayTimerSec(context.random.fromTo(1.0f, 1.1f))
+    {}
+
+    void update(Context & context)
+    {
+        if (isFading)
+        {
+            colorSlider.update(context.frameTimeSec);
+            context.bgSprites.at(fgIndex).setColor(colorSlider.value());
+
+            if (colorSlider.isAtTo())
+            {
+                isFading = false;
+                delayTimerSec = context.random.fromTo(1.0f, 1.1f);
+            }
+        }
+        else
+        {
+            delayTimerSec -= context.frameTimeSec;
+
+            if (delayTimerSec < 0.0f)
+            {
+                isFading = true;
+
+                colorSlider = util::ColorSlider(
+                    sf::Color::Transparent,
+                    sf::Color::White,
+                    context.random.fromTo(0.1f, 1.0f),
+                    util::WillOscillate::No,
+                    util::WillAutoStart::Yes);
+
+                bgIndex = fgIndex;
+
+                while (bgIndex == fgIndex)
+                {
+                    fgIndex = context.random.fromTo<std::size_t>(0, context.bgSprites.size() - 1);
+                }
+
+                context.bgSprites.at(bgIndex).setColor(sf::Color::White);
+                context.bgSprites.at(fgIndex).setColor(sf::Color::Transparent);
+            }
+        }
+    }
+
+    void draw(Context & context)
+    {
+        context.window.draw(context.bgSprites.at(bgIndex));
+        context.window.draw(context.bgSprites.at(fgIndex));
+    }
+
+  private:
+    bool isFading;
+    std::size_t bgIndex;
+    std::size_t fgIndex;
+    util::ColorSlider colorSlider;
+    float delayTimerSec;
 };
 
 //
@@ -118,8 +197,10 @@ int main()
 {
     Context context;
 
+    BackgroundFader bgFader(context);
+
     std::vector<Swirl> swirls;
-    for (std::size_t i(0); i < 50; ++i)
+    for (std::size_t i(0); i < 10; ++i)
     {
         swirls.push_back(Swirl(context));
     }
@@ -132,6 +213,8 @@ int main()
         HandleEvents(context);
 
         // update
+        bgFader.update(context);
+
         for (Swirl & swirl : swirls)
         {
             swirl.update(context.frameTimeSec);
@@ -144,13 +227,14 @@ int main()
 
         // draw
         context.window.clear();
-        context.window.draw(context.bgSprites[1]);
+
+        bgFader.draw(context);
 
         for (Swirl & swirl : swirls)
         {
             if (swirl.isAlive())
             {
-                context.window.draw(swirl.sprite);
+                swirl.draw(context.window);
             }
         }
 
