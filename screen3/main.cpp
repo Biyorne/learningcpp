@@ -19,10 +19,9 @@ struct Context
         , windowSize(static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y))
         , windowRect({}, windowSize)
         , frameTimeSec(0.0f)
-        , bgTexture()
-        , bgSprite()
-        , swirlTexture()
-        , swirlSprite()
+        , isPaused(false)
+        , swirlTextures()
+        , swirlSprites()
     {
         std::cout << window.getSize() << std::endl;
 
@@ -36,23 +35,25 @@ struct Context
             window.close();
         }
 
-        // backgrond image
-        bgTexture.loadFromFile("image/wood.jpg");
-        bgTexture.setSmooth(true);
-        bgTexture.setRepeated(true);
+        // swirl images
+        swirlTextures.resize(6);
+        swirlTextures.at(0).loadFromFile("image/swirl-2.png");
+        swirlTextures.at(1).loadFromFile("image/swirl-3.png");
+        swirlTextures.at(2).loadFromFile("image/swirl-4.png");
+        swirlTextures.at(3).loadFromFile("image/swirl-5.png");
+        swirlTextures.at(4).loadFromFile("image/swirl-6.png");
+        swirlTextures.at(5).loadFromFile("image/swirl-7.png");
 
-        bgSprite.setTexture(bgTexture);
-        bgSprite.setTextureRect(sf::IntRect(0, 0, window.getSize().x, window.getSize().y));
-        // bgSprite.setScale(2.0f, 2.0f);
+        swirlSprites.resize(swirlTextures.size());
+        for (std::size_t i(0); i < swirlSprites.size(); ++i)
+        {
+            swirlTextures.at(i).setSmooth(true);
 
-        // swirl image
-        swirlTexture.loadFromFile("image/swirl-2.png");
-        swirlTexture.setSmooth(true);
-
-        swirlSprite.setTexture(swirlTexture);
-        swirlSprite.setScale(0.3f, 0.3f);
-        util::setOriginToCenter(swirlSprite);
-        swirlSprite.setPosition(util::center(windowRect));
+            swirlSprites.at(i).setTexture(swirlTextures.at(i));
+            swirlSprites.at(i).setScale(0.3f, 0.3f);
+            util::setOriginToCenter(swirlSprites.at(i));
+            swirlSprites.at(i).setPosition(util::center(windowRect));
+        }
     }
 
     util::Random random;
@@ -62,12 +63,10 @@ struct Context
     sf::FloatRect windowRect;
 
     float frameTimeSec;
+    bool isPaused;
 
-    sf::Texture bgTexture;
-    sf::Sprite bgSprite;
-
-    sf::Texture swirlTexture;
-    sf::Sprite swirlSprite;
+    std::vector<sf::Texture> swirlTextures;
+    std::vector<sf::Sprite> swirlSprites;
 };
 
 //
@@ -237,9 +236,9 @@ class Swirl
 {
   public:
     Swirl(const Context & context)
-        : sprite_(context.swirlSprite)
-        , positionDrifter_(context, context.windowRect, { 0.15f, 0.65f })
-        , rotateSpeedDrifter_(context, { -50.0f, -5.0f }, { 0.5f, 2.0f })
+        : sprite_(context.random.from(context.swirlSprites))
+        , positionDrifter_(context, context.windowRect, { 0.15f, 10.65f })
+        , rotateSpeedDrifter_(context, { -50.0f, -0.5f }, { 0.5f, 2.0f })
         , colorDrifter_(context, { 0.1f, 1.0f })
     {}
 
@@ -277,7 +276,7 @@ int main()
     Context context;
 
     std::vector<Swirl> swirls;
-    for (std::size_t i(0); i < 10; ++i)
+    for (std::size_t i(0); i < 50; ++i)
     {
         swirls.push_back(Swirl(context));
     }
@@ -291,15 +290,18 @@ int main()
         HandleEvents(context);
 
         // update
-        for (Swirl & swirl : swirls)
+        if (!context.isPaused)
         {
-            swirl.update(context);
+            for (Swirl & swirl : swirls)
+            {
+                swirl.update(context);
+            }
         }
 
         // draw
         context.bloomWindow.clear();
 
-        context.bloomWindow.draw(context.bgSprite);
+        // context.bloomWindow.draw(context.bgSprite);
 
         for (const Swirl & swirl : swirls)
         {
@@ -332,6 +334,10 @@ void HandleEvents(Context & context)
             if (event.key.code == sf::Keyboard::Escape)
             {
                 context.window.close();
+            }
+            else if (event.key.code == sf::Keyboard::Space)
+            {
+                context.isPaused = !context.isPaused;
             }
         }
     }
