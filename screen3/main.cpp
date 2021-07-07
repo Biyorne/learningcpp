@@ -14,7 +14,7 @@ struct Context
 {
     Context()
         : random()
-        , window(sf::VideoMode(1920, 1080), "Screensaver", sf::Style::Fullscreen)
+        , window(sf::VideoMode(1920, 1200), "Screensaver", sf::Style::Fullscreen)
         , bloomWindow(window)
         , windowSize(static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y))
         , windowRect({}, windowSize)
@@ -24,6 +24,8 @@ struct Context
         , swirlTexture()
         , swirlSprite()
     {
+        std::cout << window.getSize() << std::endl;
+
         window.setFramerateLimit(60);
 
         bloomWindow.isEnabled(true);
@@ -41,14 +43,14 @@ struct Context
 
         bgSprite.setTexture(bgTexture);
         bgSprite.setTextureRect(sf::IntRect(0, 0, window.getSize().x, window.getSize().y));
-        bgSprite.setScale(2.0f, 2.0f);
+        // bgSprite.setScale(2.0f, 2.0f);
 
         // swirl image
-        swirlTexture.loadFromFile("image/swirl-1.png");
+        swirlTexture.loadFromFile("image/swirl-2.png");
         swirlTexture.setSmooth(true);
 
         swirlSprite.setTexture(swirlTexture);
-        swirlSprite.setScale(3.0f, 3.0f);
+        swirlSprite.setScale(0.3f, 0.3f);
         util::setOriginToCenter(swirlSprite);
         swirlSprite.setPosition(util::center(windowRect));
     }
@@ -100,7 +102,7 @@ class ValueDrifter
         }
     }
 
-    float value() { return slider.value(); }
+    float value() const { return slider.value(); }
 
     void reset(const Context & context)
     {
@@ -145,7 +147,7 @@ class PositionDrifter
         vertDrifter.update(context);
     }
 
-    sf::Vector2f value() { return { horizDrifter.value(), vertDrifter.value() }; }
+    sf::Vector2f value() const { return { horizDrifter.value(), vertDrifter.value() }; }
 
     void reset(const Context & context)
     {
@@ -213,7 +215,7 @@ class ColorDrifter
         }
     }
 
-    sf::Color value() { return current_; }
+    sf::Color value() const { return current_; }
 
     void reset(const Context & context)
     {
@@ -231,6 +233,42 @@ class ColorDrifter
 };
 
 //
+class Swirl
+{
+  public:
+    Swirl(const Context & context)
+        : sprite_(context.swirlSprite)
+        , positionDrifter_(context, context.windowRect, { 0.15f, 0.65f })
+        , rotateSpeedDrifter_(context, { -50.0f, -5.0f }, { 0.5f, 2.0f })
+        , colorDrifter_(context, { 0.1f, 1.0f })
+    {}
+
+    void update(const Context & context)
+    {
+        positionDrifter_.update(context);
+        sprite_.setPosition(positionDrifter_.value());
+
+        rotateSpeedDrifter_.update(context);
+        sprite_.rotate(rotateSpeedDrifter_.value());
+
+        colorDrifter_.update(context);
+        sprite_.setColor(colorDrifter_.value());
+    }
+
+    void draw(sf::RenderTarget & target) const
+    {
+        target.draw(sprite_, sf::BlendAdd);
+        target.draw(sprite_, sf::BlendAdd);
+    }
+
+  private:
+    sf::Sprite sprite_;
+    PositionDrifter positionDrifter_;
+    ValueDrifter<float> rotateSpeedDrifter_;
+    ColorDrifter colorDrifter_;
+};
+
+//
 void HandleEvents(Context & context);
 
 //
@@ -238,9 +276,11 @@ int main()
 {
     Context context;
 
-    PositionDrifter positionDrifter(context, context.windowRect, { 0.15f, 0.65f });
-    ValueDrifter rotateSpeedDrifter(context, { -30.0f, -100.0f }, { 0.5f, 2.0f });
-    ColorDrifter colorDrifter(context, { 0.1f, 1.0f });
+    std::vector<Swirl> swirls;
+    for (std::size_t i(0); i < 10; ++i)
+    {
+        swirls.push_back(Swirl(context));
+    }
 
     sf::Clock frameClock;
 
@@ -251,20 +291,21 @@ int main()
         HandleEvents(context);
 
         // update
-        rotateSpeedDrifter.update(context);
-        context.swirlSprite.rotate(rotateSpeedDrifter.value());
-
-        positionDrifter.update(context);
-        context.swirlSprite.setPosition(positionDrifter.value());
-
-        colorDrifter.update(context);
-        context.swirlSprite.setColor(colorDrifter.value());
+        for (Swirl & swirl : swirls)
+        {
+            swirl.update(context);
+        }
 
         // draw
         context.bloomWindow.clear();
+
         context.bloomWindow.draw(context.bgSprite);
-        context.bloomWindow.draw(context.swirlSprite);
-        context.bloomWindow.draw(context.swirlSprite, sf::BlendAdd);
+
+        for (const Swirl & swirl : swirls)
+        {
+            swirl.draw(context.bloomWindow.renderTarget());
+        }
+
         context.bloomWindow.display();
     }
 
