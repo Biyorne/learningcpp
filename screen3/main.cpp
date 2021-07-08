@@ -102,6 +102,7 @@ class ValueDrifter
     }
 
     float value() const { return slider.value(); }
+    float ratio() const { return util::mapToRatio(slider.value(), valueRange.x, valueRange.y); }
 
     void reset(const Context & context)
     {
@@ -237,8 +238,8 @@ class Swirl
   public:
     Swirl(const Context & context)
         : sprite_(context.random.from(context.swirlSprites))
-        , positionDrifter_(context, context.windowRect, { 0.15f, 10.65f })
-        , rotateSpeedDrifter_(context, { -50.0f, -0.5f }, { 0.5f, 2.0f })
+        , positionDrifter_(context, context.windowRect, { 0.15f, 1.65f })
+        , rotateSpeedDrifter_(context, { -35.0f, -0.05f }, { 0.5f, 2.0f })
         , colorDrifter_(context, { 0.1f, 1.0f })
     {}
 
@@ -252,6 +253,9 @@ class Swirl
 
         colorDrifter_.update(context);
         sprite_.setColor(colorDrifter_.value());
+
+        const float scale = util::mapRatioTo(rotateSpeedDrifter_.ratio(), 0.01f, 0.75f);
+        sprite_.setScale(scale, scale);
     }
 
     void draw(sf::RenderTarget & target) const
@@ -276,7 +280,7 @@ int main()
     Context context;
 
     std::vector<Swirl> swirls;
-    for (std::size_t i(0); i < 50; ++i)
+    for (std::size_t i(0); i < 35; ++i)
     {
         swirls.push_back(Swirl(context));
     }

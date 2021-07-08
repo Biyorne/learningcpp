@@ -145,6 +145,7 @@ namespace util
         bool isStopped() const { return isStopped_; }
         bool isMoving() const { return !isStopped(); }
         void stop() { isStopped_ = true; }
+        float ratio() const { return sliderZeroToOne_.value(); }
 
         T update(const float ADJUSTMENT)
         {
