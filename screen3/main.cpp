@@ -20,6 +20,7 @@ struct Context
         , windowRect({}, windowSize)
         , frameTimeSec(0.0f)
         , isPaused(false)
+        , pauseTimerSec(6.0f)
         , swirlTextures()
         , swirlSprites()
     {
@@ -64,6 +65,7 @@ struct Context
 
     float frameTimeSec;
     bool isPaused;
+    float pauseTimerSec;
 
     std::vector<sf::Texture> swirlTextures;
     std::vector<sf::Sprite> swirlSprites;
@@ -302,10 +304,23 @@ int main()
             }
         }
 
+        context.pauseTimerSec -= context.frameTimeSec;
+        if (context.pauseTimerSec < 0.0f)
+        {
+            if (context.isPaused)
+            {
+                context.pauseTimerSec = 10.0f;
+            }
+            else
+            {
+                context.pauseTimerSec = 3.0f;
+            }
+
+            context.isPaused = !context.isPaused;
+        }
+
         // draw
         context.bloomWindow.clear();
-
-        // context.bloomWindow.draw(context.bgSprite);
 
         for (const Swirl & swirl : swirls)
         {
