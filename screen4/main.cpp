@@ -290,7 +290,10 @@ int main()
 {
     Context context;
 
-    // glow specks
+    // nova center image
+    ValueDrifter novaSpinDrifter(context, { -5.0f, 5.0f }, { 0.1f, 1.0f });
+
+    // nova glow specks
     std::vector<GlowSpeck> specks;
     for (std::size_t i(0); i < 15; ++i)
     {
@@ -304,6 +307,7 @@ int main()
 
     ColorDrifter spinColorDrifter(context, { 0.01f, 0.1f });
     ValueDrifter spinRadialDrifter(context, { -0.005f, 0.005f }, { 0.25f, 2.5f });
+    ValueDrifter radiusDrifter(context, { -50.0f, 100.0f }, { 0.1f, 1.0f });
 
     //
     sf::Clock frameClock;
@@ -330,6 +334,8 @@ int main()
         // draw
         context.bloomWindow.clear();
 
+        novaSpinDrifter.update(context);
+        context.novaSprite.rotate(novaSpinDrifter.value());
         context.bloomWindow.draw(context.novaSprite);
 
         //
@@ -337,7 +343,8 @@ int main()
         angleTweak += spinRadialDrifter.value();
         const float stepCount = 20.0f;
         const float angle = ((3.141f * 2.0f) / stepCount) + angleTweak;
-        const float radius = 100.0f;
+        radiusDrifter.update(context);
+        const float radius = 100.0f + radiusDrifter.value();
         for (float step(0); step < (stepCount * 2.0f); step += 1.0f)
         {
             const float radiusActual = radius + (step * 20.0f);
