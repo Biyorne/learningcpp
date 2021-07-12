@@ -290,14 +290,23 @@ int main()
 {
     Context context;
 
+    // glow specks
     std::vector<GlowSpeck> specks;
     for (std::size_t i(0); i < 15; ++i)
     {
         specks.push_back(GlowSpeck(context, context.novaSprite));
     }
 
-    sf::Clock frameClock;
+    // radial spinning sprites
+    sf::Sprite spinSprite = context.novaSprite;
+    spinSprite.setColor(sf::Color::Yellow);
+    float angleTweak = 0.0f;
 
+    ColorDrifter spinColorDrifter(context, { 0.01f, 0.1f });
+    ValueDrifter spinRadialDrifter(context, { -0.005f, 0.005f }, { 0.25f, 2.5f });
+
+    //
+    sf::Clock frameClock;
     while (context.window.isOpen())
     {
         context.frameTimeSec = frameClock.restart().asSeconds();
@@ -322,6 +331,29 @@ int main()
         context.bloomWindow.clear();
 
         context.bloomWindow.draw(context.novaSprite);
+
+        //
+        spinRadialDrifter.update(context);
+        angleTweak += spinRadialDrifter.value();
+        const float stepCount = 20.0f;
+        const float angle = ((3.141f * 2.0f) / stepCount) + angleTweak;
+        const float radius = 100.0f;
+        for (float step(0); step < (stepCount * 2.0f); step += 1.0f)
+        {
+            const float radiusActual = radius + (step * 20.0f);
+
+            const float posX = radiusActual * std::sin(angle * step);
+            const float posY = -radiusActual * std::cos(angle * step);
+            const sf::Vector2f pos = { posX, posY };
+
+            spinSprite.setPosition((context.windowSize / 2.0f) + pos);
+
+            //
+            spinColorDrifter.update(context);
+            spinSprite.setColor(spinColorDrifter.value());
+
+            context.bloomWindow.draw(spinSprite);
+        }
 
         for (GlowSpeck & speck : specks)
         {
