@@ -307,7 +307,7 @@ int main()
 
     ColorDrifter spinColorDrifter(context, { 0.01f, 0.1f });
     ValueDrifter spinRadialDrifter(context, { -0.005f, 0.005f }, { 0.25f, 2.5f });
-    ValueDrifter radiusDrifter(context, { -50.0f, 100.0f }, { 0.1f, 1.0f });
+    ValueDrifter radiusDrifter(context, { -200.0f, 200.0f }, { 0.1f, 1.0f });
 
     //
     sf::Clock frameClock;
@@ -334,10 +334,6 @@ int main()
         // draw
         context.bloomWindow.clear();
 
-        novaSpinDrifter.update(context);
-        context.novaSprite.rotate(novaSpinDrifter.value());
-        context.bloomWindow.draw(context.novaSprite);
-
         //
         spinRadialDrifter.update(context);
         angleTweak += spinRadialDrifter.value();
@@ -362,10 +358,16 @@ int main()
             context.bloomWindow.draw(spinSprite);
         }
 
+        //
         for (GlowSpeck & speck : specks)
         {
             speck.draw(context.bloomWindow.renderTarget());
         }
+
+        //
+        novaSpinDrifter.update(context);
+        context.novaSprite.rotate(novaSpinDrifter.value());
+        context.bloomWindow.draw(context.novaSprite);
 
         context.bloomWindow.display();
     }
