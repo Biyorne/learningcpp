@@ -372,6 +372,7 @@ int main()
     ValueDrifter spinRadialDrifter(context, { -0.005f, 0.005f }, { 0.25f, 2.5f });
     ValueDrifter radiusDrifter(context, { -100.0f, 200.0f }, { 0.1f, 1.0f });
     ValueDrifter scaleDrifter(context, { 0.5f, 4.0f }, { 0.2f, 2.0f });
+    ValueDrifter stepDrifter(context, { 5.0f, 25.0f }, { 0.1, 1.0f });
 
     //
     sf::Clock frameClock;
@@ -399,18 +400,19 @@ int main()
         context.bloomWindow.clear();
 
         //
+        stepDrifter.update(context);
         scaleDrifter.update(context);
         const float scale = scaleDrifter.value();
         spinSprite.setScale(scale, scale);
         spinRadialDrifter.update(context);
         angleTweak += spinRadialDrifter.value();
-        const float stepCount = 20.0f;
+        const float stepCount = 40.0f;
         const float angle = ((3.141f * 2.0f) / stepCount) + angleTweak;
         radiusDrifter.update(context);
         const float radius = 100.0f + radiusDrifter.value();
         for (float step(0); step < (stepCount * 2.0f); step += 1.0f)
         {
-            const float radiusActual = radius + (step * 20.0f);
+            const float radiusActual = radius + (step * stepDrifter.value());
 
             const float posX = radiusActual * std::sin(angle * step);
             const float posY = -radiusActual * std::cos(angle * step);
