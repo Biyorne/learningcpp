@@ -105,7 +105,7 @@ namespace util
 
     // this lib is for simple/innaccurate/game/etc apps, so a simple multiple of epsilon works
     template <typename T>
-    constexpr T float_compare_epsilon = (std::numeric_limits<T>::epsilon() * T(10));
+    constexpr T float_compare_epsilon = (std::numeric_limits<T>::epsilon() * T(100));
 
     //
     // isRealClose()
@@ -191,9 +191,11 @@ namespace util
         return static_cast<Ratio_t>((number - inMin) / (inMax - inMin));
     }
 
-    inline constexpr sf::Uint8 mapRatioToColorValue(const float ratio)
+    template<typename T = float>
+    inline constexpr sf::Uint8 mapRatioToColorValue(const T ratio)
     {
-        return map(std::clamp(ratio, 0.0f, 1.0f), 0.0f, 1.0f, sf::Uint8(0), sf::Uint8(255));
+        static_assert(std::is_floating_point_v<T>);
+        return map(std::clamp(ratio, T(0), T(1)), T(0), T(1), sf::Uint8(0), sf::Uint8(255));
     }
 
     constexpr std::size_t verts_per_quad{ 4 };
@@ -380,7 +382,7 @@ namespace sf
 
         if (!vm.isValid())
         {
-            os << "(sfml says this mode is invalid)";
+            os << " [invalid]";
         }
 
         os << ")";
@@ -430,11 +432,7 @@ namespace util
             ++count;
         }
 
-        const std::size_t modeCountReturned{ count };
-
-        ss << separator << "(total_supported=" << modeCountOrig << ")";
-        ss << separator << "(total_listed=" << modeCountReturned << ")";
-
+        ss << separator << "(total=" << count << ", supported=" << modeCountOrig << ")";
         return ss.str();
     }
 
@@ -643,12 +641,14 @@ namespace util
         return center(thing.getLocalBounds());
     }
 
+    // origin is always in local coords
     template <typename T>
     void setOriginToCenter(T & thing)
     {
         thing.setOrigin(centerLocal(thing));
     }
 
+    // origin is always in local coords
     // sf::Text needs correction after changing the: string, scale, or characterSize
     template <typename T>
     void setOriginToPosition(T & thing)
@@ -881,12 +881,6 @@ namespace util
     void fit(T & thing, const sf::FloatRect & rect)
     {
         fit(thing, { rect.width, rect.height });
-    }
-
-    template <typename T>
-    void fit(T & thing, const float newScale)
-    {
-        fit(thing, { newScale, newScale });
     }
 
     template <typename T>
