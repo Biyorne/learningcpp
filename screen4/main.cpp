@@ -110,6 +110,69 @@ class ValueDrifter
     util::SliderFromTo<T> slider_;
 };
 
+template <typename T = float>
+class ValueOscillator
+{
+  public:
+    ValueOscillator()
+        : valueRange_(0.0f, 0.0f)
+        , speedRange_(0.0f, 0.0f)
+        , slider_()
+        , isGrowing_(true)
+    {}
+
+    ValueOscillator(
+        const Context & context,
+        const sf::Vector2<T> & VALUE_RANGE,
+        const sf::Vector2<T> & SPEED_RANGE)
+        : valueRange_(VALUE_RANGE)
+        , speedRange_(SPEED_RANGE)
+        , slider_(VALUE_RANGE.x, VALUE_RANGE.y, context.random.fromTo(speedRange_.x, speedRange_.y))
+        , isGrowing_(true)
+    {}
+
+    void update(const Context & context)
+    {
+        slider_.update(context.frameTimeSec);
+
+        if (slider_.isStopped())
+        {
+            if (isGrowing_)
+            {
+                slider_ = util::SliderFromTo(
+                    valueRange_.y,
+                    valueRange_.x,
+                    context.random.fromTo(speedRange_.x, speedRange_.y));
+            }
+            else
+            {
+                slider_ = util::SliderFromTo(
+                    valueRange_.x,
+                    valueRange_.y,
+                    context.random.fromTo(speedRange_.x, speedRange_.y));
+            }
+
+            isGrowing_ = !isGrowing_;
+        }
+    }
+
+    float value() const { return slider_.value(); }
+
+    void reset(const Context & context)
+    {
+        slider_ = util::SliderFromTo<float>(
+            slider_.value(),
+            context.random.fromTo(valueRange_.x, valueRange_.y),
+            context.random.fromTo(speedRange_.x, speedRange_.y));
+    }
+
+  private:
+    sf::Vector2<T> valueRange_;
+    sf::Vector2<T> speedRange_;
+    util::SliderFromTo<T> slider_;
+    bool isGrowing_;
+};
+
 //
 class PositionDrifter
 {
@@ -307,7 +370,9 @@ int main()
 
     ColorDrifter spinColorDrifter(context, { 0.01f, 0.1f });
     ValueDrifter spinRadialDrifter(context, { -0.005f, 0.005f }, { 0.25f, 2.5f });
-    ValueDrifter radiusDrifter(context, { -200.0f, 200.0f }, { 0.1f, 1.0f });
+    ValueDrifter radiusDrifter(context, { -100.0f, 200.0f }, { 0.1f, 1.0f });
+    ValueDrifter scaleDrifter(context, { 0.5f, 4.0f }, { 0.2f, 2.0f });
+    ValueDrifter stepDrifter(context, { 5.0f, 25.0f }, { 0.1, 1.0f });
 
     //
     sf::Clock frameClock;
@@ -335,15 +400,19 @@ int main()
         context.bloomWindow.clear();
 
         //
+        stepDrifter.update(context);
+        scaleDrifter.update(context);
+        const float scale = scaleDrifter.value();
+        spinSprite.setScale(scale, scale);
         spinRadialDrifter.update(context);
         angleTweak += spinRadialDrifter.value();
-        const float stepCount = 20.0f;
+        const float stepCount = 40.0f;
         const float angle = ((3.141f * 2.0f) / stepCount) + angleTweak;
         radiusDrifter.update(context);
         const float radius = 100.0f + radiusDrifter.value();
         for (float step(0); step < (stepCount * 2.0f); step += 1.0f)
         {
-            const float radiusActual = radius + (step * 20.0f);
+            const float radiusActual = radius + (step * stepDrifter.value());
 
             const float posX = radiusActual * std::sin(angle * step);
             const float posY = -radiusActual * std::cos(angle * step);
