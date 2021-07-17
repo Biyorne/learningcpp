@@ -293,14 +293,14 @@ class GlowSpeck
         : sprite_(context.novaSprite)
         , spawnRect_()
         , positionDrifter_()
-        , scaleSlider_(context.random.fromTo(0.1f, 1.0f))
+        , scaleSlider_(context.random.fromTo(0.25f, 2.0f))
         , isGrowing_(true)
         , maxScale_(0.2f)
     {
         spawnRect_ = TARGET_SPRITE.getGlobalBounds();
         util::scaleRectInPlace(spawnRect_, 1.0f);
 
-        positionDrifter_ = PositionDrifter(context, spawnRect_, { 0.0075f, 0.3f });
+        positionDrifter_ = PositionDrifter(context, spawnRect_, { 2.0075f, 10.2f });
 
         sprite_.setScale(0.0f, 0.0f);
 
