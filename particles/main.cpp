@@ -11,6 +11,8 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "random.hpp"
+
 //
 
 class ParticleEmitter : public sf::Drawable
@@ -27,14 +29,14 @@ public:
 
     void position(const sf::Vector2f & position) { m_position = position; }
 
-    void add(const std::size_t number = 1000)
+    void add(const std::size_t number)
     {
         if (number <= 0)
         {
             return;
         }
 
-        const std::size_t newSize(count() + number);
+        const std::size_t newSize { count() + number };
 
         m_particles.resize(newSize);
         m_vertArray.resize(newSize);
@@ -67,8 +69,8 @@ public:
                 vertex.position += ((driftPos - vertex.position) * elapsed.asSeconds());
             }
 
-            const float lifetimeRatio(
-                particle.lifetime_remaining.asSeconds() / m_lifetimeMax.asSeconds());
+            // const float lifetimeRatio(
+            //    particle.lifetime_remaining.asSeconds() / m_lifetimeMax.asSeconds());
 
             // vertex.color.a = static_cast<sf::Uint8>(lifetimeRatio * 255);
         }
@@ -89,12 +91,13 @@ private:
 
     void respawn(Particle & particle, sf::Vertex & vertex)
     {
-        const float angleRad((std::rand() % 360) * (3.14f / 180.0f));
-        const float speed((std::rand() % 100) + 100.0f);
+        const float angleRad { m_random.fromTo(0.0f, 360.0f) * (3.14f / 180.0f) };
+        const float speed { m_random.fromTo(0.0f, 100.0f) + 100.0f };
+
         particle.velocity.x = (std::cos(angleRad) * speed);
         particle.velocity.y = (std::sin(angleRad) * speed);
 
-        particle.lifetime_remaining = sf::milliseconds((std::rand() % 2000) + 1000);
+        particle.lifetime_remaining = sf::milliseconds(m_random.fromTo(0, 2000) + 1000);
 
         vertex.position = m_position;
         vertex.color = sf::Color::White;
@@ -109,11 +112,14 @@ private:
         return static_cast<unsigned char>((std::rand() % 255));
     }
 
+    static util::Random m_random;
     std::vector<Particle> m_particles;
     sf::VertexArray m_vertArray;
     sf::Time m_lifetimeMax;
     sf::Vector2f m_position;
 };
+
+util::Random ParticleEmitter::m_random {};
 
 //
 
@@ -128,6 +134,7 @@ int main()
 
     auto willDrift { false };
     auto backgroundColor { sf::Color(46, 54, 60) };
+    const std::size_t countToAddPerSpawn { 1000 };
 
     const sf::VideoMode videoMode { 1600, 1200, sf::VideoMode::getDesktopMode().bitsPerPixel };
     sf::RenderWindow window(videoMode, "Particles2", sf::Style::Fullscreen);
@@ -166,12 +173,13 @@ int main()
                 }
                 else
                 {
-                    emitters.emplace_back(mousePosition).add();
+                    emitters.emplace_back(mousePosition).add(countToAddPerSpawn);
                 }
             }
             else if (sf::Keyboard::R == event.key.code)
             {
                 emitters.clear();
+                willDrift = false;
             }
             else if (sf::Keyboard::D == event.key.code)
             {
