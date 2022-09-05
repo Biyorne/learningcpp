@@ -19,10 +19,9 @@ public:
     explicit ParticleEmitter(const sf::Vector2f & position)
         : m_particles()
         , m_vertArray(sf::Points)
-        , m_lifetimeMax(sf::seconds(3.0f))
+        , m_lifetimeMax(sf::seconds(5.0f))
         , m_position(position)
-        , m_willDrift(false)
-    {}
+    { }
 
     std::size_t count() const { return m_vertArray.getVertexCount(); }
 
@@ -47,7 +46,7 @@ public:
         m_vertArray.resize(0);
     }
 
-    void update(const sf::Time & elapsed, const sf::Vector2f & driftPos)
+    void update(const sf::Time & elapsed, const bool willDrift, const sf::Vector2f & driftPos)
     {
         const auto particleCount { count() };
         for (std::size_t i(0); i < particleCount; ++i)
@@ -63,7 +62,7 @@ public:
 
             vertex.position += (particle.velocity * elapsed.asSeconds());
 
-            if (m_willDrift)
+            if (willDrift)
             {
                 vertex.position += ((driftPos - vertex.position) * elapsed.asSeconds());
             }
@@ -71,16 +70,13 @@ public:
             const float lifetimeRatio(
                 particle.lifetime_remaining.asSeconds() / m_lifetimeMax.asSeconds());
 
-            vertex.color.a = static_cast<sf::Uint8>(lifetimeRatio * 255);
+            // vertex.color.a = static_cast<sf::Uint8>(lifetimeRatio * 255);
         }
     }
-
-    void drift(const bool will) { m_willDrift = will; }
 
 private:
     void draw(sf::RenderTarget & target, sf::RenderStates states) const final
     {
-        // states.blendMode = sf::BlendAdd;
         target.draw(m_vertArray, states);
     }
 
@@ -117,7 +113,6 @@ private:
     sf::VertexArray m_vertArray;
     sf::Time m_lifetimeMax;
     sf::Vector2f m_position;
-    bool m_willDrift;
 };
 
 //
@@ -126,30 +121,33 @@ int main()
 {
     std::cout.imbue(std::locale("")); // this is only to put commas in big numbers
 
-    bool willDrift(false);
-    bool isFullscreen(false);
-    const std::string appName("Particles");
-    const sf::VideoMode videoMode(1600, 1200, sf::VideoMode::getDesktopMode().bitsPerPixel);
+    if (!sf::Shader::isAvailable())
+    {
+        std::cout << "Shaders are NOT supported.  Your video card sucks." << std::endl;
+    }
 
-    sf::RenderWindow window(videoMode, appName, sf::Style::Default);
+    auto willDrift { false };
+    auto backgroundColor { sf::Color(46, 54, 60) };
 
-    const sf::Vector2f windowSize(window.getSize());
+    const sf::VideoMode videoMode { 1600, 1200, sf::VideoMode::getDesktopMode().bitsPerPixel };
+    sf::RenderWindow window(videoMode, "Particles2", sf::Style::Fullscreen);
+    const auto windowSize { window.getSize() };
 
     std::vector<ParticleEmitter> emitters;
 
     sf::Clock clock;
     sf::Clock statusClock;
-    std::size_t framesPerStatusCounter(0);
+    std::size_t framesPerStatusCounter { 0 };
 
     while (window.isOpen())
     {
-        const sf::Vector2f mousePos(sf::Mouse::getPosition(window));
+        const sf::Vector2f mousePosition { sf::Mouse::getPosition(window) };
 
         // handle events
         sf::Event event;
         while (window.pollEvent(event))
         {
-            if (sf::Event::Closed == event.type)
+            if ((sf::Event::Closed == event.type) || sf::Keyboard::Escape == event.key.code)
             {
                 window.close();
                 break;
@@ -160,52 +158,15 @@ int main()
                 continue;
             }
 
-            if (sf::Keyboard::Escape == event.key.code)
+            if (sf::Keyboard::S == event.key.code)
             {
-                window.close();
-                break;
-            }
-
-            if (sf::Keyboard::B == event.key.code)
-            {
-                if (!sf::Shader::isAvailable())
+                if (event.key.shift)
                 {
-                    std::cout << "'B' Keypress ignored because shaders are NOT supported.  Your "
-                                 "video card sucks."
-                              << std::endl;
-                    continue;
-                }
-
-                willBloom = !willBloom;
-            }
-            else if (sf::Keyboard::F == event.key.code)
-            {
-                isFullscreen = !isFullscreen;
-
-                window.close();
-
-                window.create(
-                    videoMode,
-                    appName,
-                    ((isFullscreen) ? sf::Style::Fullscreen : sf::Style::Default));
-            }
-            else if (sf::Keyboard::S == event.key.code)
-            {
-                if (!event.key.shift)
-                {
-                    emitters.emplace_back(mousePos).add();
+                    // todo?
                 }
                 else
                 {
-                    if (emitters.empty())
-                    {
-                        emitters.emplace_back(mousePos);
-                    }
-
-                    for (auto & emitter : emitters)
-                    {
-                        emitter.add();
-                    }
+                    emitters.emplace_back(mousePosition).add();
                 }
             }
             else if (sf::Keyboard::R == event.key.code)
@@ -215,10 +176,6 @@ int main()
             else if (sf::Keyboard::D == event.key.code)
             {
                 willDrift = !willDrift;
-                for (auto & emitter : emitters)
-                {
-                    emitter.drift(willDrift);
-                }
             }
         }
 
@@ -252,13 +209,13 @@ int main()
             const sf::Time elapsed(clock.restart());
             for (auto & emitter : emitters)
             {
-                emitter.update(elapsed, mousePos);
+                emitter.update(elapsed, willDrift, mousePosition);
             }
         }
 
         // draw
         {
-            window.clear();
+            window.clear(backgroundColor);
 
             for (const auto & emitter : emitters)
             {
