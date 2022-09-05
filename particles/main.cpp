@@ -15,6 +15,14 @@
 
 //
 
+struct Particle
+{
+    sf::Vector2f velocity { 0.0f, 0.0f };
+    sf::Time lifetime_remaining { sf::milliseconds(0) };
+};
+
+//
+
 class ParticleEmitter : public sf::Drawable
 {
 public:
@@ -25,18 +33,50 @@ public:
         , m_position(position)
     { }
 
-    std::size_t count() const { return m_vertArray.getVertexCount(); }
+    std::size_t size() const { return m_vertArray.getVertexCount(); }
+
+    bool empty() const { return (0 == size()); }
 
     void position(const sf::Vector2f & position) { m_position = position; }
 
-    void add(const std::size_t number)
+    Particle & particle(const std::size_t index) { return m_particles[index]; }
+    const Particle & particle(const std::size_t index) const { return m_particles[index]; }
+
+    sf::Vertex & vertex(const std::size_t index) { return m_vertArray[index]; }
+    const sf::Vertex & vertex(const std::size_t index) const { return m_vertArray[index]; }
+
+    void remove(const std::size_t index)
     {
-        if (number <= 0)
+        const auto particleCount { size() };
+
+        if (1 == particleCount)
+        {
+            m_particles.clear();
+            m_vertArray.clear();
+            return;
+        }
+
+        if (index >= particleCount)
         {
             return;
         }
 
-        const std::size_t newSize { count() + number };
+        // use swap & pop
+        m_particles[index] = m_particles[particleCount - 1];
+        m_particles.resize(particleCount - 1);
+
+        m_vertArray[index] = m_vertArray[particleCount - 1];
+        m_vertArray.resize(particleCount - 1);
+    }
+
+    void add(const std::size_t count)
+    {
+        if (count <= 0)
+        {
+            return;
+        }
+
+        const std::size_t newSize { size() + count };
 
         m_particles.resize(newSize);
         m_vertArray.resize(newSize);
@@ -50,7 +90,7 @@ public:
 
     void update(const sf::Time & elapsed, const bool willDrift, const sf::Vector2f & driftPos)
     {
-        const auto particleCount { count() };
+        const auto particleCount { size() };
         for (std::size_t i(0); i < particleCount; ++i)
         {
             Particle & particle(m_particles[i]);
@@ -76,18 +116,40 @@ public:
         }
     }
 
+    std::size_t handleCollisions(ParticleEmitter & otherEmitter)
+    {
+        std::size_t collisionCount { 0 };
+
+        const std::size_t myParticleCount { size() };
+        for (std::size_t myIndex { 0 }; myIndex < myParticleCount; ++myIndex)
+        {
+            const auto myPosition { vertex(myIndex).position };
+
+            const std::size_t otherParticleCount { otherEmitter.size() };
+            for (std::size_t otherIndex { 0 }; otherIndex < otherParticleCount; ++otherIndex)
+            {
+                const auto otherPosition { otherEmitter.vertex(otherIndex).position };
+
+                const auto positionDiff { myPosition - otherPosition };
+
+                if ((std::abs(positionDiff.x) < 1.0f) && (std::abs(positionDiff.y) < 1.0f))
+                {
+                    ++collisionCount;
+                    remove(myIndex);
+                    otherEmitter.remove(otherIndex);
+                    continue;
+                }
+            }
+        }
+
+        return collisionCount;
+    }
+
 private:
     void draw(sf::RenderTarget & target, sf::RenderStates states) const final
     {
         target.draw(m_vertArray, states);
     }
-
-private:
-    struct Particle
-    {
-        sf::Vector2f velocity;
-        sf::Time lifetime_remaining;
-    };
 
     void respawn(Particle & particle, sf::Vertex & vertex)
     {
@@ -133,8 +195,10 @@ int main()
     }
 
     auto willDrift { false };
+    auto willCollide { false };
+    auto collisionCount { std::size_t(0) };
     auto backgroundColor { sf::Color(46, 54, 60) };
-    const std::size_t countToAddPerSpawn { 1000 };
+    const auto countToAddPerSpawn { std::size_t(1000) };
 
     const sf::VideoMode videoMode { 1600, 1200, sf::VideoMode::getDesktopMode().bitsPerPixel };
     sf::RenderWindow window(videoMode, "Particles2", sf::Style::Fullscreen);
@@ -167,14 +231,7 @@ int main()
 
             if (sf::Keyboard::S == event.key.code)
             {
-                if (event.key.shift)
-                {
-                    // todo?
-                }
-                else
-                {
-                    emitters.emplace_back(mousePosition).add(countToAddPerSpawn);
-                }
+                emitters.emplace_back(mousePosition).add(countToAddPerSpawn);
             }
             else if (sf::Keyboard::R == event.key.code)
             {
@@ -184,6 +241,10 @@ int main()
             else if (sf::Keyboard::D == event.key.code)
             {
                 willDrift = !willDrift;
+            }
+            else if (sf::Keyboard::C == event.key.code)
+            {
+                willCollide = !willCollide;
             }
         }
 
@@ -201,11 +262,12 @@ int main()
                 std::size_t particleCount(0);
                 for (const auto & emitter : emitters)
                 {
-                    particleCount += emitter.count();
+                    particleCount += emitter.size();
                 }
 
                 std::cout << emitters.size() << " emitters, " << particleCount << " particles, "
-                          << framesPerSecond << "fps" << std::endl;
+                          << collisionCount << " collisions, " << framesPerSecond << "fps"
+                          << std::endl;
 
                 statusClock.restart();
                 framesPerStatusCounter = 0;
@@ -214,10 +276,28 @@ int main()
 
         // update
         {
+            // update position
             const sf::Time elapsed(clock.restart());
             for (auto & emitter : emitters)
             {
                 emitter.update(elapsed, willDrift, mousePosition);
+            }
+
+            // handle collisions
+            const auto emitterCount { emitters.size() };
+            if (willCollide && (emitterCount > 1))
+            {
+                for (std::size_t outer { 0 }; outer < emitterCount; ++outer)
+                {
+                    ParticleEmitter & outerEmitter { emitters[outer] };
+
+                    for (std::size_t inner { outer + 1 }; inner < emitterCount; ++inner)
+                    {
+                        ParticleEmitter & innerEmitter { emitters[inner] };
+
+                        collisionCount += outerEmitter.handleCollisions(innerEmitter);
+                    }
+                }
             }
         }
 
