@@ -88,6 +88,18 @@ public:
         m_vertArray.resize(0);
     }
 
+    void spawnToReachCountOf(const std::size_t newCount)
+    {
+        if (size() >= newCount)
+        {
+            return;
+        }
+        else
+        {
+            add(newCount - size());
+        }
+    }
+
     void update(const sf::Time & elapsed, const bool willDrift, const sf::Vector2f & driftPos)
     {
         const auto particleCount { size() };
@@ -237,6 +249,7 @@ int main()
             {
                 emitters.clear();
                 willDrift = false;
+                willCollide = false;
             }
             else if (sf::Keyboard::D == event.key.code)
             {
@@ -298,6 +311,11 @@ int main()
                         collisionCount += outerEmitter.handleCollisions(innerEmitter);
                     }
                 }
+            }
+
+            for (auto & emitter : emitters)
+            {
+                emitter.spawnToReachCountOf(countToAddPerSpawn);
             }
         }
 
